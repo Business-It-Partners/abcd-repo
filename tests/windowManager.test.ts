@@ -1,0 +1,69 @@
+import { describe, expect, it } from 'vitest';
+import { resizeBounds, fitBounds, initialBounds, workArea, type ResizeEdge } from '../src/windowGeometry';
+import { activeWindow, createDesktop, desktopReducer } from '../src/windowManager';
+
+const screen = { width: 1440, height: 1000 }, minimum = { width: 540, height: 340 };
+const start = { x: 300, y: 200, width: 760, height: 480 };
+describe('Constrained window resizing', () => {
+  for (const edge of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'] as ResizeEdge[]) {
+    it(`${edge} keeps the opposite boundaries fixed`, () => {
+      const next = resizeBounds(start, edge, 40, 30, screen, minimum);
+      expect(next.x + next.width).toBe(edge.includes('e') ? 1100 : 1060);
+      expect(next.y + next.height).toBe(edge.includes('s') ? 710 : 680);
+      expect(next.x).toBe(edge.includes('w') ? 340 : 300);
+      expect(next.y).toBe(edge.includes('n') ? 230 : 200);
+    });
+  }
+  it('does not slide a left/top resize beyond minimum size', () => {
+    const next = resizeBounds(start, 'nw', 5000, 5000, screen, minimum);
+    expect(next).toEqual({ x: 520, y: 340, ...minimum });
+    expect(resizeBounds(start, 'nw', 10000, 10000, screen, minimum)).toEqual(next);
+  });
+  it('limits outward resize to the usable area', () => {
+    const area = workArea(screen);
+    const nw = resizeBounds(start, 'nw', -10000, -10000, screen, minimum);
+    const se = resizeBounds(start, 'se', 10000, 10000, screen, minimum);
+    expect(nw.x).toBe(area.x); expect(nw.y).toBe(area.y);
+    expect(se.x + se.width).toBe(area.x + area.width);
+    expect(se.y + se.height).toBe(area.y + area.height);
+  });
+  it('fits tiny displays without negative size or unreachable frames', () => {
+    const tiny = { width: 400, height: 300 }, area = workArea(tiny);
+    const fit = fitBounds(start, tiny, minimum);
+    expect(fit).toEqual(area);
+    expect(initialBounds('records', tiny)).toEqual(area);
+  });
+});
+describe('Shared lifecycle and focus', () => {
+  it('selects the next visible window after minimize or close', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'visible' });
+    expect(activeWindow(state)).toBe('records');
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'minimizing' });
+    expect(activeWindow(state)).toBe('studio');
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'closed' });
+    expect(activeWindow(state)).toBeUndefined();
+    state = desktopReducer(state, { type: 'focus', id: 'records' });
+    expect(activeWindow(state)).toBeUndefined();
+  });
+  it('retains resized normal bounds and fullscreen through minimize/restore', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });
+    state = desktopReducer(state, { type: 'patch', id: 'studio', patch: { normalBounds: start } });
+    state = desktopReducer(state, { type: 'toggle', id: 'studio' });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'minimized' });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });
+    expect(state.windows.studio.presentation).toBe('fullscreen');
+    state = desktopReducer(state, { type: 'toggle', id: 'studio' });
+    expect(state.windows.studio.normalBounds).toEqual(start);
+  });
+  it('refits normal bounds on display changes without changing fullscreen presentation', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'visible' });
+    state = desktopReducer(state, { type: 'toggle', id: 'records' });
+    state = desktopReducer(state, { type: 'viewport', size: { width: 500, height: 400 } });
+    expect(state.windows.records.presentation).toBe('fullscreen');
+    expect(state.windows.records.normalBounds).toEqual(workArea(state.size));
+  });
+});

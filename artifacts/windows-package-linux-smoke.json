@@ -1,0 +1,24 @@
+{
+  "host": {
+    "appPath": "/home/master-x/Desktop/fewa_business_os/release/windows/win-unpacked/resources/app.asar",
+    "version": "0.1.0",
+    "platform": "linux",
+    "display": {
+      "x": 0,
+      "y": 0,
+      "width": 1366,
+      "height": 768
+    }
+  },
+  "checks": [
+    "Linux host launches the exact ASAR bundled for Windows",
+    "Packaged preload bridge loads without exposing Node",
+    "Packaged wallpaper and app artwork load from relative ASAR paths",
+    "Packaged Follow-ups renders demo data",
+    "Packaged native minimize works on the isolated Linux host",
+    "Packaged restore retains the open form draft",
+    "No packaged renderer exceptions"
+  ],
+  "errors": [],
+  "limitation": "ASAR smoke run on Linux; Windows EXE/installer not executed."
+}

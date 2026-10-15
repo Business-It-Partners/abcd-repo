@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "host reaches ready",
+    "default preference enabled",
+    "unknown preference rejected",
+    "preference survives full restart",
+    "disabled shortcut does not open overview",
+    "corrupt state shows explicit recovery",
+    "recovery has no privileged preload",
+    "corrupt file preserved"
+  ],
+  "platform": "linux"
+}

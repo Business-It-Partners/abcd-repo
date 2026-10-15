@@ -1,0 +1,42 @@
+{
+  "checks": [
+    "Full display coverage at devicePixelRatio 2, including host dock/taskbar area",
+    "Native capture and WebGL round-trip at devicePixelRatio 2",
+    "Native snapshot rejects out-of-bounds capture",
+    "Minimized display-size change restores session state safely",
+    "Environment remains fullscreen through internal transitions"
+  ],
+  "devicePixelRatio": 2,
+  "performance": {
+    "frames": 25,
+    "intervals": [
+      202.70000000000005,
+      16.699999999999818,
+      16.700000000000045,
+      50,
+      33.299999999999955,
+      16.700000000000045,
+      23.90000000000009,
+      16.09999999999991,
+      17,
+      16.700000000000045,
+      16.09999999999991,
+      17.09999999999991,
+      17,
+      16.600000000000364,
+      16.699999999999818,
+      17,
+      16.699999999999818,
+      16,
+      16.800000000000182,
+      16.59999999999991,
+      16.200000000000273,
+      16.799999999999727,
+      16.90000000000009,
+      17
+    ],
+    "renderer": "WebKit WebGL",
+    "direction": "minimize",
+    "active": false
+  }
+}

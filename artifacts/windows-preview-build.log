@@ -1,0 +1,38 @@
+  • electron-builder  version=26.15.3 os=6.8.0-111-generic
+  • loaded configuration  file=/home/master-x/Desktop/fewa_business_os/tools/desktop-release/windows-preview.cjs
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=44.7.0 appOutDir=release/windows/win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/home/master-x/Desktop/fewa_business_os/release/windows/win-unpacked
+  • searching for node modules  pm=npm searchDir=/home/master-x/Desktop/fewa_business_os
+  • updating asar integrity executable resource  executablePath=release/windows/win-unpacked/Dental OS Preview.exe
+  • file signing skipped via signExecutable configuration  file=release/windows/win-unpacked/Dental OS Preview.exe
+  • building        target=nsis file=release/windows/Dental-OS-Setup-0.1.0-x64.exe archs=x64 oneClick=false perMachine=false
+  • downloaded      label=nsis-resources-3.4.1.7z progress=100%
+  • downloaded      label=wine-11.0-linux-x86_64.tar.xz progress=100%
+  ⨯ /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/bin/wine process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+null
+Output:
+Exit code: null. Command failed: /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/bin/wine /home/master-x/Desktop/fewa_business_os/release/windows/Dental-OS-Setup-0.1.0-x64.exe
+wine: failed to load /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/lib/wine/x86_64-unix/ntdll.dll error c0000135
+0024:err:environ:run_wineboot failed to start wineboot 1
+
+wine: failed to load /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/lib/wine/x86_64-unix/ntdll.dll error c0000135
+0024:err:environ:run_wineboot failed to start wineboot 1
+  failedTask=build stackTrace=Error: /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/bin/wine process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+null
+Output:
+Exit code: null. Command failed: /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/bin/wine /home/master-x/Desktop/fewa_business_os/release/windows/Dental-OS-Setup-0.1.0-x64.exe
+wine: failed to load /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/lib/wine/x86_64-unix/ntdll.dll error c0000135
+0024:err:environ:run_wineboot failed to start wineboot 1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 wine: failed to load /home/master-x/.cache/electron-builder/wine@1.0.1/wine-11.0-linux-x86_64-16s8u/lib/wine/x86_64-unix/ntdll.dll error c0000135
+0024:err:environ:run_wineboot failed to start wineboot 1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     at /home/master-x/Desktop/fewa_business_os/node_modules/builder-util/src/util.ts:192:18
+    at ChildProcess.exithandler (node:child_process:421:5)
+    at ChildProcess.emit (node:events:524:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:524:28)
+    at Pipe.<anonymous> (node:net:351:12)

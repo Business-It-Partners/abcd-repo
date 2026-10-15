@@ -1,0 +1,15 @@
+{
+  "files": {
+    "electron/main.ts": "8af590149696d92d1c28d3cb7aa2faef18efd5b379c61455a978a9ff13d5b3fb",
+    "electron/preload.ts": "4459bda4378248933f03b54a53e9351e017ea2f768ffde4c3217927b4f5120bf",
+    "electron/host/platform.ts": "19ee7e21c32c92c6ccbee557ee6b2c7acd0d3937477f3aad1d9ca8863c9627c5",
+    "electron/storage/osState.ts": "71af294e5cea0738da995ed438b1a629c679b3b13a97696403c80e531666df83",
+    "src/App.tsx": "4b48b6c70cd49df7a9e8ef6f98bd5ea6dea429d36c47c73de048502bc3acdb8f",
+    "src/global.d.ts": "a11ce4de2f0bd21bd36cd3938a85ccb62453d55d1aaa9a97199092d8970bbd93",
+    "tests/osState.test.ts": "6dede6fd0af29834e2f5a9fe395f3cc43f981d0225fe5408529da84acfac7a1f",
+    "tests/host-state.mjs": "3e097d1ae854e43c470ff1f79982abce1c23f39614f4e6d7c7fd4af5f3df96e2",
+    "tools/check-dental-docs.py": "2d6069af62be5b9d1753ff5c8ff0f7b47af5ebd4fd392bb04eb365d1861a10c8"
+  },
+  "host": "Linux-6.8.0-111-generic-x86_64-with-glibc2.35",
+  "scope": "uncommitted M02 source; Linux private display only"
+}

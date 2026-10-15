@@ -1,0 +1,99 @@
+{
+  "minimized": true,
+  "native": [
+    {
+      "method": "minimize",
+      "args": [],
+      "time": 1791896568693
+    },
+    {
+      "event": "leave-full-screen",
+      "time": 1791896568693,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 768
+      },
+      "fullscreen": false,
+      "minimized": true
+    },
+    {
+      "event": "minimize",
+      "time": 1791896568693,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 768
+      },
+      "fullscreen": false,
+      "minimized": true
+    },
+    {
+      "event": "blur",
+      "time": 1791896568712,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 768
+      },
+      "fullscreen": false,
+      "minimized": true
+    },
+    {
+      "method": "restore",
+      "args": [],
+      "time": 1791896569309
+    },
+    {
+      "event": "restore",
+      "time": 1791896569309,
+      "bounds": {
+        "x": 16,
+        "y": 10,
+        "width": 1334,
+        "height": 726
+      },
+      "fullscreen": false,
+      "minimized": false
+    },
+    {
+      "method": "setFullScreen",
+      "args": [
+        true
+      ],
+      "time": 1791896569309
+    },
+    {
+      "event": "enter-full-screen",
+      "time": 1791896569310,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 768
+      },
+      "fullscreen": true,
+      "minimized": false
+    }
+  ],
+  "renderer": [
+    {
+      "event": "resize",
+      "time": 1791896568733,
+      "width": 1334,
+      "height": 726,
+      "visibility": "visible"
+    },
+    {
+      "event": "resize",
+      "time": 1791896569314,
+      "width": 1366,
+      "height": 768,
+      "visibility": "visible"
+    }
+  ],
+  "note": "native retention probe"
+}

@@ -1,0 +1,16 @@
+{
+  "scope": "documentation links/structure/requirement ownership only; no runtime certification",
+  "architecture_documents": 23,
+  "milestones": 11,
+  "required_milestone_files": 44,
+  "requirements": 15,
+  "acceptance_gates": 11,
+  "invariants": 14,
+  "contract_sha256": "19166cb66a6b9a90170c0d8acd21f0e19286756b905993c44cce10640cf4c929",
+  "git_head": "b2f90beaad4031459a52de3742837243c70d9f08",
+  "working_tree": "uncommitted; contract digest identifies authored architecture/plans",
+  "errors": [],
+  "passed": true,
+  "repository_structure_sha256": "cf06ac0ac95cc2963315ba1354ce04db0a72df72d97dc397ce0d054ce170fc24",
+  "source_migration_performed": false
+}

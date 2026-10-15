@@ -1,0 +1,64 @@
+[
+  {
+    "viewport": {
+      "width": 1366,
+      "height": 768
+    },
+    "bar": {
+      "x": 0,
+      "y": 0,
+      "width": 1366,
+      "height": 43,
+      "bottom": 43
+    },
+    "window": {
+      "x": 12,
+      "y": 47,
+      "width": 1342,
+      "height": 640.90625,
+      "bottom": 687.90625
+    },
+    "dock": {
+      "x": 511.546875,
+      "y": 695.90625,
+      "width": 342.890625,
+      "height": 64.078125,
+      "bottom": 759.984375
+    },
+    "topGap": 4,
+    "windowDockGap": 8,
+    "dockBottomMargin": 8.015625,
+    "iconWidth": 36
+  },
+  {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "bar": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 43,
+      "bottom": 43
+    },
+    "window": {
+      "x": 12,
+      "y": 47,
+      "width": 1896,
+      "height": 952.90625,
+      "bottom": 999.90625
+    },
+    "dock": {
+      "x": 788.546875,
+      "y": 1007.90625,
+      "width": 342.890625,
+      "height": 64.078125,
+      "bottom": 1071.984375
+    },
+    "topGap": 4,
+    "windowDockGap": 8,
+    "dockBottomMargin": 8.015625,
+    "iconWidth": 36
+  }
+]

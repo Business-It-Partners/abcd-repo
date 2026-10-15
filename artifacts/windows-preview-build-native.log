@@ -1,0 +1,7 @@
+  • electron-builder  version=26.15.3 os=6.8.0-111-generic
+  • loaded configuration  file=/home/master-x/Desktop/fewa_business_os/tools/desktop-release/windows-preview.cjs
+  • building        target=nsis file=release/windows/Dental-OS-Setup-0.1.0-x64.exe archs=x64 oneClick=false perMachine=false
+  • skipped archiving  reason=Archive file is up to date outFile=/home/master-x/Desktop/fewa_business_os/release/windows/dental-os-preview-0.1.0-x64.nsis.7z
+Native NSIS uninstaller extraction completed; no Windows helper executed.
+  • file signing skipped via signExecutable configuration  file=release/windows/Dental-OS-Setup-0.1.0-x64.__uninstaller.exe
+  • file signing skipped via signExecutable configuration  file=release/windows/Dental-OS-Setup-0.1.0-x64.exe

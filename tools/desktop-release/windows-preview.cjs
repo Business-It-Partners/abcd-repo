@@ -1,0 +1,35 @@
+/** Local, unsigned preview only; production installer selection remains an M11 gate. */
+module.exports = {
+  appId: 'local.dentalos.preview',
+  productName: 'Dental OS Preview',
+  directories: { output: 'release/windows', buildResources: 'assets' },
+  files: ['dist/**/*', 'dist-electron/**/*', 'assets/electron-os.ico', 'package.json'],
+  asar: true,
+  npmRebuild: false,
+  compression: 'normal',
+  publish: null,
+  extraMetadata: {
+    name: 'dental-os-preview',
+    description: 'Dental OS preview with synthetic session-only app data',
+    author: 'Dental OS',
+  },
+  win: {
+    target: [{ target: 'nsis', arch: ['x64'] }],
+    icon: 'assets/electron-os.ico',
+    executableName: 'Dental OS Preview',
+    signExecutable: false,
+    artifactName: 'Dental-OS-Setup-${version}-${arch}.exe',
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: false,
+    allowElevation: false,
+    allowToChangeInstallationDirectory: false,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: 'Dental OS Preview',
+    runAfterFinish: false,
+    deleteAppDataOnUninstall: false,
+    differentialPackage: false,
+  },
+};

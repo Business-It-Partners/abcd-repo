@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "Staff list has requested columns and five dummy staff",
+    "Search filters staff",
+    "Type filter shows doctors",
+    "Staff modal leaves another app usable",
+    "Staff draft survives switching apps",
+    "Create adds staff with salary",
+    "Non-doctor has only three profile tabs",
+    "New staff has empty history",
+    "Doctor has four tabs and overview data",
+    "Salary history shows payments and balance",
+    "Keyboard selects doctor work tab",
+    "Doctor work includes three treatments and supporting doctors",
+    "Doctor has three sample documents",
+    "Document preview explicitly identifies dummy file",
+    "Genie retains profile tab",
+    "Close/reopen retains profile",
+    "Created staff persists after close",
+    "Staff fullscreen remains usable",
+    "Compact table scrolls within staff app",
+    "Compact modal scrolls with reachable submit",
+    "No renderer errors"
+  ],
+  "errors": []
+}

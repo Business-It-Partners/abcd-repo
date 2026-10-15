@@ -1,0 +1,51 @@
+{
+  "name": "electron-desktop-prototype",
+  "version": "0.1.0",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "npm run build && electron .",
+    "start": "electron .",
+    "build": "npm run typecheck && vite build && tsc -p tsconfig.electron.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test": "vitest run",
+    "test:electron": "node tools/run-ui-test.mjs tests/electron.mjs",
+    "test:scaling": "node tools/run-ui-test.mjs tests/scaling.mjs",
+    "test:records": "node tools/run-ui-test.mjs tests/records.mjs",
+    "test:windows": "node tools/run-ui-test.mjs tests/windows.mjs",
+    "test:native-session": "node tools/run-ui-test.mjs tests/native-session.mjs",
+    "test:followups": "node tools/run-ui-test.mjs tests/followups.mjs",
+    "test:ui": "node tools/run-ui-test.mjs tests/store.mjs tests/labs.mjs tests/staff.mjs tests/overview.mjs tests/finance.mjs tests/dockapps.mjs tests/followups.mjs tests/records.mjs tests/windows.mjs tests/electron.mjs tests/native-session.mjs tests/scaling.mjs",
+    "test:dockapps": "node tools/run-ui-test.mjs tests/dockapps.mjs",
+    "test:finance": "node tools/run-ui-test.mjs tests/finance.mjs",
+    "test:overview": "node tools/run-ui-test.mjs tests/overview.mjs",
+    "test:staff": "node tools/run-ui-test.mjs tests/staff.mjs",
+    "test:clarity": "node tools/run-ui-test.mjs tests/clarity.mjs",
+    "test:labs": "node tools/run-ui-test.mjs tests/labs.mjs",
+    "test:store": "node tools/run-ui-test.mjs tests/store.mjs",
+    "test:store-interruptions": "node tools/run-ui-test.mjs tests/store-interruptions.mjs",
+    "dist:windows": "node tools/desktop-release/build-windows.mjs",
+    "test:windows-package": "node tools/run-ui-test.mjs tests/windows-package.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "description": "Independent Electron dock and Genie motion prototype",
+  "dependencies": {
+    "lucide-react": "^1.56.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.0",
+    "electron-builder": "26.15.3",
+    "playwright": "^1.64.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  },
+  "private": true
+}

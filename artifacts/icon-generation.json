@@ -1,0 +1,65 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "id": "followups",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-a908f40c-e08b-4fd2-8168-a1e9547b79ea.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/followups.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a teal desk calendar with a small polished brass reminder bell, patient follow-ups. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "appointments",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-0c17a788-816e-433f-89fe-fcd35fcc4cd3.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/appointments.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a cobalt blue diary calendar with a clock face and silver binding, appointments. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "workentry",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-9e724ef5-8702-46e8-a76a-6bbf0ba71c5b.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/workentry.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a warm orange clipboard with a detailed pencil and ivory work sheet, work entry. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "patients",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-7d43a89b-c4e0-4e0e-8b19-dbe76ee1aec8.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/patients.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a cyan medical file folder with a patient portrait card and ivory paper, patient record. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "treatment",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-efb42695-8a67-4cd6-aab3-16ca5a72cf7f.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/treatment.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a green ceramic tooth with three rising blue-green progress bars, treatment progress. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "lab",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-607f57c6-1214-40ab-a205-71a12f362818.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/lab.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a purple and silver laboratory microscope with one glass test tube, lab tracker. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "finance",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-88aab854-f1d8-4ab3-ae6f-e9f47491cccd.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/finance.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a dark indigo calculator with small gold coins and an ivory receipt, finance. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "staff",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-765b8b67-dac0-4e43-a949-acdfeb728cd7.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/staff.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: two layered employee portrait ID badges with blue lanyard details, staff. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "protocols",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-395b0eaa-e5ee-4b28-aafa-3e611b32d796.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/protocols.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: a burgundy leather medical handbook with cream pages and a small blue check seal, treatment protocols. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    },
+    {
+      "id": "calendar",
+      "path": "/home/master-x/.codex/generated_images/01a13487-4142-7b52-b259-ed14e7883278/exec-6e5270de-783c-49bc-ba59-014b7803cda8.png",
+      "savedPath": "/home/master-x/Desktop/electron-desktop-prototype/src/assets/dock/calendar.png",
+      "prompt": "Use case: stylized-concept. Asset type: single square desktop dock app icon PNG. Primary request: an ivory tear-off calendar page with red header, black numeral 13 and visible paper layers, calendar. Detailed realistic 3D miniature object illustration in the polished dimensional macOS Big Sur dock tradition, original artwork. A softly beveled rounded-square tile, front facing with a slight top view of the object; rich materials, paper grain, subtle highlights and cast shadows, large recognizable object filling 86% of the tile, clean silhouette readable at 36 pixels. Soft upper-left studio light. Single icon centered occupying 94% of the square canvas. Transparent outside rounded tile, no surrounding scene, no extra icon, no app name, no watermark, no line-symbol or flat material-design style. Consistent premium desktop icon family."
+    }
+  ]
+}

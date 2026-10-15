@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "Finance contains the eight reference submodules in order",
+    "Transaction Record selects its own Coming soon panel",
+    "Patient payments selects its own Coming soon panel",
+    "General expenses selects its own Coming soon panel",
+    "Salary payments selects its own Coming soon panel",
+    "Product list selects its own Coming soon panel",
+    "Purchases selects its own Coming soon panel",
+    "Supplier list selects its own Coming soon panel",
+    "Supplier payments selects its own Coming soon panel",
+    "Arrow keys wrap to Transaction Record",
+    "End selects the final submodule",
+    "Home selects the first submodule",
+    "Submodule stays selected through fullscreen",
+    "Genie restore retains selection",
+    "Close/reopen retains selection",
+    "Whole OS restore retains selected Finance submodule",
+    "Small window wraps navigation without horizontal clipping",
+    "Wrapped tabs still select their content",
+    "Compact window keeps the section name and Coming soon visible without scrolling",
+    "No renderer errors"
+  ],
+  "errors": []
+}

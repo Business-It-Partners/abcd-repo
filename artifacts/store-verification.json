@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Catalog shows ten dental apps",
+    "Available apps do not occupy dock",
+    "Detail shows metadata and install control",
+    "Cancelled installation can be retried",
+    "Choreographed arrival uses a 2050 ms timeline",
+    "Arrival includes destination glow, light trails, and twenty sparks",
+    "Completion creates artwork arrival overlay",
+    "Celebration removes all temporary effects",
+    "Ready feedback appears at destination",
+    "Source artwork restores after handoff",
+    "New app lands at end of dock",
+    "Installed app opens through shared manager",
+    "Keep app cancels uninstall",
+    "Uninstall removes dock entry and closes open app",
+    "Open during flight settles presentation and opens immediately",
+    "Uninstalled app can be reinstalled",
+    "Update all completes sequentially",
+    "Search filters catalog",
+    "Reduced motion installs without flight",
+    "Session retains installation state"
+  ]
+}

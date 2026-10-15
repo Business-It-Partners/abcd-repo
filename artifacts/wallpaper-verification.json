@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Original FEWA default photograph copied byte-for-byte",
+    "Wallpaper loaded and covers 1920x1080 viewport",
+    "Wallpaper loaded and covers 1000x700 viewport",
+    "Wallpaper loaded and covers 800x1100 viewport"
+  ],
+  "errors": [],
+  "sha256": "b04974335f104fa93bc47ad4cea58f3c3152512b7b3205b8f834b317b9660eec"
+}

@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "Records launches from its dock icon with six column headings and six demo records",
+    "Table rows have alternating colors",
+    "Add opens a focused accessible form",
+    "Modal stays in app content and leaves its title frame clear",
+    "Other dock apps remain usable while Records form is open",
+    "Empty submission is blocked",
+    "Save inserts the entered values into the table",
+    "Cancel does not insert a record",
+    "Records minimizes with a captured dock preview",
+    "Genie restore preserves the added record",
+    "Records and Motion Studio can both stay open",
+    "Records maximize remains internal",
+    "Maximized Records fills the whole renderer",
+    "Maximized app hides dock and has no OS bar",
+    "Bottom-center edge raises dock to its usual position",
+    "Dock stays revealed while using it",
+    "Direct environment controls stay usable in the revealed fullscreen dock",
+    "Dock hides again after leaving its direct controls",
+    "Restoring app size returns persistent dock without an OS bar",
+    "Session data survives closing and reopening Records",
+    "No renderer errors"
+  ],
+  "errors": []
+}

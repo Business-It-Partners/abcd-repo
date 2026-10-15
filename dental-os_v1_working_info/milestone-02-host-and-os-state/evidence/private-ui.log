@@ -1,0 +1,33 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS host reaches ready
+PASS default preference enabled
+PASS unknown preference rejected
+PASS preference survives full restart
+PASS disabled shortcut does not open overview
+PASS corrupt state shows explicit recovery
+PASS recovery has no privileged preload
+PASS corrupt file preserved
+PASS Test profile is isolated from the user session
+PASS Normal windows with an open draft: environment minimized without closing
+PASS Normal windows with an open draft: minimized renderer keeps a stable desktop and resting dock
+PASS Normal windows with an open draft: window bounds, order, presentation, rows, note, counter, and draft stay identical
+PASS Normal windows with an open draft: existing native window restored at full display size
+PASS Normal windows with an open draft: restore avoids bounds changes and repeated fullscreen calls
+PASS Installed launcher reactivation with an open draft: environment minimized without closing
+PASS Installed launcher reactivation with an open draft: minimized renderer keeps a stable desktop and resting dock
+PASS Installed launcher reactivation with an open draft: window bounds, order, presentation, rows, note, counter, and draft stay identical
+PASS Installed launcher reactivation with an open draft: existing native window restored at full display size
+PASS Installed launcher reactivation with an open draft: restore avoids bounds changes and repeated fullscreen calls
+PASS Fullscreen Records and internally minimized Studio: environment minimized without closing
+PASS Fullscreen Records and internally minimized Studio: minimized renderer keeps a stable desktop and resting dock
+PASS Fullscreen Records and internally minimized Studio: window bounds, order, presentation, rows, note, counter, and draft stay identical
+PASS Fullscreen Records and internally minimized Studio: existing native window restored at full display size
+PASS Fullscreen Records and internally minimized Studio: restore avoids bounds changes and repeated fullscreen calls
+PASS Installed launcher with fullscreen and minimized apps: environment minimized without closing
+PASS Installed launcher with fullscreen and minimized apps: minimized renderer keeps a stable desktop and resting dock
+PASS Installed launcher with fullscreen and minimized apps: window bounds, order, presentation, rows, note, counter, and draft stay identical
+PASS Installed launcher with fullscreen and minimized apps: existing native window restored at full display size
+PASS Installed launcher with fullscreen and minimized apps: restore avoids bounds changes and repeated fullscreen calls
+PASS Internally minimized Studio still restores its note and counter
+PASS Saved Records row remains after all cycles
+PASS No renderer errors

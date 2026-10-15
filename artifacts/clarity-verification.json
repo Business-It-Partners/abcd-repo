@@ -1,0 +1,158 @@
+{
+  "checks": [
+    {
+      "selector": ".staff-heading h2",
+      "minimum": 4.5,
+      "color": "rgb(48, 49, 56)",
+      "background": "rgb(255,255,255)",
+      "ratio": 12.946136797636209
+    },
+    {
+      "selector": ".staff-heading p",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".staff-table-wrap thead th",
+      "minimum": 4.5,
+      "color": "rgb(82, 84, 93)",
+      "background": "rgb(241,242,245)",
+      "ratio": 6.736011307719458
+    },
+    {
+      "selector": ".staff-footer",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".staff-primary",
+      "minimum": 4.5,
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(0,107,96)",
+      "ratio": 6.418124952642381
+    },
+    {
+      "selector": ".staff-role.support",
+      "minimum": 4.5,
+      "color": "rgb(133, 80, 0)",
+      "background": "rgb(255,243,229)",
+      "ratio": 6.1065339373747385
+    },
+    {
+      "selector": ".staff-role.helper",
+      "minimum": 4.5,
+      "color": "rgb(34, 93, 153)",
+      "background": "rgb(234,243,253)",
+      "ratio": 6.056456965539641
+    },
+    {
+      "selector": ".staff-table-wrap td small",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".staff-modal label",
+      "minimum": 4.5,
+      "color": "rgb(82, 84, 93)",
+      "background": "rgb(255,255,255)",
+      "ratio": 7.540503631913412
+    },
+    {
+      "selector": ".staff-modal .form-context",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".staff-modal input",
+      "minimum": 4.5,
+      "color": "rgb(48, 49, 56)",
+      "background": "rgb(255,255,255)",
+      "ratio": 12.946136797636209
+    },
+    {
+      "selector": ".followups-heading p",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".followups-card.today strong",
+      "minimum": 4.5,
+      "color": "rgb(133, 80, 0)",
+      "background": "rgb(255,255,255)",
+      "ratio": 6.6777466698617465
+    },
+    {
+      "selector": ".followups-card small",
+      "minimum": 4.5,
+      "color": "rgb(82, 84, 93)",
+      "background": "rgb(255,255,255)",
+      "ratio": 7.540503631913412
+    },
+    {
+      "selector": ".followups-table-scroll thead th",
+      "minimum": 4.5,
+      "color": "rgb(82, 84, 93)",
+      "background": "rgb(241,242,245)",
+      "ratio": 6.736011307719458
+    },
+    {
+      "selector": ".followups-table-scroll td small",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".followups-primary",
+      "minimum": 4.5,
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(0,102,204)",
+      "ratio": 5.566637067604819
+    },
+    {
+      "selector": ".followups-session",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(255,255,255)",
+      "ratio": 5.805660098995211
+    },
+    {
+      "selector": ".finance-navigation button[aria-selected=true]",
+      "minimum": 4.5,
+      "color": "rgb(0, 102, 204)",
+      "background": "rgb(240,245,252)",
+      "ratio": 5.081987382065165
+    },
+    {
+      "selector": ".finance-placeholder p",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(250,250,252)",
+      "ratio": 5.569202901027907
+    },
+    {
+      "selector": ".coming-soon-body p",
+      "minimum": 4.5,
+      "color": "rgb(99, 101, 110)",
+      "background": "rgb(250,250,252)",
+      "ratio": 5.569202901027907
+    },
+    {
+      "selector": ".overview-heading p",
+      "minimum": 4.5,
+      "color": "rgb(215, 220, 229)",
+      "background": "rgb(50.53999999999999,53.72,61.449999999999996)",
+      "ratio": 8.823748813460071
+    }
+  ]
+}

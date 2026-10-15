@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Validate the Dental OS documentation contract without opening the application."""
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+ARCH = ROOT / 'dental-os_v1-documentation'
+WORK = ROOT / 'dental-os_v1_working_info'
+REQUIRED = ('PLAN.md', 'STATUS.md', 'IMPLEMENTATION_NOTES.md', 'VERIFICATION_EVIDENCE.md')
+
+def check():
+    errors = []
+    files = sorted(ARCH.glob('*.md')) + sorted(WORK.glob('*.md'))
+    milestones = sorted(WORK.glob('milestone-*'))
+    if len(list(ARCH.glob('*.md'))) != 23:
+        errors.append('Expected 23 numbered architecture documents')
+    if len(milestones) != 11:
+        errors.append('Expected eleven milestone folders')
+    for index, folder in enumerate(milestones, 1):
+        if not folder.name.startswith(f'milestone-{index:02d}-'):
+            errors.append(f'Milestone sequence mismatch: {folder.name}')
+        for name in REQUIRED:
+            path = folder / name
+            if not path.is_file():
+                errors.append(f'Missing {path.relative_to(ROOT)}')
+            else:
+                files.append(path)
+    files += [ROOT / name for name in ('PRODUCT_DIRECTION.md', 'AGENTS.md')]
+    # Check the scoped documents and root authority files; old prototype/history
+    # links outside this task are deliberately not reinterpreted as new failures.
+    for path in files:
+        body = path.read_text()
+        if len(body.strip()) < 80:
+            errors.append(f'Empty/placeholder document: {path.relative_to(ROOT)}')
+        for raw in re.findall(r'(?<!!)\[[^\]]*\]\(([^)]+)\)', body):
+            target = raw.strip().split(' "', 1)[0].strip('<>')
+            if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target) or target.startswith('#'):
+                continue
+            target = target.split('#', 1)[0]
+            if target and not (path.parent / target).exists():
+                errors.append(f'Broken link in {path.relative_to(ROOT)}: {target}')
+    plans = '\n'.join((p / 'PLAN.md').read_text() for p in milestones if (p / 'PLAN.md').exists())
+    trace = (ARCH / '22_V1_REQUIREMENTS_AND_TRACEABILITY.md').read_text()
+    gate_doc = (ARCH / '18_V1_ACCEPTANCE_GATES.md').read_text()
+    inv = (ARCH / '03_V1_PRINCIPLES_AND_INVARIANTS.md').read_text()
+    for n in range(1, 16):
+        req = f'R{n:02d}'
+        if not re.search(rf'\b{req}\b', plans) or not re.search(rf'\b{req}\b', trace):
+            errors.append(f'Unmapped requirement {req}')
+    for n in range(1, 12):
+        gate = f'G{n:02d}'
+        if not re.search(rf'\b{gate}\b', plans) or not re.search(rf'\b{gate}\b', gate_doc):
+            errors.append(f'Unmapped gate {gate}')
+    for n in range(1, 15):
+        if f'INV-{n:02d}' not in inv:
+            errors.append(f'Missing invariant INV-{n:02d}')
+    for folder in milestones[1:]:
+        status = (folder / 'STATUS.md').read_text()
+        if not re.search(r'\*\*Status:\*\* (PLANNED|IMPLEMENTING|IMPLEMENTED|VERIFIED|BLOCKED|DEFERRED|REMOVED)\b', status):
+            errors.append(f'Missing valid milestone status: {folder.name}')
+    if 'permanent' not in (ARCH / '02_V1_PRODUCT_DEFINITION.md').read_text().lower():
+        errors.append('Missing permanent first-party policy')
+    # Stable content identity excludes evolving progress/evidence files.
+    contract_files = sorted(ARCH.glob('*.md')) + [p / 'PLAN.md' for p in milestones]
+    digest = hashlib.sha256()
+    for path in contract_files:
+        digest.update(str(path.relative_to(ROOT)).encode())
+        digest.update(b'\0' + path.read_bytes() + b'\0')
+    result = {
+        'scope': 'documentation links/structure/requirement ownership only; no runtime certification',
+        'architecture_documents': 23,
+        'milestones': len(milestones),
+        'required_milestone_files': len(milestones) * len(REQUIRED),
+        'requirements': 15,
+        'acceptance_gates': 11,
+        'invariants': 14,
+        'contract_sha256': digest.hexdigest(),
+        'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'working_tree': 'uncommitted; contract digest identifies authored architecture/plans',
+        'errors': errors,
+        'passed': not errors,
+    }
+    print(json.dumps(result, indent=2))
+    return 1 if errors else 0
+
+if __name__ == '__main__':
+    raise SystemExit(check())
