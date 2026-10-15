@@ -29,3 +29,8 @@ Run [38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs
 ## M03 checkpoint
 
 `codex/milestone-03` contains isolated-runtime implementation and retained evidence. Tested source/tag: `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` / `checkpoint/m03-ci`; Windows run [38782178992](https://github.com/Business-It-Partners/dental-os/actions/runs/38782178992) passes. Evidence-only follow-up commits preserve identical runtime source. Main remains the M02 integrated snapshot; no merge performed. Physical device testing remains deferred after M11/before release. M04 has not started.
+
+
+## Local-only reference correction — 2026-10-15
+
+The user clarified that `refrence/` is local lookup material and must not be published with Dental OS. Remove it from tracking on main and the started milestone branch tips, preserve the local directory, and ignore `/refrence/` for future commits. Existing checkpoint tags and older commits retain their historical trees; this cleanup does not rewrite published history. Historical statements about publishing tracked archive source above describe the earlier setup and are superseded for current branch contents.
