@@ -1,0 +1,49 @@
+{
+  "old_baseline": "3771bce30b4133d5425c77d1a9526a898b752567",
+  "new_baseline": "129f4cd624d22fe3917090b05f6c68e08a935b05",
+  "commits": {
+    "3771bce30b4133d5425c77d1a9526a898b752567": "129f4cd624d22fe3917090b05f6c68e08a935b05",
+    "24470d84a55817440f1282e3ffc03c8cf8011bb1": "bb43cdd86562f77cb5bf68bc55aeab5297399bd1",
+    "fd124b5c20e0abbac0a3f99a79be2cc01cddb59c": "caf9f98f9a5732883da662e283d8a1639dec27f4",
+    "471d22a91b94c04e6723c0d37a184e3bc86bfbb8": "28cad49671c2b56ba3b60e5c2c8ab2c5eead8945",
+    "7c794b4526afc7061c4939d6fbe050bf4b279a86": "d33db462985a8d4f40380010f367d1c9717cac21",
+    "f8fc71e35d980cda251e40c7abdb9245a3cdcc21": "f29d69bbfddbda3294d891c89068bd7425526977",
+    "fc7f3a23248d8acf18c1fc3462dcbcf3095c966a": "ce58156ef1bc8fc373c751412d0be51cb8f3529f",
+    "fb95168920893a17210fcbb3ba07baa9e31b0785": "b8906d9af14a4c1195aa1b1da0e0d1698d21c38f",
+    "de923ac5b024d34cd0fdc31ca34e6a77f58c2de1": "789e1c0ae73227140e576144ae9c4c32f7a35558",
+    "619d9dba84146b6e7cfc786aa0e1a3d27b1ea871": "00080d4fbc1fcca33e1f5ebe8c8faa247f2c5bac",
+    "ca3855f3b6d1ba937ef464157c742e2328069c8c": "ce42378a5eeee4b64511c4457b2b5efe6623ffc5"
+  },
+  "refs": {
+    "refs/heads/codex/milestone-01": {
+      "before": "ca3855f3b6d1ba937ef464157c742e2328069c8c",
+      "after": "ce42378a5eeee4b64511c4457b2b5efe6623ffc5"
+    },
+    "refs/heads/codex/milestone-02": {
+      "before": "619d9dba84146b6e7cfc786aa0e1a3d27b1ea871",
+      "after": "00080d4fbc1fcca33e1f5ebe8c8faa247f2c5bac"
+    },
+    "refs/heads/codex/milestone-03": {
+      "before": "de923ac5b024d34cd0fdc31ca34e6a77f58c2de1",
+      "after": "789e1c0ae73227140e576144ae9c4c32f7a35558"
+    },
+    "refs/heads/main": {
+      "before": "619d9dba84146b6e7cfc786aa0e1a3d27b1ea871",
+      "after": "00080d4fbc1fcca33e1f5ebe8c8faa247f2c5bac"
+    },
+    "refs/tags/checkpoint/m01-reconstructed": {
+      "before": "712f30fecf96e718815e2912e6fefc2cccd671c5",
+      "after": "de277a161a50632a55d020cc6fa5587491082396"
+    },
+    "refs/tags/checkpoint/m02-ci": {
+      "before": "52718d9cf0d8d867f2c364f1d4fc0e04163ed642",
+      "after": "2ff378302afcb3f8cb86b2e6012cc8ff359ab8d5"
+    },
+    "refs/tags/checkpoint/m03-ci": {
+      "before": "fc7f3a23248d8acf18c1fc3462dcbcf3095c966a",
+      "after": "ce58156ef1bc8fc373c751412d0be51cb8f3529f"
+    }
+  },
+  "verified_commit_count": 11,
+  "verification": "Every retained commit and checkpoint preserves all non-refrence blob IDs and modes; inherited Flutter ancestry detached; one Dental OS root."
+}
