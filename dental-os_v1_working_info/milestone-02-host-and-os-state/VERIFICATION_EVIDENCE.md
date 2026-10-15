@@ -1,6 +1,6 @@
 # M02 Verification Evidence — Trusted host and OS state
 
-**Result:** Linux checks pass; Windows device verification pending; full cross-host milestone not VERIFIED.
+**Current result:** VERIFIED for automated Linux/Windows scope under the approved CI policy. Physical Windows-device acceptance is deferred until after M11 and before final product release. Earlier pending-gate records below are historical and superseded by the final closeout.
 **Date:** 2026-10-15. Source is the uncommitted tree; [source hashes](evidence/source-manifest.json) identify changed implementation/checker files. No commit or push.
 
 ## Executed sequential checks
