@@ -7,6 +7,17 @@ function publishHostTransition(transitioning: boolean) {
 }
 ipcRenderer.on('window:host-transition', (_event, value: boolean) => publishHostTransition(value));
 contextBridge.exposeInMainWorld('desktop', {
+  runtime: {
+    sync: (value: unknown) => ipcRenderer.invoke('runtime:sync', value),
+    restart: (id: string) => ipcRenderer.invoke('runtime:restart', id),
+    subscribe: (callback: (kind: string, value: unknown) => void) => {
+      const state = (_event: unknown, value: unknown) => callback('state', value);
+      const key = (_event: unknown, value: unknown) => callback('key', value);
+      const edge = (_event: unknown, value: unknown) => callback('edge', value);
+      ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge);
+      return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); };
+    },
+  },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),
   control: (action: 'close' | 'minimize') => {

@@ -57,3 +57,16 @@ New OS-specific services use `/v1/dental-os/...`; existing dental business and i
 ## Windows verification scope
 
 Use the [approved deferred-device policy](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md): Linux checks plus applicable Windows GitHub Actions evidence during milestones; physical Windows interaction/visual checks after M11, before final release. Record remaining device scenarios separately; CI success is not physical-device certification.
+
+## Detailed M03 execution plan — 2026-10-15
+
+Inspection: shared ManagedWindow/windowManager already owns presentation, dock/overview and Genie. Native WebContentsView bodies sit above shell DOM, so naïvely adding two views would obscure other window chrome/overlays. Preserve one shared lifecycle: render only the foreground isolated body natively; represent inactive/occluded bodies with session-memory snapshots while their isolated renderers remain alive. Hide native content for overview, gestures, dock overlap and animations; compose isolated captures into the shared capture route. This explicit composition tradeoff must pass interaction/visual evidence before ADR-007 can be accepted.
+
+1. Implement a development/test-only runtime registry for two fixed sample IDs mapped to existing studio/records fixture frames. Each uses a distinct secure custom origin, in-memory partition and sandboxed webContents. No production installation or user-supplied path.
+2. Add a platform-owned restricted app preload for dirty/modal/paint/input-edge signals only. No identity argument, token getter, arbitrary IPC or shell/native services. Bind sender/frame to registry entry; deny network, downloads, permissions, navigation/popups and file paths. Limit payloads, sessions, bounds and sample count. Restrict all shell host IPC to the actual shell sender.
+3. Supervise load/crash/hang and teardown, with bounded watchdog and explicit restart. Close dirty apps through owner-scoped discard/cancel UI; do not promise crash draft recovery. Keep ordinary demo behavior unchanged outside the runtime-fixture flag.
+4. Integrate native-body placement/focus and snapshot mirrors with current shared frames, content clipping, existing dock, overview and unchanged Genie field. Forward reserved shell keys and bottom-edge pointer access from native content.
+5. Unit-test layout/input/capture helpers. Privately verify two independent processes/origins/storage, denied privilege/network/navigation, real editing/scoped dialog, dirty close, overlap/resize/fullscreen, minimize/restore captures, overview, dock reveal, crash/hang containment and repeated cleanup. Inspect screenshots.
+6. Run bounded single-worker tests, build, focused private runtime suite and applicable shared regressions sequentially. Add corresponding hosted Windows CI checks; retain source/run evidence. Physical Windows review remains deferred per policy. M04 is not started.
+
+Resource preflight: no task-owned stale job identified. Browser load is elevated; do source/planning work first, recheck instantaneous CPU/memory before heavy checks. Do not kill unrelated browser activity.

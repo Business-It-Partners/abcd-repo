@@ -1,12 +1,12 @@
 # M03 Status — Isolated runtime and shared shell
 
-**Status:** PLANNED
+**Status:** IMPLEMENTING
 **Updated:** 2026-10-15.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+Implementation and Linux verification are complete. Hosted Windows Actions is the remaining automated G03 gate; physical-device review remains deferred. See implementation notes and retained evidence.
 
 **Dependencies:** [M02](../milestone-02-host-and-os-state/PLAN.md)
 

@@ -1,0 +1,32 @@
+export const runtimeIds = ['studio', 'records'] as const;
+export type RuntimeId = typeof runtimeIds[number];
+export type RuntimeRect = { x: number; y: number; width: number; height: number };
+export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
+export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'failed'; dirty: boolean; modal: boolean; reason?: string; snapshot?: string };
+export function parseLayout(input: unknown): RuntimeLayout[] {
+  if (!Array.isArray(input) || input.length !== 2) throw new Error('Invalid runtime layout');
+  const seen = new Set();
+  for (const v of input) {
+    if (!v || Object.keys(v).sort().join() !== 'id,open,rect,visible' || !runtimeIds.includes(v.id) || seen.has(v.id) || typeof v.open !== 'boolean' || typeof v.visible !== 'boolean' || !v.rect || Object.keys(v.rect).sort().join() !== 'height,width,x,y') throw new Error('Invalid runtime layout');
+    seen.add(v.id);
+    if (!Object.values(v.rect).every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 8192) || v.rect.width < 1 || v.rect.height < 1 || v.rect.width * v.rect.height > 16_000_000) throw new Error('Invalid runtime bounds');
+  }
+  if (input.filter(v => v.visible).length > 1) throw new Error('Only one native input surface');
+  return input;
+}
+export function fixtureAsset(url: string, host: string): string | undefined {
+  try { const u = new URL(url); return u.protocol === 'dental-fixture:' && u.host === host && !u.search && !u.hash && ['/index.html', '/app.js', '/app.css'].includes(u.pathname) ? u.pathname.slice(1) : undefined; } catch { return undefined; }
+}
+/** BGRA/RGBA buffers share byte order; copy opaque/alpha pixels without channel conversion. */
+export function compositePixels(base: Uint8Array, width: number, height: number, layer: Uint8Array, lw: number, lh: number, target: RuntimeRect) {
+  if (base.length !== width * height * 4 || layer.length !== lw * lh * 4) throw new Error('Invalid bitmap');
+  for (let y = Math.max(0, Math.floor(target.y)); y < Math.min(height, Math.ceil(target.y + target.height)); y++) {
+    for (let x = Math.max(0, Math.floor(target.x)); x < Math.min(width, Math.ceil(target.x + target.width)); x++) {
+      const sx = Math.min(lw - 1, Math.max(0, Math.floor((x - target.x) / target.width * lw)));
+      const sy = Math.min(lh - 1, Math.max(0, Math.floor((y - target.y) / target.height * lh)));
+      const b = (y * width + x) * 4, s = (sy * lw + sx) * 4, alpha = layer[s + 3] / 255;
+      for (let c = 0; c < 3; c++) base[b + c] = Math.round(layer[s + c] * alpha + base[b + c] * (1 - alpha));
+      base[b + 3] = Math.round(layer[s + 3] + base[b + 3] * (1 - alpha));
+    }
+  }
+}

@@ -1,0 +1,16 @@
+import { describe, expect, it } from 'vitest';
+import { parseLayout, fixtureAsset, compositePixels } from '../electron/runtime/contracts';
+const layouts=()=>['studio','records'].map(id=>({id,open:true,visible:id==='studio',rect:{x:0,y:43,width:640,height:400}}));
+describe('isolated runtime boundary',()=>{
+ it('accepts the fixed two-sample layout only',()=>{expect(parseLayout(layouts())).toHaveLength(2);for(const value of [[],[layouts()[0],layouts()[0]],layouts().map(v=>({...v,identity:'forged'})),layouts().map(v=>({...v,visible:true})),layouts().map(v=>({...v,rect:{...v.rect,width:NaN}}))])expect(()=>parseLayout(value)).toThrow();});
+ it('resolves only exact assets belonging to the registered origin',()=>{
+  expect(fixtureAsset('dental-fixture://alpha/app.js','alpha')).toBe('app.js');
+  for(const url of ['file:///etc/passwd','https://alpha/app.js','dental-fixture://beta/app.js','dental-fixture://alpha/secret.json','dental-fixture://alpha/app.js?other=1','dental-fixture://alpha/../secret'])expect(fixtureAsset(url,'alpha')).toBeUndefined();
+ });
+ it('composes captures with clipping, scaling and alpha without touching outside pixels',()=>{
+  const base=new Uint8Array(4*4*4).fill(255), layer=new Uint8Array([0,100,200,255]);
+  compositePixels(base,4,4,layer,1,1,{x:-1,y:1,width:3,height:2});
+  expect([...base.slice(0,4)]).toEqual([255,255,255,255]);expect([...base.slice(16,20)]).toEqual([0,100,200,255]);expect([...base.slice(28,32)]).toEqual([255,255,255,255]);
+  expect(()=>compositePixels(base,1,1,layer,1,1,{x:0,y:0,width:1,height:1})).toThrow();
+ });
+});

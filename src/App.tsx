@@ -7,6 +7,7 @@ import { StaffApp } from './StaffApp';
 import { LabApp } from './LabApp';
 import { StoreApp, catalogIds, type StoreJob } from './StoreApp';
 import { celebrateStoreArrival } from './storeArrival';
+import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
 import { ManagedWindowFrame } from './ManagedWindow';
@@ -16,6 +17,7 @@ import { dockArtwork } from './dockArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
+const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
 const fixtures = new URLSearchParams(location.search).get('prototypeFixtures') === '1';
 const makeIcons = (ids: WindowId[]) => ids.map(id => ({ id, label: WINDOW_SPECS[id].title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
 const previewId = (id: WindowId) => id === 'studio' ? 'preview' : `${id}-preview`;
@@ -115,6 +117,7 @@ function Desktop() {
   const frontApp = activeWindow(state);
   const immersive = !!frontApp && state.windows[frontApp].presentation === 'fullscreen';
   const showDock = !state.overview && (!immersive || dockRevealed || anyMotion || !!arrivalId);
+  useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
   useEffect(() => { setDockRevealed(false); }, [immersive, frontApp]);
   function trackChrome(event: React.PointerEvent<HTMLElement>) {
     if (state.overview) return;
@@ -184,7 +187,8 @@ function Desktop() {
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {fixtures && <ManagedWindowFrame controller={studio}>
+    {runtimeFixtures && <RuntimeFixtures controllers={{studio,records}} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
         <div className="studio-content"><div className="content-top"><span className="eyebrow">A SMALL EXPERIMENT</span><span className="saved"><Check size={12}/> In memory</span></div><h2>Make room for ideas.</h2><p className="content-description">One window. A little state. A different way to move.</p>
@@ -194,7 +198,7 @@ function Desktop() {
         </div>
       </div>
     </ManagedWindowFrame>}
-    {fixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
+    {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={controllers[id]}>
       {id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{

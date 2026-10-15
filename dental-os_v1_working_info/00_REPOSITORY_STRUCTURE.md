@@ -265,3 +265,7 @@ The target tree, ownership, dependency rules, backend separation, runtime-data p
 ## Git and CI ownership
 
 The dedicated remote is https://github.com/Business-It-Partners/dental-os. Preserve the former Flutter remote as flutter-reference and retain its history; never push this project to it. main is the integrated Dental OS snapshot. Started milestone branches use codex/milestone-NN; future branches are created on start. .github/workflows/windows-validation.yml owns bounded sequential hosted Windows checks, not backend deployment. Physical Windows tests are deferred until after M11 and before final product release under the architecture acceptance policy. Reconstructed historical checkpoints must be labeled as reconstructed, never as original verified commits.
+
+## M03 transitional source mapping
+
+The bounded runtime proof introduces `electron/runtime/` for the trusted fixture supervisor/preload and `fixtures/runtime-apps/` for fixed synthetic assets, plus `src/RuntimeFixtures.tsx` for shared-frame integration. `electron/runtime/contracts.ts` is an explicitly renderer-safe transitional contract (pure schemas/types/pixel helper, no Node/Electron imports); the shell may consume its safe exports until M04 extracts the governed shared SDK/contracts package. This is not permission to import other trusted runtime internals. No full apps/packages migration or production app registry is claimed.

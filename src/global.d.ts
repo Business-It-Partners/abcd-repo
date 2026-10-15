@@ -3,6 +3,7 @@ export {};
 declare global {
   interface Window {
     desktop?: {
+      runtime: { sync(value: unknown): Promise<void>; restart(id: string): Promise<void>; subscribe(callback: (kind: string, value: unknown) => void): () => void };
       preferences(value?: { overviewShortcutEnabled: boolean }): Promise<{ overviewShortcutEnabled: boolean }>;
       status(): Promise<{ phase: string }>;
       onHostTransition(listener: (transitioning: boolean) => void): () => void;
