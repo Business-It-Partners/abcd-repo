@@ -34,3 +34,12 @@ Run [38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs
 ## Local-only reference correction — 2026-10-15
 
 The user clarified that `refrence/` is local lookup material and must not be published with Dental OS. Remove it from tracking on main and the started milestone branch tips, preserve the local directory, and ignore `/refrence/` for future commits. Existing checkpoint tags and older commits retain their historical trees; this cleanup does not rewrite published history. Historical statements about publishing tracked archive source above describe the earlier setup and are superseded for current branch contents.
+
+
+## Reference history removal — 2026-10-15
+
+The user explicitly authorized rewriting published Dental OS history and checkpoint tags. The published history now starts at the Dental OS baseline, with inherited Flutter ancestry detached and `refrence/` removed from every retained commit. All four published branches and three checkpoint tags were rewritten together. Every retained commit/checkpoint was compared against its predecessor: all non-reference blob IDs and file modes are identical.
+
+[Commit/ref translation map](GIT_HISTORY_REWRITE_MAP.json) maps the original IDs to their rewritten equivalents. Earlier CI evidence retains its original executed SHA and run link; the rewritten checkpoints contain the same non-reference source/evidence. This cleanup does not rerun or invalidate those checks. Earlier statements that the published Flutter history was retained or that no rewrite occurred describe superseded setup steps.
+
+The local reference directory and original history backup are preserved outside publication. The original Flutter repository/remote and local legacy branches remain local lookup/recovery sources; never push them to Dental OS origin or merge their ancestry back. Fresh clones receive only the cleaned Dental OS history. Existing external clones must be realigned or freshly cloned before contributing; do not merge their old branch histories. GitHub may retain unreachable objects/cached old commit URLs internally; the rewrite removes them from published branch/tag ancestry, not GitHub's internal storage retention.
