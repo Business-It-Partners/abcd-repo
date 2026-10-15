@@ -18,3 +18,7 @@ Recovery preserves unsafe files and asks for support rather than silently resett
 ## Verification repair
 
 First build failed because new filesystem unit tests needed Node type declarations in the renderer/test compilation. Added a Node type reference to that test; subsequent build passes. Tightened the private shortcut assertion to target the actual overview class and added a positive enabled-shortcut control before rerunning the focused private suite. Retained both failed and passing build logs.
+
+## GitHub and Windows CI closeout
+
+Connected dedicated private Dental OS origin, preserving Flutter remote/history. Windows tests follow platform permission semantics with a portable directory-junction rejection case. Direct Vitest invocation and scoped artifact paths ensure explicit single-worker/report arguments and current-run evidence. Windows Actions passes at fd124b5c20e0abbac0a3f99a79be2cc01cddb59c. User-approved physical Windows deferral replaces the earlier immediate progression blocker; automated M02 is verified, M03 not started.

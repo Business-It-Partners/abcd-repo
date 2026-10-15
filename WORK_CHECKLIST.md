@@ -512,3 +512,5 @@ Implemented strict OS-only preference storage, atomic journal/migration/recovery
 ## Dedicated repository and Windows CI setup — 2026-10-15
 
 User authorized connecting to Business-It-Partners/dental-os, preserving history/work, establishing main and milestone branches, committing/pushing the reviewed project and adding Windows Actions. Physical Windows-device tests are deferred until after M11, before final product release. CI must not deploy the backend. Publication audit, checkpoint identities and run evidence are recorded in docs/GIT_AND_CI_SETUP.md.
+
+Windows CI closeout: [run 38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs/38778013772) passes at `fd124b5c20e0abbac0a3f99a79be2cc01cddb59c`. Dedicated origin/main and M01/M02 branches are published; Flutter origin retained as flutter-reference. M02 is verified for automated Linux/Windows scope under the approved physical-device deferral. M03 not started. No cloud backend deployment or live-session restart.

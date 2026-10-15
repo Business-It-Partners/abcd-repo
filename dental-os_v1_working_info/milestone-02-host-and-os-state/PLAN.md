@@ -28,7 +28,7 @@ Establish a controlled Electron host lifecycle and durable OS-only state without
 
 - [x] Linux private display: repeated launch preserves native identity; minimize/restore preserves session and geometry. Windows remains pending.
 - [x] Linux unit/private checks cover interrupted commits, migration, corrupt state and injected low-space failures; files are preserved on unsafe input. See evidence for limits.
-- [ ] Verify data-root paths/permissions and absence of business-data persistence; host lifecycle checks on named supported profiles.
+- [x] Automated Linux/Windows CI state/path and startup checks passed; POSIX modes tested on Linux, Windows junction refusal and inherited-permission operation tested on hosted Windows. Physical native lifecycle/ACL/visual device scenarios remain deferred under the approved policy.
 
 ## Scope exclusions
 

@@ -1,9 +1,9 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-15.
-**Active scope:** M01 documentation baseline complete; M02 implemented with Linux evidence; Windows CI pending; physical Windows gate deferred.
+**Active scope:** M01 documentation baseline complete; M02 automated Linux/Windows gates passed; physical Windows acceptance deferred.
 **Current implementation authorization:** user authorized M02 inspection, planning, implementation and controlled verification.
-**Next gate:** Windows M02 GitHub Actions; physical-device testing after M11, before final product release. M03 has not started.
+**Next candidate:** M03, not started. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -11,7 +11,7 @@
 | Milestone | Status | Evidence |
 | --- | --- | --- |
 | [M01 — Architecture and baseline](milestone-01-architecture-baseline/STATUS.md) | VERIFIED — documentation scope only | [Evidence](milestone-01-architecture-baseline/VERIFICATION_EVIDENCE.md) |
-| [M02 — Trusted host and OS state](milestone-02-host-and-os-state/STATUS.md) | IMPLEMENTED — Linux checked; Windows CI pending | [Evidence](milestone-02-host-and-os-state/VERIFICATION_EVIDENCE.md) |
+| [M02 — Trusted host and OS state](milestone-02-host-and-os-state/STATUS.md) | VERIFIED — automated Linux/Windows; device testing deferred | [Evidence](milestone-02-host-and-os-state/VERIFICATION_EVIDENCE.md) |
 | [M03 — Isolated runtime and shared shell](milestone-03-isolated-runtime-and-shell/STATUS.md) | PLANNED | [Evidence](milestone-03-isolated-runtime-and-shell/VERIFICATION_EVIDENCE.md) |
 | [M04 — Internal SDK and API boundary](milestone-04-sdk-and-api-broker/STATUS.md) | PLANNED | [Evidence](milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md) |
 | [M05 — Single login and protected sessions](milestone-05-identity-and-session/STATUS.md) | PLANNED | [Evidence](milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) |
