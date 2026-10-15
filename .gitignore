@@ -79,3 +79,6 @@ lib/generated_plugin_registrant.dart
 
 # Local shareable installers and unpacked packaging output
 release/
+
+# Local-only Flutter/Rust lookup archive; never publish with Dental OS.
+/refrence/

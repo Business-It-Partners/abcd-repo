@@ -24,3 +24,8 @@ Initial Windows evidence: 35 passed / 1 POSIX-only test skipped, build/typecheck
 ## Final CI gate
 
 Run [38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs/38778013772) passed at `fd124b5c20e0abbac0a3f99a79be2cc01cddb59c`: 35 Windows tests passed, one POSIX-specific case skipped, build/typecheck and four hosted runtime checks passed. JSON and logs are retained under M02 evidence/windows-ci-final, beyond GitHub's artifact retention. Tag checkpoint/m02-ci identifies this tested source. Later evidence-only commits do not change tested runtime code. M02 automated scope is verified; physical Windows tests remain deferred until after M11, before final release. M03 is not started.
+
+
+## Local-only reference correction
+
+The user clarified that refrence/ is local lookup material. It is removed from current branch tracking and ignored; the local directory is preserved. Existing commits/checkpoint tags retain their historical trees. No published history is rewritten. Earlier archive-publication statements describe the previous setup only.
