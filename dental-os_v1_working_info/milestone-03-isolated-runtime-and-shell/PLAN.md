@@ -26,9 +26,9 @@ Prove isolated app execution can preserve the existing desktop experience before
 
 ## Exit criteria and verification
 
-- [ ] Prove overlap, z-order, clipping, scoped dialogs, fullscreen, resize, keyboard focus, overview, dock reveal and Genie.
-- [ ] Reject cross-app storage, unapproved navigation, Node/host privilege and forged runtime identity.
-- [ ] Crash/hang one sample runtime and record actual containment; repeat close/minimize/restore and inspect leaked resources.
+- [x] Prove overlap, z-order, clipping, scoped dialogs, fullscreen, resize, keyboard focus, overview, dock reveal and Genie.
+- [x] Reject cross-app storage, unapproved navigation, Node/host privilege and forged runtime identity.
+- [x] Crash/hang one sample runtime and record actual containment; repeat close/minimize/restore and inspect leaked resources.
 
 ## Scope exclusions
 

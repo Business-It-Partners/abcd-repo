@@ -1,0 +1,29 @@
+
+> electron-desktop-prototype@0.1.0 build
+> npm run typecheck && vite build && tsc -p tsconfig.electron.json
+
+
+> electron-desktop-prototype@0.1.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.electron.json --noEmit
+
+[36mvite v8.3.4 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 1939 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    0.54 kB │ gzip:   0.36 kB
+dist/assets/fewa-turquoise-shore-BavrPO0F.jpg  1,168.90 kB
+dist/assets/patients-CnHypqeH.png              2,068.88 kB
+dist/assets/treatment-E6Zl7DwX.png             2,189.17 kB
+dist/assets/workentry-CHOql-x6.png             2,193.04 kB
+dist/assets/finance-C3wSanDN.png               2,273.74 kB
+dist/assets/followups-DBk1gvSg.png             2,277.16 kB
+dist/assets/staff-vGRcWfjL.png                 2,282.08 kB
+dist/assets/lab-BGy0NYcL.png                   2,308.63 kB
+dist/assets/calendar-Dlc8jjiT.png              2,597.63 kB
+dist/assets/appointments-BxVsVr0h.png          2,636.23 kB
+dist/assets/protocols-B2hJqyJu.png             2,992.03 kB
+dist/assets/index-DYVLvVEb.css                    54.09 kB │ gzip:  10.72 kB
+dist/assets/index-DCVR_51Z.js                    335.75 kB │ gzip: 101.84 kB
+
+[32m✓ built in 625ms[39m

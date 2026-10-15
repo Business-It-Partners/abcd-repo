@@ -12,7 +12,7 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-004 | Existing Dental SaaS remains business authority | Accepted | backend additions within existing system; 04/11 |
 | ADR-005 | Independently released self-contained web bundles | Accepted | package/SDK/API version governance; 08/10 |
 | ADR-006 | Isolated app contexts and platform-bound identity | Accepted requirement | exact composition gated at M03; 07 |
-| ADR-007 | WebContentsView rendering | Candidate, M03 proof required | native stacking/composition must be proven; 07 |
+| ADR-007 | WebContentsView rendering | Accepted for bounded M03 sample proof | foreground native/inactive mirrors; Linux/Windows CI passed; physical tests deferred; 07 |
 | ADR-008 | Typed internal SDK and credential-mediating API broker | Accepted | no generic authenticated fetch/token getters; 11 |
 | ADR-009 | One login using existing Firebase/Worker authority | Accepted | desktop flow/storage proof required; 12 |
 | ADR-010 | R2 release storage + existing Cloudflare catalogue | Accepted direction | dedicated bucket, exact endpoints/metadata frozen in M07; 09 |

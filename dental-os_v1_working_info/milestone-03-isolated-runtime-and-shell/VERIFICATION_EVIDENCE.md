@@ -1,6 +1,6 @@
 # M03 Verification Evidence — Isolated runtime and shared shell
 
-**Milestone verification:** Linux passed; Windows CI pending. User visual acceptance pending.
+**Milestone verification:** VERIFIED for automated Linux/Windows G03 scope. Physical Windows testing deferred; user visual acceptance pending.
 
 ## Source and environment
 
@@ -29,9 +29,20 @@ CPU/memory/process preflight before heavy work; single heavy job, low priority, 
 
 ## Remaining limits
 
-Windows hosted CI must pass before G03 is closed. Physical Windows compositing, clipping, input, scaling and device performance are deferred after M11/before release under the approved policy. User visual acceptance is separate. This proves controlled samples, not production package trust, SDK/auth, installed dental apps or general background animation freshness. M04 is not started.
+Windows hosted CI passed; G03 is closed within the declared automated scope. Physical Windows compositing, clipping, input, scaling and device performance are deferred after M11/before release under the approved policy. User visual acceptance is separate. This proves controlled samples, not production package trust, SDK/auth, installed dental apps or general background animation freshness. M04 is not started.
 
 
 ## First hosted Windows run
 
-[Run 38781581529](https://github.com/Business-It-Partners/dental-os/actions/runs/38781581529) at `f8fc71e35d980cda251e40c7abdb9245a3cdcc21` passed 38 unit tests (one POSIX-only skip), build, four host-state checks and 26 runtime checks. [Original metadata](evidence/windows-ci-first/run.json) and original screenshots/logs are retained under `evidence/windows-ci-first/`. Review found a capture corner defect, repaired after this run. It is superseded as final runtime evidence by the upcoming run on the repaired source.
+[Run 38781581529](https://github.com/Business-It-Partners/dental-os/actions/runs/38781581529) at `f8fc71e35d980cda251e40c7abdb9245a3cdcc21` passed 38 unit tests (one POSIX-only skip), build, four host-state checks and 26 runtime checks. [Original metadata](evidence/windows-ci-first/run.json) and original screenshots/logs are retained under `evidence/windows-ci-first/`. Review found a capture corner defect, repaired after this run. It is superseded as final runtime evidence by the final run on the repaired source below.
+
+
+## Final Windows G03 closeout
+
+[Run 38782178992](https://github.com/Business-It-Partners/dental-os/actions/runs/38782178992) passed at `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` (tag `checkpoint/m03-ci`). [Metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [build log](evidence/windows-ci/windows-build.log), [host results](evidence/windows-ci/windows-host-ci.json) and [runtime results](evidence/windows-ci/windows-runtime.json) are retained beyond GitHub artifact expiry. Windows: 39 tests passed, one POSIX-specific test skipped, zero failures; typecheck/build, four host-state checks and all 28 runtime checks pass. Both-direction native focus, real crash/hang containment and cleanup are included; no shell page errors. [Corrected overlap screenshot](evidence/windows-ci/runtime-overlap.png) was visually inspected and preserves rounded corners. Linux: 40 unit tests passed.
+
+This promotes ADR-007 for the bounded foreground-native/inactive-mirror sample design. It does not certify physical hardware or claim production app installation. Follow-up evidence/documentation commits do not modify tested runtime source. `codex/milestone-03` retains this milestone; main remains M02.
+
+## Deferred physical Windows handoff
+
+After M11 and before release, verify native-body clipping/occlusion at overlapping corners; actual keyboard/focus activation in both directions and local modal Escape/Tab; dock access in fullscreen; real host minimize/restore; Genie and overview snapshots; 100/125/150/200 percent scaling and display changes; repeated crash/restart/close; device GPU/performance/resource behavior. Evaluate inactive snapshot and activation-click semantics with the user. These remain open physical-device gates, not failures silently waived by CI.

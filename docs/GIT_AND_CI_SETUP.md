@@ -24,3 +24,8 @@ Initial Windows evidence: 35 passed / 1 POSIX-only test skipped, build/typecheck
 ## Final CI gate
 
 Run [38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs/38778013772) passed at `fd124b5c20e0abbac0a3f99a79be2cc01cddb59c`: 35 Windows tests passed, one POSIX-specific case skipped, build/typecheck and four hosted runtime checks passed. JSON and logs are retained under M02 evidence/windows-ci-final, beyond GitHub's artifact retention. Tag checkpoint/m02-ci identifies this tested source. Later evidence-only commits do not change tested runtime code. M02 automated scope is verified; physical Windows tests remain deferred until after M11, before final release. M03 is not started.
+
+
+## M03 checkpoint
+
+`codex/milestone-03` contains isolated-runtime implementation and retained evidence. Tested source/tag: `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` / `checkpoint/m03-ci`; Windows run [38782178992](https://github.com/Business-It-Partners/dental-os/actions/runs/38782178992) passes. Evidence-only follow-up commits preserve identical runtime source. Main remains the M02 integrated snapshot; no merge performed. Physical device testing remains deferred after M11/before release. M04 has not started.

@@ -1,6 +1,6 @@
 # ADR Runtime 001 — Foreground native view and inactive mirrors
 
-**State:** candidate implementation; final M03 verification pending.
+**State:** accepted for M03 fixed-sample composition after Linux and Windows CI proof; physical device assessment deferred.
 **Date:** 2026-10-15.
 **Related:** architecture ADR-007 and M03/G03.
 
@@ -8,7 +8,7 @@
 
 A WebContentsView is a native child view, not a React child. Multiple native bodies placed above a single shell renderer can obscure DOM title bars, overview, dock and Genie. The established shared window manager must remain the lifecycle/geometry/focus owner.
 
-## Decision under verification
+## Decision
 
 Two fixed fixture IDs bind to separate sandboxed webContents, memory partitions and secure custom origins. Only the foreground body receives a native visible/input surface. Inactive/occluded bodies are represented by session-memory captures; their renderers stay alive. Hide native input during shared gestures, overview, motion, owner-scoped discard UI and lower-edge dock overlap. Frame bounds and native view bounds derive from the same shared shell layout. Round native edges; fullscreen has square edges.
 
@@ -28,8 +28,12 @@ Inactive content is a read-only snapshot; clicking activates the live body and t
 
 ## Alternatives
 
-Directly stacking all native bodies was rejected as incompatible with DOM chrome occlusion. Iframes alone do not establish independent crash containment. Offscreen streaming would add frame scheduling/GPU/copy complexity and continuous resource use. The bounded foreground/mirror design is accepted only if its declared tests and screenshots pass, with these interaction tradeoffs retained explicitly.
+Directly stacking all native bodies was rejected as incompatible with DOM chrome occlusion. Iframes alone do not establish independent crash containment. Offscreen streaming would add frame scheduling/GPU/copy complexity and continuous resource use. The bounded foreground/mirror design passed its declared automated checks and screenshot review on Linux and hosted Windows. Acceptance is limited to that scope, with these interaction tradeoffs retained explicitly.
 
 ## References
 
 [Electron WebContentsView](https://www.electronjs.org/docs/latest/api/web-contents-view), [session-specific protocols](https://www.electronjs.org/docs/latest/api/protocol), and installed Electron type definitions informed API use. This composition policy is our design, not an Electron-provided desktop compositor.
+
+## Acceptance evidence
+
+[M03 evidence](../VERIFICATION_EVIDENCE.md) records source `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a`, final Windows run 38782178992 and Linux logs/screenshots. Production package/SDK integration must preserve these boundaries and repeat applicable regressions.

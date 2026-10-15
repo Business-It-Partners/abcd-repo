@@ -29,3 +29,8 @@ New OS-specific services use `/v1/dental-os/...`, while existing business APIs r
 ## M02 implementation reconciliation — 2026-10-15
 
 The table above records the starting snapshot. M02 now implements strict OS-only preference persistence under userData/state, atomic pending-journal reconciliation, v0 migration, capacity/path protection, boot recovery presentation and bounded restore settling. The overview-shortcut preference is read on shell launch; business/demo records remain memory-only. No full installation registry, authenticated lock/session or production package runtime is implied. [M02 status and Windows verification gap](../dental-os_v1_working_info/milestone-02-host-and-os-state/STATUS.md) govern the current scope.
+
+
+## M03 implementation reconciliation — 2026-10-15
+
+Two fixed sample apps now use separate sandboxed renderers, origins and memory partitions through `electron/runtime/` and `src/RuntimeFixtures.tsx`, gated to private Linux tests/Windows CI. Foreground native content and inactive snapshots integrate with existing shared frames/dock/overview/Genie. Linux and hosted Windows G03 checks pass; physical-device testing is deferred. Ordinary demo apps remain unchanged outside the fixture mode. This is not installed production package execution, auth, SDK/API integration or store delivery. [M03 status](../dental-os_v1_working_info/milestone-03-isolated-runtime-and-shell/STATUS.md) governs the exact scope.
