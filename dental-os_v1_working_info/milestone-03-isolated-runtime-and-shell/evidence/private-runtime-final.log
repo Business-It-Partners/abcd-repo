@@ -9,6 +9,8 @@ PASS popup denied
 PASS unknown runtime IDs/layouts denied
 PASS modal stays in app content
 PASS local modal traps keyboard focus
+PASS beta-to-alpha switch focuses the native foreground
+PASS alpha-to-beta switch focuses the native foreground
 PASS dirty close cancellation preserves draft
 PASS resize uses shared manager
 PASS overview contains both isolated snapshots

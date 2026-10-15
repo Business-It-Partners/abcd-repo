@@ -13,4 +13,11 @@ describe('isolated runtime boundary',()=>{
   expect([...base.slice(0,4)]).toEqual([255,255,255,255]);expect([...base.slice(16,20)]).toEqual([0,100,200,255]);expect([...base.slice(28,32)]).toEqual([255,255,255,255]);
   expect(()=>compositePixels(base,1,1,layer,1,1,{x:0,y:0,width:1,height:1})).toThrow();
  });
+ it('preserves shell corners under a rounded native body capture',()=>{
+  const base=new Uint8Array(20*20*4).fill(255), layer=new Uint8Array([0,0,0,255]);
+  compositePixels(base,20,20,layer,1,1,{x:0,y:0,width:20,height:20,radius:8});
+  expect([...base.slice(0,4)]).toEqual([255,255,255,255]);
+  expect([...base.slice((10*20+10)*4,(10*20+10)*4+4)]).toEqual([0,0,0,255]);
+  expect([...base.slice(-4)]).toEqual([255,255,255,255]);
+ });
 });

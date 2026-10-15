@@ -28,8 +28,12 @@ export async function verifyRuntime(profileArgs, reportName) {
   await beta.getByRole('button',{name:'Open local dialog'}).click();await beta.getByRole('dialog').waitFor();
   check('modal stays in app content',await shell.locator('[data-window-id="records"] .mac-titlebar').evaluate(e=>e.inert));
   await beta.keyboard.press('Tab');check('local modal traps keyboard focus',await beta.evaluate(()=>document.activeElement.id)==='dismiss');
-  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await alpha.getByLabel('Your draft').fill('alpha-independent');
-  await shell.getByRole('button',{name:'Records',exact:true}).click();await beta.getByRole('button',{name:'Close dialog'}).click();
+  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
+  check('beta-to-alpha switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).isFocused()));
+  await alpha.getByLabel('Your draft').fill('alpha-independent');
+  await shell.getByRole('button',{name:'Records',exact:true}).click();
+  check('alpha-to-beta switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://beta/')).isFocused()));
+  await beta.getByRole('button',{name:'Close dialog'}).click();
   await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('dialog',{name:'Unsaved sample draft'}).waitFor();
   await shell.getByRole('button',{name:'Keep working',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();

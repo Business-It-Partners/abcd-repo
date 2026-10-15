@@ -10,6 +10,8 @@
     "unknown runtime IDs/layouts denied",
     "modal stays in app content",
     "local modal traps keyboard focus",
+    "beta-to-alpha switch focuses the native foreground",
+    "alpha-to-beta switch focuses the native foreground",
     "dirty close cancellation preserves draft",
     "resize uses shared manager",
     "overview contains both isolated snapshots",
@@ -28,12 +30,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 90667,
+    "shell": 95901,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/index.html",
-        "pid": 90799,
+        "pid": 96080,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -43,7 +45,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/index.html",
-        "pid": 90710,
+        "pid": 95954,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,

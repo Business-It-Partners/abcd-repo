@@ -17,15 +17,15 @@ export class FixtureRuntime {
   }
   private fail(e: Entry, reason: string) {
     if (this.entries.get(e.state.id)!==e || e.state.phase === 'failed') return;
+    const wasVisible = e.view.getVisible();
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
+    if (wasVisible && !this.win.isDestroyed()) this.win.webContents.focus();
     clearInterval(e.watchdog); clearTimeout(e.pingTimer); this.emit();
   }
   private applyVisibility(e: Entry) {
     const wanted = this.desired.find(v => v.id === e.state.id);
     const visible = !!wanted?.visible && e.state.phase === 'ready';
-    const was = e.view.getVisible(); e.view.setVisible(visible);
-    if (visible && !was) e.view.webContents.focus();
-    else if (!visible && was && !this.win.isDestroyed()) this.win.webContents.focus();
+    e.view.setVisible(visible);
   }
   private async refresh(e: Entry, fresh = false) {
     // An explicit shell capture must not return an older frame just because a
@@ -69,7 +69,7 @@ export class FixtureRuntime {
     wc.on('unresponsive', () => { this.fail(e, 'unresponsive'); if (!wc.isDestroyed()) wc.forcefullyCrashRenderer(); });
     wc.on('did-finish-load', () => {
       if (this.entries.get(id) !== e) return;
-      e.state.phase = 'ready'; this.applyVisibility(e); this.emit();
+      e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
       let pending = false;
       e.watchdog = setInterval(() => {
@@ -88,6 +88,7 @@ export class FixtureRuntime {
     for (const layout of next) {
       if (layout.rect.x + layout.rect.width > width + 1 || layout.rect.y + layout.rect.height > height + 1) throw new Error('Outside host');
     }
+    const hadNativeInput = [...this.entries.values()].some(e => e.view.getVisible());
     this.desired = next;
     for (const layout of this.desired) {
       let e = this.entries.get(layout.id);
@@ -98,6 +99,10 @@ export class FixtureRuntime {
       if (e.view.getVisible() && !layout.visible) void this.refresh(e);
       this.applyVisibility(e);
     }
+    // Choose focus after all visibility changes, independent of registry order.
+    const foreground = [...this.entries.values()].find(e => e.view.getVisible());
+    if (foreground && !foreground.view.webContents.isFocused()) foreground.view.webContents.focus();
+    else if (!foreground && hadNativeInput) this.win.webContents.focus();
     this.emit();
   }
   restart(id: unknown) {
@@ -137,7 +142,7 @@ export class FixtureRuntime {
       if (wholeHost ? !e.view.getVisible() : (Math.abs(e.rect.x - rect.x) > 3 || Math.abs(e.rect.width - rect.width) > 3 || e.rect.y - rect.y < 40 || e.rect.y - rect.y > 46)) continue;
       await this.refresh(e, true); if (!e.image) continue;
       const s = e.image.getSize();
-      compositePixels(bytes, size.width, size.height, e.image.toBitmap(), s.width, s.height, { x: (e.rect.x-rect.x)*scaleX, y: (e.rect.y-rect.y)*scaleY, width:e.rect.width*scaleX,height:e.rect.height*scaleY });
+      compositePixels(bytes, size.width, size.height, e.image.toBitmap(), s.width, s.height, { x: (e.rect.x-rect.x)*scaleX, y: (e.rect.y-rect.y)*scaleY, width:e.rect.width*scaleX,height:e.rect.height*scaleY, radius:e.rect.x===0&&e.rect.width===hostWidth?0:10*scaleX });
     }
     return nativeImage.createFromBitmap(bytes, { width: size.width, height: size.height });
   }

@@ -18,15 +18,20 @@ export function fixtureAsset(url: string, host: string): string | undefined {
   try { const u = new URL(url); return u.protocol === 'dental-fixture:' && u.host === host && !u.search && !u.hash && ['/index.html', '/app.js', '/app.css'].includes(u.pathname) ? u.pathname.slice(1) : undefined; } catch { return undefined; }
 }
 /** BGRA/RGBA buffers share byte order; copy opaque/alpha pixels without channel conversion. */
-export function compositePixels(base: Uint8Array, width: number, height: number, layer: Uint8Array, lw: number, lh: number, target: RuntimeRect) {
+export function compositePixels(base: Uint8Array, width: number, height: number, layer: Uint8Array, lw: number, lh: number, target: RuntimeRect & { radius?: number }) {
   if (base.length !== width * height * 4 || layer.length !== lw * lh * 4) throw new Error('Invalid bitmap');
+  const radius = Math.max(0, Math.min(target.radius ?? 0, target.width / 2, target.height / 2));
   for (let y = Math.max(0, Math.floor(target.y)); y < Math.min(height, Math.ceil(target.y + target.height)); y++) {
     for (let x = Math.max(0, Math.floor(target.x)); x < Math.min(width, Math.ceil(target.x + target.width)); x++) {
       const sx = Math.min(lw - 1, Math.max(0, Math.floor((x - target.x) / target.width * lw)));
       const sy = Math.min(lh - 1, Math.max(0, Math.floor((y - target.y) / target.height * lh)));
-      const b = (y * width + x) * 4, s = (sy * lw + sx) * 4, alpha = layer[s + 3] / 255;
+      const b = (y * width + x) * 4, s = (sy * lw + sx) * 4, sourceAlpha = layer[s + 3] / 255;
+      const cx = Math.max(target.x + radius, Math.min(x + 0.5, target.x + target.width - radius));
+      const cy = Math.max(target.y + radius, Math.min(y + 0.5, target.y + target.height - radius));
+      const coverage = radius ? Math.max(0, Math.min(1, radius + 0.5 - Math.hypot(x + 0.5 - cx, y + 0.5 - cy))) : 1;
+      const alpha = sourceAlpha * coverage;
       for (let c = 0; c < 3; c++) base[b + c] = Math.round(layer[s + c] * alpha + base[b + c] * (1 - alpha));
-      base[b + 3] = Math.round(layer[s + 3] + base[b + 3] * (1 - alpha));
+      base[b + 3] = Math.round(alpha * 255 + base[b + 3] * (1 - alpha));
     }
   }
 }

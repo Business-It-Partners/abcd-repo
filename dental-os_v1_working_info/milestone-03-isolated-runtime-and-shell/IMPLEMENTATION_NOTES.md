@@ -22,3 +22,7 @@ No backend/cloud configuration, deployment, production credentials or real patie
 ## Repairs during verification
 
 Initial denied-navigation test waited for a navigation intentionally blocked by policy; the final test observes unchanged origin without waiting for success. Private CDP keyboard input did not produce Electron before-input-event, so reserved keys use trusted DOM keydown capture in the isolated platform preload. Modal Escape stays local. Captures now serialize with pending mirror work; the DPR test waits for painting before capture and the resulting draft text was visually inspected.
+
+The first Windows CI passed automation, but screenshot review found square composed corners. The final bitmap compositor applies a scaled rounded mask, preserving shell pixels outside native clipping; a focused unit regression covers corner preservation. The original Windows run remains retained separately.
+
+Focus is selected once after all native visibility changes, so registry iteration order cannot return focus to the shell after activating the other app. Linux verifies both directions explicitly; Windows rerun applies the same checks.
