@@ -1,5 +1,16 @@
 # Dental OS Git and Windows CI setup
 
+## Verified milestone integration policy — 2026-10-16
+
+The user gives standing authorization to commit and push milestone work for verification, then merge each completed milestone into `main` after its required checks pass. No separate merge confirmation is needed. `main` is the latest integrated verified milestone; `codex/milestone-NN` branches retain milestone work and checkpoint tags identify tested source. M03 is now integrated into main; M04 has not started.
+
+1. Start one milestone branch from current main. Inspect, plan, implement and perform controlled relevant verification; retain exact source/evidence and any approved scope deferrals.
+2. Close the required milestone gates and update status/evidence. Keep physical Windows testing deferred only under the existing after-M11/before-release policy; do not treat that as physical certification.
+3. Fetch main, integrate with a normal non-squash merge, and resolve conflicts without losing either side's work. Verify the merged runtime matches tested source. If conflict resolution or intervening changes alter code, rerun affected checks before completing integration. When code is identical and changes are documentation only, validate docs and source hashes without repeating passing heavy suites.
+4. Commit and push the merge to main. Preserve milestone branches and checkpoint tags; do not delete, force-move, squash away or reuse completed checkpoints. Record merge/source/evidence and report integration status.
+
+This authorization covers milestone commits, verification publication and verified integration. It does not authorize deploying backend changes, promoting production resources, merging unverified work, deleting branches/worktrees, rewriting history, or starting the next milestone without its work authorization. All backend work remains staging-only under the existing resource policy. `refrence/` and inherited Flutter ancestry remain local-only.
+
 User-authorized repository: https://github.com/Business-It-Partners/dental-os (private).
 
 The existing Flutter root history and former remote are retained. Local caches/builds/installers remain excluded and are not deleted. Existing source, documentation, synthetic prototype artifacts and tracked archive source are preserved. A local pre-setup branch and index backup preserve the initial reference point.
@@ -26,9 +37,14 @@ Initial Windows evidence: 35 passed / 1 POSIX-only test skipped, build/typecheck
 Run [38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs/38778013772) passed at `fd124b5c20e0abbac0a3f99a79be2cc01cddb59c`: 35 Windows tests passed, one POSIX-specific case skipped, build/typecheck and four hosted runtime checks passed. JSON and logs are retained under M02 evidence/windows-ci-final, beyond GitHub's artifact retention. Tag checkpoint/m02-ci identifies this tested source. Later evidence-only commits do not change tested runtime code. M02 automated scope is verified; physical Windows tests remain deferred until after M11, before final release. M03 is not started.
 
 
-## Local-only reference correction
+## M03 checkpoint
 
-The user clarified that refrence/ is local lookup material. It is removed from current branch tracking and ignored; the local directory is preserved. Existing commits/checkpoint tags retain their historical trees. No published history is rewritten. Earlier archive-publication statements describe the previous setup only.
+`codex/milestone-03` contains isolated-runtime implementation and retained evidence. Tested source/tag: `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` / `checkpoint/m03-ci`; Windows run [38782178992](https://github.com/Business-It-Partners/dental-os/actions/runs/38782178992) passes. Evidence-only follow-up commits preserve identical runtime source. At initial closeout, main remained M02. The user subsequently authorized M03 integration on 2026-10-16; main now includes M03. Physical device testing remains deferred after M11/before release. M04 has not started.
+
+
+## Local-only reference correction — 2026-10-15
+
+The user clarified that `refrence/` is local lookup material and must not be published with Dental OS. Remove it from tracking on main and the started milestone branch tips, preserve the local directory, and ignore `/refrence/` for future commits. Existing checkpoint tags and older commits retain their historical trees; this cleanup does not rewrite published history. Historical statements about publishing tracked archive source above describe the earlier setup and are superseded for current branch contents.
 
 
 ## Reference history removal — 2026-10-15

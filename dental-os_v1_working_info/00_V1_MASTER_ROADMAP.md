@@ -11,7 +11,7 @@
 
 ## Execution policy
 
-One active milestone by default. Reconcile existing work when a milestone begins; close applicable exit gates before starting dependent implementation. Current authorization is documentation creation only; M02 is the next implementation candidate, not already started. No automatic merge/push/deploy or remote provisioning.
+One active milestone by default. Reconcile existing work when a milestone begins; close applicable exit gates before starting dependent implementation. Current milestone authorization/status is recorded in the global status. The user gives standing authorization to commit/push milestone work for verification and merge each verified milestone into main without another confirmation, preserving its branch and checkpoint tags. Follow the [integration policy](../docs/GIT_AND_CI_SETUP.md). This does not authorize deployment, production promotion, history rewriting or remote provisioning by itself.
 
 Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOVED. Technical verification and user acceptance are separate. A missing required supported-host check prevents verification of that scope; an explicit scope change needs an ADR and user decision.
 

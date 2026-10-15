@@ -1,0 +1,29 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS two isolated renderer processes and separate shell
+PASS sandbox/context isolation and no Node
+PASS apps have no Node or shell bridge
+PASS storage is separated by app
+PASS forged report rejected
+PASS network and cross-origin fetch denied
+PASS popup denied
+PASS external navigation denied
+PASS unknown runtime IDs/layouts denied
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+locator.fill: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Your draft')[22m
+[2m    - waiting for navigation to finish...[22m
+
+    at verifyRuntime (/home/master-x/Desktop/fewa_business_os/tests/runtime-scenario.mjs:28:39)
+    at async file:///home/master-x/Desktop/fewa_business_os/tests/runtime.mjs:3:1 {
+  log: [
+    "  - waiting for getByLabel('Your draft')",
+    '    - waiting for navigation to finish...'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.13.1

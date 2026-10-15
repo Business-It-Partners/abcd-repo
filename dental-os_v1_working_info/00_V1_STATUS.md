@@ -1,9 +1,9 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-15.
-**Active scope:** M01 documentation baseline complete; M02 automated Linux/Windows gates passed; physical Windows acceptance deferred.
-**Current implementation authorization:** user authorized M02 inspection, planning, implementation and controlled verification.
-**Next candidate:** M03, not started. Physical Windows-device testing remains after M11 and before final product release.
+**Active scope:** M01 documentation baseline complete; M02 and M03 automated Linux/Windows gates passed; physical Windows acceptance deferred.
+**Current implementation authorization:** user authorized M03 implementation/verification and its integration into main; standing authorization now covers merging each milestone after its required verification.
+**Active milestone:** M03 verified and integrated into main; M04 not started. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | [M01 — Architecture and baseline](milestone-01-architecture-baseline/STATUS.md) | VERIFIED — documentation scope only | [Evidence](milestone-01-architecture-baseline/VERIFICATION_EVIDENCE.md) |
 | [M02 — Trusted host and OS state](milestone-02-host-and-os-state/STATUS.md) | VERIFIED — automated Linux/Windows; device testing deferred | [Evidence](milestone-02-host-and-os-state/VERIFICATION_EVIDENCE.md) |
-| [M03 — Isolated runtime and shared shell](milestone-03-isolated-runtime-and-shell/STATUS.md) | PLANNED | [Evidence](milestone-03-isolated-runtime-and-shell/VERIFICATION_EVIDENCE.md) |
+| [M03 — Isolated runtime and shared shell](milestone-03-isolated-runtime-and-shell/STATUS.md) | VERIFIED — automated Linux/Windows; device testing deferred | [Evidence](milestone-03-isolated-runtime-and-shell/VERIFICATION_EVIDENCE.md) |
 | [M04 — Internal SDK and API boundary](milestone-04-sdk-and-api-broker/STATUS.md) | PLANNED | [Evidence](milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md) |
 | [M05 — Single login and protected sessions](milestone-05-identity-and-session/STATUS.md) | PLANNED | [Evidence](milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) |
 | [M06 — Verified packages and local lifecycle](milestone-06-verified-packages/STATUS.md) | PLANNED | [Evidence](milestone-06-verified-packages/VERIFICATION_EVIDENCE.md) |
@@ -34,7 +34,7 @@ Documentation now requires reuse of `fewa_demo` resources, Cloudflare staging-on
 
 ## Separate Windows preview packaging experiment — 2026-10-15
 
-The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of production M11, a production installer decision, or backend deployment authorization. M03–M11 remain PLANNED; M02 has its own current status above. Windows runtime acceptance is pending.
+The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of production M11, a production installer decision, or backend deployment authorization. M03 now has its own implementation status above; M04–M11 remain PLANNED. Windows runtime acceptance is pending.
 
 ## Approved verification revision
 

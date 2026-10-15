@@ -11,7 +11,7 @@ npm run test:labs      # example focused UI suite on the private display
 
 All graphical verification must use the private display runner described in AGENTS.md. Never launch test windows on the live desktop. `npm start` is an interactive user launch; it uses the current built files. Leave the user's running session intact during builds.
 
-Source: `src/`, `electron/`. Verification: `tests/`, `artifacts/`. Archived Flutter/Rust implementation: `refrence/`. Pinned motion reference: `references/`. The existing root Git history is retained; relocation changes have not been committed automatically.
+Source: `src/`, `electron/`. Verification: `tests/`, `artifacts/`. Archived Flutter/Rust implementation: `refrence/`. Pinned motion reference: `references/`. Published history contains Dental OS only; the local-only reference history cleanup is documented in docs/GIT_AND_CI_SETUP.md.
 
 ## Controlled execution workflow
 
@@ -45,3 +45,8 @@ This checks local links, document structure and requirement ownership; it does n
 ## Windows CI
 
 Windows milestone validation runs on windows-2022 with Node 22.13.1: locked dependency install, documentation checks, single-worker unit/filesystem tests, build/typecheck and hosted Windows boot/restart/recovery smoke. Steps run sequentially with a 20-minute job timeout; same-ref superseded runs cancel. The Windows smoke script refuses non-GitHub-Windows execution. Artifacts retain logs and JSON for 30 days; preserve relevant results in milestone evidence. The POSIX file-mode assertion and file-symlink test are Linux-specific; Windows runs the directory-junction refusal and portable state fault tests. No cloud secrets or deploy steps are used. Physical Windows interaction remains deferred, not certified by CI.
+
+
+## Milestone completion and main integration
+
+After each milestone passes its required verification, commit/push its evidence and merge it into `main` under the user's standing authorization. Preserve the milestone branch and checkpoint tags. Use the [canonical integration policy](docs/GIT_AND_CI_SETUP.md), including source comparison and affected-check rules. Do not repeat passing heavy checks for documentation-only integration when the runtime is unchanged. Deployments and production promotion require their own authorization; physical Windows acceptance remains after M11/before final release.

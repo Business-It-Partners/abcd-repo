@@ -9,6 +9,10 @@ This root is the active Electron + React + TypeScript project. Read PRODUCT_DIRE
 - Build with `npm run build`, run `npm test`, and use the smallest relevant private UI suites. Do not run Flutter/Rust checks for Electron-only changes.
 - Before changing dock/Genie geometry, read `references/fewa/GENIE_ENGINE.md` and the archived `refrence/docs/motion/GENIE_ENGINE.md`; keep the shared field and fallback.
 
+## Verified milestone integration
+
+The user authorizes milestone commits/pushes for verification and merging each completed milestone into `main` after its required checks pass, without another confirmation. Follow [the integration policy](docs/GIT_AND_CI_SETUP.md): keep one active milestone, retain evidence, use a normal non-squash merge, preserve milestone branches/checkpoint tags, and verify the merged source. Rerun affected checks if integration changes code; documentation-only integration with identical tested source needs lightweight validation only. Approved physical Windows deferral remains in force. This authorization does not extend to deployments, production promotion, history rewrites or branch/worktree deletion. Start the next milestone only when authorized.
+
 ## Controlled builds, tests and resource use
 
 - This workstation has approximately 12 GB RAM and 8 logical CPUs. Keep resource use bounded so the user's desktop stays responsive; recheck actual load rather than assuming capacity is available.

@@ -24,7 +24,8 @@
     "test:store": "node tools/run-ui-test.mjs tests/store.mjs",
     "test:store-interruptions": "node tools/run-ui-test.mjs tests/store-interruptions.mjs",
     "dist:windows": "node tools/desktop-release/build-windows.mjs",
-    "test:windows-package": "node tools/run-ui-test.mjs tests/windows-package.mjs"
+    "test:windows-package": "node tools/run-ui-test.mjs tests/windows-package.mjs",
+    "test:runtime": "node tools/run-ui-test.mjs tests/runtime.mjs tests/runtime-dpr.mjs"
   },
   "keywords": [],
   "author": "",

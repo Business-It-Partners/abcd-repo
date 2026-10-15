@@ -44,6 +44,8 @@ jobs:
           exit $code
       - name: Windows hosted-runner startup and recovery
         run: node tests/windows-host-ci.mjs
+      - name: Windows isolated runtime proof
+        run: node tests/runtime-ci.mjs
       - name: Retain evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,4 +56,7 @@ jobs:
             artifacts/windows-build.log
             artifacts/windows-unit.json
             artifacts/windows-host-ci.json
+            artifacts/windows-runtime.json
+            artifacts/runtime-overlap.png
+            artifacts/runtime-crash.png
           retention-days: 30

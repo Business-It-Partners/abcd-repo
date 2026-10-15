@@ -1,0 +1,20 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.4 [39m[90mD:/a/dental-os/dental-os[39m
+
+ [32m✓[39m tests/windowManager.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/osState.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m tests/motion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 452[2mms[22m[39m
+   [32m✓[39m FEWA motion port [2m(6)[22m
+     [33m[2m✓[22m[39m lands on both exact rectangles and keeps the mesh fold-free along the trip[33m 431[2mms[22m[39m
+ [32m✓[39m tests/runtimeContracts.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/overviewLayout.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m39 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (40)[39m
+[2m   Start at [22m 18:02:10
+[2m   Duration [22m 1.97s[2m (tests 64%, transform 19%, import 13%, worker 3%)[22m
+
+[2m    Isolate [22m [33m5 workers spawned[39m[2m · ~183ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~731ms faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+JSON report written to D:/a/dental-os/dental-os/artifacts/windows-unit.json

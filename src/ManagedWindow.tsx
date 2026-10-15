@@ -16,6 +16,8 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
   const win = state.windows[id], active = activeWindow(state) === id;
   const windowRef = useRef<HTMLElement>(null), canvasRef = useRef<HTMLCanvasElement>(null);
   const snapshotRef = useRef<string | undefined>(undefined), [snapshot, setSnapshot] = useState<string>();
+  const closeGuard = useRef<(() => boolean) | undefined>(undefined);
+  const setCloseGuard = (guard?: () => boolean) => { closeGuard.current = guard; };
   const generation = useRef(0), animation = useRef<ReturnType<typeof prepareGenie> | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const anyBusy = Object.values(state.windows).some(w => w.busy);
@@ -125,13 +127,14 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     target?.focus({ preventScroll: true });
   }
   function close() {
+    if (closeGuard.current && !closeGuard.current()) return;
     const current = getState();
     if (current.windows[id].modal || Object.values(current.windows).some(w => w.busy || w.interaction !== 'idle')) return;
     snapshotRef.current = undefined; setSnapshot(undefined);
     dispatch({ type: 'phase', id, phase: 'closed' });
   }
   const toggleFullscreen = () => { if (!Object.values(getState().windows).some(w => w.busy || w.interaction !== 'idle')) dispatch({ type: 'toggle', id }); };
-  return { id, win, bounds, active, anyBusy, snapshot, windowRef, canvasRef, focus, setModal, open, close, toggleFullscreen,
+  return { id, win, bounds, active, anyBusy, snapshot, windowRef, canvasRef, focus, setModal, setCloseGuard, open, close, toggleFullscreen,
     minimize: () => void transition(true), startGesture };
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;

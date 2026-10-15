@@ -1,6 +1,13 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, protocol } from 'electron';
 import path from 'node:path';
 import { OsStateStore } from './storage/osState';
+import { FixtureRuntime } from './runtime/manager';
+protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
+let hostWindow: BrowserWindow | undefined;
+let runtime: FixtureRuntime | undefined;
+const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
+const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true'));
+const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
@@ -23,6 +30,9 @@ function createWindow() {
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
+  hostWindow = win;
+  if (runtimeFixtures) runtime = new FixtureRuntime(win, path.join(__dirname, '../fixtures/runtime-apps'), path.join(__dirname, 'runtime/appPreload.js'));
+  win.on('close', () => runtime?.dispose());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -72,12 +82,12 @@ function createWindow() {
       if (win.isMinimized()) win.restore();
     } else { win.show(); win.focus(); }
   };
-  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1' } : {} });
+  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1' } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1' } : {} });
 }
 
 ipcMain.handle('window:control', (event, action: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win || event.senderFrame !== event.sender.mainFrame) throw new Error('Invalid caller');
+  if (!win || !isShell(event)) throw new Error('Invalid caller');
   if (action === 'close') win.close();
   else if (action === 'minimize') {
     win.webContents.send('window:host-transition', true);
@@ -88,26 +98,32 @@ ipcMain.handle('window:control', (event, action: unknown) => {
 // Capture only this application's main frame, in device-independent pixels.
 ipcMain.handle('window:capture', async (event, rect: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win || event.senderFrame !== event.sender.mainFrame || !rect || typeof rect !== 'object') throw new Error('Invalid capture');
+  if (!win || !isShell(event) || !rect || typeof rect !== 'object') throw new Error('Invalid capture');
   const r = rect as Record<string, unknown>;
   const values = ['x', 'y', 'width', 'height'].map(k => r[k]);
   if (!values.every(v => typeof v === 'number' && Number.isFinite(v))) throw new Error('Invalid rectangle');
   const [x, y, width, height] = (values as number[]).map(Math.round);
   const [w, h] = win.getContentSize();
   if (x < 0 || y < 0 || width < 1 || height < 1 || x + width > w || y + height > h) throw new Error('Capture outside window');
-  const image = await event.sender.capturePage({ x, y, width, height });
+  let image = await event.sender.capturePage({ x, y, width, height });
+  if (runtime) image = await runtime.capture({x,y,width,height}, image);
   if (image.isEmpty()) throw new Error('Empty snapshot');
   return image.toDataURL();
 });
 ipcMain.handle('os:preferences', (event, input: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (bootPhase !== 'ready' || !win || event.senderFrame !== event.sender.mainFrame) throw new Error('Unavailable');
+  if (bootPhase !== 'ready' || !win || !isShell(event)) throw new Error('Unavailable');
   return input === undefined ? osStore.load() : osStore.update(input);
 });
 ipcMain.handle('os:status', event => {
-  if (event.senderFrame !== event.sender.mainFrame) throw new Error('Invalid caller');
+  if (!isShell(event)) throw new Error('Invalid caller');
   return { phase: bootPhase };
 });
+ipcMain.handle('runtime:sync', (event, value: unknown) => { if (!isShell(event) || !runtime) throw new Error('Unavailable'); runtime.sync(value); });
+ipcMain.handle('runtime:restart', (event, id: unknown) => { if (!isShell(event) || !runtime) throw new Error('Unavailable'); runtime.restart(id); });
+ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
+ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
+ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
   try {
     osStore = new OsStateStore(path.join(app.getPath('userData'), 'state'));

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { X } from 'lucide-react';
 import type { WindowController } from './ManagedWindow';
 import { useWindowManager } from './windowManager';
@@ -10,6 +10,8 @@ import { overviewLayout } from './overviewLayout';
  * Clones have no handlers, IDs, test identities, or accessible controls. */
 function WindowPreview({ controller }: { controller: WindowController }) {
   const host = useRef<HTMLDivElement>(null);
+  const [revision,setRevision]=useState(0);
+  useEffect(()=>{const update=()=>setRevision(n=>n+1);window.addEventListener('runtime:snapshot',update);return()=>window.removeEventListener('runtime:snapshot',update);},[]);
   useLayoutEffect(() => {
     const source = controller.windowRef.current, container = host.current;
     if (!source || !container) return;
@@ -20,7 +22,7 @@ function WindowPreview({ controller }: { controller: WindowController }) {
       if (field instanceof HTMLInputElement && fields[index] instanceof HTMLInputElement) field.checked = (fields[index] as HTMLInputElement).checked;
     });
     [clone, ...clone.querySelectorAll<HTMLElement>('*')].forEach(element => {
-      for (const attribute of ['id', 'for', 'data-testid', 'data-window-id', 'aria-labelledby', 'aria-controls']) element.removeAttribute(attribute);
+      for (const attribute of ['id', 'for', 'data-testid', 'data-window-id', 'aria-labelledby', 'aria-controls', 'data-runtime', 'data-runtime-phase']) element.removeAttribute(attribute);
     });
     clone.inert = true; clone.setAttribute('aria-hidden', 'true');
     const bounds = source.getBoundingClientRect();
@@ -32,7 +34,7 @@ function WindowPreview({ controller }: { controller: WindowController }) {
     };
     fit(); const observer = new ResizeObserver(fit); observer.observe(container);
     return () => { observer.disconnect(); container.replaceChildren(); };
-  }, [controller.id, controller.windowRef, controller.bounds.width, controller.bounds.height]);
+  }, [controller.id, controller.windowRef, controller.bounds.width, controller.bounds.height, revision]);
   return <div className="overview-preview" ref={host} aria-hidden="true" inert/>;
 }
 

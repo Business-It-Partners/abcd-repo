@@ -514,3 +514,15 @@ Implemented strict OS-only preference storage, atomic journal/migration/recovery
 User authorized connecting to Business-It-Partners/dental-os, preserving history/work, establishing main and milestone branches, committing/pushing the reviewed project and adding Windows Actions. Physical Windows-device tests are deferred until after M11, before final product release. CI must not deploy the backend. Publication audit, checkpoint identities and run evidence are recorded in docs/GIT_AND_CI_SETUP.md.
 
 Windows CI closeout: [run 38778013772](https://github.com/Business-It-Partners/dental-os/actions/runs/38778013772) passes at `fd124b5c20e0abbac0a3f99a79be2cc01cddb59c`. Dedicated origin/main and M01/M02 branches are published; Flutter origin retained as flutter-reference. M02 is verified for automated Linux/Windows scope under the approved physical-device deferral. M03 not started. No cloud backend deployment or live-session restart.
+
+
+## M03 isolated runtime implementation — 2026-10-15
+
+User authorized M03 only. Two fixed private sample apps now execute in separate sandboxed renderers/origins/partitions, with platform-bound reports, crash/hang supervision, scoped dirty-close and shared shell composition. Foreground native view plus inactive snapshot mirrors preserves existing dock/overview/Genie; activation-click and background-invalidation limitations are explicit in the composition ADR. Linux: 39 unit tests, final build, isolated runtime/DPR proof and shared overview/native regressions pass sequentially. Windows CI is pending on `codex/milestone-03`; physical Windows remains deferred. See [M03 evidence](dental-os_v1_working_info/milestone-03-isolated-runtime-and-shell/VERIFICATION_EVIDENCE.md). No backend/cloud deployment, M04 start or live-session restart.
+
+M03 closeout: final source `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` passes Linux 40 unit tests/build/private runtime-DPR and applicable shared regressions; Windows run [38782178992](https://github.com/Business-It-Partners/dental-os/actions/runs/38782178992) passes 39 unit tests (one POSIX-only skip), build, four host and 28 runtime checks. Capture corners and native-focus ordering were repaired and rerun. ADR-007 is accepted for declared sample scope. M03 VERIFIED under approved physical-device deferral; user acceptance pending. Main stays M02 and M04 is not started. All local owned test/display jobs exited.
+
+
+## M03 main integration and standing workflow — 2026-10-16
+
+User authorized integrating verified M03 into main, retaining milestone branches/checkpoint tags, and future merges after each milestone passes required verification. Normal merge preserves M03 and main history; duplicate cleanup-documentation conflict reconciled, no runtime changes. Tested runtime SHA-256 manifest matches; documentation checks pass. No heavy checks repeated, backend deployment, live-session restart or M04 start. Canonical policy: docs/GIT_AND_CI_SETUP.md; enforced through AGENTS.md, DEVELOPMENT.md and roadmap/status records. Physical Windows testing remains after M11/before final release.
