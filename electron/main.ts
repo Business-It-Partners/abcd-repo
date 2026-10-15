@@ -1,5 +1,8 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
+import { OsStateStore } from './storage/osState';
+let osStore: OsStateStore;
+let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
 
@@ -24,6 +27,7 @@ function createWindow() {
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   let transitioning = false, restoring = false, wantsFocus = false;
+  let restoreAttempts = 0;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   const publish = (value: boolean) => {
     transitioning = value;
@@ -34,7 +38,7 @@ function createWindow() {
     settleTimer = setTimeout(() => {
       if (win.isDestroyed() || win.isMinimized()) return;
       // Fullscreen is asynchronous on some hosts; resume only after it settles.
-      if (!win.isFullScreen()) { settleRestore(); return; }
+      if (!win.isFullScreen() && ++restoreAttempts < 100) { settleRestore(); return; }
       restoring = false;
       publish(false);
       if (wantsFocus) { wantsFocus = false; win.focus(); }
@@ -48,7 +52,7 @@ function createWindow() {
   });
   win.on('restore', () => {
     if (restoring || !transitioning && win.isFullScreen()) return;
-    restoring = true;
+    restoring = true; restoreAttempts = 0;
     publish(true);
     // Do not setBounds/focus here: either can reenter the host restore event.
     // Defer fullscreen until the native restore callback has completed.
@@ -95,5 +99,27 @@ ipcMain.handle('window:capture', async (event, rect: unknown) => {
   if (image.isEmpty()) throw new Error('Empty snapshot');
   return image.toDataURL();
 });
-if (primary) app.whenReady().then(createWindow);
+ipcMain.handle('os:preferences', (event, input: unknown) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (bootPhase !== 'ready' || !win || event.senderFrame !== event.sender.mainFrame) throw new Error('Unavailable');
+  return input === undefined ? osStore.load() : osStore.update(input);
+});
+ipcMain.handle('os:status', event => {
+  if (event.senderFrame !== event.sender.mainFrame) throw new Error('Invalid caller');
+  return { phase: bootPhase };
+});
+if (primary) void app.whenReady().then(async () => {
+  try {
+    osStore = new OsStateStore(path.join(app.getPath('userData'), 'state'));
+    osStore.load(); bootPhase = 'ready'; createWindow();
+  } catch {
+    bootPhase = 'recovery';
+    const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Dental OS recovery', webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    recovery.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    recovery.webContents.on('will-navigate', event => event.preventDefault());
+    activateExisting = () => { if (!recovery.isDestroyed()) { recovery.show(); recovery.focus(); } };
+    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS settings could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the state folder in the application user-data directory. No reset was performed.</p>`));
+  }
+});
+app.on('before-quit', () => { bootPhase = 'exiting'; });
 app.on('window-all-closed', () => app.quit());

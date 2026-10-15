@@ -1,0 +1,56 @@
+name: Windows milestone validation
+on:
+  push:
+    branches: [main, 'codex/milestone-*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate documentation
+        run: python tools/check-dental-docs.py
+      - name: Unit and filesystem state checks
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          npm test -- --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
+          $code = $LASTEXITCODE
+          Get-Content artifacts/windows-unit.log
+          exit $code
+      - name: Build and typecheck
+        shell: pwsh
+        run: |
+          npm run build *> artifacts/windows-build.log
+          $code = $LASTEXITCODE
+          Get-Content artifacts/windows-build.log
+          exit $code
+      - name: Windows hosted-runner startup and recovery
+        run: node tests/windows-host-ci.mjs
+      - name: Retain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-milestone-${{ github.sha }}
+          path: |
+            artifacts/windows-*.log
+            artifacts/windows-unit.json
+            artifacts/windows-host-ci.json
+          retention-days: 30

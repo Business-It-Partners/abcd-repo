@@ -7,6 +7,8 @@ function publishHostTransition(transitioning: boolean) {
 }
 ipcRenderer.on('window:host-transition', (_event, value: boolean) => publishHostTransition(value));
 contextBridge.exposeInMainWorld('desktop', {
+  preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
+  status: () => ipcRenderer.invoke('os:status'),
   control: (action: 'close' | 'minimize') => {
     // Suspend layout synchronously before native fullscreen/minimize events.
     if (action !== 'minimize') return ipcRenderer.invoke('window:control', action);

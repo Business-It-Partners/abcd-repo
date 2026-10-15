@@ -153,10 +153,13 @@ function Desktop() {
     },420);
     return ()=>{clearTimeout(timer);media.removeEventListener('change',reduce);disposeArrival?.();finishArrival.current=undefined;};
   },[arrivalId, state.overview, hostTransitioning, size.width, size.height, dock.reset]);
+  const overviewShortcutEnabled = useRef(true);
+  useEffect(() => { let active = true; void window.desktop?.preferences().then(value => { if (active) overviewShortcutEnabled.current = value.overviewShortcutEnabled; }).catch(() => { overviewShortcutEnabled.current = false; }); return () => { active = false; }; }, []);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       const current = getState();
       const toggle = (event.code === 'Backquote' || event.key === '`') && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && !event.isComposing;
+      if (toggle && !overviewShortcutEnabled.current) return;
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
       event.preventDefault(); event.stopImmediatePropagation();
       if (event.repeat || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
