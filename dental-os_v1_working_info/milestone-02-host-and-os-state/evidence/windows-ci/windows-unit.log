@@ -1,0 +1,22 @@
+
+> electron-desktop-prototype@0.1.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.4 [39m[90mD:/a/dental-os/dental-os[39m
+
+ [32m✓[39m tests/windowManager.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/osState.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[33m 301[2mms[22m[39m
+ [32m✓[39m tests/motion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 331[2mms[22m[39m
+   [32m✓[39m FEWA motion port [2m(6)[22m
+     [33m[2m✓[22m[39m lands on both exact rectangles and keeps the mesh fold-free along the trip[33m 315[2mms[22m[39m
+ [32m✓[39m tests/overviewLayout.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m35 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (36)[39m
+[2m   Start at [22m 17:29:02
+[2m   Duration [22m 1.50s[2m (tests 74%, transform 14%, import 9%, worker 2%)[22m
+
+[2m    Isolate [22m [33m4 workers spawned[39m[2m · ~143ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~429ms faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+

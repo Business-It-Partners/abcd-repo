@@ -27,3 +27,9 @@ Named Windows device/build evidence for activation, state permissions/durability
 The user superseded the immediate physical Windows requirement: applicable Windows GitHub CI is now the milestone gate; physical checks remain deferred until after M11 and before final product release. Earlier pending-device wording above is retained as historical scope. Windows CI is pending publication/run; no result is inferred.
 
 Portable tests now use platform-specific directory-fsync/mode policy. Linux local single-worker unit suite: 36 tests pass. Windows skips the POSIX-specific file-symlink case and runs a portable directory-junction rejection case; private POSIX modes are asserted only on Linux. Dedicated GitHub-Windows smoke checks boot, preference restart and corrupt-state recovery without launching on the user's desktop. No physical Windows interaction is certified.
+
+## First Windows Actions result
+
+[Run 38777592561](https://github.com/Business-It-Partners/dental-os/actions/runs/38777592561) at source 24470d84a55817440f1282e3ffc03c8cf8011bb1 passed. Retained [run metadata](evidence/windows-ci/run.json), [unit log](evidence/windows-ci/windows-unit.log), [build log](evidence/windows-ci/windows-build.log) and [host smoke](evidence/windows-ci/windows-host-ci.json). Windows: 35 passed, one POSIX file-symlink case skipped; directory-junction refusal runs on Windows. Hosted boot, full-restart persistence and no-preload corrupt-state recovery pass. Physical desktop interaction remains deferred.
+
+Workflow follow-up: direct Vitest invocation makes worker/reporter arguments explicit and produces missing JSON; artifact upload is narrowed to new logs only. Local direct command passes 36 tests and emits JSON. Latest workflow revision awaits its own Windows run before final closeout.

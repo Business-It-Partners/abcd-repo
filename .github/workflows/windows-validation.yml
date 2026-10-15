@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          npm test -- --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
+          node node_modules/vitest/vitest.mjs run --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-unit.log
           exit $code
@@ -50,7 +50,8 @@ jobs:
         with:
           name: windows-milestone-${{ github.sha }}
           path: |
-            artifacts/windows-*.log
+            artifacts/windows-unit.log
+            artifacts/windows-build.log
             artifacts/windows-unit.json
             artifacts/windows-host-ci.json
           retention-days: 30
