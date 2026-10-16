@@ -1,9 +1,9 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-16.
-**Active scope:** M01 documentation baseline complete; M02–M06 required automated gates passed, with M05 live staging identity acceptance and M06 verified local packages; physical Windows acceptance deferred.
+**Active scope:** M01–M09 verified for their recorded scope; M10 implemented with local gates passed and Windows CI pending; M11 release/operations remains planned.
 **Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
-**Active milestone:** M09 verified and integrated at bd0cea01; M10 security/resilience/usability implementing. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M09 verified and integrated at bd0cea01; M10 hardening implemented; final Windows CI pending. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -30,11 +30,11 @@ No Flutter/Rust milestone status transfers to Dental OS. Architecture decisions 
 
 ## Staging/resource policy amendment
 
-Documentation now requires reuse of `fewa_demo` resources, Cloudflare staging-only backend execution, and `/v1/dental-os/...` for new OS services. Existing business routes and production resources remain unchanged. Exact staging branch/resource mapping is not yet verified. No backend edits, cloud resource changes or deployments were made. Milestone statuses remain unchanged; dental application completion is a separate delivery.
+Documentation now requires reuse of `fewa_demo` resources, Cloudflare staging-only backend execution, and `/v1/dental-os/...` for new OS services. Existing business routes and production resources remain unchanged. The original documentation amendment itself changed no backend. Subsequent user-authorized M05/M07–M09 work verified the mapping, provisioned dedicated public sample delivery, deployed additive staging OS services and proved real SaaS integration; see those milestone records for exact resources/evidence. Production remains unchanged and full dental application completion is a separate delivery.
 
 ## Separate Windows preview packaging experiment — 2026-10-15
 
-The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of production M11, a production installer decision, or backend deployment authorization. M03 now has its own implementation status above; M04–M11 remain PLANNED. Windows runtime acceptance is pending.
+The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of production M11, a production installer decision, or backend deployment authorization. That was the preview-time state. Current milestone/Windows CI progress is recorded in the table above; physical Windows acceptance remains pending.
 
 ## Approved verification revision
 

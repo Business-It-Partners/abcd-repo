@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "checks": [
+    "ten open/close cycles leave no native app views",
+    "two-app 60-second sample stays within native view/process budget",
+    "aggregate working set stays below 2 GiB",
+    "warm-to-final working set growth stays below 160 MiB",
+    "all app views released after resource sample"
+  ],
+  "samples": [
+    {
+      "time": 1792165014149,
+      "processes": 6,
+      "workingSetKiB": 800276,
+      "cpuPercent": 0,
+      "views": 2
+    },
+    {
+      "time": 1792165029182,
+      "processes": 6,
+      "workingSetKiB": 744872,
+      "cpuPercent": 1.593045340744928,
+      "views": 2
+    },
+    {
+      "time": 1792165044262,
+      "processes": 6,
+      "workingSetKiB": 689644,
+      "cpuPercent": 2.156192796845138,
+      "views": 2
+    },
+    {
+      "time": 1792165059331,
+      "processes": 6,
+      "workingSetKiB": 699204,
+      "cpuPercent": 1.8413833789104654,
+      "views": 2
+    },
+    {
+      "time": 1792165074387,
+      "processes": 6,
+      "workingSetKiB": 659432,
+      "cpuPercent": 1.843479199984644,
+      "views": 2
+    }
+  ],
+  "platform": "win32",
+  "source": "ea24769cbfa8c75bdfff42d4373925d655b551e1",
+  "scope": "Two configured sample runtimes, ten cycles and 60-second bounded sample; no claim of multi-hour physical-device soak or arbitrary app count."
+}
