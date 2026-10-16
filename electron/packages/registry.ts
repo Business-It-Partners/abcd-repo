@@ -208,7 +208,7 @@ export class PackageRegistry {
       }
       const verified = this.verified(id,v.active); this.guard(verified);
       this.leases.set(id, (this.leases.get(id) ?? 0) + 1); const digest=verified.release.digest; this.digestLeases.set(digest,(this.digestLeases.get(digest)??0)+1); let released = false;
-      return { ...verified, releaseLease: () => { if (!released) { released = true; this.digestLeases.set(digest,Math.max(0,(this.digestLeases.get(digest)??1)-1)); this.leases.set(id, Math.max(0, (this.leases.get(id) ?? 1) - 1)); } } };
+      return { ...verified, releaseLease: () => { if (!released) { released = true; const remaining=(this.digestLeases.get(digest)??1)-1;if(remaining>0)this.digestLeases.set(digest,remaining);else this.digestLeases.delete(digest);const appRemaining=(this.leases.get(id)??1)-1;if(appRemaining>0)this.leases.set(id,appRemaining);else this.leases.delete(id); } } };
     });
   }
   private trim(s: State, id: string) {

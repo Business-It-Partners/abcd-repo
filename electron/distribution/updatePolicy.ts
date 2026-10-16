@@ -1,5 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
-import { canonical, sha256, type TrustPolicy, type VerifiedPackage } from '../packages/format';
+import { parseCanonical, canonical, sha256, type TrustPolicy, type VerifiedPackage } from '../packages/format';
 import { compareVersion, type Catalogue, type Watermark } from './catalogue';
 export type AppUpdatePolicy = { id: string; minimumVersion: string; revokedDigests: string[]; rollback: null | { from: string; to: string } };
 export type UpdatePolicy = { format: 1; environment: 'cloudfare-staging'; channel: 'staging'; sequence: number; issuedAt: number; expiresAt: number; revokedKeys: string[]; apps: AppUpdatePolicy[] };
@@ -7,7 +7,7 @@ const keys=(v:any,expected:string[])=>{if(!v||typeof v!=='object'||Array.isArray
 const hash=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const version=(v:unknown):v is string=>typeof v==='string'&&/^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/.test(v);
 export function verifyUpdatePolicy(bytes:Buffer,trust:TrustPolicy,watermark:Watermark,now=Date.now()) {
- if(!bytes.length||bytes.length>65536)throw Error('Update policy size');const e=JSON.parse(bytes.toString());if(canonical(e)!==bytes.toString())throw Error('Update policy encoding');keys(e,['policy','keyId','signature']);
+ if(!bytes.length||bytes.length>65536)throw Error('Update policy size');const e=parseCanonical(bytes);keys(e,['policy','keyId','signature']);
  if(typeof e.keyId!=='string'||!Object.hasOwn(trust.keys,e.keyId)||typeof e.signature!=='string'||(!/^[A-Za-z0-9+/]{86}==$/.test(e.signature)||Buffer.from(e.signature,'base64').toString('base64')!==e.signature))throw Error('Update policy key');
  const publicKey=createPublicKey(trust.keys[e.keyId].publicKey);if(publicKey.asymmetricKeyType!=='ed25519'||!verify(null,Buffer.from(canonical({purpose:'dental-os-update-policy',keyId:e.keyId,policy:e.policy})),publicKey,Buffer.from(e.signature,'base64')))throw Error('Update policy signature');
  const p=e.policy;keys(p,['format','environment','channel','sequence','issuedAt','expiresAt','revokedKeys','apps']);

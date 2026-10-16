@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "phase": "complete",
+  "checks": [
+    "sampled text contrast >=4.5: .identity-card h1",
+    "sampled text contrast >=4.5: .identity-card label",
+    "sampled text contrast >=4.5: .identity-note",
+    "sampled text contrast >=4.5: .identity-card button",
+    "Store capability labels describe access without raw SDK names",
+    "sampled text contrast >=4.5: .store-copy p",
+    "explicit native preview/save exports only safe fixed OS events",
+    "support export preserves existing files and reports a new-name recovery action",
+    "sample apps have no support/filesystem bridge",
+    "scoped close dialog traps reverse keyboard focus",
+    "scoped close dialog traps forward keyboard focus",
+    "Escape dismisses only the dialog and preserves draft",
+    "reduced-motion minimize/restore preserves shared lifecycle",
+    "200 percent zoom retains labeled login controls inside scrollable layout",
+    "account reset permits immediate launch from fresh signed public metadata",
+    "compact 1024x768 host retains session and Store controls",
+    "failed app clears its mirrored preview while other app remains usable",
+    "three failures stop manual restart loops without an automatic relaunch",
+    "closing/reopening cannot bypass crash cooldown",
+    "watchdog contains a real busy-loop renderer while shell remains responsive",
+    "suspend locks and erases all failed/healthy native views and previews",
+    "closed crash/hang/suspend profile contains no password or private draft canary"
+  ],
+  "samples": [
+    {
+      "selector": ".identity-card h1",
+      "contrast": 12.396369836847068
+    },
+    {
+      "selector": ".identity-card label",
+      "contrast": 12.396369836847068
+    },
+    {
+      "selector": ".identity-note",
+      "contrast": 5.674570251702194
+    },
+    {
+      "selector": ".identity-card button",
+      "contrast": 9.864864057453577
+    },
+    {
+      "selector": ".store-copy p",
+      "contrast": 5.805660098995211
+    },
+    {
+      "privacyScan": {
+        "files": 72,
+        "bytes": 2996336
+      }
+    }
+  ],
+  "platform": "win32",
+  "source": "ea24769cbfa8c75bdfff42d4373925d655b551e1"
+}

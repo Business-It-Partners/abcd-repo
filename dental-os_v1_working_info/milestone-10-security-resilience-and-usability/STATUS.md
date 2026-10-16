@@ -1,21 +1,8 @@
 # M10 Status — Security, resilience and usability
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
-**User acceptance:** pending; no production acceptance claimed.
+**Status:** VERIFIED — documented automated Linux/Windows scope.
+**Updated:** 2026-10-16.
+**Tested source:** e2027a57198ac87ceb0d7db0a82d6063d9878c14, checkpoint/m10-ci.
+**User acceptance:** pending; physical device/assistive/multi-hour release checks remain after M11/before release.
 
-## Current position
-
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
-
-**Dependencies:** [M09](../milestone-09-integrated-os-and-saas/PLAN.md)
-
-## Remaining work
-
-- Run package/IPC/network escape negatives and disk canary checks across login/logout/cache/crash paths.
-- Test app hangs/crash loops, backend outages, uncertain writes, corrupt journal, sleep/resume and low capacity.
-- Verify keyboard/focus/screen-reader semantics, contrast, scaling, motion fallback and many-app resource behavior against stated budgets.
-
-## Status rules
-
-PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
+Required G10 hardening, privacy, crash/hang/cooldown, preserved recovery, diagnostics, write-safe host exit, keyboard/contrast/zoom/compact/reduced-motion and declared two-app resource gates pass. Final Windows CI 38925883945 passes all 255 unit cases (253 pass/two POSIX skips), build and all applicable desktop/process-exit gates. Local evidence and failures retained. Normal evidence-only main integration preserves tested source. No M10 backend/cloud/production operation. Stop after M10 under current authorization; M11 release/operations and full clinical application delivery remain separate.

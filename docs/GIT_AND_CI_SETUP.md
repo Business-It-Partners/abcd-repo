@@ -2,7 +2,7 @@
 
 ## Verified milestone integration policy — 2026-10-16
 
-The user gives standing authorization to commit and push milestone work for verification, then merge each completed milestone into `main` after its required checks pass. No separate merge confirmation is needed. `main` is the latest integrated verified milestone; `codex/milestone-NN` branches retain milestone work and checkpoint tags identify tested source. M03 is now integrated into main; M04 has not started.
+The user gives standing authorization to commit and push milestone work for verification, then merge each completed milestone into `main` after its required checks pass. No separate merge confirmation is needed. `main` is the latest integrated verified milestone; `codex/milestone-NN` branches retain milestone work and checkpoint tags identify tested source. Current completion is recorded in the global milestone status; latest verified checkpoints are recorded below.
 
 1. Start one milestone branch from current main. Inspect, plan, implement and perform controlled relevant verification; retain exact source/evidence and any approved scope deferrals.
 2. Close the required milestone gates and update status/evidence. Keep physical Windows testing deferred only under the existing after-M11/before-release policy; do not treat that as physical certification.
@@ -79,3 +79,7 @@ User authorized scoped staging operations and continuous work through M10, super
 ## M09 verified integrated checkpoint — 2026-10-16
 
 Source 54be1c0609f367a784de9d06516964da157e6e3e / checkpoint/m09-ci, Windows [38922410037](https://github.com/Business-It-Partners/dental-os/actions/runs/38922410037), final Linux and actual staging 21-case integration pass. Preserve branch/tag, merge normally with identical runtime/source hashes; continue M10 under existing authorization. Physical Windows after M11/before release. No production or shared backend deployment.
+
+## M10 verified hardening checkpoint — 2026-10-16
+
+`codex/milestone-10` / `checkpoint/m10-ci` retains source e2027a57198ac87ceb0d7db0a82d6063d9878c14. [Windows 38925883945](https://github.com/Business-It-Partners/dental-os/actions/runs/38925883945) passes all unit/build/hardening/recovery/resource/integration/update/Store/package/host/runtime/SDK/identity gates. Linux evidence and the superseded old error-text assertion failure are retained. Normal evidence-only main merge must match 151 source hashes. Stop at M10; M11 is not started. Preserve every milestone branch/tag; no production or M10 backend deployment. Physical/device/release acceptance remains separate.

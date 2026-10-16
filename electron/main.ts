@@ -1,5 +1,7 @@
-import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session, dialog, shell } from 'electron';
 import path from 'node:path';
+import {writeFileSync} from 'node:fs';
+import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
@@ -16,6 +18,8 @@ import { distributionFixtures as createDistributionFixtures } from './distributi
 import { fixtureServices } from './sdk/fixtures';
 import type { SessionView } from './identity/contracts';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
+let diagnostics:DiagnosticStore|undefined;
+let recoveryWindow:BrowserWindow|undefined;
 let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
@@ -53,8 +57,8 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once')});
-  win.on('close', () => runtime?.dispose());
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
+  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -107,6 +111,30 @@ function createWindow() {
   void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: storeFixtures ? {} : process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1' } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1' } : {} });
 }
 
+const supportCaller=(event:Electron.IpcMainInvokeEvent)=>isShell(event)||!!recoveryWindow&&event.sender===recoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame;
+let supportBusy=false;
+const supportView=()=>({appVersion:app.getVersion(),electron:process.versions.electron,platform:process.platform,arch:process.arch,...diagnostics?.preview()});
+ipcMain.handle('support:action',async(event,kind:unknown)=>{
+ if(!supportCaller(event))throw Error('Invalid caller');
+ const owner=BrowserWindow.fromWebContents(event.sender);if(!owner)throw Error('Unavailable');
+ if(kind==='view')return supportView();
+ if(supportBusy||!['preview','export','show-files'].includes(kind as string))return {ok:false};
+ supportBusy=true;
+ try{
+  if(kind==='show-files'){if(owner!==recoveryWindow)return {ok:false};await shell.openPath(app.getPath('userData'));return {ok:true};}
+  if(kind==='preview'){
+   const review=await dialog.showMessageBox(owner,{type:'info',title:'Safe support diagnostics',message:'Review safe support diagnostics',detail:JSON.stringify(supportView(),null,2),buttons:['Close','Save diagnostics file'],defaultId:0,cancelId:0});
+   if(review.response!==1)return {ok:false,cancelled:true};
+  }
+  const result=await dialog.showSaveDialog(owner,{title:'Save safe Dental OS diagnostics',defaultPath:'dental-os-support.json',filters:[{name:'JSON',extensions:['json']}]});
+  if(result.canceled||!result.filePath)return {ok:false,cancelled:true};
+  writeFileSync(result.filePath,JSON.stringify(supportView(),null,2),{flag:'wx',mode:0o600});
+  diagnostics?.record('support-exported');return {ok:true};
+ }catch{
+  await dialog.showMessageBox(owner,{type:'warning',title:'Diagnostics unavailable',message:'Could not save diagnostics',detail:'Choose a new filename in a writable folder. Existing files are never overwritten.',buttons:['Close']}).catch(()=>{});
+  return {ok:false};
+ }finally{supportBusy=false;}
+});
 ipcMain.handle('window:control', (event, action: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || !isShell(event)) throw new Error('Invalid caller');
@@ -170,6 +198,7 @@ ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, v
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
+  diagnostics=new DiagnosticStore(path.join(app.getPath('userData'),'diagnostics'));
   session.defaultSession.setSpellCheckerEnabled(false);
   session.defaultSession.setSpellCheckerLanguages([]);
   try {
@@ -182,25 +211,27 @@ if (primary) void app.whenReady().then(async () => {
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
-      identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
+      identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
       identity.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
     if(!trustedTest)distribution.startUpdates();
-    distribution.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
-    bootPhase = 'ready'; createWindow(); if (identity) void identity.restore();
+    distribution.subscribe(view => { if(view.phase==='unavailable')diagnostics?.record('store-unavailable');if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
+    bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); if (identity) void identity.restore();
   } catch {
-    bootPhase = 'recovery';
-    const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Dental OS recovery', webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    bootPhase = 'recovery';diagnostics?.record('boot-recovery');
+    const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Dental OS recovery', webPreferences: { preload:path.join(__dirname,'recoveryPreload.js'),sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck:false } });
+    recoveryWindow=recovery;
     recovery.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     recovery.webContents.on('will-navigate', event => event.preventDefault());
     activateExisting = () => { if (!recovery.isDestroyed()) { recovery.show(); recovery.focus(); } };
-    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS state or installed applications could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the application user-data directory. No reset was performed.</p>`));
+    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS state or installed applications could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the application user-data directory. No reset was performed.</p><p>Support can inspect the preserved OS state and restore a verified copy after this application is closed. Do not delete identity files or replace clinical records.</p><button id="show-files">Show local files</button><button id="export-support">Preview safe diagnostics</button><pre id="support-preview"></pre><button id="save-support" hidden>Save diagnostics file</button><p id="support-status" role="status"></p>`));
   }
 });
 let quitFlushed = false;
 app.on('before-quit', event => {
+  if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
   bootPhase = 'exiting'; distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });

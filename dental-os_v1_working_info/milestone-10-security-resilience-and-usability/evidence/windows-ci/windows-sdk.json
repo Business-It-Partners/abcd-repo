@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "platform binds real alpha sender to company identity",
+    "named API read works through isolated preload and host broker",
+    "named API write preserves backend revision contract",
+    "same-key replay does not create a second synthetic mutation",
+    "beta cannot invoke alpha write capability",
+    "connections are independently generated",
+    "incompatible handshake fails in real bridge",
+    "copied alpha connection rejected by beta sender",
+    "URL and raw-channel injection rejected",
+    "oversized request rejected before IPC",
+    "unconfigured native adapter fails explicitly",
+    "only synthetic display context returned",
+    "no privileged bridge, token getter or raw transport exposed",
+    "close/reopen revokes old connection",
+    "no shell page errors"
+  ],
+  "errors": [],
+  "platform": "win32",
+  "sha": "e2027a57198ac87ceb0d7db0a82d6063d9878c14"
+}

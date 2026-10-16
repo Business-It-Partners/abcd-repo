@@ -1,0 +1,30 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.4 [39m[90mD:/a/dental-os/dental-os[39m
+
+ [32m✓[39m tests/updates.test.ts [2m([22m[2m52 tests[22m[2m)[22m[33m 3552[2mms[22m[39m
+ [32m✓[39m tests/sdkBroker.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 228[2mms[22m[39m
+ [32m✓[39m tests/packages.test.ts [2m([22m[2m65 tests[22m[2m)[22m[33m 2123[2mms[22m[39m
+   [32m✓[39m local immutable registry and transactions [2m(25)[22m
+     [33m[2m✓[22m[39m reconciles interrupted uninstall at committed[33m 543[2mms[22m[39m
+ [32m✓[39m tests/distribution.test.ts [2m([22m[2m47 tests[22m[2m)[22m[33m 817[2mms[22m[39m
+ [32m✓[39m tests/identity.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32m✓[39m tests/sdkHttp.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 357[2mms[22m[39m
+   [32m✓[39m actual loopback HTTP transport fixtures [2m(3)[22m
+     [33m[2m✓[22m[39m stops redirects and times out an incomplete streamed body[33m 311[2mms[22m[39m
+ [32m✓[39m tests/hardening.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[33m 1290[2mms[22m[39m
+   [33m[2m✓[22m[39m retains only bounded allowlisted diagnostics and reopens them without private payloads[33m 1279[2mms[22m[39m
+ [32m✓[39m tests/windowManager.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/osState.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 116[2mms[22m[39m
+ [32m✓[39m tests/motion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 241[2mms[22m[39m
+ [32m✓[39m tests/runtimeContracts.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/overviewLayout.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m      Tests [22m [1m[32m253 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (255)[39m
+[2m   Start at [22m 15:36:10
+[2m   Duration [22m 10.95s[2m (tests 93%, transform 4%, import 3%)[22m
+
+[2m    Isolate [22m [33m12 workers spawned[39m[2m · ~106ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~1.16s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+JSON report written to D:/a/dental-os/dental-os/artifacts/windows-unit.json

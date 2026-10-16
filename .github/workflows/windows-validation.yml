@@ -42,6 +42,12 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows hardening proof
+        run: node tests/hardening-ci.mjs
+      - name: Windows preserved-state recovery
+        run: node tests/recovery-ci.mjs
+      - name: Windows bounded runtime resource profile
+        run: node tests/resources-ci.mjs
       - name: Windows integrated OS and API contract proof
         run: node tests/integration-ci.mjs
       - name: Windows app update process-exit recovery
@@ -71,6 +77,9 @@ jobs:
             artifacts/win32-updates-crash.json
             artifacts/windows-updates.json
             artifacts/updates-store.png
+            artifacts/windows-recovery.json
+            artifacts/windows-hardening.json
+            artifacts/windows-resources.json
             artifacts/windows-integration.json
             artifacts/windows-unit.log
             artifacts/windows-build.log

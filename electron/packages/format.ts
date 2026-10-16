@@ -27,9 +27,9 @@ function base64(value: unknown, max: number): Buffer {
   if (typeof value !== 'string' || value.length > Math.ceil(max / 3) * 4 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error('Invalid base64');
   const bytes = Buffer.from(value, 'base64'); if (bytes.length > max || bytes.toString('base64') !== value) throw new Error('Invalid base64'); return bytes;
 }
-function parse(bytes: Buffer): any {
+export function parseCanonical(bytes: Buffer): any {
   const text = bytes.toString('utf8'), value: unknown = JSON.parse(text);
-  if (canonical(value) !== text) throw new Error('Noncanonical encoding'); return value;
+  if (!Buffer.from(canonical(value), 'utf8').equals(bytes)) throw new Error('Noncanonical encoding'); return value;
 }
 function manifest(value: unknown): asserts value is Manifest {
   object(value, ['format', 'appId', 'publisher', 'version', 'entry', 'sdkMajor', 'apiMajor', 'capabilities', 'assets']);
@@ -50,7 +50,7 @@ function manifest(value: unknown): asserts value is Manifest {
 }
 export function verifyPackage(bytes: Buffer, policy: TrustPolicy): VerifiedPackage {
   if (!bytes.length || bytes.length > limits.wire) throw new Error('Package size');
-  const envelope = parse(bytes); object(envelope, ['payload', 'release', 'signature']);
+  const envelope = parseCanonical(bytes); object(envelope, ['payload', 'release', 'signature']);
   const release = envelope.release; object(release, ['format', 'appId', 'publisher', 'version', 'digest', 'keyId']);
   if (release.format !== 1 || typeof release.keyId !== 'string' || !/^[a-z0-9-]{1,48}$/.test(release.keyId) || typeof release.digest !== 'string' || !hashPattern.test(release.digest)) throw new Error('Invalid release');
   const key = Object.hasOwn(policy.keys, release.keyId) ? policy.keys[release.keyId] : undefined;
@@ -60,7 +60,7 @@ export function verifyPackage(bytes: Buffer, policy: TrustPolicy): VerifiedPacka
   if (publicKey.asymmetricKeyType !== 'ed25519' || !verify(null, Buffer.from(canonical(release)), publicKey, base64(envelope.signature, 64))) throw new Error('Invalid signature');
   const payload = base64(envelope.payload, 12 * 1024 * 1024);
   if (sha256(payload) !== release.digest) throw new Error('Payload digest');
-  const body = parse(payload); object(body, ['manifest', 'files']); manifest(body.manifest);
+  const body = parseCanonical(payload); object(body, ['manifest', 'files']); manifest(body.manifest);
   const m = body.manifest;
   if (m.appId !== release.appId || m.publisher !== release.publisher || m.version !== release.version) throw new Error('Identity mismatch');
   if (!Array.isArray(body.files) || body.files.length !== m.assets.length) throw new Error('Inventory mismatch');

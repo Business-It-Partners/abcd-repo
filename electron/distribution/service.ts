@@ -29,7 +29,7 @@ export class DistributionService {
  }
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }
  private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32'); }
- invalidate() { this.action?.abort(); this.updatePolicy=undefined; this.policyBytes=undefined; this.catalogueBytes=undefined; this.catalogue = undefined; this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
+ invalidate() { this.action?.abort(); this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
  dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); }
  private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.version);if(v.pendingVersion)pending.set(id,v.pendingVersion);}this.installed=installed;this.pendingVersions=pending;this.quarantined=quarantined;}
  changed(){this.reloadInstalled();this.emit();}
