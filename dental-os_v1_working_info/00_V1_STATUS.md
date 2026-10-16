@@ -3,7 +3,7 @@
 **Updated:** 2026-10-16.
 **Active scope:** M01 documentation baseline complete; M02–M06 required automated gates passed, with M05 live staging identity acceptance and M06 verified local packages; physical Windows acceptance deferred.
 **Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
-**Active milestone:** M07 verified including actual staging distribution; completing main integration, then M08 safe updates. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M07 verified and integrated at f2361db6; M08 safe independent updates implementing. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -17,7 +17,7 @@
 | [M05 — Single login and protected sessions](milestone-05-identity-and-session/STATUS.md) | VERIFIED — automated Linux/Windows and live staging identity | [Evidence](milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) |
 | [M06 — Verified packages and local lifecycle](milestone-06-verified-packages/STATUS.md) | VERIFIED — automated Linux/Windows local packages | [Evidence](milestone-06-verified-packages/VERIFICATION_EVIDENCE.md) |
 | [M07 — First-party store and Cloudflare delivery](milestone-07-store-and-distribution/STATUS.md) | VERIFIED — Linux/Windows CI and actual staging delivery | [Evidence](milestone-07-store-and-distribution/VERIFICATION_EVIDENCE.md) |
-| [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | PLANNED | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
+| [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | IMPLEMENTING | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | PLANNED | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | PLANNED | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
 | [M11 — Windows/Linux release and operations](milestone-11-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md) |

@@ -555,3 +555,8 @@ M07 CI update: [Windows 38850865178](https://github.com/Business-It-Partners/den
 
 
 M07 closeout: user authorized all necessary staging work through M10. Final source `3d349758` passes Windows run 38853480777 and affected Linux checks. Actual G07 acceptance passes 14 staging identity/catalogue/R2/install/access/client-regression cases. Dedicated sample release bucket/public origin added; guarded publication sequence 2; temporary publisher removed. SaaS additive staging deployment 38853577930 at 3ae3397 preserves all previous bindings and no new migration. G07 VERIFIED; normal main integration and checkpoint authorized, M08 follows continuously. Production/live desktop untouched, protected credential input removed, physical Windows deferred.
+
+
+## M08 — Safe independent app updates, 2026-10-16
+
+Started continuously after verified M07 normal merge f2361db6 on codex/milestone-08. Detailed plan covers pending/trial/known-good registry state, pinned running leases, signed staging controls and explicit rollback, update authorization/background timing, dirty/unknown-write coordination, health recovery/retention and staged/Windows gates. Existing SaaS backend ticket will own additive update-policy delivery; no production changes. Implementation/verification in progress, no acceptance claimed.

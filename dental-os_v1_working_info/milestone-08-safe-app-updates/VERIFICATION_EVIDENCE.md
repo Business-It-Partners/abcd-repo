@@ -1,27 +1,13 @@
 # M08 Verification Evidence — Safe independent application updates
 
-**Milestone verification:** NOT YET STARTED.
+**Milestone verification:** in progress; local gates passed, live staging/Windows pending.
 
-## Required proof
+Linux 2026-10-16, 12 GB/8 logical CPU workstation, controlled single-job runs with nice 10/timeouts/one Vitest worker. Full unit suite: 240/11 files pass ([log](evidence/unit-full-linux.log), [JSON](evidence/m08-unit.json)). Final broker safety review: 23 affected tests pass ([log](evidence/sdk-gate-final.log)); final build/typecheck passes ([log](evidence/build-linux.log)).
 
-- Run old app during new download: unchanged running assets/session; next permitted launch selects verified successor.
-- Inject interruption at every persistence/activation boundary, repeated operations and failed health checks.
-- Test dirty work, ambiguous in-flight writes, incompatible rollback, revoked versions, key rotation and storage exhaustion.
+Real process exits at six staging, trial, health, rollback and three retention boundaries: 12/12 pass ([log](evidence/process-exit-linux.log), [report](evidence/linux-updates-crash.json)). No throw-only simulation substitutes for this evidence.
 
-## Evidence record format
+Private headless GNOME/Wayland runner: eight update cases pass, plus ten Store, twenty-eight runtime, fifteen SDK and twenty identity cases ([combined log](evidence/private-regressions-linux.log), [update report](evidence/updates-verification.json), [screenshot](evidence/updates-store.png)). SDK rerun after continuous write-safety gate fix also passes ([log](evidence/sdk-ui-final.log)). Earlier [first UI failure](evidence/private-ui-first-failed.log) exposed stale canInstall projection after update refusal; fixed. [Second failure](evidence/private-ui-timing-failed.log) was crash injection before the new renderer had its URL; harness corrected. Final private update flow proves pinned old draft, dirty/modal refusal, clean activation/health, independent app ownership and failed trial rollback. No live desktop focus/restart.
 
-For every run retain: date; source commit plus uncommitted tree identity where applicable; dependency/build versions; named OS/architecture/display/profile; exact command; exit status; successful/failed cases; redacted log/artifact paths; limitations and requirement/gate bindings. Never include credentials or patient payloads.
+Signed-control negative cases include signature/domain/schema/channel/environment/expiry/future/lifetime/app/duplicate/root-key/digest/rollback/minimum validation, replay/equivocation/clock rollback, revoked/incompatible fallback, low disk, retention, legacy migration and verified-cache tampering/expiry. Actual pending/unknown broker outcomes remain gated across app close; original-key reconciliation/session reset governs release. Never-opened unsafe old app may trial a safe successor without fabricating fallback health.
 
-## Executed evidence
-
-No milestone-governed runs recorded. Existing WORK_CHECKLIST.md/artifacts evidence is historical until reconciled and rerun where required. Planned checks above are not test results.
-
-## Platform and user acceptance
-
-Windows: not verified. Linux: not verified for this production milestone. User acceptance: pending. For M01, these runtime fields are not applicable to documentation verification; no host runtime claim follows.
-
-## Additional staging-policy acceptance evidence
-
-- Prove channels, withdrawal/revocation and minimum-version metadata affect staging releases only and preserve existing clients; do not modify production feeds or pointers.
-
-Not executed. Exact mapping and backend regression proof remain required when this milestone is implemented; this amendment changes documentation only.
+Backend SYS-0006: full initial 418/419 tests exposed missing publication sequence consistency assertion; fixed and final 21 affected route/publisher cases pass. Staging CI 38854679157 at a502142 passes complete 419 suite/typecheck and existing binding-preserving deployment. No production/shared business contract/schema mutation. Live policy/release acceptance and final Windows gate must pass before VERIFIED/main merge. Physical Windows remains deferred after M11/before release; user acceptance pending.

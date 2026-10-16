@@ -109,3 +109,15 @@ describe('SDK transport, cancellation and operation identity',()=>{
   expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',{...writeInput,idempotencyKey:'operation_0002'})))).toBe('BUSY');h.broker.dispose();
  });
 });
+
+describe('safe-update broker coordination',()=>{
+ it('tracks pending and uncertain writes until original-key reconciliation, including app close',async()=>{
+  let lost=true;const h=harness(async()=>{if(lost)throw Error('lost response');return Response.json({appointment:sampleAppointment});});
+  const pending=h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(true);await pending;expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(true);
+  h.broker.unregister(h.caller.sender);expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(true);h.register();const connection=h.connect();lost=false;expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,connection)))).toBe('OK');expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(false);h.broker.dispose();
+ });
+ it('session reset clears uncertain state and new revocation guard refuses dispatch',async()=>{
+  let calls=0;const h=harness(async()=>{calls++;throw Error('lost');});await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(true);h.change();expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(false);
+  let allowed=true;h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{},authorize:()=>allowed});const connection=h.connect();allowed=false;expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,connection)))).toBe('ACCESS_DENIED');expect(calls).toBe(1);h.broker.dispose();
+ });
+});

@@ -3,15 +3,27 @@ import { mkdirSync, lstatSync, openSync, closeSync, readFileSync, writeFileSync,
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { canonical, limits, sha256, verifyPackage, type TrustPolicy, type VerifiedPackage } from './format';
-type Installed = { active: string; versions: string[] };
-type State = { format: 1; apps: Record<string, Installed> };
-type Journal = { format: 1; kind: 'install' | 'uninstall'; appId: string; digest: string; stage: string };
-export type Checkpoint = 'journal' | 'asset-write' | 'extracted' | 'published' | 'committed' | 'removed';
+type Installed = { active: string; versions: string[]; pending: string | null; knownGood: string | null; trial: string | null; failed: string[] };
+type State = { format: 2; apps: Record<string, Installed> };
+type Journal = { format: 1; kind: 'install' | 'uninstall' | 'evict'; appId: string; digest: string; stage: string };
+export type Checkpoint = 'journal' | 'asset-write' | 'extracted' | 'published' | 'committed' | 'removed' | 'staged' | 'trial-committed' | 'health-committed' | 'rollback-committed' | 'retention-committed';
 export type Lease = VerifiedPackage & { releaseLease(): void };
 const digestPattern = /^[a-f0-9]{64}$/;
 const uuidPattern = /^[a-f0-9-]{36}$/;
 export class PackageRegistry {
   private leases = new Map<string, number>();
+  private digestLeases = new Map<string, number>();
+  private guard: (value: VerifiedPackage) => void = () => {};
+  private rollbackGuard: (from: VerifiedPackage, to: VerifiedPackage) => boolean = () => false;
+  setUpdateGuards(guard: (value: VerifiedPackage) => void, rollback: (from: VerifiedPackage, to: VerifiedPackage) => boolean) { this.guard = guard; this.rollbackGuard = rollback; }
+  assertAllowed(value: VerifiedPackage) { this.guard(value); }
+  private verified(id: string, digest: string) {
+    const value = this.validateDirectory(this.version(id, digest));
+    if (value.manifest.appId !== id || value.release.digest !== digest) throw new Error('Registry identity mismatch');
+    return value;
+  }
+  describe(id: string) { return this.locked(() => { const v = this.state().apps[id]; if (!v) throw new Error('App not installed'); return { version: this.verified(id,v.active).manifest.version, pendingVersion: v.pending ? this.verified(id,v.pending).manifest.version : null, trial: !!v.trial }; }); }
+
   constructor(readonly root: string, private policy: TrustPolicy, private capacity: () => number = () => { const s = statfsSync(root); return s.bavail * s.bsize; }, private checkpoint: (phase: Checkpoint) => void = () => {}) {
     // Reject link/reparse ancestors too, including a linked user-data directory.
     const absolute = path.resolve(root); let cursor = path.parse(absolute).root;
@@ -54,14 +66,16 @@ export class PackageRegistry {
   private app(id: string) { if (!Object.hasOwn(this.policy.apps, id) || !/^company\.[a-z][a-z0-9.-]{1,70}$/.test(id)) throw new Error('Unknown company app'); return path.join(this.root, 'apps', id); }
   private version(id: string, digest: string) { if (!digestPattern.test(digest)) throw new Error('Invalid version pointer'); return path.join(this.app(id), digest); }
   private state(): State {
-    const raw = this.optional(path.join(this.root, 'registry.json'), 65536); if (!raw) return { format: 1, apps: {} };
+    const raw = this.optional(path.join(this.root, 'registry.json'), 65536); if (!raw) return { format: 2, apps: {} };
     const s = JSON.parse(raw.toString());
-    if (!s || Object.keys(s).sort().join() !== 'apps,format' || s.format !== 1 || !s.apps || typeof s.apps !== 'object' || Array.isArray(s.apps) || Object.keys(s.apps).length > 16) throw new Error('Registry recovery required');
+    if (!s || Object.keys(s).sort().join() !== 'apps,format' || ![1, 2].includes(s.format) || !s.apps || typeof s.apps !== 'object' || Array.isArray(s.apps) || Object.keys(s.apps).length > 16) throw new Error('Registry recovery required');
     for (const [id, v] of Object.entries(s.apps) as [string, Installed][]) {
       this.app(id);
-      if (!v || Object.keys(v).sort().join() !== 'active,versions' || !Array.isArray(v.versions) || !v.versions.length || v.versions.length > 3 || new Set(v.versions).size !== v.versions.length || !v.versions.every(d => typeof d === 'string' && digestPattern.test(d)) || !v.versions.includes(v.active)) throw new Error('Registry recovery required');
+      if (!v || Object.keys(v).sort().join() !== (s.format === 1 ? 'active,versions' : 'active,failed,knownGood,pending,trial,versions') || !Array.isArray(v.versions) || !v.versions.length || v.versions.length > 3 || new Set(v.versions).size !== v.versions.length || !v.versions.every(d => typeof d === 'string' && digestPattern.test(d)) || !v.versions.includes(v.active)) throw new Error('Registry recovery required');
+      if (s.format === 1) Object.assign(v, { pending:null, knownGood:null, trial:null, failed:[] });
+      if (![v.pending,v.knownGood,v.trial].every(d => d === null || typeof d === 'string' && v.versions.includes(d)) || v.trial !== null && v.trial !== v.active || v.pending !== null && (v.pending === v.active || v.trial !== null) || !Array.isArray(v.failed) || v.failed.length > 3 || !v.failed.every(d => digestPattern.test(d)) || new Set(v.failed).size !== v.failed.length) throw new Error('Registry recovery required');
     }
-    return s;
+    s.format = 2; return s;
   }
   private writeState(s: State) { this.atomic(path.join(this.root, 'registry.json'), canonical(s)); }
   private removeTree(p: string) {
@@ -81,11 +95,12 @@ export class PackageRegistry {
   private recover() {
     const raw = this.optional(path.join(this.root, 'operation.json'), 4096); if (!raw) return;
     const j = JSON.parse(raw.toString()) as Journal;
-    if (!j || Object.keys(j).sort().join() !== 'appId,digest,format,kind,stage' || j.format !== 1 || !['install', 'uninstall'].includes(j.kind) || !digestPattern.test(j.digest) || !uuidPattern.test(j.stage)) throw new Error('Journal recovery required');
+    if (!j || Object.keys(j).sort().join() !== 'appId,digest,format,kind,stage' || j.format !== 1 || !['install', 'uninstall', 'evict'].includes(j.kind) || !digestPattern.test(j.digest) || !uuidPattern.test(j.stage)) throw new Error('Journal recovery required');
     this.app(j.appId); const s = this.state();
     if (j.kind === 'install') {
       this.removeTree(path.join(this.root, 'staging', j.stage));
       if (!s.apps[j.appId]?.versions.includes(j.digest)) this.removeTree(this.version(j.appId, j.digest));
+    } else if (j.kind === 'evict') { if (!s.apps[j.appId]?.versions.includes(j.digest)) this.removeTree(this.version(j.appId,j.digest));
     } else if (!s.apps[j.appId]) this.removeTree(this.app(j.appId));
     unlinkSync(path.join(this.root, 'operation.json')); this.syncDirectory(this.root);
   }
@@ -135,12 +150,21 @@ export class PackageRegistry {
     };
     scan(dir); if (found.length !== verified.files.size) throw new Error('Installed inventory'); return verified;
   }
-  install(bytes: Buffer) {
+  install(bytes: Buffer, stageUpdate = false) {
     const verified = verifyPackage(bytes, this.policy), id = verified.manifest.appId, digest = verified.release.digest;
     return this.locked(() => {
       const s = this.state(), previous = s.apps[id];
-      if (previous?.versions.includes(digest)) { this.validateDirectory(this.version(id, digest)); if (previous.active !== digest) throw new Error('Historical activation requires rollback policy'); return digest; }
+      if (stageUpdate) this.guard(verified);
+      if (previous?.failed.includes(digest)) throw new Error('Failed update quarantined');
+      if (previous?.versions.includes(digest)) {
+        this.verified(id,digest);
+        if (previous.pending === digest || previous.active === digest) return digest;
+        if (!stageUpdate || !this.rollbackGuard(this.verified(id,previous.active),verified) || previous.trial || previous.pending) throw new Error('Historical activation requires rollback policy');
+        previous.pending=digest; this.writeState(s); this.checkpoint('staged'); return digest;
+      }
       if (!previous && Object.keys(s.apps).length >= 16) throw new Error('Installed app limit');
+      if (stageUpdate && previous && (previous.pending || previous.trial)) throw new Error('Update already pending or awaiting health');
+      if (stageUpdate && previous) this.trim(s,id);
       if (previous && previous.versions.length >= 3) throw new Error('Retention limit; explicit eviction policy required');
       if (previous) {
         const active = this.validateDirectory(this.version(id, previous.active));
@@ -148,7 +172,7 @@ export class PackageRegistry {
         const tuple = (v: string) => v.split('.').map(Number);
         const a = tuple(verified.manifest.version), b = tuple(active.manifest.version); let comparison = 0;
         for (let i = 0; i < 3 && comparison === 0; i++) comparison = a[i] - b[i];
-        if (comparison <= 0) throw new Error('Version must increase');
+        if (comparison <= 0 && (!stageUpdate || !this.rollbackGuard(active,verified))) throw new Error('Version must increase');
       }
       const reserve = bytes.length + verified.manifest.assets.reduce((n, a) => n + a.size, 0) + 4 * 1024 * 1024;
       if (this.capacity() < reserve) throw new Error('Insufficient package space');
@@ -167,18 +191,49 @@ export class PackageRegistry {
       const destination = this.version(id, digest);
       try { lstatSync(destination); throw new Error('Unregistered version collision'); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
       renameSync(dir, destination); this.syncDirectory(appDir); this.syncDirectory(path.join(this.root, 'staging')); this.checkpoint('published');
-      s.apps[id] = { active: digest, versions: [...(previous?.versions ?? []), digest] };
-      this.writeState(s); this.checkpoint('committed'); unlinkSync(path.join(this.root, 'operation.json')); this.syncDirectory(this.root); return digest;
+      s.apps[id] = { active: stageUpdate && previous ? previous.active : digest, versions: [...(previous?.versions ?? []), digest], pending: stageUpdate && previous ? digest : null, knownGood: previous?.knownGood ?? null, trial: null, failed: previous?.failed ?? [] };
+      this.writeState(s); this.checkpoint('committed'); if (stageUpdate) this.checkpoint('staged'); unlinkSync(path.join(this.root, 'operation.json')); this.syncDirectory(this.root); return digest;
     });
   }
   launch(id: string): Lease {
     return this.locked(() => {
-      const v = this.state().apps[id]; if (!v) throw new Error('App not installed');
-      const verified = this.validateDirectory(this.version(id, v.active));
-      if (verified.manifest.appId !== id || verified.release.digest !== v.active) throw new Error('Registry identity mismatch');
-      this.leases.set(id, (this.leases.get(id) ?? 0) + 1); let released = false;
-      return { ...verified, releaseLease: () => { if (!released) { released = true; this.leases.set(id, Math.max(0, (this.leases.get(id) ?? 1) - 1)); } } };
+      const s=this.state(), v = s.apps[id]; if (!v) throw new Error('App not installed');
+      // A prior trial without health acknowledgement is failed, including process exit.
+      if (!this.leases.get(id) && v.trial) this.rollback(s,id);
+      let activeAllowed=true;try{this.guard(this.verified(id,v.active));}catch{activeAllowed=false;}
+      if (!this.leases.get(id) && v.pending && (v.knownGood || !activeAllowed)) {
+        this.guard(this.verified(id,v.pending));
+        v.active=v.pending; v.pending=null; v.trial=v.active;
+        this.writeState(s); this.checkpoint('trial-committed');
+      }
+      const verified = this.verified(id,v.active); this.guard(verified);
+      this.leases.set(id, (this.leases.get(id) ?? 0) + 1); const digest=verified.release.digest; this.digestLeases.set(digest,(this.digestLeases.get(digest)??0)+1); let released = false;
+      return { ...verified, releaseLease: () => { if (!released) { released = true; this.digestLeases.set(digest,Math.max(0,(this.digestLeases.get(digest)??1)-1)); this.leases.set(id, Math.max(0, (this.leases.get(id) ?? 1) - 1)); } } };
     });
+  }
+  private trim(s: State, id: string) {
+    const v=s.apps[id];
+    while(v.versions.length>=3) {
+      const discard=v.versions.find(d=>![v.active,v.pending,v.knownGood,v.trial].includes(d)&&!this.digestLeases.get(d));
+      if(!discard)throw new Error('Retention limit; protected versions remain');
+      const j:Journal={format:1,kind:'evict',appId:id,digest:discard,stage:randomUUID()};
+      this.atomic(path.join(this.root,'operation.json'),canonical(j));this.checkpoint('journal');
+      v.versions=v.versions.filter(d=>d!==discard);this.writeState(s);this.checkpoint('retention-committed');
+      this.removeTree(this.version(id,discard));this.checkpoint('removed');unlinkSync(path.join(this.root,'operation.json'));this.syncDirectory(this.root);
+    }
+  }
+  private rollback(s: State, id: string) {
+    const v=s.apps[id]; if(!v.trial)return;
+    if(!v.knownGood||v.knownGood===v.trial)throw new Error('No known-good rollback');
+    const fallback=this.verified(id,v.knownGood);this.guard(fallback);
+    v.failed=[...new Set([...v.failed,v.trial])].slice(-3);v.active=v.knownGood;v.trial=null;
+    this.writeState(s);this.checkpoint('rollback-committed');
+  }
+  markHealthy(id: string, digest: string) {
+    return this.locked(()=>{const s=this.state(),v=s.apps[id];if(!v||v.active!==digest||!this.digestLeases.get(digest))throw new Error('Stale health receipt');const value=this.verified(id,digest);this.guard(value);v.knownGood=digest;v.trial=null;this.writeState(s);this.checkpoint('health-committed');});
+  }
+  markFailed(id: string, digest: string) {
+    return this.locked(()=>{const s=this.state(),v=s.apps[id];if(v?.trial===digest)this.rollback(s,id);});
   }
   uninstall(id: string) {
     return this.locked(() => {

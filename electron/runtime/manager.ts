@@ -5,7 +5,7 @@ import { fixtureServices } from '../sdk/fixtures';
 import { PackageRegistry, type Lease } from '../packages/registry';
 import { randomUUID } from 'node:crypto';
 import { compositePixels, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
-type Entry = { view: WebContentsView; lease?: Lease; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
+type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
 export class FixtureRuntime {
   private services = fixtureServices();
   private broker: ApiBroker;
@@ -14,7 +14,7 @@ export class FixtureRuntime {
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private instance = randomUUID();
   private lastEmission = '';
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
   private emit() {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
@@ -22,6 +22,7 @@ export class FixtureRuntime {
   private fail(e: Entry, reason: string) {
     if (this.entries.get(e.state.id)!==e || e.state.phase === 'failed') return;
     const wasVisible = e.view.getVisible();
+    clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
     this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
     if (wasVisible && !this.win.isDestroyed()) this.win.webContents.focus();
@@ -78,6 +79,7 @@ export class FixtureRuntime {
     view.setBounds(rect);
     const wc = view.webContents;
     try { e.lease = this.packages.launch(`company.sample.${host}`); } catch { this.fail(e, 'package-verification-failed'); return e; }
+    e.healthTimer=setTimeout(()=>this.fail(e,'launch-health-timeout'),8000);
     const lease = e.lease, entryURL = `dental-fixture://${host}/${lease.manifest.entry}`;
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));
     wc.on('will-navigate', event => event.preventDefault());
@@ -87,7 +89,8 @@ export class FixtureRuntime {
     wc.on('unresponsive', () => { this.fail(e, 'unresponsive'); if (!wc.isDestroyed()) wc.forcefullyCrashRenderer(); });
     wc.on('did-finish-load', () => {
       if (this.entries.get(id) !== e) return;
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], report: value => this.reportState(e, value) });
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, report: value => this.reportState(e, value) });
+      e.connected=this.broker.connect({sender:wc,frame:wc.mainFrame,url:entryURL},{major:1,minor:0}).ok;
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
       let pending = false;
@@ -95,7 +98,7 @@ export class FixtureRuntime {
         if (pending || wc.isDestroyed() || e.state.phase !== 'ready') return;
         pending = true;
         e.pingTimer = setTimeout(() => { this.fail(e, 'unresponsive'); if (!wc.isDestroyed()) wc.forcefullyCrashRenderer(); }, 1500);
-        void wc.executeJavaScript('true').then(() => { clearTimeout(e.pingTimer); pending = false; }).catch(() => { clearTimeout(e.pingTimer); pending = false; });
+        void wc.executeJavaScript('document.readyState === "complete" && !!document.body && typeof window.dentalApp?.connect === "function"').then(ready => { clearTimeout(e.pingTimer); pending = false;if(ready&&e.connected&&!e.healthy&&this.entries.get(id)===e){try{this.packages.markHealthy(lease.manifest.appId,lease.release.digest);e.healthy=true;clearTimeout(e.healthTimer);this.changed();}catch{this.fail(e,'update-policy-refused');}} }).catch(() => { clearTimeout(e.pingTimer); pending = false; });
       }, 2000);
     });
     void wc.loadURL(entryURL).catch(() => this.fail(e, 'load-failed'));
@@ -144,7 +147,9 @@ export class FixtureRuntime {
   }
   sdk(kind: 'connect' | 'request' | 'cancel', event: { sender: Electron.WebContents; senderFrame: Electron.WebFrameMain | null }, input: unknown) {
     const caller: Caller = { sender: event.sender, frame: event.senderFrame, url: event.senderFrame?.url ?? '' };
-    return this.broker[kind](caller, input);
+    const result=this.broker[kind](caller, input);
+    if(kind==='connect'&&!(result instanceof Promise)&&result.ok){const e=[...this.entries.values()].find(e=>e.view.webContents===event.sender);if(e)e.connected=true;}
+    return result;
   }
   edge(event: IpcMainEvent, input: unknown) {
     const e = [...this.entries.values()].find(e => e.view.webContents === event.sender);
@@ -176,10 +181,16 @@ export class FixtureRuntime {
     const e = this.entries.get(id); if (!e) return;
     this.broker.unregister(e.view.webContents);
     e.lease?.releaseLease();
-    this.entries.delete(id); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
+    this.entries.delete(id); clearTimeout(e.healthTimer); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
     this.win.contentView.removeChildView(e.view);
     if (!e.view.webContents.isDestroyed()) e.view.webContents.close();
     e.image = undefined;
+  }
+  updateNow(appId:string) {
+    const id=appId==='company.sample.alpha'?'studio':appId==='company.sample.beta'?'records':undefined;if(!id)throw Error('Unknown update app');
+    const e=this.entries.get(id);if(this.broker.hasUnsafeWrites(appId))throw Error('Resolve pending or unknown write before updating');
+    if(e&&(e.state.dirty||e.state.modal||e.state.phase!=='ready'))throw Error('Save work and close dialogs before updating');
+    if(e){const rect=e.rect;this.close(id);this.create(id,rect);}this.changed();
   }
   clearSession() { this.broker.invalidateSession(); for (const id of [...this.entries.keys()]) this.close(id); }
   dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }

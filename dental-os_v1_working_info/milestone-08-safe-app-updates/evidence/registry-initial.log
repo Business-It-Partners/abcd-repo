@@ -1,0 +1,13 @@
+
+> electron-desktop-prototype@0.1.0 test
+> vitest run tests/updates.test.ts tests/packages.test.ts --maxWorkers=1
+
+
+ RUN  v5.0.4 /home/master-x/Desktop/fewa_business_os
+
+
+ Test Files  2 passed (2)
+      Tests  108 passed (108)
+   Start at  10:56:12
+   Duration  3.95s (tests 94%, transform 3%, import 2%)
+

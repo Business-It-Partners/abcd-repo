@@ -42,6 +42,10 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows app update process-exit recovery
+        run: node tests/updates-crash.mjs
+      - name: Windows safe app update proof
+        run: node tests/updates-ci.mjs
       - name: Windows Store and distribution proof
         run: node tests/distribution-ci.mjs
       - name: Windows package process-exit recovery
@@ -62,6 +66,9 @@ jobs:
         with:
           name: windows-milestone-${{ github.sha }}
           path: |
+            artifacts/win32-updates-crash.json
+            artifacts/windows-updates.json
+            artifacts/updates-store.png
             artifacts/windows-unit.log
             artifacts/windows-build.log
             artifacts/windows-unit.json
