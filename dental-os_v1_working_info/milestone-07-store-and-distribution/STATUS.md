@@ -1,23 +1,11 @@
 # M07 Status — First-party store and Cloudflare delivery
 
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
-## Current position
-
-User authorized the next sprint (M07). Desktop and isolated staging backend implementation/local verification complete. Windows CI 38850865178 passes at 8554c1bc (187 tests pass / one POSIX skip plus build and all Store/package/host/runtime/SDK/identity gates). Actual G07 catalogue/R2 acceptance remains pending. User explicitly authorized scoped staging rollout and continuous M07–M10 work; provisioning/publication complete, deployment/live acceptance in progress.
+Linux checks, Windows CI 38853480777 at 3d349758, and 14 actual staging distribution/identity/client-regression checks pass. Dedicated public sample bucket/origin provisioned; signed sequence 2 published with live conditional/anonymous/replay guards; temporary publisher removed. Additive SaaS staging deployment 38853577930 at 3ae3397 preserves all 12 existing D1/R2 bindings and adds only the release binding. No pending/new migration or production change. Evidence and exact scope: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 
 **Dependencies:** [M06](../milestone-06-verified-packages/PLAN.md)
 
-## Remaining work
-
-- Deliver a staging fixture through actual catalogue and R2; verify bytes, identity, authorization, expiry and bounded download.
-- Refuse replayed/withdrawn/incompatible releases, altered metadata, unauthorized install policy and URL/token leakage.
-- Catalogue outage and interrupted download leave installed apps coherent; readiness follows registry success, not animation completion.
-
-## Status rules
-
-PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
-
-**Next gate:** actual staging API/catalogue/install acceptance and refreshed Windows evidence for the verified public origin. M07 remains unverified/unmerged until this passes. No acceptance checkpoint tag yet. M08 not started.
+Completed G07 within synthetic company sample scope. Physical Windows interaction remains deferred after M11/before release. Positive privileged Super Admin interaction and actual clinical workflows are not inferred from HTTP reachability/clinic denial. M08–M10 are authorized next without a permission pause; retain branches/checkpoints and normal-merge each verified milestone.

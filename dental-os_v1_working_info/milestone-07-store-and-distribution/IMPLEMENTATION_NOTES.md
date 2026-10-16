@@ -21,3 +21,7 @@ The first backend test command selected root Vitest 2.1.9 rather than locked Wor
 ## Remaining acceptance
 
 M07 local/CI proof is not live G07 completion. Separate approval is needed for dedicated public staging bucket, scoped publisher setup, actual reviewed publication and additive staging Worker deployment; then pin the actual public origin and run live read-only delivery/existing-client checks. Positive privileged Super Admin interaction requires its own approved credential if that scenario is required; reachability/clinic denial are labeled accordingly. Physical Windows remains deferred after M11. Do not mark M07 verified or merge it into main until required live evidence exists. M08 not started.
+
+## Authorized live rollout
+
+G07 actual staging acceptance now passes; exact resource/source/deployment/publication identity and limitations are retained in VERIFICATION_EVIDENCE.md and STAGING_ROLLOUT.md. Public origin pinned; temporary operator publisher uses live-verified R2 conditional writes and is removed after publication. All previous clinic bindings preserved, no pending migration. Windows 38853480777 passes for final origin-pinned source. Earlier no-cloud/pending-approval statements describe the preparation stage.

@@ -26,11 +26,11 @@ Connect the store to actual approved package releases in the existing Cloudflare
 
 ## Exit criteria and verification
 
-- [ ] Deliver a staging fixture through actual catalogue and R2; verify bytes, identity, authorization, expiry and bounded download.
-- [ ] Refuse replayed/withdrawn/incompatible releases, altered metadata, unauthorized install policy and URL/token leakage.
-- [ ] Catalogue outage and interrupted download leave installed apps coherent; readiness follows registry success, not animation completion.
+- [x] Deliver a staging fixture through actual catalogue and R2; verify bytes, identity, authorization, expiry and bounded download.
+- [x] Refuse replayed/withdrawn/incompatible releases, altered metadata, unauthorized install policy and URL/token leakage.
+- [x] Catalogue outage and interrupted download leave installed apps coherent; readiness follows registry success, not animation completion.
 
-- [ ] Record exact existing fewa_demo repository/branch, GitHub environment/workflow and staging resource map; freeze `/v1/dental-os/...` contracts and prove existing SaaS/Super Admin staging regression checks pass without production mutations.
+- [x] Record exact existing fewa_demo repository/branch, GitHub environment/workflow and staging resource map; freeze `/v1/dental-os/...` contracts and prove existing SaaS/Super Admin staging regression checks pass without production mutations.
 
 ## Scope exclusions
 

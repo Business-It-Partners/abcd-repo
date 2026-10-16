@@ -4,7 +4,7 @@
   "electron/distribution/contracts.ts": "68ba19e78f746041c454bba025d1e447013b6954a76a0e665602cc29290dec29",
   "electron/distribution/fixtures.ts": "c6281fd4bff932965710fe707f62428c4c1fab74e84598ee63e1f2c72c13dde7",
   "electron/distribution/service.ts": "b1a2a2a2e53cc552b3cd9a838eeca9a49fae0935b7baa41bc88c9f0a143eb9a5",
-  "electron/distribution/staging.ts": "ff39401987438b49273fc472cb286d2f877c9e787a4deb5374de8bbfac61b424",
+  "electron/distribution/staging.ts": "6f08ecbd5a523f0ef5e5fdedf468e080387dae0dedeb63655b0afab6e14b02ac",
   "electron/distribution/storage.ts": "59f8756bc83686fba17c8584dbd63ef1819588c23826c7acab8e27ef067b2af8",
   "electron/host/platform.ts": "19ee7e21c32c92c6ccbee557ee6b2c7acd0d3937477f3aad1d9ca8863c9627c5",
   "electron/identity/client.ts": "6f75bb80a5de0bfe9850329d634a5bda60dd8ae3c0634b6c84974e6aacfd05f1",

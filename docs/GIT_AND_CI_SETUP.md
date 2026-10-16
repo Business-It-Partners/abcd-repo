@@ -67,3 +67,7 @@ The user authorized the next sprint, superseding the prior stop after M05. M06 t
 ## M07 prepared checkpoint — 2026-10-16
 
 `codex/milestone-07` source `8554c1bc28004e91c0d934e1e08f2cc4f4859bf3` passes hosted Windows run 38850865178 plus retained Linux proof. Backend SYS-0005 remains isolated/local at `67a5dc5`. This is preparation, not a completed G07 acceptance checkpoint: no acceptance tag/main merge until actual approved staging catalogue/R2 delivery proof. Separate staging deployment/provisioning approval remains required by AGENTS; see the milestone rollout record. Evidence-only follow-up skips redundant CI with identical runtime source. Existing branches/tags and main remain preserved.
+
+## M07 verified live staging checkpoint — 2026-10-16
+
+User authorized scoped staging operations and continuous work through M10, superseding prior pending-approval/stop statements. M07 tested source `3d3497584f77bbb0d43cbf5a1c2621ed987f9bca` / checkpoint/m07-ci passes Windows 38853480777, affected Linux checks and actual staging G07 acceptance. Backend additive deployment 38853577930 at SaaS staging merge 3ae3397 preserves previous tenant bindings/clients. Retain milestone branch/tag; normal merge into main. Physical Windows remains after M11/before final release, no production change.
