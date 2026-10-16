@@ -26,11 +26,11 @@ Deliver independent app improvements without replacing running code or losing un
 
 ## Exit criteria and verification
 
-- [ ] Run old app during new download: unchanged running assets/session; next permitted launch selects verified successor.
-- [ ] Inject interruption at every persistence/activation boundary, repeated operations and failed health checks.
-- [ ] Test dirty work, ambiguous in-flight writes, incompatible rollback, revoked versions, key rotation and storage exhaustion.
+- [x] Run old app during new download: unchanged running assets/session; next permitted launch selects verified successor.
+- [x] Inject interruption at every persistence/activation boundary, repeated operations and failed health checks.
+- [x] Test dirty work, ambiguous in-flight writes, incompatible rollback, revoked versions, key rotation and storage exhaustion.
 
-- [ ] Prove channels, withdrawal/revocation and minimum-version metadata affect staging releases only and preserve existing clients; do not modify production feeds or pointers.
+- [x] Prove channels, withdrawal/revocation and minimum-version metadata affect staging releases only and preserve existing clients; do not modify production feeds or pointers.
 
 ## Scope exclusions
 
