@@ -6,7 +6,7 @@
 
 ## Current position
 
-User authorized the next sprint (M07). Desktop and isolated staging backend implementation/local verification complete. Windows CI pending; actual G07 catalogue/R2 acceptance remains pending. Actual cloud rollout requires separately authorized deployment under existing repository rules.
+User authorized the next sprint (M07). Desktop and isolated staging backend implementation/local verification complete. Windows CI 38850865178 passes at 8554c1bc (187 tests pass / one POSIX skip plus build and all Store/package/host/runtime/SDK/identity gates). Actual G07 catalogue/R2 acceptance remains pending. Actual cloud rollout requires separately authorized deployment under existing repository rules.
 
 **Dependencies:** [M06](../milestone-06-verified-packages/PLAN.md)
 
@@ -19,3 +19,5 @@ User authorized the next sprint (M07). Desktop and isolated staging backend impl
 ## Status rules
 
 PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
+
+**Next required decision:** separate approval for the concrete STAGING_ROLLOUT.md operations. M07 remains unverified/unmerged until live G07 acceptance. No acceptance checkpoint tag yet. No cloud resources were changed; M08 not started.

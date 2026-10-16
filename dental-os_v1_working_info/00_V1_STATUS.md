@@ -3,7 +3,7 @@
 **Updated:** 2026-10-16.
 **Active scope:** M01 documentation baseline complete; M02–M06 required automated gates passed, with M05 live staging identity acceptance and M06 verified local packages; physical Windows acceptance deferred.
 **Current implementation authorization:** user authorized M07 (next sprint), including detailed planning, implementation, controlled verification and verified main integration; stop after M07.
-**Active milestone:** M07 implemented locally; Windows CI and approved staging rollout/live G07 acceptance pending; M06 verified and integrated into main. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M07 implemented and Linux/Windows CI passed; approved staging rollout/live G07 acceptance pending; M06 verified and integrated into main. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -16,7 +16,7 @@
 | [M04 — Internal SDK and API boundary](milestone-04-sdk-and-api-broker/STATUS.md) | VERIFIED — automated Linux/Windows fixture scope | [Evidence](milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md) |
 | [M05 — Single login and protected sessions](milestone-05-identity-and-session/STATUS.md) | VERIFIED — automated Linux/Windows and live staging identity | [Evidence](milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) |
 | [M06 — Verified packages and local lifecycle](milestone-06-verified-packages/STATUS.md) | VERIFIED — automated Linux/Windows local packages | [Evidence](milestone-06-verified-packages/VERIFICATION_EVIDENCE.md) |
-| [M07 — First-party store and Cloudflare delivery](milestone-07-store-and-distribution/STATUS.md) | IMPLEMENTED — local proof; CI/live staging pending | [Evidence](milestone-07-store-and-distribution/VERIFICATION_EVIDENCE.md) |
+| [M07 — First-party store and Cloudflare delivery](milestone-07-store-and-distribution/STATUS.md) | IMPLEMENTED — Linux/Windows CI passed; live staging pending | [Evidence](milestone-07-store-and-distribution/VERIFICATION_EVIDENCE.md) |
 | [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | PLANNED | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | PLANNED | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | PLANNED | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |

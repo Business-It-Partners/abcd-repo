@@ -1,6 +1,6 @@
 # M07 Verification Evidence — Store and Cloudflare delivery
 
-**Milestone verification:** NOT VERIFIED. Local implementation/preparation passes; Windows CI and actual approved staging G07 delivery remain pending. R02/R08/G07. No cloud mutations/deployment or final product certification.
+**Milestone verification:** NOT VERIFIED. Local implementation/preparation passes; Linux and hosted Windows automated checks pass; actual approved staging G07 delivery remains pending. R02/R08/G07. No cloud mutations/deployment or final product certification.
 
 ## Source and environment
 
@@ -23,7 +23,7 @@ Every heavy command ran sequentially with load/memory/process preflight, nice 10
 | Staging assembler + operator publisher `--validate-only` | Two signed local sample bundles and fresh catalogue prepared/validated; no cloud calls | [public review metadata](evidence/publication-review.json) |
 | `node --check` on staging assembler, read-only acceptance and publisher scripts | All parse successfully | No application/deployment executed |
 
-Full initial unit source predates the final security additions; affected distribution tests were rerun instead of repeating unrelated passing suites. Final CI will run the complete current suite. The first backend test command selected wrong root Vitest 2.1.9 and failed before any tests; [failed log](evidence/backend-worker-first-failed.log) retained, corrected locked Worker run supersedes it. First Store screenshot revealed blank raster slots for vector sample icons; fixed using existing Layers/Table2 language, rebuilt and final screenshot inspected. No visual acceptance by the user is implied.
+Full initial unit source predates the final security additions; affected distribution tests were rerun instead of repeating unrelated passing suites. Final Windows CI ran the complete current suite: 187 passed, one POSIX-only skip (188 total). The first backend test command selected wrong root Vitest 2.1.9 and failed before any tests; [failed log](evidence/backend-worker-first-failed.log) retained, corrected locked Worker run supersedes it. First Store screenshot revealed blank raster slots for vector sample icons; fixed using existing Layers/Table2 language, rebuilt and final screenshot inspected. No visual acceptance by the user is implied.
 
 ## Case coverage
 
@@ -38,3 +38,9 @@ Backend: new namespace only, absent outside exact staging, methods/query/publish
 GitHub cloudfare-staging commit matches 76447b9; read-only Wrangler account matches 03453ad990acaaa56336e5851e24f490 and current bucket inventory has no dedicated Dental OS release bucket. Existing staging Worker/Firebase/D1/private R2 map is recorded without secrets. These are inventory observations, not deployment or actual package delivery evidence.
 
 Required before G07 VERIFIED/main merge: separately authorized dedicated public staging bucket/publisher credentials, reviewed immutable release/catalogue publication, additive staging Worker rollout preserving tenant bindings and existing clients, exact public origin pin, actual catalogue/R2 byte/authorization/freshness proof and affected CI rerun. tools/verify-staging-distribution.mjs is prepared but not executed against undeployed routes. Positive privileged Super Admin account acceptance is not inferred from web reachability/clinic denial. Physical Windows remains deferred after M11/before final release; M08 has not started.
+
+## Windows CI result — local/prepared distribution scope only
+
+[Run 38850865178](https://github.com/Business-It-Partners/dental-os/actions/runs/38850865178) passed at `8554c1bc28004e91c0d934e1e08f2cc4f4859bf3` on Windows 2022 / Node 22.13.1. Current full suite: 187 pass / one POSIX-only skip. Build/typecheck and ten real local Store fixture cases, eight process-exit recovery, eight package runtime, four host, twenty-eight runtime, fifteen SDK and twenty identity cases pass. [Run metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [Store report](evidence/windows-ci/windows-distribution.json) and other exact reports/logs/screenshots are retained in evidence/windows-ci. Original artifact byte hashes are retained; logs normalize line endings only.
+
+All 131 current source hashes match the tested checkpoint. Evidence-only follow-up does not repeat heavy checks. G07 remains NOT VERIFIED: these are controlled local/hosted fixtures, not actual undeployed Cloudflare catalogue/R2 proof. No acceptance tag or main merge is issued early. Backend patch remains local at 67a5dc5da68a1e5fc112129072eeb17ec0c37968; no cloudfare-staging branch push/deploy. All task-owned local test/build/private-display processes exited; live desktop untouched. Await the specific separate staging rollout approval in STAGING_ROLLOUT.md; M08 not started.
