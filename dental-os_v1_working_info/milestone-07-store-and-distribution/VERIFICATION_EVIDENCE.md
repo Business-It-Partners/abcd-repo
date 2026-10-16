@@ -1,27 +1,56 @@
-# M07 Verification Evidence — First-party store and Cloudflare delivery
+# M07 Verification Evidence — Store and Cloudflare delivery
 
-**Milestone verification:** NOT YET STARTED.
+**Milestone verification:** NOT VERIFIED. Local implementation/preparation passes; Linux and hosted Windows automated checks pass; actual approved staging G07 delivery remains pending. R02/R08/G07. No cloud mutations/deployment or final product certification.
 
-## Required proof
+## Source and environment
 
-- Deliver a staging fixture through actual catalogue and R2; verify bytes, identity, authorization, expiry and bounded download.
-- Refuse replayed/withdrawn/incompatible releases, altered metadata, unauthorized install policy and URL/token leakage.
-- Catalogue outage and interrupted download leave installed apps coherent; readiness follows registry success, not animation completion.
+Baseline main f79ee668faa4586030e37dc28ee68b1d0d9bc7d7; codex/milestone-07. [Source hashes](evidence/source-sha256.json) identify current desktop/tool/fixture/test inputs before CI checkpoint. [Linux metadata](evidence/linux-run.json) records versions, counts, backend commit and resource policy. Separate backend branch codex/sys-0005-dental-os-distribution at 67a5dc5; no merge to cloudfare-staging. [Rollout record](STAGING_ROLLOUT.md) maps exact existing resources and proposed changes.
 
-## Evidence record format
+## Local executed proof — 2026-10-16
 
-For every run retain: date; source commit plus uncommitted tree identity where applicable; dependency/build versions; named OS/architecture/display/profile; exact command; exit status; successful/failed cases; redacted log/artifact paths; limitations and requirement/gate bindings. Never include credentials or patient payloads.
+Every heavy command ran sequentially with load/memory/process preflight, nice 10, conservative workers, bounded timeout and private display/profile. No dependency install; live desktop/session untouched.
 
-## Executed evidence
+| Command | Actual result | Retained proof |
+| --- | --- | --- |
+| `node node_modules/vitest/vitest.mjs run --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/m07-unit.json` | 182 tests / 10 files pass at initial distribution implementation | [log](evidence/unit-full-linux.log), [JSON](evidence/m07-unit.json) |
+| `node node_modules/vitest/vitest.mjs run tests/distribution.test.ts --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/m07-distribution-unit.json` | Final 46 focused tests pass after staging-trust/server-clock/final-metadata security review; replaces earlier 40-case coverage | [log](evidence/distribution-unit-final.log), [JSON](evidence/m07-distribution-unit.json) |
+| `npm run build` | Final source typecheck, renderer build and Electron compile pass | [log](evidence/build-linux.log) |
+| `node tools/run-ui-test.mjs tests/distribution.mjs` | 10 final Store/install/launch/uninstall/restart/artwork cases pass privately | [report](evidence/distribution-verification.json), [log](evidence/store-linux.log), [screenshot](evidence/distribution-store.png) |
+| `node tools/run-ui-test.mjs tests/identity.mjs` | Existing 20 identity/session/privacy cases pass after host/IPC wiring | [report](evidence/identity-verification.json), [log](evidence/identity-linux.log) |
+| Worker TypeScript 5.9.3 `tsc --noEmit` | Exit 0, no diagnostics | [record](evidence/backend-worker-check.log) |
+| Worker Vitest 5.0.3 full `run --maxWorkers=1` | 410 tests / 47 files pass including existing clinic/platform authorization and new routes | [log](evidence/backend-worker-tests.log) |
+| Worker final targeted `run test/route-contract/dentalOs.test.ts --maxWorkers=1` | 12 pass after response clock header assertion | [log](evidence/backend-worker-route-final.log) |
+| Staging assembler + operator publisher `--validate-only` | Two signed local sample bundles and fresh catalogue prepared/validated; no cloud calls | [public review metadata](evidence/publication-review.json) |
+| `node --check` on staging assembler, read-only acceptance and publisher scripts | All parse successfully | No application/deployment executed |
 
-No milestone-governed runs recorded. Existing WORK_CHECKLIST.md/artifacts evidence is historical until reconciled and rerun where required. Planned checks above are not test results.
+Full initial unit source predates the final security additions; affected distribution tests were rerun instead of repeating unrelated passing suites. Final Windows CI ran the complete current suite: 187 passed, one POSIX-only skip (188 total). The first backend test command selected wrong root Vitest 2.1.9 and failed before any tests; [failed log](evidence/backend-worker-first-failed.log) retained, corrected locked Worker run supersedes it. First Store screenshot revealed blank raster slots for vector sample icons; fixed using existing Layers/Table2 language, rebuilt and final screenshot inspected. No visual acceptance by the user is implied.
 
-## Platform and user acceptance
+## Case coverage
 
-Windows: not verified. Linux: not verified for this production milestone. User acceptance: pending. For M01, these runtime fields are not applicable to documentation verification; no host runtime claim follows.
+Signed metadata: valid current/exact-sequence bytes, signature/unsigned/unknown key/altered/noncanonical/body cap; schema/environment/channel, expiry/future/max lifetime, ID/duplicates, traversal/arbitrary URL, size/SDK/API/grant/platform/minimum-version; replay/equivocation, device clock rollback, missing/invalid/skewed authenticated server clock; normal staging key refuses private fixtures and appointment grants.
 
-## Additional staging-policy acceptance evidence
+Transport/lifecycle: fixed HTTPS origin rules, no credentials to R2, no redirects, declared/streamed/truncated/modified bytes, before-download admin denial and pre-commit role recheck, post-download withdrawal/version/payload/capability identity consistency, cancellation/deadline/busy refusal, late generation fencing, outage preservation and independently authorized uninstall. Native proof ties Ready and dock to registry success, isolated signed app launch, no install bridge, uninstall truth and restart persistence.
 
-- Record exact existing fewa_demo repository/branch, GitHub environment/workflow and staging resource map; freeze `/v1/dental-os/...` contracts and prove existing SaaS/Super Admin staging regression checks pass without production mutations.
+Backend: new namespace only, absent outside exact staging, methods/query/publisher path refusal, existing actor 401/403/503, admin versus doctor/reception policy, missing/failing/oversized R2, bounded opaque signed-byte response/no-store/current time. [Scope check](evidence/backend-scope.json) proves production config, existing client/shared contracts/business authorities/migrations/deployment workflows unchanged. No frontend rebuild was necessary for a backend-only additive route.
 
-Not executed. Exact mapping and backend regression proof remain required when this milestone is implemented; this amendment changes documentation only.
+## Actual cloud observations and remaining gate
+
+GitHub cloudfare-staging commit matches 76447b9; read-only Wrangler account matches 03453ad990acaaa56336e5851e24f490 and current bucket inventory has no dedicated Dental OS release bucket. Existing staging Worker/Firebase/D1/private R2 map is recorded without secrets. These are inventory observations, not deployment or actual package delivery evidence.
+
+Required before G07 VERIFIED/main merge: separately authorized dedicated public staging bucket/publisher credentials, reviewed immutable release/catalogue publication, additive staging Worker rollout preserving tenant bindings and existing clients, exact public origin pin, actual catalogue/R2 byte/authorization/freshness proof and affected CI rerun. tools/verify-staging-distribution.mjs is prepared but not executed against undeployed routes. Positive privileged Super Admin account acceptance is not inferred from web reachability/clinic denial. Physical Windows remains deferred after M11/before final release; M08 has not started.
+
+## Windows CI result — local/prepared distribution scope only
+
+[Run 38850865178](https://github.com/Business-It-Partners/dental-os/actions/runs/38850865178) passed at `8554c1bc28004e91c0d934e1e08f2cc4f4859bf3` on Windows 2022 / Node 22.13.1. Current full suite: 187 pass / one POSIX-only skip. Build/typecheck and ten real local Store fixture cases, eight process-exit recovery, eight package runtime, four host, twenty-eight runtime, fifteen SDK and twenty identity cases pass. [Run metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [Store report](evidence/windows-ci/windows-distribution.json) and other exact reports/logs/screenshots are retained in evidence/windows-ci. Original artifact byte hashes are retained; logs normalize line endings only.
+
+All 131 current source hashes match the tested checkpoint. Evidence-only follow-up does not repeat heavy checks. G07 remains NOT VERIFIED: these are controlled local/hosted fixtures, not actual undeployed Cloudflare catalogue/R2 proof. No acceptance tag or main merge is issued early. Backend patch remains local at 67a5dc5da68a1e5fc112129072eeb17ec0c37968; no cloudfare-staging branch push/deploy. All task-owned local test/build/private-display processes exited; live desktop untouched. Await the specific separate staging rollout approval in STAGING_ROLLOUT.md; M08 not started.
+
+## Actual authorized staging G07 closeout — 2026-10-16
+
+This supersedes earlier pending rollout/approval statements. User authorized scoped staging work through M10. Dedicated release bucket/public origin provisioned and pinned; signed company sample packages and catalogue sequence 2 published through a temporary operator Worker using verified R2 `onlyIf` absence/ETag guards. Anonymous/replay refusal passed; temporary publisher/probe objects removed. No credentials/private signing keys in evidence. See [publication](evidence/live-publication.json) and [rollout](STAGING_ROLLOUT.md).
+
+Backend staging normal merge `3ae339739edf05902eb85a6a8560aa89c1241802`, [deployment 38853577930](https://github.com/Business-It-Partners/dental-saas/actions/runs/38853577930), Worker version `a7fdec4f-737d-4325-8a4b-f2871e7de352`. All 13 Control D1 migrations already applied; no new migration. [Before](evidence/staging-bindings-before.json)/[after](evidence/staging-bindings-after.json) prove all 12 existing tenant/control/private bindings preserved; only release binding added. Initial run 38853429663 stopped before deployment because the publisher test used Node's runner inside Vitest discovery; corrected to existing Vitest gate, 413/48 tests pass.
+
+`tools/verify-staging-distribution.mjs --staging-distribution-readonly` passed all 14 actual staging cases: Firebase/Worker identity, signed/fresh catalogue, admin install policy, both anonymous R2 downloads and local verified installs/launches/uninstalls, anonymous catalogue denial, clinic/platform denial and both existing staging web clients reachable. [Report](evidence/distribution-staging.json), [log](evidence/staging-acceptance.log). Protected external credential file removed afterward. No clinical writes. Reachability/clinic denial do not establish positive privileged Super Admin UI acceptance.
+
+Public-origin-only desktop change passes [build](evidence/staging-origin-build.log)/[46 focused cases](evidence/staging-origin-tests.log). Final [Windows run 38853480777](https://github.com/Business-It-Partners/dental-os/actions/runs/38853480777) at `3d3497584f77bbb0d43cbf5a1c2621ed987f9bca` passes 187 unit tests/one POSIX skip, build and all Store/package/host/runtime/SDK/identity gates. [Retained final evidence](evidence/windows-ci-live/run.json), [source manifest](evidence/source-sha256.json). G07 VERIFIED for named sample/staging scope. Evidence-only integration requires lightweight checks; physical Windows remains deferred and user acceptance pending.

@@ -42,6 +42,8 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows Store and distribution proof
+        run: node tests/distribution-ci.mjs
       - name: Windows package process-exit recovery
         run: node tests/packages-crash.mjs
       - name: Windows verified package runtime
@@ -63,6 +65,8 @@ jobs:
             artifacts/windows-unit.log
             artifacts/windows-build.log
             artifacts/windows-unit.json
+            artifacts/windows-distribution.json
+            artifacts/distribution-store.png
             artifacts/win32-packages-crash.json
             artifacts/windows-packages.json
             artifacts/windows-host-ci.json

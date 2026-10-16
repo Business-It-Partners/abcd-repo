@@ -1,0 +1,64 @@
+{
+  "bindings": [
+    {
+      "name": "CLINIC_0EFB60EC2E314DA0",
+      "type": "d1",
+      "id": "d9a2edaa-e70e-43ae-bd5b-166e6dbc4afc"
+    },
+    {
+      "name": "CLINIC_132F259BB0264D70",
+      "type": "d1",
+      "id": "d9855ffa-0ba7-4f46-88d1-6dc698d65283"
+    },
+    {
+      "name": "CLINIC_186A99489EE04ACF",
+      "type": "d1",
+      "id": "31189196-0387-4425-b10a-42b1e8e8d509"
+    },
+    {
+      "name": "CLINIC_1A827A9281D2468C",
+      "type": "d1",
+      "id": "60fc4aea-0a21-418f-8bd7-8e4494650414"
+    },
+    {
+      "name": "CLINIC_202FB2F1A8204091",
+      "type": "d1",
+      "id": "7bfa20c6-8903-4560-aa7a-73c7ca94a9ed"
+    },
+    {
+      "name": "CLINIC_6A0B9822649A4090",
+      "type": "d1",
+      "id": "49daa91f-22dc-4cbc-b1c1-05cfb416d2a7"
+    },
+    {
+      "name": "CLINIC_817BD3DC62914C18",
+      "type": "d1",
+      "id": "197f6c59-7060-4029-878d-859b73a2862d"
+    },
+    {
+      "name": "CLINIC_A28056B6662841D7",
+      "type": "d1",
+      "id": "2f4149a8-6f5e-483b-9d26-1a614556feaf"
+    },
+    {
+      "name": "CLINIC_B6F0621E41E14310",
+      "type": "d1",
+      "id": "418248da-1fd0-46dc-b1fb-b17213653956"
+    },
+    {
+      "name": "CLINIC_C67AAC0B2BC440BD",
+      "type": "d1",
+      "id": "dc4e6ba7-946a-42fb-8f09-eb6711f5a704"
+    },
+    {
+      "name": "CONTROL_DB",
+      "type": "d1",
+      "id": "55ac8b32-9c22-46c5-ab05-45988adff79f"
+    },
+    {
+      "name": "PRIVATE_BUCKET",
+      "type": "r2_bucket",
+      "bucket_name": "dentmitra-private-cloudfare-staging"
+    }
+  ]
+}

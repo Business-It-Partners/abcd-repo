@@ -7,6 +7,8 @@ import { StaffApp } from './StaffApp';
 import { LabApp } from './LabApp';
 import { StoreApp, catalogIds, type StoreJob } from './StoreApp';
 import { celebrateStoreArrival } from './storeArrival';
+import { DeliveryStore, useDeliveryStore } from './DeliveryStore';
+import { sampleWindows } from '../electron/distribution/contracts';
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
@@ -68,7 +70,9 @@ function Desktop() {
   const { studio, records, followups } = controllers;
   const phase = studio.win.phase;
   const [installed, setInstalled] = useState<WindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
-  const icons = makeIcons(fixtures ? WINDOW_IDS : ['store', ...installed]);
+  const delivery = useDeliveryStore(!fixtures);
+  const deliveredIds = delivery.view.apps.filter(a => a.installedVersion && sampleWindows[a.id]).map(a => sampleWindows[a.id]);
+  const icons = makeIcons(fixtures ? WINDOW_IDS : ['store', ...deliveredIds]);
   const [updates, setUpdates] = useState<WindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
@@ -187,7 +191,7 @@ function Desktop() {
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {runtimeFixtures && <RuntimeFixtures controllers={{studio,records}} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records}} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -201,7 +205,7 @@ function Desktop() {
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={controllers[id]}>
-      {id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
+      {id === 'store' && !fixtures ? <DeliveryStore view={delivery.view} action={delivery.action} open={openStoreApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));

@@ -1,0 +1,14 @@
+{
+  "id": 38850865178,
+  "name": "Windows milestone validation",
+  "head_branch": "codex/milestone-07",
+  "head_sha": "8554c1bc28004e91c0d934e1e08f2cc4f4859bf3",
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "html_url": "https://github.com/Business-It-Partners/dental-os/actions/runs/38850865178",
+  "created_at": "2026-10-16T04:29:14Z",
+  "updated_at": "2026-10-16T04:31:05Z",
+  "run_started_at": "2026-10-16T04:29:14Z",
+  "run_attempt": 1
+}

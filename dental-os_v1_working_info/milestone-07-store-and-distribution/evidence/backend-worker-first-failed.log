@@ -1,0 +1,28 @@
+
+ RUN  v2.1.9 /home/master-x/Desktop/fewa_demo/dental-os-m07-backend/apps/platform-worker
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+RangeError: options.minThreads and options.maxThreads must not conflict
+ ❯ new Tinypool ../../../dental-saas/node_modules/tinypool/dist/index.js:745:120
+ ❯ createForksPool ../../../dental-saas/node_modules/vitest/dist/chunks/resolveConfig.rBxzbVsl.js:6756:16
+ ❯ forks ../../../dental-saas/node_modules/vitest/dist/chunks/resolveConfig.rBxzbVsl.js:7664:20
+ ❯ ../../../dental-saas/node_modules/vitest/dist/chunks/resolveConfig.rBxzbVsl.js:7690:27
+ ❯ executeTests ../../../dental-saas/node_modules/vitest/dist/chunks/resolveConfig.rBxzbVsl.js:7681:5
+ ❯ ../../../dental-saas/node_modules/vitest/dist/chunks/cli-api.DqsSTaIi.js:10818:9
+ ❯ Vitest.runFiles ../../../dental-saas/node_modules/vitest/dist/chunks/cli-api.DqsSTaIi.js:10840:12
+ ❯ Vitest.start ../../../dental-saas/node_modules/vitest/dist/chunks/cli-api.DqsSTaIi.js:10682:7
+ ❯ startVitest ../../../dental-saas/node_modules/vitest/dist/chunks/cli-api.DqsSTaIi.js:11848:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  no tests
+      Tests  no tests
+     Errors  1 error
+   Start at  09:58:27
+   Duration  33ms (transform 0ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)

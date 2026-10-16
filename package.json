@@ -28,7 +28,8 @@
     "test:runtime": "node tools/run-ui-test.mjs tests/runtime.mjs tests/runtime-dpr.mjs",
     "test:sdk": "node tools/run-ui-test.mjs tests/sdk.mjs",
     "test:identity": "node tools/run-ui-test.mjs tests/identity.mjs",
-    "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs"
+    "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs",
+    "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs"
   },
   "keywords": [],
   "author": "",

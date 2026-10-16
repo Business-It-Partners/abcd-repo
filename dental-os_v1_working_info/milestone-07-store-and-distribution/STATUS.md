@@ -1,21 +1,11 @@
 # M07 Status — First-party store and Cloudflare delivery
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** VERIFIED
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
-## Current position
-
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+Linux checks, Windows CI 38853480777 at 3d349758, and 14 actual staging distribution/identity/client-regression checks pass. Dedicated public sample bucket/origin provisioned; signed sequence 2 published with live conditional/anonymous/replay guards; temporary publisher removed. Additive SaaS staging deployment 38853577930 at 3ae3397 preserves all 12 existing D1/R2 bindings and adds only the release binding. No pending/new migration or production change. Evidence and exact scope: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 
 **Dependencies:** [M06](../milestone-06-verified-packages/PLAN.md)
 
-## Remaining work
-
-- Deliver a staging fixture through actual catalogue and R2; verify bytes, identity, authorization, expiry and bounded download.
-- Refuse replayed/withdrawn/incompatible releases, altered metadata, unauthorized install policy and URL/token leakage.
-- Catalogue outage and interrupted download leave installed apps coherent; readiness follows registry success, not animation completion.
-
-## Status rules
-
-PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
+Completed G07 within synthetic company sample scope. Physical Windows interaction remains deferred after M11/before release. Positive privileged Super Admin interaction and actual clinical workflows are not inferred from HTTP reachability/clinic denial. M08–M10 are authorized next without a permission pause; retain branches/checkpoints and normal-merge each verified milestone.
