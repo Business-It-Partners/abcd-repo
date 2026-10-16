@@ -1,7 +1,8 @@
 # M10 Status — Security, resilience and usability
 
-**Status:** IMPLEMENTED — local gates passed, Windows CI pending.
+**Status:** VERIFIED — documented automated Linux/Windows scope.
 **Updated:** 2026-10-16.
-**User acceptance:** pending; no production/release certification claimed.
+**Tested source:** e2027a57198ac87ceb0d7db0a82d6063d9878c14, checkpoint/m10-ci.
+**User acceptance:** pending; physical device/assistive/multi-hour release checks remain after M11/before release.
 
-Implemented bounded fixed-schema diagnostics and explicit safe support export, narrow preserved-state recovery, strict signed JSON byte canonicality, crash/restart/capture and host exit safety, public-metadata continuity and readable Store permissions. Local unit/build, private security/privacy/recovery/usability and bounded resource gates pass. Final Windows Actions remains required before VERIFIED and normal main merge. Physical device/assistive/multi-hour release checks remain after M11/before release; full clinical UI separate.
+Required G10 hardening, privacy, crash/hang/cooldown, preserved recovery, diagnostics, write-safe host exit, keyboard/contrast/zoom/compact/reduced-motion and declared two-app resource gates pass. Final Windows CI 38925883945 passes all 255 unit cases (253 pass/two POSIX skips), build and all applicable desktop/process-exit gates. Local evidence and failures retained. Normal evidence-only main integration preserves tested source. No M10 backend/cloud/production operation. Stop after M10 under current authorization; M11 release/operations and full clinical application delivery remain separate.

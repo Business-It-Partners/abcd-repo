@@ -26,9 +26,9 @@ Close production risks across trust, privacy, failure recovery, accessibility an
 
 ## Exit criteria and verification
 
-- [ ] Run package/IPC/network escape negatives and disk canary checks across login/logout/cache/crash paths.
-- [ ] Test app hangs/crash loops, backend outages, uncertain writes, corrupt journal, sleep/resume and low capacity.
-- [ ] Verify keyboard/focus/screen-reader semantics, contrast, scaling, motion fallback and many-app resource behavior against stated budgets.
+- [x] Run package/IPC/network escape negatives and disk canary checks across login/logout/cache/crash paths.
+- [x] Test app hangs/crash loops, backend outages, uncertain writes, corrupt journal, sleep/resume and low capacity.
+- [x] Verify keyboard/focus/screen-reader semantics, contrast, scaling, motion fallback and many-app resource behavior against stated budgets.
 
 ## Scope exclusions
 
