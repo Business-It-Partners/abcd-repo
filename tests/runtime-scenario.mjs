@@ -48,7 +48,11 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.getByRole('button',{name:'Switch to Records',exact:true}).click();
   await shell.getByRole('button',{name:'Maximize Records',exact:true}).click();
   await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.presentation==='fullscreen');
-  const size=await beta.evaluate(()=>({w:innerWidth,h:innerHeight}));await beta.mouse.move(size.w/2,size.h-2);
+  const expected=await shell.locator('[data-runtime="records"]').boundingBox();assert.ok(expected);
+  // React presentation changes before native layout/guest resize acknowledgement.
+  await beta.waitForFunction(({w,h})=>innerWidth===w&&innerHeight===h,{w:Math.round(expected.width),h:Math.round(expected.height)});
+  const size=await beta.evaluate(()=>({w:innerWidth,h:innerHeight}));
+  await beta.mouse.move(size.w/2,size.h/2);await beta.mouse.move(size.w/2,size.h-2);
   await shell.waitForFunction(()=>!document.querySelector('.dock-region').inert);check('native app bottom edge reveals fullscreen dock');
   await shell.getByRole('button',{name:'Restore Records size',exact:true}).click();
   await shell.mouse.move(10,10);

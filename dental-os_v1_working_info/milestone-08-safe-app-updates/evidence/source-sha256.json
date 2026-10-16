@@ -106,7 +106,7 @@
   "tests/records.mjs": "21af2d3462af71ca6660242fcf844ec0eb9330aab08db6486b84916e15234b76",
   "tests/runtime-ci.mjs": "ea41196794952165c8d5c5e6d568c86021c35e87f5e758b9045772e4041670c9",
   "tests/runtime-dpr.mjs": "020da45f29cbadd3caeba1b3cf915580e2a4ee2d4a959b8160f7cfff9e6b05f9",
-  "tests/runtime-scenario.mjs": "8a110f29920af5ce2086587a39afb5b0a51dec17421e1f642b51c41c8d1aab74",
+  "tests/runtime-scenario.mjs": "f69c320ebfe88fa844112078e53b46fab64d3bd3e0bc54eb273c0c07175eba6a",
   "tests/runtime.mjs": "45bbe4f09bf68498e3dd81b81934920a7d74c2eb5432d049847350ad3291017e",
   "tests/runtimeContracts.test.ts": "24216e0053595bb4109fcfef0046eedf7b7c00b2e304cc1b85b28a102dc90de8",
   "tests/scaling.mjs": "1f88a1732c18974db36a0b1ad6ae7664b9d85107fff3aa29f6b6c77ed2cba336",
