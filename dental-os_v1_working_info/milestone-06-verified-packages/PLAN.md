@@ -26,9 +26,9 @@ Replace developer-loaded fixtures with company-verified independently installed 
 
 ## Exit criteria and verification
 
-- [ ] Reject unsigned/altered assets/manifests, unknown publishers/IDs, incompatible SDK/API, invalid entry paths and forged identity.
-- [ ] Test traversal, links/reparse points, excessive expansion/count, disk exhaustion, concurrent operations and crash checkpoints.
-- [ ] Restart resolves pending operations; only active verified bytes execute; uninstall affects neither SaaS records nor other app files.
+- [x] Reject unsigned/altered assets/manifests, unknown publishers/IDs, incompatible SDK/API, invalid entry paths and forged identity.
+- [x] Test traversal, links/reparse points, excessive expansion/count, disk exhaustion, concurrent operations and crash checkpoints.
+- [x] Restart resolves pending operations; only active verified bytes execute; uninstall affects neither SaaS records nor other app files.
 
 ## Scope exclusions
 

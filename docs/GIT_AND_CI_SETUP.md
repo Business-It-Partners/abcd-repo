@@ -59,3 +59,7 @@ The local reference directory and original history backup are preserved outside 
 ## M04 and M05 integrated checkpoints — 2026-10-16
 
 M04 tested source `672a81180336b535d90ee9c2d92917354dc1c6e5` / `checkpoint/m04-ci` passed Windows run 38842666568 and was merged into main at `4ad8e32f`. M05 tested source `07c2fb21575dc6b575ad664a9bb3b3466c0fd6e3` / `checkpoint/m05-ci` passed final Windows run 38845000521, plus retained Linux/live-staging identity evidence, and is now merged into main. `codex/milestone-04` and `codex/milestone-05` remain available; tags identify exact tested sources. Evidence-only closeout does not change runtime bytes. No backend deployment, history rewrite or deletion occurred. Stop after M05; M06 has not started.
+
+## M06 verified package checkpoint — 2026-10-16
+
+The user authorized the next sprint, superseding the prior stop after M05. M06 tested source `083f91280fec560000b531bc96d9394b820ddf4d` / `checkpoint/m06-ci` passed [Windows run 38848241451](https://github.com/Business-It-Partners/dental-os/actions/runs/38848241451) and retained Linux local-package/runtime regression evidence. M06 is integrated into main with the required normal non-squash merge; codex/milestone-06 and previous milestone branches/checkpoint tags are preserved. Evidence-only closeout has identical tested source (116 retained hashes). No production key publication, backend change, deployment or history rewrite. Physical Windows remains after M11/before final release. Stop after M06; M07 has not started.
