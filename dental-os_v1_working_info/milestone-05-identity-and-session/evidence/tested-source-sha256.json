@@ -45,7 +45,7 @@
   "fixtures/runtime-apps/app.js": "7bc495bf20353774905f853f02e24024271e31e26b7b6820b2dedbf616b2dc52",
   "fixtures/runtime-apps/app.css": "2c02fc614518b5991e7e749803b55736c100875ac0b58bb7591d9c0bb3181e69",
   "tests/identity.test.ts": "f4f31306ee5e791b5f0b99d6334d3e5c2280e0f273f291ba8b47f79f1f34c65f",
-  "tests/identity-scenario.mjs": "ca66ff514b3f58ce3213854cda84955b25b77d05f67a302fbe43e2d52fce7b61",
+  "tests/identity-scenario.mjs": "a64b13ea4f6125bab1637390b69bab72296eb60435aa835fa05d727819cec334",
   "tests/identity.mjs": "06552599a458a97f5ad283da50395bef9bd10bd51c59f28c7e4a794f6dc51540",
   "tests/identity-ci.mjs": "feb1c1cc83b0cc5ef1fe4bf159afd140727c504986bb6162bcd1a6f70c869f67",
   "tests/identity-staging.mjs": "70db16f7259fd3ee93d817d388332dcad46549a358d023d5f2f84313d94c9315",

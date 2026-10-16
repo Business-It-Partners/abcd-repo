@@ -1,10 +1,11 @@
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {createReadStream} from 'node:fs';
 import path from 'node:path';
 export async function verifyIdentity(profileArgs,reportName){
  const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
- const app=await electron.launch({args:[root,...profileArgs,'--runtime-fixtures','--identity-fixtures'],env,timeout:30000});const checks=[],errors=[];let crypto;
+ const app=await electron.launch({args:[root,...profileArgs,'--runtime-fixtures','--identity-fixtures'],env,timeout:30000});const checks=[],errors=[];let crypto,closed=false;
  const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
  try{
   const shell=await app.firstWindow();shell.on('pageerror',e=>errors.push(e.message));
@@ -38,10 +39,20 @@ export async function verifyIdentity(profileArgs,reportName){
   await shell.getByRole('button',{name:'Sign out',exact:true}).click();await shell.getByRole('heading',{name:'Sign in to your clinic'}).waitFor();
   check('logout destroys guest runtimes and clears authority',(await shell.evaluate(()=>window.desktop.identity.view())).phase==='signed-out'&&await app.evaluate(({webContents})=>webContents.getAllWebContents().every(w=>!w.getURL().startsWith('dental-fixture:'))));
   check('signed-out form clears account identifier and keeps exit available',await shell.getByLabel('Email',{exact:true}).inputValue()===''&&await shell.getByRole('button',{name:'Exit Dental OS',exact:true}).isVisible());
-  const profile=profileArgs.find(v=>v.startsWith('--user-data-dir='))?.slice('--user-data-dir='.length);
-  async function scan(dir){for(const f of await fs.readdir(dir,{withFileTypes:true})){const p=path.join(dir,f.name);if(f.isDirectory())await scan(p);else if(f.isFile()){const s=await fs.stat(p);if(s.size<5_000_000){const data=await fs.readFile(p);assert.ok(!data.includes(Buffer.from('fixture-pass'))&&!data.includes(Buffer.from('fixture-refresh-')),`credential bytes in profile ${f.name}`);}}}}
-  if(profile)await scan(profile);check('profile contains no plaintext fixture password/refresh token');
   check('no shell page errors',errors.length===0);await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts','identity-gate.png'),await shell.screenshot());
+  // Chromium owns open cache/metrics files on Windows. Inspect only after orderly exit.
+  await app.close();closed=true;
+  const profile=profileArgs.find(v=>v.startsWith('--user-data-dir='))?.slice('--user-data-dir='.length);
+  async function scan(dir){for(const f of await fs.readdir(dir,{withFileTypes:true})){
+    const p=path.join(dir,f.name);if(f.isDirectory())await scan(p);else if(f.isFile()){
+      for(let attempt=0;;attempt++){
+        try{let tail=Buffer.alloc(0);for await(const chunk of createReadStream(p,{highWaterMark:65536})){
+          const data=Buffer.concat([tail,chunk]);assert.ok(!data.includes(Buffer.from('fixture-pass'))&&!data.includes(Buffer.from('fixture-refresh-')),`credential bytes in profile ${f.name}`);tail=data.subarray(-32);
+        }break;}catch(error){if(!['EBUSY','EPERM'].includes(error.code)||attempt>=5)throw error;await new Promise(r=>setTimeout(r,100));}
+      }
+    }
+  }}
+  if(profile)await scan(profile);check('closed profile contains no plaintext fixture password/refresh token');
   return {checks,errors,crypto};
- }finally{await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({checks,errors,crypto,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));await app.close();}
+ }finally{await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({checks,errors,crypto,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));if(!closed)await app.close();}
 }

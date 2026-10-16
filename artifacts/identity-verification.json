@@ -18,8 +18,8 @@
     "native secret-provider classification is explicit",
     "logout destroys guest runtimes and clears authority",
     "signed-out form clears account identifier and keeps exit available",
-    "profile contains no plaintext fixture password/refresh token",
-    "no shell page errors"
+    "no shell page errors",
+    "closed profile contains no plaintext fixture password/refresh token"
   ],
   "errors": [],
   "crypto": {
