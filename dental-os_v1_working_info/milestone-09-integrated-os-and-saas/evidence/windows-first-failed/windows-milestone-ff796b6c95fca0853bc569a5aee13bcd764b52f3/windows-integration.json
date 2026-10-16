@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "phase": "launch",
+  "checks": [
+    "one platform sign-in reaches current authenticated catalogue",
+    "two downloaded isolated apps share one mediated session, with distinct connections",
+    "closed profile contains no password or private app storage/draft canary"
+  ],
+  "platform": "win32",
+  "source": "ff796b6c95fca0853bc569a5aee13bcd764b52f3",
+  "scope": "Private synthetic identity/transport/packages only; no cloud API calls."
+}
