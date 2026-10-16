@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "phase": "logout",
+  "checks": [
+    "live Worker identifies the mapped staging environment",
+    "approved staging Firebase login and Worker /v1/me establish clinic readiness",
+    "live refresh and fresh Worker access resolution retain the same clinic session",
+    "live Worker rejects an invalid identity token",
+    "clinic identity does not grant Super Admin tenant access",
+    "operation-level denial revalidates clinic access without granting platform authority",
+    "live Firebase refuses an invalid refresh grant",
+    "local sign-out clears authority and persisted credentials",
+    "signed-out generation cannot obtain a credential"
+  ],
+  "environment": "cloudfare-staging",
+  "apiBase": "https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev",
+  "firebaseProject": "dental-managemetn-staging",
+  "source": "4ad8e32ff34bd13e0db00e69143137dbde14bd60",
+  "scope": "Approved staging account, identity-only; no business writes/user mutations/global revocation; denied/disabled/outage state transitions additionally covered by controlled fixtures."
+}

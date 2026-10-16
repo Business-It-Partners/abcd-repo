@@ -15,3 +15,8 @@ Worker authorization remains mandatory on every request. A valid Firebase token 
 ## Existing staging identity
 
 Reuse the Firebase identity and Worker access configuration belonging to the verified `fewa_demo` staging setup. Do not create a second identity system, modify production users/settings, or add OS-only duplicates of existing identity routes. Confirm Firebase project/API/Worker alignment before integration; never fall back to production to bypass staging login failure. Retain separate Super Admin and clinic authorization. See [staging/resource policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
+
+
+## M05 implemented desktop flow
+
+Trusted main uses existing staging Firebase email/password REST sign-in and coordinated refresh, then Worker `/v1/me` before readiness. Apps receive only safe display context/operation capability; no credentials. Optional remember-me stores only native-encrypted refresh state; inadequate Linux basic_text/unknown/unavailable storage is refused with session-only login. Lock/logout/switch clear isolated views and generation-bound captures/runtime calls; lock requires reauthentication and clears remembered refresh state. See [flow decision](../dental-os_v1_working_info/milestone-05-identity-and-session/decisions/ADR_IDENTITY_001_DESKTOP_FLOW.md) and [evidence](../dental-os_v1_working_info/milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) for exact live/fixture/platform scope. Logout is local and does not revoke existing web sessions. Device keyring/ACL behavior remains a physical-release gate.

@@ -1,0 +1,7 @@
+{
+  "electron": "44.7.0",
+  "playwright": "1.64.0",
+  "vitest": "5.0.4",
+  "typescript": "7.0.2",
+  "node": "v22.13.1"
+}

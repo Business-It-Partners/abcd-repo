@@ -1,12 +1,12 @@
 # M05 Status — Single login and protected sessions
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** IMPLEMENTING
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+Implementation complete. Linux 77 unit tests, build, six focused private regressions and approved real staging CLI/desktop identity checks pass. Windows hosted gate pending; no production or physical-device acceptance claimed.
 
 **Dependencies:** [M04](../milestone-04-sdk-and-api-broker/PLAN.md)
 

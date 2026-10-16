@@ -4,6 +4,8 @@ import { bindEnvironment, type Environment } from './environment';
 
 export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
+  allowed?(operation: Operation): boolean;
+  rejected?(status: 401 | 403): void;
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
@@ -56,7 +58,7 @@ export class ApiBroker {
     const s = this.current(); if (!s.active) return failure('AUTH_REQUIRED');
     // Repeated compatible handshakes reuse identity instead of disrupting in-flight calls.
     r.connection ??= randomUUID(); r.generation = s.generation;
-    return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: [...r.capabilities] });
+    return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => this.identity.allowed?.(op) ?? true) });
   }
   private connected(r: Registration, v: Cancel) {
     const s = this.current();
@@ -73,7 +75,7 @@ export class ApiBroker {
     const r = this.caller(caller); if (!r) return failure('UNKNOWN_CALLER');
     const v = parseRequest(input); if (!v) return failure('INVALID_REQUEST');
     if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
-    if (!r.capabilities.includes(v.operation)) return failure('FORBIDDEN', 'not_sent', v);
+    if (!r.capabilities.includes(v.operation) || this.identity.allowed?.(v.operation) === false) return failure('FORBIDDEN', 'not_sent', v);
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
     if (active.has(v.requestId) || active.size >= this.limits.perApp || total >= this.limits.total) return failure('BUSY', 'not_sent', v);
@@ -107,6 +109,7 @@ export class ApiBroker {
         if (response.redirected || response.status >= 300 && response.status < 400) { void response.body?.cancel(); throw new TransportError('REDIRECT_DENIED'); }
         if (!response.ok) {
           void response.body?.cancel();
+          if (response.status === 401 || response.status === 403) this.identity.rejected?.(response.status);
           const code: ErrorCode = response.status === 401 ? 'AUTH_REQUIRED' : response.status === 403 ? 'ACCESS_DENIED' : response.status === 409 ? 'CONFLICT' : response.status === 400 || response.status === 422 ? 'VALIDATION' : 'MAINTENANCE';
           if (write && response.status >= 500) return failure('UNKNOWN_OUTCOME', 'unknown', v);
           return failure(code, 'rejected', v);
