@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session } from 'electron';
 import path from 'node:path';
 import { OsStateStore } from './storage/osState';
 import { FixtureRuntime } from './runtime/manager';
@@ -50,7 +50,7 @@ function createWindow() {
     ...display.bounds,
     title: 'Desktop — Motion Prototype', frame: false, fullscreen: true, fullscreenable: true, resizable: true, backgroundColor: '#eef3f8',
     show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once')});
@@ -170,6 +170,8 @@ ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, v
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
+  session.defaultSession.setSpellCheckerEnabled(false);
+  session.defaultSession.setSpellCheckerLanguages([]);
   try {
     osStore = new OsStateStore(path.join(app.getPath('userData'), 'state'));
     osStore.load();

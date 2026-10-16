@@ -68,6 +68,8 @@ export class FixtureRuntime {
     if (!ses) {
     ses = session.fromPartition(`fixture-${host}-${this.instance}`);
     this.sessions.set(id, ses);
+    ses.setSpellCheckerEnabled(false);
+    ses.setSpellCheckerLanguages([]);
     ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     ses.setPermissionCheckHandler(() => false);
     ses.on('will-download', event => event.preventDefault());
@@ -77,7 +79,7 @@ export class FixtureRuntime {
       return asset ? new Response(new Uint8Array(asset.bytes), { headers: { 'Content-Type': asset.type, 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'", 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' } }) : new Response('Denied', { status: 403 });
     });
     }
-    const view = new WebContentsView({ webPreferences: { session: ses, preload: this.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false } });
+    const view = new WebContentsView({ webPreferences: { session: ses, preload: this.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false, webSecurity: true, backgroundThrottling: false } });
     const e: Entry = { view, state: { id, phase: 'loading', dirty: false, modal: false }, rect };
     this.entries.set(id, e); view.setVisible(false); this.win.contentView.addChildView(view);
     view.setBounds(rect);
