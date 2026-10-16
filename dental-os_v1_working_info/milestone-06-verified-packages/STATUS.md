@@ -1,12 +1,12 @@
 # M06 Status — Verified packages and local lifecycle
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** IMPLEMENTED
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+User authorized the next sprint (M06). Baseline inspected; detailed execution sequence is recorded in PLAN.md. Local implementation, build/typecheck, 142 unit tests, eight process-exit recovery cases and package/runtime/SDK/identity private checks pass on codex/milestone-06. Windows CI is the remaining automated gate.
 
 **Dependencies:** [M05](../milestone-05-identity-and-session/PLAN.md)
 

@@ -53,3 +53,7 @@ After each milestone passes its required verification, commit/push its evidence 
 
 
 M05 identity checks: `npm run test:identity` runs synthetic private desktop verification. Optional real staging tools (`tools/verify-staging-identity.mjs --staging-identity-readonly` and private-runner `tests/identity-staging.mjs`) require an approved account via named environment variables or a mode-0600 credential input file outside the repository. The desktop live test also requires `DENTAL_OS_STAGING_ACCEPTANCE=true`. Never hardcode credentials, print tokens or add live identity checks to default CI. Retain reports with outcomes only; remove temporary credential inputs after use.
+
+## M06 verified local packages
+
+Read [dentalpkg/1](dental-os_v1-documentation/23_V1_PACKAGE_FORMAT.md) and [internal tooling](tools/app-packages/README.md). `npm run test:packages` uses the private display; `node tests/packages-crash.mjs` checks abrupt installer exits after a controlled build. Run these sequentially under resource rules. Normal launches trust no fixture signing keys. The existing sample-runtime flag now installs signed fixtures into the isolated profile and revalidates at launch; it never exposes a package file picker or production sideload command. Cloud delivery/Store wiring and full update policy remain M07/M08. Current user session remains untouched; new builds take effect on full relaunch.

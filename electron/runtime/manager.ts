@@ -1,13 +1,11 @@
-import { WebContentsView, session, net, nativeImage, type BrowserWindow, type IpcMainEvent, type NativeImage } from 'electron';
-import path from 'node:path';
+import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMainEvent, type NativeImage } from 'electron';
 import { ApiBroker, type Caller, type Identity } from '../sdk/broker';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
-import { operations } from '../sdk/contracts';
-import { pathToFileURL } from 'node:url';
+import { PackageRegistry, type Lease } from '../packages/registry';
 import { randomUUID } from 'node:crypto';
-import { compositePixels, fixtureAsset, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
-type Entry = { view: WebContentsView; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
+import { compositePixels, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+type Entry = { view: WebContentsView; lease?: Lease; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
 export class FixtureRuntime {
   private services = fixtureServices();
   private broker: ApiBroker;
@@ -16,7 +14,7 @@ export class FixtureRuntime {
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private instance = randomUUID();
   private lastEmission = '';
-  constructor(private win: BrowserWindow, private assets: string, private preload: string, identity?: Identity) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
   private emit() {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
@@ -48,6 +46,17 @@ export class FixtureRuntime {
     })();
     await e.capturePromise;
   }
+  private asset(id: RuntimeId, url: string) {
+    const lease = this.entries.get(id)?.lease; if (!lease) return;
+    try {
+      const u = new URL(url), host = id === 'studio' ? 'alpha' : 'beta';
+      if (u.protocol !== 'dental-fixture:' || u.host !== host || u.username || u.password || u.search || u.hash || u.pathname.includes('%')) return;
+      const name = u.pathname.slice(1), bytes = lease.files.get(name); if (!bytes) return;
+      const ext = name.split('.').pop() ?? '';
+      const types: Record<string, string> = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', json: 'application/json', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2' };
+      return { bytes, type: types[ext] ?? 'application/octet-stream' };
+    } catch { return; }
+  }
   private create(id: RuntimeId, rect: RuntimeRect) {
     const host = id === 'studio' ? 'alpha' : 'beta';
     let ses = this.sessions.get(id);
@@ -57,10 +66,10 @@ export class FixtureRuntime {
     ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     ses.setPermissionCheckHandler(() => false);
     ses.on('will-download', event => event.preventDefault());
-    ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !fixtureAsset(details.url, host) }));
+    ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !this.asset(id, details.url) }));
     void ses.protocol.handle('dental-fixture', request => {
-      const file = fixtureAsset(request.url, host);
-      return file ? net.fetch(pathToFileURL(path.join(this.assets, file)).href) : new Response('Denied', { status: 403 });
+      const asset = this.asset(id, request.url);
+      return asset ? new Response(new Uint8Array(asset.bytes), { headers: { 'Content-Type': asset.type, 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'", 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' } }) : new Response('Denied', { status: 403 });
     });
     }
     const view = new WebContentsView({ webPreferences: { session: ses, preload: this.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false } });
@@ -68,6 +77,8 @@ export class FixtureRuntime {
     this.entries.set(id, e); view.setVisible(false); this.win.contentView.addChildView(view);
     view.setBounds(rect);
     const wc = view.webContents;
+    try { e.lease = this.packages.launch(`company.sample.${host}`); } catch { this.fail(e, 'package-verification-failed'); return e; }
+    const lease = e.lease, entryURL = `dental-fixture://${host}/${lease.manifest.entry}`;
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));
     wc.on('will-navigate', event => event.preventDefault());
     wc.on('will-frame-navigate', event => event.preventDefault());
@@ -76,7 +87,7 @@ export class FixtureRuntime {
     wc.on('unresponsive', () => { this.fail(e, 'unresponsive'); if (!wc.isDestroyed()) wc.forcefullyCrashRenderer(); });
     wc.on('did-finish-load', () => {
       if (this.entries.get(id) !== e) return;
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: `dental-fixture://${host}/index.html`, appId: `company.sample.${host}`, appVersion: '1.0.0', capabilities: operations.filter(op => id === 'studio' || op !== 'appointments.setStatus'), report: value => this.reportState(e, value) });
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], report: value => this.reportState(e, value) });
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
       let pending = false;
@@ -87,7 +98,7 @@ export class FixtureRuntime {
         void wc.executeJavaScript('true').then(() => { clearTimeout(e.pingTimer); pending = false; }).catch(() => { clearTimeout(e.pingTimer); pending = false; });
       }, 2000);
     });
-    void wc.loadURL(`dental-fixture://${host}/index.html`).catch(() => this.fail(e, 'load-failed'));
+    void wc.loadURL(entryURL).catch(() => this.fail(e, 'load-failed'));
     return e;
   }
   sync(input: unknown) {
@@ -164,6 +175,7 @@ export class FixtureRuntime {
   close(id: RuntimeId) {
     const e = this.entries.get(id); if (!e) return;
     this.broker.unregister(e.view.webContents);
+    e.lease?.releaseLease();
     this.entries.delete(id); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
     this.win.contentView.removeChildView(e.view);
     if (!e.view.webContents.isDestroyed()) e.view.webContents.close();

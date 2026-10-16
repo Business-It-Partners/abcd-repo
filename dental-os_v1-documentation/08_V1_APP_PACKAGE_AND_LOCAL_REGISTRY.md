@@ -6,7 +6,7 @@ A package is a versioned self-contained React/TypeScript web build: manifest, HT
 
 ## Required logical metadata
 
-Package-format version; stable app ID/company publisher; app version; relative entry path; SDK compatibility; backend contract compatibility; requested capabilities; asset inventory/integrity binding. Signed release metadata binds identity, version and package SHA-256 digest using a defined canonical serialization. M06 freezes the exact schema, signature algorithm, archive format and verification fixtures; Ed25519 is the preferred candidate from the reference design, not an implemented claim.
+Package-format version; stable app ID/company publisher; app version; relative entry path; SDK compatibility; backend contract compatibility; requested capabilities; asset inventory/integrity binding. Signed release metadata binds identity, version and package SHA-256 digest using a defined canonical serialization. M06 freezes the exact [dentalpkg/1 schema, Ed25519 signature and uncompressed archive](23_V1_PACKAGE_FORMAT.md). Its local implementation/evidence is tracked in M06; remote distribution remains M07.
 
 The verifier uses platform-owned trust roots, rejects unknown schemas/identities and mismatched hashes, and validates paths, symlinks, entry points, expanded size/count and extraction limits. App metadata cannot grant itself capabilities. Validate installed content at launch under a documented integrity policy, not only during download.
 

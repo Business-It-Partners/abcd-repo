@@ -1,0 +1,8 @@
+PASS install process exit at journal: dead-owner lock and journal reconciled
+PASS install process exit at asset-write: dead-owner lock and journal reconciled
+PASS install process exit at extracted: dead-owner lock and journal reconciled
+PASS install process exit at published: dead-owner lock and journal reconciled
+PASS install process exit at committed: dead-owner lock and journal reconciled
+PASS uninstall process exit at journal: dead-owner lock and journal reconciled
+PASS uninstall process exit at committed: dead-owner lock and journal reconciled
+PASS uninstall process exit at removed: dead-owner lock and journal reconciled

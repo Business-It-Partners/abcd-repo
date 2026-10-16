@@ -1,0 +1,9 @@
+
+> electron-desktop-prototype@0.1.0 build
+> npm run typecheck && vite build && tsc -p tsconfig.electron.json
+
+
+> electron-desktop-prototype@0.1.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.electron.json --noEmit
+
+electron/packages/format.ts(75,25): error TS2740: Type 'Record<string, any>' is missing the following properties from type 'Release': format, appId, publisher, version, and 2 more.

@@ -36,6 +36,7 @@ The [canonical repository structure](../dental-os_v1_working_info/00_REPOSITORY_
 - [Architecture Decision Register](20_V1_ADR_REGISTER.md)
 - [Current Baseline and Gaps](21_V1_CURRENT_BASELINE_AND_GAPS.md)
 - [Requirements and Traceability](22_V1_REQUIREMENTS_AND_TRACEABILITY.md)
+- [Exact dentalpkg/1 format and local transaction contract](23_V1_PACKAGE_FORMAT.md)
 
 ## Documentation conventions
 

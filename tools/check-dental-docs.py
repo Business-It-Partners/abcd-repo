@@ -15,8 +15,8 @@ def check():
     errors = []
     files = sorted(ARCH.glob('*.md')) + sorted(WORK.glob('*.md'))
     milestones = sorted(WORK.glob('milestone-*'))
-    if len(list(ARCH.glob('*.md'))) != 23:
-        errors.append('Expected 23 numbered architecture documents')
+    if len(list(ARCH.glob('*.md'))) != 24:
+        errors.append('Expected 24 numbered architecture documents')
     if len(milestones) != 11:
         errors.append('Expected eleven milestone folders')
     for index, folder in enumerate(milestones, 1):
@@ -71,7 +71,7 @@ def check():
         digest.update(b'\0' + path.read_bytes() + b'\0')
     result = {
         'scope': 'documentation links/structure/requirement ownership only; no runtime certification',
-        'architecture_documents': 23,
+        'architecture_documents': 24,
         'milestones': len(milestones),
         'required_milestone_files': len(milestones) * len(REQUIRED),
         'requirements': 15,
