@@ -7,12 +7,16 @@ import { FirebaseClient } from './identity/client';
 import { CredentialStore } from './identity/storage';
 import { systemSecretProvider } from './identity/provider';
 import { identityFixtures } from './identity/fixtures';
+import { fixtureRegistry } from './packages/fixtures';
+import { PackageRegistry } from './packages/registry';
+import { productionTrust } from './packages/format';
 import type { SessionView } from './identity/contracts';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
+let packages: PackageRegistry;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
-const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true'));
+const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
 const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSwitch('identity-staging');
@@ -43,7 +47,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures) runtime = new FixtureRuntime(win, path.join(__dirname, '../fixtures/runtime-apps'), path.join(__dirname, 'runtime/appPreload.js'), identity);
+  if (runtimeFixtures) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity);
   win.on('close', () => runtime?.dispose());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
@@ -153,6 +157,9 @@ if (primary) void app.whenReady().then(async () => {
   try {
     osStore = new OsStateStore(path.join(app.getPath('userData'), 'state'));
     osStore.load();
+    const packageRoot = path.join(app.getPath('userData'), 'packages');
+    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages')) : new PackageRegistry(packageRoot, productionTrust);
+    if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => runtime?.clearSession(), identityFixture ? 'fixture' : 'staging');

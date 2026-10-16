@@ -1,0 +1,20 @@
+{
+  "artifact_id": 12024535675,
+  "zip_sha256": "3c19171b1135794d5d8746ed818d3e5791fcaefc13d30eda3ba8db68eb7fb322",
+  "original_file_sha256": {
+    "identity-gate.png": "44bfb320694a3b831bb9c50e6ac622fea32300d7e6cc073c19fff801a487c8b1",
+    "runtime-crash.png": "97799c2d5670057803e391f1872af4850f9c5772dceeb1b0ed6bff67ce77a4a7",
+    "runtime-overlap.png": "e80552ae18bb166f160028a8def9e0e7fa59b511e1b2f9caa31336b964396ca7",
+    "sdk-fixtures.png": "ac5427928ee51ef18b98e680751c53c8ffd1e6617386bfcf6a00282bdb0be1d0",
+    "win32-packages-crash.json": "56df3832408a115f31723ad27b2f93f55e37ed29fcced0971a899020e474d391",
+    "windows-build.log": "67cf09a7d4275bb14a4f827597a9722b05462e072b0ea09c2202c0f1fc99a902",
+    "windows-host-ci.json": "2eeb4e35f8991473b2f2c498744b59eee6520d428cba186c37f25c0a593df64e",
+    "windows-identity.json": "5167d997f9f05b7a98d92681310ddca877b93c3d34556bce5adb16a4f6b23878",
+    "windows-packages.json": "3d0c93dd8e08513dca97b7df5571e94f02296e7952710a67cebdf9384b43cf8d",
+    "windows-runtime.json": "d7dafa57c9c377e0a123e7b429791310acf94fdc5c4bf2a8fca4529544c0b3a6",
+    "windows-sdk.json": "1fbe9b11c97ddfaecca5dc810de7fca20ce0fda11df520a4e53a942abba1d312",
+    "windows-unit.json": "aeaae8158e719c7c91d27cd26d1fea2aab5cd30792565e49ca9c9a32ee73f270",
+    "windows-unit.log": "73b7318351050b6702d3a45e5b1600e4524326337b5e9afa98bd770673c6248d"
+  },
+  "text_normalization": "Retained logs normalize CRLF to LF and trailing blank EOF only; outcomes unchanged."
+}

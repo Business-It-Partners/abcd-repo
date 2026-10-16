@@ -20,7 +20,7 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-012 | Online-dependent business operations; no persistent patient cache | Accepted baseline | privacy disk checks; 13 |
 | ADR-013 | No general app-to-app communication | Accepted baseline | backend coordination only; 11/19 |
 | ADR-014 | Signed metadata/packages, freshness and key lifecycle | Accepted requirement | wire format/algorithm frozen in M06/M07; 08/14 |
-| ADR-015 | Ed25519 signatures | Candidate | reference precedent; choose canonical schema and tooling in M06 |
+| ADR-015 | Ed25519 signatures over canonical release metadata | Accepted for dentalpkg/1 | SHA-256 payload/inventory binding; exact format in 23; M06 evidence governs implementation acceptance |
 | ADR-016 | Windows/Linux installer/update formats | Open release decision | select supported matrix before M11 acceptance; 16 |
 | ADR-017 | Reuse fewa_demo infrastructure; staging-only backend execution | Accepted execution constraint | verify repository/branch/GitHub environment/resource mapping; production changes/promotion separately authorized; 09 |
 | ADR-018 | New OS APIs under /v1/dental-os; existing business routes unchanged | Accepted route boundary | additive services with explicit authorization; prefix is not deployment isolation; 09/11 |
@@ -30,3 +30,7 @@ New ADRs identify problem, options, decision, tradeoffs, affected invariants/con
 ## ADR-019 — GitHub Windows CI during milestones; device testing after M11
 
 Accepted user decision, 2026-10-15. Automated Windows evidence permits milestone progression when applicable gates pass; native physical-device acceptance remains a separate mandatory gate before final product release. Record CI limitations and deferred scenarios. main plus started milestone branches and immutable identified checkpoints provide regression traceability. No claim that hosted-runner automation certifies a physical device.
+
+## ADR-020 — Bounded uncompressed dentalpkg/1 web container
+
+M06 chooses canonical JSON with base64 file records over ZIP/TAR: deterministic assembly, no compression/link/special-file representation and no new parser dependency. Tradeoffs are base64 size/memory overhead and bounded synchronous verification (16 MiB wire, 8 MiB assets); not suitable for medical imaging payloads. [Exact contract](23_V1_PACKAGE_FORMAT.md) owns limits, signatures, trust and recovery semantics. Platform-owned ID/key/grant policy remains authoritative; production trust is empty until approved release keys exist. No third-party or production sideloading route follows. M07 owns remote freshness/key lifecycle; M08 controls full update/rollback policy. Unknown local schemas preserve files and refuse operation instead of silently migrating/resetting.

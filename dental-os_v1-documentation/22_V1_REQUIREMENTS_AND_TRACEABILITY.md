@@ -7,8 +7,8 @@ This matrix connects the constitution to acceptance gates and execution owners. 
 | Requirement | Contract | Gate / milestone |
 | --- | --- | --- |
 | R01 Hosted Windows/Linux product, clear authority | 02,04,16; INV-01/03/05 | G01/G11; M01/M11 |
-| R02 Company-only executable apps forever | 02,08,09,14,19; INV-02/06 | G06/G07; M06/M07 |
-| R03 Independent web package lifecycle | 08..10; INV-04/06/12 | G06..G08; M06..M08 |
+| R02 Company-only executable apps forever | 02,08,09,14,19,23; INV-02/06 | G06/G07; M06/M07 |
+| R03 Independent web package lifecycle | 08..10,23; INV-04/06/12 | G06..G08; M06..M08 |
 | R04 Shared desktop continuity and accessibility | 05..07; INV-05/09/14 | G03/G09/G10; M03/M09/M10 |
 | R05 Isolated apps and bounded privileges | 07,11,14; INV-07 | G03/G04/G10; M03/M04/M10 |
 | R06 Single login, protected secrets, session switching | 12; INV-08/11 | G05; M05 |

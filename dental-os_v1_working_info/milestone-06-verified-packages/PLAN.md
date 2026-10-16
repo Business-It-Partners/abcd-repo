@@ -26,9 +26,9 @@ Replace developer-loaded fixtures with company-verified independently installed 
 
 ## Exit criteria and verification
 
-- [ ] Reject unsigned/altered assets/manifests, unknown publishers/IDs, incompatible SDK/API, invalid entry paths and forged identity.
-- [ ] Test traversal, links/reparse points, excessive expansion/count, disk exhaustion, concurrent operations and crash checkpoints.
-- [ ] Restart resolves pending operations; only active verified bytes execute; uninstall affects neither SaaS records nor other app files.
+- [x] Reject unsigned/altered assets/manifests, unknown publishers/IDs, incompatible SDK/API, invalid entry paths and forged identity.
+- [x] Test traversal, links/reparse points, excessive expansion/count, disk exhaustion, concurrent operations and crash checkpoints.
+- [x] Restart resolves pending operations; only active verified bytes execute; uninstall affects neither SaaS records nor other app files.
 
 ## Scope exclusions
 
@@ -57,3 +57,14 @@ New OS-specific services use `/v1/dental-os/...`; existing dental business and i
 ## Windows verification scope
 
 Use the [approved deferred-device policy](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md): Linux checks plus applicable Windows GitHub Actions evidence during milestones; physical Windows interaction/visual checks after M11, before final release. Record remaining device scenarios separately; CI success is not physical-device certification.
+
+## Approved M06 execution detail — 2026-10-16
+
+1. Freeze `dentalpkg/1`: canonical UTF-8 JSON envelope, uncompressed base64 file payload, SHA-256 inventories/digest and Ed25519 signed release binding. No ZIP/TAR parser, compression, links, modes or executable hooks. Exact keys, paths and bounded sizes/counts are mandatory; deterministic builders share the verifier.
+2. Add trusted package modules under `electron/packages/` (transitional format/service boundary) and an internal `tools/app-packages/` builder. Platform policy selects company IDs, public keys, SDK/API and maximum grants; manifest requests cannot grant authority. Production policy starts empty/fail-closed until separately approved release keys exist. Private signed fixtures use ephemeral keys and cannot enter normal profiles.
+3. Implement OS-selected profile-local registry with immutable version directories, staged extraction, exclusive operations, atomic pointer/journal writes, capacity checks, retained versions, explicit uninstall and startup reconciliation. Reject links/hardlinks/reparse paths; bound reads/writes; verify installed inventory again before each launch. Pin verified memory bytes for the running version to avoid serving mutable files.
+4. Replace direct source-file runtime loading in the private two-app proof with installed verified packages. Bind broker ID/version/capabilities from the verified handle; preserve native isolation, shared frame/motion, session fences and existing SDK behavior. No renderer filesystem/install/sideload API.
+5. Add adversarial unit/filesystem tests: signature/identity/schema/compatibility/path/inventory limits; tamper/link/capacity/concurrent/crash recovery; retained version and uninstall containment. Add hosted Linux/Windows packaged-runtime proof. Continue runtime/SDK/identity regressions because the loader changes.
+6. Preflight resources, run one bounded unit/build/private UI job at a time, retain source hashes and reports, run Windows Actions, then checkpoint and normal-merge verified source to main. No cloud/backend/deployment work. Stop after M06.
+
+M07 owns catalogue freshness/remote delivery; M08 owns user-facing update timing, dirty workflow coordination, revocation/rollback authorization and retention eviction. M06 provides local primitives only; an active lease blocks uninstall rather than silently terminating work.

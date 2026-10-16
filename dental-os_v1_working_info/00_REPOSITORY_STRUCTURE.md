@@ -279,3 +279,7 @@ The bounded runtime proof introduces `electron/runtime/` for the trusted fixture
 ## M05 source mapping
 
 Trusted identity/REST/session/protected-store adapters live in `electron/identity/`; only its pure contracts are type-imported into the shell. `src/IdentityGate.tsx` owns platform sign-in and `src/SessionBoundary.tsx` scopes shell generation. App code has no identity-client/store imports. `tests/identity*` owns controlled integration/security/live optional acceptance; `tools/verify-staging-identity.mjs` is explicit approved-account, identity-only staging acceptance. No credential input is stored in the repository. Broad packages/apps migration remains separate work.
+
+## M06 source mapping
+
+`electron/packages/format.ts` is a Node-only, Electron-independent deterministic format boundary; `registry.ts` owns trusted local transactions; `fixtures.ts` is called only under the bootstrap's private-test guard. The runtime now obtains verified leases instead of loading `fixtures/runtime-apps` files directly. The latter remain source inputs for separately signed fixture bundles in `fixtures/packages`. `tools/app-packages/` owns internal assembly and explicit test-fixture maintenance; `tests/packages*` owns adversarial filesystem, abrupt process-exit and private/CI integration checks. No renderer imports these host modules and no broad workspace migration is claimed. The exact implemented installed-state subtree is `<userData>/packages/` as specified in architecture 23; the earlier conceptual tree is not a second storage implementation.

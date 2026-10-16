@@ -1,0 +1,9 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS two signed packages installed under isolated OS profile
+PASS broker identity/version/capabilities derive from verified package
+PASS renderer cannot access installation or filesystem authority
+PASS beta manifest has no appointment write grant
+PASS already-running version remains pinned in memory
+PASS tampered installed bytes refuse execution on next launch
+PASS failure leaves other app and host usable
+PASS restored signed bytes pass explicit retry

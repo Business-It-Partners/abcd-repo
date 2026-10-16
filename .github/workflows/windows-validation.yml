@@ -42,6 +42,10 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows package process-exit recovery
+        run: node tests/packages-crash.mjs
+      - name: Windows verified package runtime
+        run: node tests/packages-ci.mjs
       - name: Windows hosted-runner startup and recovery
         run: node tests/windows-host-ci.mjs
       - name: Windows isolated runtime proof
@@ -59,6 +63,8 @@ jobs:
             artifacts/windows-unit.log
             artifacts/windows-build.log
             artifacts/windows-unit.json
+            artifacts/win32-packages-crash.json
+            artifacts/windows-packages.json
             artifacts/windows-host-ci.json
             artifacts/windows-runtime.json
             artifacts/windows-sdk.json

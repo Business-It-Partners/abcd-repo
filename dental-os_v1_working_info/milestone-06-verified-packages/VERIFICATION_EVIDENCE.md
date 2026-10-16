@@ -1,21 +1,35 @@
 # M06 Verification Evidence — Verified packages and local lifecycle
 
-**Milestone verification:** NOT YET STARTED.
+**Milestone verification:** VERIFIED — applicable Linux and hosted Windows automated scope. G06 / R02 / R03 / R15. User visual acceptance pending; no production release claim.
 
-## Required proof
+## Source and environment
 
-- Reject unsigned/altered assets/manifests, unknown publishers/IDs, incompatible SDK/API, invalid entry paths and forged identity.
-- Test traversal, links/reparse points, excessive expansion/count, disk exhaustion, concurrent operations and crash checkpoints.
-- Restart resolves pending operations; only active verified bytes execute; uninstall affects neither SaaS records nor other app files.
+Baseline main `b24e3591586aa1d950d8367ba193c4ea09cd7dfb`; branch codex/milestone-06. [Source hashes](evidence/tested-source-sha256.json) identify the exact tested runtime/tool/fixture/test tree before checkpoint commit. [Linux metadata](evidence/linux-run.json) records host/Node/npm and bounded private-profile policy. No real account, patient data, production key or backend was used. Original Flutter reference remains local-only.
 
-## Evidence record format
+## Linux executed checks — 2026-10-16
 
-For every run retain: date; source commit plus uncommitted tree identity where applicable; dependency/build versions; named OS/architecture/display/profile; exact command; exit status; successful/failed cases; redacted log/artifact paths; limitations and requirement/gate bindings. Never include credentials or patient payloads.
+Each job ran sequentially with resource preflight, nice 10 and timeout; Vitest had one worker. All final commands exited 0.
 
-## Executed evidence
+| Command | Result | Retained proof |
+| --- | --- | --- |
+| `node node_modules/vitest/vitest.mjs run --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/m06-unit.json` | 142 tests, 9 files pass | [log](evidence/unit-linux.log), [JSON](evidence/m06-unit.json) |
+| `npm run build` | typecheck, Vite and Electron compile pass | [log](evidence/build-linux.log) |
+| `node tests/packages-crash.mjs` | 8 abrupt process-exit/restart checkpoints pass | [report](evidence/linux-packages-crash.json), [log](evidence/crash-linux.log) |
+| `node tools/run-ui-test.mjs tests/packages.mjs` | 8 installed-package runtime cases pass | [report](evidence/packages-verification.json), [log](evidence/packages-ui-linux.log) |
+| `node tools/run-ui-test.mjs tests/runtime.mjs` | existing native composition/isolation/crash/Genie/cleanup cases pass | [report](evidence/runtime-verification.json), [log](evidence/runtime-linux.log) |
+| `node tools/run-ui-test.mjs tests/sdk.mjs` | existing sender/grant/SDK/API fixture cases pass | [report](evidence/sdk-verification.json), [log](evidence/sdk-linux.log) |
+| `node tools/run-ui-test.mjs tests/identity.mjs` | existing identity/session/privacy cases pass | [report](evidence/identity-verification.json), [log](evidence/identity-linux.log) |
 
-No milestone-governed runs recorded. Existing WORK_CHECKLIST.md/artifacts evidence is historical until reconciled and rerun where required. Planned checks above are not test results.
+## Gate bindings
 
-## Platform and user acceptance
+R02/G06: known-key signature and publisher/app allowlist; unsigned/modified metadata and payload/assets, unknown IDs/keys/publisher, schema/SDK/API mismatch, capability escalation and identity mismatch negatives. R03/G06: portable path/device/ADS/traversal negatives, no links/special types, count/file/total/wire limits; disk capacity refusal and ENOSPC extraction fault; monotonic versions/retention limits; live/concurrent owner refusal; corrupt registry/journal; installed tamper/missing/extra/hardlink/junction and cleanup containment. First install and update logical interruption matrix plus real process exits prove dead-owner recovery at journal, asset-write, extraction, publish/commit and uninstall phases. Active pointer determines recovery; no app executes before launch revalidation. Installed fixtures bind actual broker identity/grants; runtime tampering blocks only the affected launch. Pinned lease blocks uninstall; uninstall preserves another app and unrelated fixture marker (no SaaS operation exists).
 
-Windows: not verified. Linux: not verified for this production milestone. User acceptance: pending. For M01, these runtime fields are not applicable to documentation verification; no host runtime claim follows.
+R15: exact source hashes, commands and structured outcomes retained. [Requirement coverage](REQUIREMENT_COVERAGE.md) maps controls to cases; the internal builder CLI was also run twice against one ephemeral external signing key and its byte-identical output passed the strict verifier ([report](evidence/builder-cli.json)); that temporary key/output directory was removed. Superseded failures remain: [first typecheck](evidence/build-first-failed.log), [first crash-recovery case](evidence/crash-first-failed.log), [first UI harness attempt](evidence/packages-ui-first-failed.log). Corrections and limits are recorded in [implementation notes](IMPLEMENTATION_NOTES.md). Earlier passing format tests are [retained](evidence/unit-first.log), superseded by the full final suite.
+
+## Windows and acceptance limits
+
+Windows Actions [38848241451](https://github.com/Business-It-Partners/dental-os/actions/runs/38848241451) passed at `083f91280fec560000b531bc96d9394b820ddf4d` (`checkpoint/m06-ci`). Hosted Windows 2022 / Node 22.13.1: 141 unit tests pass and one POSIX-only test skips; build/typecheck, eight actual process-exit recovery checks, eight packaged-runtime checks, four host, twenty-eight runtime, fifteen SDK and twenty identity checks all pass. [Run metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [build log](evidence/windows-ci/windows-build.log), [process-exit report](evidence/windows-ci/win32-packages-crash.json) and [package runtime report](evidence/windows-ci/windows-packages.json) are retained beyond GitHub's artifact retention. Other regression reports/screenshots are in the same directory.
+
+All 116 tested source/tool/fixture/test hashes match the CI checkpoint and final integrated tree. Closeout changes only documentation/evidence; merged-source validation uses hash equality and lightweight documentation checks, without another heavy local build/test cycle. Existing milestone branches/checkpoint tags remain unchanged; M06 branch and immutable tested-source tag are retained. No owned build/test/private-display process remains. The live user session was not restarted or focused. M07 has not started.
+
+ Physical Windows/device visuals remain deferred until after M11 and before final release. No real filesystem fill, sudden power cut, physical ACL/antivirus behavior, production signing/distribution or full Store/update-policy acceptance is claimed. ENOSPC fault injection is not a claim that the host disk was exhausted. Runtime samples are private fixtures; normal policy remains empty/fail-closed. Remote freshness/delivery and full update/revocation/rollback remain M07/M08.
