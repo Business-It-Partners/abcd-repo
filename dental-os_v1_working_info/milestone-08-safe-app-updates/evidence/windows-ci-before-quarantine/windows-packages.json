@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "two signed packages installed under isolated OS profile",
+    "broker identity/version/capabilities derive from verified package",
+    "renderer cannot access installation or filesystem authority",
+    "beta manifest has no appointment write grant",
+    "already-running version remains pinned in memory",
+    "tampered installed bytes refuse execution on next launch",
+    "failure leaves other app and host usable",
+    "restored signed bytes pass explicit retry"
+  ],
+  "platform": "win32",
+  "sha": "83df9eefb5f0b7dbea9cdd54ccb292c7f561b964"
+}

@@ -1,0 +1,17 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS both original company apps have actual runtime health acknowledgements
+PASS background download leaves running active digest pinned
+PASS unfinished draft survives download
+PASS update-now refuses dirty work without closing or replacing its lease
+PASS update-now refuses an app-owned modal
+PASS clean update-now selects successor and records new runtime health
+PASS other app remains pinned to original active digest
+PASS failed successor launch rolls back only its own verified known-good pointer
+PASS two signed packages installed under isolated OS profile
+PASS broker identity/version/capabilities derive from verified package
+PASS renderer cannot access installation or filesystem authority
+PASS beta manifest has no appointment write grant
+PASS already-running version remains pinned in memory
+PASS tampered installed bytes refuse execution on next launch
+PASS failure leaves other app and host usable
+PASS restored signed bytes pass explicit retry

@@ -1,0 +1,36 @@
+﻿2026-10-16T05:41:26.8853128Z ##[group]Run node tests/runtime-ci.mjs
+2026-10-16T05:41:26.8853708Z [36;1mnode tests/runtime-ci.mjs[0m
+2026-10-16T05:41:26.8906480Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-16T05:41:26.8907060Z env:
+2026-10-16T05:41:26.8907319Z   CI: true
+2026-10-16T05:41:26.8907645Z   NODE_OPTIONS: --max-old-space-size=2048
+2026-10-16T05:41:26.8908085Z ##[endgroup]
+2026-10-16T05:41:30.7045725Z PASS two isolated renderer processes and separate shell
+2026-10-16T05:41:30.8675428Z PASS sandbox/context isolation and no Node
+2026-10-16T05:41:30.8690767Z PASS apps have no Node or shell bridge
+2026-10-16T05:41:30.8692393Z PASS storage is separated by app
+2026-10-16T05:41:30.8693201Z PASS forged report rejected
+2026-10-16T05:41:30.8703711Z PASS network and cross-origin fetch denied
+2026-10-16T05:41:30.8765753Z PASS popup denied
+2026-10-16T05:41:30.8766543Z PASS unknown runtime IDs/layouts denied
+2026-10-16T05:41:30.9654782Z PASS modal stays in app content
+2026-10-16T05:41:30.9656146Z PASS local modal traps keyboard focus
+2026-10-16T05:41:31.1860496Z PASS beta-to-alpha switch focuses the native foreground
+2026-10-16T05:41:31.6326807Z PASS alpha-to-beta switch focuses the native foreground
+2026-10-16T05:41:32.0705976Z PASS dirty close cancellation preserves draft
+2026-10-16T05:41:32.5041635Z PASS resize uses shared manager
+2026-10-16T05:41:32.9569323Z PASS overview contains both isolated snapshots
+2026-10-16T05:41:32.9570121Z PASS overview clones have no runtime identities
+2026-10-16T05:42:03.4592180Z node:internal/modules/run_main:122
+2026-10-16T05:42:03.4594953Z     triggerUncaughtException(
+2026-10-16T05:42:03.4595416Z     ^
+2026-10-16T05:42:03.4595644Z 
+2026-10-16T05:42:03.4596004Z page.waitForFunction: Timeout 30000ms exceeded.
+2026-10-16T05:42:03.4596807Z     at verifyRuntime (D:\a\dental-os\dental-os\tests\runtime-scenario.mjs:52:15)
+2026-10-16T05:42:03.4598261Z     at async file:///D:/a/dental-os/dental-os/tests/runtime-ci.mjs:7:5 {
+2026-10-16T05:42:03.4599003Z   log: [],
+2026-10-16T05:42:03.4599361Z   name: 'TimeoutError'
+2026-10-16T05:42:03.4599705Z }
+2026-10-16T05:42:03.4599984Z 
+2026-10-16T05:42:03.4600160Z Node.js v22.13.1
+2026-10-16T05:42:03.4709856Z ##[error]Process completed with exit code 1.

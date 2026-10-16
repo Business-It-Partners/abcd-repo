@@ -10,7 +10,7 @@ export async function verifyPackages(profileArgs, reportName) {
   const shell = await app.firstWindow(), profile = await app.evaluate(({ app }) => app.getPath('userData'));
   shell.setDefaultTimeout(15000);
   const packageRoot = path.join(profile, 'packages'), registry = JSON.parse(await fs.readFile(path.join(packageRoot, 'registry.json'), 'utf8'));
-  check('two signed packages installed under isolated OS profile', Object.keys(registry.apps).length === 2 && registry.format === 1);
+  check('two signed packages installed under isolated OS profile', Object.keys(registry.apps).length === 2 && registry.format === 2);
   await shell.getByRole('button', { name: 'Motion Studio', exact: true }).click();
   await shell.waitForFunction(() => document.querySelector('[data-runtime="studio"]')?.dataset.runtimePhase === 'ready');
   const alpha = app.context().pages().find(p => p.url().startsWith('dental-fixture://alpha/')); assert.ok(alpha);

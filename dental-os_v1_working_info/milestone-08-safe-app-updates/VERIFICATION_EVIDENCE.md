@@ -1,27 +1,29 @@
 # M08 Verification Evidence — Safe independent application updates
 
-**Milestone verification:** NOT YET STARTED.
+**Milestone verification:** in progress; local gates passed, live staging/Windows pending.
 
-## Required proof
+Linux 2026-10-16, 12 GB/8 logical CPU workstation, controlled single-job runs with nice 10/timeouts/one Vitest worker. Full unit suite: 240/11 files pass ([log](evidence/unit-full-linux.log), [JSON](evidence/m08-unit.json)). Final broker safety review: 23 affected tests pass ([log](evidence/sdk-gate-final.log)); final build/typecheck passes ([log](evidence/build-linux.log)).
 
-- Run old app during new download: unchanged running assets/session; next permitted launch selects verified successor.
-- Inject interruption at every persistence/activation boundary, repeated operations and failed health checks.
-- Test dirty work, ambiguous in-flight writes, incompatible rollback, revoked versions, key rotation and storage exhaustion.
+Real process exits at six staging, trial, health, rollback and three retention boundaries: 12/12 pass ([log](evidence/process-exit-linux.log), [report](evidence/linux-updates-crash.json)). No throw-only simulation substitutes for this evidence.
 
-## Evidence record format
+Private headless GNOME/Wayland runner: eight update cases pass, plus ten Store, twenty-eight runtime, fifteen SDK and twenty identity cases ([combined log](evidence/private-regressions-linux.log), [update report](evidence/updates-verification.json), [screenshot](evidence/updates-store.png)). SDK rerun after continuous write-safety gate fix also passes ([log](evidence/sdk-ui-final.log)). Earlier [first UI failure](evidence/private-ui-first-failed.log) exposed stale canInstall projection after update refusal; fixed. [Second failure](evidence/private-ui-timing-failed.log) was crash injection before the new renderer had its URL; harness corrected. Final private update flow proves pinned old draft, dirty/modal refusal, clean activation/health, independent app ownership and failed trial rollback. No live desktop focus/restart.
 
-For every run retain: date; source commit plus uncommitted tree identity where applicable; dependency/build versions; named OS/architecture/display/profile; exact command; exit status; successful/failed cases; redacted log/artifact paths; limitations and requirement/gate bindings. Never include credentials or patient payloads.
+Signed-control negative cases include signature/domain/schema/channel/environment/expiry/future/lifetime/app/duplicate/root-key/digest/rollback/minimum validation, replay/equivocation/clock rollback, revoked/incompatible fallback, low disk, retention, legacy migration and verified-cache tampering/expiry. Actual pending/unknown broker outcomes remain gated across app close; original-key reconciliation/session reset governs release. Never-opened unsafe old app may trial a safe successor without fabricating fallback health.
 
-## Executed evidence
+Backend SYS-0006: full initial 418/419 tests exposed missing publication sequence consistency assertion; fixed and final 21 affected route/publisher cases pass. Staging CI 38854679157 at a502142 passes complete 419 suite/typecheck and existing binding-preserving deployment. No production/shared business contract/schema mutation. Live policy/release acceptance and final Windows gate must pass before VERIFIED/main merge. Physical Windows remains deferred after M11/before release; user acceptance pending.
 
-No milestone-governed runs recorded. Existing WORK_CHECKLIST.md/artifacts evidence is historical until reconciled and rerun where required. Planned checks above are not test results.
+## Actual staging proof and final local review
 
-## Platform and user acceptance
+`tools/verify-staging-updates.mjs --staging-update-acceptance` passed with protected external staging credentials/signing key and public synthetic bundles only. [Report](evidence/staging-updates.json), [log](evidence/staging-live.log) retain exact package/catalogue/policy hashes and sequences 3–7. Proves actual rotated-key delivery/pinning, withdrawal and minimum/digest-revocation refusal without file deletion, higher-sequence listing recovery, trial successor and explicit signed digest-paired downgrade; anonymous policy denial and both staging web clients reachable. No clinical writes. Credentials input removed, private keys stay external. [Resource check](evidence/staging-resource-check.json) proves all 13 existing bindings unchanged and zero temporary publishers.
 
-Windows: not verified. Linux: not verified for this production milestone. User acceptance: pending. For M01, these runtime fields are not applicable to documentation verification; no host runtime claim follows.
+First publication attempt returned non-JSON edge HTML; [failed report](evidence/staging-first-failed.json)/[log](evidence/staging-first-failed.log) retained. Read-only inventory showed catalogue sequence 2/policy absent before retry. Backend operator-only readiness GET now verifies newly propagated routing before its single POST; no blind publication retry. Backend source deployment remains [38854679157](https://github.com/Business-It-Partners/dental-saas/actions/runs/38854679157); later operator helper changes did not redeploy the unchanged clinical Worker.
 
-## Additional staging-policy acceptance evidence
+First Windows run 38855524396 passed new update gates then stopped on obsolete format-1 assertion ([log](evidence/windows-first-failed.log)); updated M06 regression to assert migrated format 2. [38856462271](https://github.com/Business-It-Partners/dental-os/actions/runs/38856462271) at 83df9eef passes complete gates ([retained](evidence/windows-ci-before-quarantine/run.json)).
 
-- Prove channels, withdrawal/revocation and minimum-version metadata affect staging releases only and preserve existing clients; do not modify production feeds or pointers.
+Final visual review fixed repeated automatic downloading of a quarantined digest and shows a clear recovery reason. [51 affected update tests](evidence/quarantine-tests.log), [build](evidence/quarantine-build.log), eight private update/eight verified-package cases ([log](evidence/quarantine-ui.log)) pass; final Windows rerun required before acceptance. Earlier passing unrelated checks were not repeated.
 
-Not executed. Exact mapping and backend regression proof remain required when this milestone is implemented; this amendment changes documentation only.
+## G08 final verified checkpoint
+
+Final source `857b2c4fb44a0fa3308db49a222d768fa3eb9800`, [Windows CI 38857330434](https://github.com/Business-It-Partners/dental-os/actions/runs/38857330434) passes 240 units/one POSIX-only skip, build, all 12 update process-exit and eight update UI, ten Store, eight package exits/eight package runtime, four host, twenty-eight runtime, fifteen SDK and twenty identity gates. [Retained run](evidence/windows-ci/run.json), [unit report](evidence/windows-ci/windows-unit.json), [update report](evidence/windows-ci/windows-updates.json), [source hashes](evidence/source-sha256.json). Native resize acknowledgement harness repair passes 28 Linux cases ([log](evidence/runtime-resize-ack-linux.log)); supersedes [failed Windows timing run](evidence/windows-runtime-resize-first-failed.log).
+
+G08 VERIFIED for configured samples, actual staging and automated Linux/Windows scope. Evidence-only closeout/normal integration preserves tested runtime bytes; documentation validation only. User acceptance and physical Windows interaction remain pending under approved post-M11 deferral. No prior failed run is reclassified as a pass. All owned local test/display/publisher processes exited; protected credential input removed; signing private keys remain external. Actual live acceptance ran before the quarantine presentation/skip fix, whose affected local and final hosted gates pass; that fix does not change publication, signature, transport or rollback authority.

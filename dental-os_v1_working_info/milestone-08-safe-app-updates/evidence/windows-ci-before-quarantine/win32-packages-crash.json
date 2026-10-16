@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "install process exit at journal: dead-owner lock and journal reconciled",
+    "install process exit at asset-write: dead-owner lock and journal reconciled",
+    "install process exit at extracted: dead-owner lock and journal reconciled",
+    "install process exit at published: dead-owner lock and journal reconciled",
+    "install process exit at committed: dead-owner lock and journal reconciled",
+    "uninstall process exit at journal: dead-owner lock and journal reconciled",
+    "uninstall process exit at committed: dead-owner lock and journal reconciled",
+    "uninstall process exit at removed: dead-owner lock and journal reconciled"
+  ],
+  "platform": "win32",
+  "sha": "83df9eefb5f0b7dbea9cdd54ccb292c7f561b964"
+}

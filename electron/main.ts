@@ -53,7 +53,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures || storeFixtures || !trustedTest) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity);
+  if (runtimeFixtures || storeFixtures || !trustedTest) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed());
   win.on('close', () => runtime?.dispose());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
@@ -163,6 +163,7 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
   if (kind === 'cancel' && input === undefined) return distribution.cancel();
   if (kind === 'install') return distribution.install(input);
   if (kind === 'uninstall') return distribution.uninstall(input);
+  if (kind === 'update-now') return distribution.updateNow(input,id=>{if(!runtime)throw Error('Runtime unavailable');runtime.updateNow(id);});
   return { ok: false, code: 'INVALID' };
 });
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
@@ -174,7 +175,7 @@ if (primary) void app.whenReady().then(async () => {
     osStore.load();
     const packageRoot = path.join(app.getPath('userData'), 'packages');
     const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
-    const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1) : undefined;
+    const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined) : undefined;
     packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages')) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
@@ -183,7 +184,8 @@ if (primary) void app.whenReady().then(async () => {
       identity.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
-    distribution = new DistributionService(storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
+    distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
+    if(!trustedTest)distribution.startUpdates();
     distribution.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
     bootPhase = 'ready'; createWindow(); if (identity) void identity.restore();
   } catch {

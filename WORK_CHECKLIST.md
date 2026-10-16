@@ -555,3 +555,10 @@ M07 CI update: [Windows 38850865178](https://github.com/Business-It-Partners/den
 
 
 M07 closeout: user authorized all necessary staging work through M10. Final source `3d349758` passes Windows run 38853480777 and affected Linux checks. Actual G07 acceptance passes 14 staging identity/catalogue/R2/install/access/client-regression cases. Dedicated sample release bucket/public origin added; guarded publication sequence 2; temporary publisher removed. SaaS additive staging deployment 38853577930 at 3ae3397 preserves all previous bindings and no new migration. G07 VERIFIED; normal main integration and checkpoint authorized, M08 follows continuously. Production/live desktop untouched, protected credential input removed, physical Windows deferred.
+
+
+## M08 — Safe independent app updates, 2026-10-16
+
+Started continuously after verified M07 normal merge f2361db6 on codex/milestone-08. Detailed plan covers pending/trial/known-good registry state, pinned running leases, signed staging controls and explicit rollback, update authorization/background timing, dirty/unknown-write coordination, health recovery/retention and staged/Windows gates. Existing SaaS backend ticket will own additive update-policy delivery; no production changes. Implementation/verification in progress, no acceptance claimed.
+
+M08 closeout: final tested source 857b2c4f / Windows 38857330434 passes 240 units/one POSIX skip, build and all update/package/host/runtime/SDK/identity gates. Linux focused/final checks and actual staging sequences 3–7 prove signed rotation, old-instance pinning, safe activation, revocation/minimum/withdrawal refusal and controlled downgrade. Quarantined digests are communicated and skipped for background download. Additive SYS-0006 deployed at a502142; all existing bindings preserved, no clinical writes/production changes or temporary publisher left. M08 VERIFIED, checkpoint/normal main merge authorized; continue M09/M10. Physical Windows and user acceptance remain deferred/pending.

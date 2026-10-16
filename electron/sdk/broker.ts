@@ -9,7 +9,7 @@ export type Identity = {
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
-type Registration = { sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
+type Registration = { authorize?(): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
 type Pending = { controller: AbortController; write: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 const messages: Record<ErrorCode, string> = {
@@ -33,6 +33,8 @@ export class ApiBroker {
   private pending = new Map<Registration, Map<string, Pending>>();
   private writing = new Set<string>();
   private writes = new Map<string, string>();
+  private uncertain = new Set<string>();
+  private writeCalls = new Map<string,number>();
   private flight?: { generation: number; controller: AbortController; promise: Promise<string> };
   private environment: Environment;
   private generation: number;
@@ -56,6 +58,7 @@ export class ApiBroker {
     const r = this.caller(caller); if (!r) return failure('UNKNOWN_CALLER');
     if (!bounded(input, 256) || !handshake(input)) return failure('INCOMPATIBLE_SDK');
     const s = this.current(); if (!s.active) return failure('AUTH_REQUIRED');
+    if(r.authorize?.()===false)return failure('ACCESS_DENIED');
     // Repeated compatible handshakes reuse identity instead of disrupting in-flight calls.
     r.connection ??= randomUUID(); r.generation = s.generation;
     return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => this.identity.allowed?.(op) ?? true) });
@@ -71,10 +74,25 @@ export class ApiBroker {
     const pending = this.pending.get(r)?.get(input.requestId);
     pending?.controller.abort('cancel'); return success({ cancelledLocally: !!pending, serverCommitUndone: false });
   }
+  hasUnsafeWrites(appId:string) {return !!this.writeCalls.get(appId)|| [...this.uncertain].some(k=>k.startsWith(appId+':'))||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write));}
   async request(caller: Caller, input: unknown): Promise<Result> {
+    const r=this.caller(caller),v=parseRequest(input),generation=this.identity.snapshot().generation;
+    const writing=!!r&&v?.operation==='appointments.setStatus';
+    if(writing)this.writeCalls.set(r!.appId,(this.writeCalls.get(r!.appId)??0)+1);
+    try {
+      const result=await this.execute(caller,input);
+      if(writing&&generation===this.identity.snapshot().generation){const key=r!.appId+':'+v!.input.idempotencyKey;if(!result.ok&&result.error.outcome==='unknown')this.uncertain.add(key);else if(result.ok||!result.ok&&result.error.outcome==='rejected')this.uncertain.delete(key);}
+      return result;
+    } finally {
+      // Keep the safety gate continuous through transport cleanup and outcome recording.
+      if(writing&&generation===this.identity.snapshot().generation){const count=(this.writeCalls.get(r!.appId)??1)-1;if(count>0)this.writeCalls.set(r!.appId,count);else this.writeCalls.delete(r!.appId);}
+    }
+  }
+  private async execute(caller: Caller, input: unknown): Promise<Result> {
     const r = this.caller(caller); if (!r) return failure('UNKNOWN_CALLER');
     const v = parseRequest(input); if (!v) return failure('INVALID_REQUEST');
     if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
+    if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
     if (!r.capabilities.includes(v.operation) || this.identity.allowed?.(v.operation) === false) return failure('FORBIDDEN', 'not_sent', v);
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
@@ -97,6 +115,7 @@ export class ApiBroker {
       if (v.operation.startsWith('appointments.')) {
         const token = await abortable(this.credential(v.generation), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
+        if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
         if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
         const path = write ? `/v1/appointments/${v.input.appointmentId}/status` : `/v1/appointments?${new URLSearchParams({ date: v.input.date as string })}`;
         const url = new URL(path, this.environment.apiBase);
@@ -167,7 +186,7 @@ export class ApiBroker {
   }
   invalidateSession() {
     this.generation = this.identity.snapshot().generation;
-    this.flight?.controller.abort('session'); this.flight = undefined; this.writes.clear();
+    this.flight?.controller.abort('session'); this.flight = undefined; this.writes.clear(); this.uncertain.clear(); this.writeCalls.clear();
     for (const r of this.registrations.values()) { r.connection = undefined; r.generation = undefined; }
     for (const list of this.pending.values()) for (const p of list.values()) p.controller.abort('session');
   }
@@ -177,5 +196,5 @@ export class ApiBroker {
     for (const p of this.pending.get(r)?.values() ?? []) p.controller.abort('closed');
     this.pending.delete(r);
   }
-  dispose() { for (const sender of [...this.registrations.keys()]) this.unregister(sender); this.flight?.controller.abort('closed'); this.writes.clear(); }
+  dispose() { for (const sender of [...this.registrations.keys()]) this.unregister(sender); this.flight?.controller.abort('closed'); this.writes.clear(); this.uncertain.clear(); this.writeCalls.clear(); }
 }

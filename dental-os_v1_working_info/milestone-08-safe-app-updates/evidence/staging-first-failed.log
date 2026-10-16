@@ -1,0 +1,21 @@
+PASS approved staging clinic login resolves existing business authority
+PASS original published M07 immutable package retains reviewed byte identity
+Prepared two signed staging packages and 24-hour catalogue. No cloud changes.
+Reviewed staging publication bytes/paths/hash/sequence validated. No cloud calls.
+Deploying temporary staging publisher with one release-bucket binding.
+Temporary publisher removed. No publisher endpoint remains.
+undefined:1
+<!DOCTYPE html>
+^
+
+SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (node:internal/deps/undici/undici:5738:19)
+    at successSteps (node:internal/deps/undici/undici:5719:27)
+    at fullyReadBody (node:internal/deps/undici/undici:4609:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async consumeBody (node:internal/deps/undici/undici:5728:7)
+    at async file:///home/master-x/Desktop/fewa_demo/dental-os-m07-backend/apps/platform-worker/operations/dental-os/publish-via-worker.mjs:27:138
+
+Node.js v22.13.1
+Staging update acceptance failed at publish-successor; no credentials or API payload printed. Inspect retained public publication metadata before retrying.

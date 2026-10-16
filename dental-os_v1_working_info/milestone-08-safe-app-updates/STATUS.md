@@ -1,21 +1,9 @@
 # M08 Status — Safe independent application updates
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
-**User acceptance:** pending; no production acceptance claimed.
+**Status:** VERIFIED
+**Updated:** 2026-10-16.
+**User acceptance:** pending.
 
-## Current position
+G08 passes within configured first-party sample/staging scope. Final source 857b2c4f / Windows CI 38857330434 passes 240 units plus one POSIX skip, build, 12 update process-exit/eight update UI cases and all package/host/runtime/SDK/identity gates. Linux full 240 initial units plus final affected 51 update/23 broker cases, builds, 12 real process exits and private regressions pass. Actual staging sequences 3–7 prove delivery/pinning/rotation, minimum/digest revocation/withdrawal refusal and explicit controlled downgrade. All 13 existing bindings preserved, no temporary publisher or credential input remains. No clinical writes or production changes. Exact evidence/limitations: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
-
-**Dependencies:** [M07](../milestone-07-store-and-distribution/PLAN.md)
-
-## Remaining work
-
-- Run old app during new download: unchanged running assets/session; next permitted launch selects verified successor.
-- Inject interruption at every persistence/activation boundary, repeated operations and failed health checks.
-- Test dirty work, ambiguous in-flight writes, incompatible rollback, revoked versions, key rotation and storage exhaustion.
-
-## Status rules
-
-PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
+Retain codex/milestone-08 and checkpoint/m08-ci, normal-merge to main. M09 and M10 are authorized next without permission pause. Physical Windows remains after M11/before release. Launch health is responsiveness, never clinical correctness; full dental workflow delivery is separate.

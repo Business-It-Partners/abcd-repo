@@ -1,17 +1,17 @@
 # M08 Implementation Notes — Safe independent application updates
 
-## Starting baseline
+Implemented in existing source ownership (no repository migration): registry format-2 migration, pending/trial/health/known-good and bounded eviction journal in electron/packages/registry.ts; signed controls/cached metadata and serial update service in electron/distribution; trusted runtime health/update-now and broker revocation/uncertain-write gates in electron/runtime and electron/sdk; renderer-safe Store active/pending actions. Background checking is disabled in trusted private fixture profiles so tests cannot contact staging accidentally. Normal checks use 15-second initial delay/15-minute interval, one operation and session fences.
 
-Backend must preserve supported old clients. A passing launch health check is not evidence of correct business behavior.
+Trusted staging key rotation adds a second public key only; protected private key remains external, never packaged. Additive SaaS SYS-0006 exposes authenticated read-only update-policy with unchanged existing bindings/migrations; staging deployment 38854679157 at a502142. Existing M07 catalogue shape/routes remain. Signed minimum/digest/key revocation and explicit digest-paired downgrade authority are frozen in architecture 10. Cache contains public signed metadata only. Live acceptance/publishing and Windows evidence remain pending at this record.
 
-## Implementation record
+Linux: 240 full unit tests pass, 12 real process exits pass, eight private update cases plus Store/runtime/SDK/identity regressions pass. A final broker review removed a microtask gap between transport cleanup and recording unknown write outcome; affected 23 broker tests and 15 private SDK checks rerun, final build passes. Earlier UI failures found stale Store authorization state after a refusal (fixed by fresh policy read) and a crash-test timing race (wait for the actual successor renderer before injecting crash). Retain failed logs. Runtime health checks preload/DOM/SDK/event-loop responsiveness, never business correctness. Unknown writes remain in-memory app/operation markers and block update-now until reconciliation/session reset.
 
-No milestone-governed implementation changes yet. Planned deliverables in PLAN.md are not implemented features.
+Tests use private profiles/displays and regenerated test-only 1.0/1.1 fixture packages; no production key or real patient input. All jobs sequential/bounded; live desktop preserved. Physical Windows remains after M11/before final release.
 
-## Decisions and boundaries
+First Windows CI 38855524396 passes 239 units/one POSIX skip, build, all 12 new process-exit and eight update UI cases, Store and package process exits. It then stops on the earlier M06 UI assertion requiring registry format 1. M08 intentionally migrates to format 2, already covered by legacy-migration unit checks; update that assertion to 2 and rerun applicable verification. No package/runtime defect inferred from an obsolete schema expectation.
 
-Resolve candidate choices through the architecture ADR register. Keep permanent first-party-only scope, existing SaaS business authority and live-desktop protection. Record actual file/module mapping when code is implemented; proposed architecture boundaries are not existing source paths.
+Actual live staging acceptance now passes: sequences 3–7 prove rotated-key successor, old lease pinning, minimum/digest revocation/withdrawal refusal, higher-sequence listing recovery and signed explicit controlled rollback to 1.1.0. Existing clients reachable; no clinical writes; all 13 bindings preserved; zero temporary publishers remain. First attempt returned an edge HTML response before route propagation, no policy/catalogue change; temporary publisher removed. Backend operator readiness GET now verifies routing before one non-retried POST, with three affected tests passing.
 
-## Change log / deviations
+Windows 38856462271 passes all gates at 83df9eef, before the final quarantine projection improvement. Visual review found failed digests were locally refused but background checks could download them again. Store now explains quarantine and automatic checks skip that exact failed digest. Affected 51 update tests, final build and private eight-update/eight-package cases pass; final Windows rerun pending.
 
-None recorded. Preserve superseded evidence with an explanation rather than silently rewriting outcomes.
+Windows 38856936051 at 7cff7d55 passes all new update/quarantine/unit/build/package/host gates, then a pre-existing runtime fullscreen edge test races React presentation against native viewport resize. Test now waits for actual expected guest viewport dimensions before moving from its centre to the bottom edge. Shared dock/Genie/runtime geometry implementation unchanged. Affected 28 Linux private runtime cases pass; final Windows rerun required.

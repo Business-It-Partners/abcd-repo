@@ -71,3 +71,7 @@ The user authorized the next sprint, superseding the prior stop after M05. M06 t
 ## M07 verified live staging checkpoint — 2026-10-16
 
 User authorized scoped staging operations and continuous work through M10, superseding prior pending-approval/stop statements. M07 tested source `3d3497584f77bbb0d43cbf5a1c2621ed987f9bca` / checkpoint/m07-ci passes Windows 38853480777, affected Linux checks and actual staging G07 acceptance. Backend additive deployment 38853577930 at SaaS staging merge 3ae3397 preserves previous tenant bindings/clients. Retain milestone branch/tag; normal merge into main. Physical Windows remains after M11/before final release, no production change.
+
+## M08 verified update checkpoint — 2026-10-16
+
+`codex/milestone-08` / `checkpoint/m08-ci` retains final tested source `857b2c4fb44a0fa3308db49a222d768fa3eb9800`; Windows [38857330434](https://github.com/Business-It-Partners/dental-os/actions/runs/38857330434) and retained Linux/live-staging G08 gates pass. Evidence-only normal main integration preserves tested source hashes. Earlier CI failures/repairs remain in milestone evidence. Backend SYS-0006 staging deployment and publication sequences 3–7 are accepted without production/clinical mutation. Proceed M09/M10 under standing authorization; physical Windows stays after M11/before release.
