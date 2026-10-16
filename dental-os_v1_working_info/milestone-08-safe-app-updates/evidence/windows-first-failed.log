@@ -1,0 +1,24 @@
+﻿2026-10-16T05:25:01.3315406Z ##[group]Run node tests/packages-ci.mjs
+2026-10-16T05:25:01.3316137Z [36;1mnode tests/packages-ci.mjs[0m
+2026-10-16T05:25:01.3363597Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-16T05:25:01.3364296Z env:
+2026-10-16T05:25:01.3364645Z   CI: true
+2026-10-16T05:25:01.3365030Z   NODE_OPTIONS: --max-old-space-size=2048
+2026-10-16T05:25:01.3365501Z ##[endgroup]
+2026-10-16T05:25:03.9317828Z node:internal/modules/run_main:122
+2026-10-16T05:25:03.9318499Z     triggerUncaughtException(
+2026-10-16T05:25:03.9318960Z     ^
+2026-10-16T05:25:03.9319113Z 
+2026-10-16T05:25:03.9319637Z AssertionError [ERR_ASSERTION]: two signed packages installed under isolated OS profile
+2026-10-16T05:25:03.9320596Z     at check (file:///D:/a/dental-os/dental-os/tests/packages-scenario.mjs:8:42)
+2026-10-16T05:25:03.9321552Z     at verifyPackages (file:///D:/a/dental-os/dental-os/tests/packages-scenario.mjs:13:3)
+2026-10-16T05:25:03.9322420Z     at async file:///D:/a/dental-os/dental-os/tests/packages-ci.mjs:7:7 {
+2026-10-16T05:25:03.9323131Z   generatedMessage: false,
+2026-10-16T05:25:03.9323616Z   code: 'ERR_ASSERTION',
+2026-10-16T05:25:03.9324011Z   actual: false,
+2026-10-16T05:25:03.9324375Z   expected: true,
+2026-10-16T05:25:03.9324749Z   operator: '=='
+2026-10-16T05:25:03.9325094Z }
+2026-10-16T05:25:03.9325542Z 
+2026-10-16T05:25:03.9330113Z Node.js v22.13.1
+2026-10-16T05:25:04.0694471Z ##[error]Process completed with exit code 1.

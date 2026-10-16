@@ -1,0 +1,35 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.4 [39m[90mD:/a/dental-os/dental-os[39m
+
+ [32m✓[39m tests/updates.test.ts [2m([22m[2m50 tests[22m[2m)[22m[33m 3900[2mms[22m[39m
+   [32m✓[39m pending updates, pinned leases and crash-safe health [2m(19)[22m
+     [33m[2m✓[22m[39m retains at most three versions and evicts expendable versions after healthy updates[33m 355[2mms[22m[39m
+   [32m✓[39m real distribution update coordinator with signed metadata cache [2m(6)[22m
+     [33m[2m✓[22m[39m background check stages successor while old lease remains pinned; verified cache survives restart[33m 323[2mms[22m[39m
+     [33m[2m✓[22m[39m update-now refusal preserves pending bytes; clean application uses the same safe launch transition[33m 307[2mms[22m[39m
+ [32m✓[39m tests/sdkBroker.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 268[2mms[22m[39m
+ [32m✓[39m tests/packages.test.ts [2m([22m[2m65 tests[22m[2m)[22m[33m 2169[2mms[22m[39m
+ [32m✓[39m tests/distribution.test.ts [2m([22m[2m46 tests[22m[2m)[22m[33m 1493[2mms[22m[39m
+   [32m✓[39m signed catalogue authenticity/freshness and exact destination binding [2m(26)[22m
+     [33m[2m✓[22m[39m requires a fixed HTTPS public origin with no credentials, path, port or query[33m 513[2mms[22m[39m
+ [32m✓[39m tests/identity.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 222[2mms[22m[39m
+ [32m✓[39m tests/sdkHttp.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 385[2mms[22m[39m
+   [32m✓[39m actual loopback HTTP transport fixtures [2m(3)[22m
+     [33m[2m✓[22m[39m stops redirects and times out an incomplete streamed body[33m 314[2mms[22m[39m
+ [32m✓[39m tests/windowManager.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/osState.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 162[2mms[22m[39m
+ [32m✓[39m tests/motion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 438[2mms[22m[39m
+   [32m✓[39m FEWA motion port [2m(6)[22m
+     [33m[2m✓[22m[39m lands on both exact rectangles and keeps the mesh fold-free along the trip[33m 417[2mms[22m[39m
+ [32m✓[39m tests/runtimeContracts.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/overviewLayout.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m      Tests [22m [1m[32m239 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (240)[39m
+[2m   Start at [22m 05:34:54
+[2m   Duration [22m 12.20s[2m (tests 90%, transform 5%, import 4%, worker 1%)[22m
+
+[2m    Isolate [22m [33m11 workers spawned[39m[2m · ~181ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~1.81s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+JSON report written to D:/a/dental-os/dental-os/artifacts/windows-unit.json
