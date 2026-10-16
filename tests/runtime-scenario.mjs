@@ -75,10 +75,9 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor({timeout:10000});
   check('watchdog terminates hung renderer without stopping beta',await shell.locator('[data-runtime="studio"] [role="alert"]').innerText().then(t=>t.includes('unresponsive'))&&await betaNew.getByLabel('Your draft').inputValue()==='');
   for(let i=0;i<3;i++){
-   await shell.getByRole('button',{name:'Restart sample',exact:true}).click();await ready('studio');
+   await shell.getByRole('button',{name:i===0?'Restart sample':'Motion Studio',exact:true}).click();await ready('studio');
    await shell.getByRole('button',{name:'Close Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='closed');
    check(`cleanup cycle ${i+1}: no closed sample webContents`,(await native()).apps.length===1);
-   if(i<2){await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await ready('studio');await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).forcefullyCrashRenderer());await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor();}
   }
   check('no shell renderer errors',errors.length===0);
   return {checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null};

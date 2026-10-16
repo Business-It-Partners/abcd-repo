@@ -1,21 +1,23 @@
 # M10 Verification Evidence — Security, resilience and usability
 
-**Milestone verification:** NOT YET STARTED.
+**Milestone verification:** local gates passed; Windows pending.
+**Date:** 2026-10-16. Source is the implementation commit containing this record, codex/milestone-10 from M09 main bd0cea01. Exact final CI/checkpoint source will be retained at closeout.
 
-## Required proof
+## Controlled local verification
 
-- Run package/IPC/network escape negatives and disk canary checks across login/logout/cache/crash paths.
-- Test app hangs/crash loops, backend outages, uncertain writes, corrupt journal, sleep/resume and low capacity.
-- Verify keyboard/focus/screen-reader semantics, contrast, scaling, motion fallback and many-app resource behavior against stated budgets.
+Linux x64; installed locked dependencies, private headless GNOME/Wayland profiles. One heavy local job at a time, nice 10, timeouts and unit maxWorkers=1. No user desktop/app restart or cloud/production operation.
 
-## Evidence record format
+- Full unit suite: 254 pass / 12 files before the final interrupted-temporary ownership refinement. [Report](evidence/m10-unit.json), [log](evidence/dental-m10-unit-final.log). Final affected diagnostics/budget/canonical suite: 11 pass ([log](evidence/dental-m10-diagnostics-verified.log)). The preceding focused run hit the default five-second per-test timeout for 280 durable fsync writes; [failure](evidence/dental-m10-diagnostics-final.log) is retained. Only that bounded disk test gets 30 seconds, no logic/case removal. Final total with the added ownership case is 255; Windows must rerun all.
+- Final build/typecheck passes ([log](evidence/dental-m10-support-final-build.log)).
+- Final hardening: 22 pass ([report](evidence/hardening-verification.json), [log](evidence/dental-m10-zoom-native.log)). Fixed-schema native preview/save, existing-file preservation/friendly recovery, no guest support bridge, keyboard trap/Escape, reduced-motion continuity, semantic/contrast samples, 200% zoom/compact host, immediate verified launch after account reset, crash/hang containment and cooldown across reopen, suspend erasure and closed crash-profile password/draft canaries. Exact raw scan has no file exclusions.
+- Resource proof: five checks, ten open/close cycles and 60-second two-native-app sample ([report](evidence/resources-verification.json), [combined log](evidence/dental-m10-private-final.log)). Six processes, peak 1,206,808 KiB aggregate working set (~1.15 GiB), final below warm baseline; no views remain. Limits: <=12 processes, <=2 GiB, <=160 MiB positive growth. This is not clinic-day endurance or arbitrary app-count proof.
+- Runtime 28 and identity 21 regressions pass in that combined log; [runtime](evidence/runtime-verification.json), [identity](evidence/identity-verification.json). Runtime cleanup cycles now exercise open/close rather than intentionally bypassing the new three-failure budget; targeted hardening independently verifies exact throttle and hang cases.
+- Integrated OS/SDK/update flow: 23 checks, including ordinary host close and app.quit refusal while unknown before identity/runtime disposal ([report](evidence/integration-verification.json), [log](evidence/dental-m10-private-first.log)). Real API correctness remains M09 actual staging evidence; M10 private transport is synthetic and makes no remote clinical mutation.
+- Recovery: two checks, preserved corrupt preferences, support-only preload/preview, offline known-good OS preference fixture restore after shutdown with corrupt evidence retained ([report](evidence/recovery-verification.json), [log](evidence/dental-m10-support-final-ui.log)). No generic registry/ledger reset claim.
+- Visual inspection of [compact host](evidence/m10-compact.png) and [native 200% zoom capture](evidence/m10-zoom.png) confirms quiet readable layout and scrollable login. Playwright viewport screenshot at Electron zoom crops physical pixels; native WebContents capture supplies correct full image. Geometry assertion includes horizontal and vertical sign-in bounds. Five text contrast samples all >=4.5; ratios retained in report. This is not full assistive/WCAG certification.
 
-For every run retain: date; source commit plus uncommitted tree identity where applicable; dependency/build versions; named OS/architecture/display/profile; exact command; exit status; successful/failed cases; redacted log/artifact paths; limitations and requirement/gate bindings. Never include credentials or patient payloads.
+## Requirement/threat mapping and limits
 
-## Executed evidence
+R05/R10: full unit suite package/SDK/identity/storage negatives plus runtime escape tests and strict invalid-UTF-8 signed catalogue case. R11: crash/hang/cooldown, uncertain exit and preserved recovery; existing M02/M06/M08 journals/process exits/capacity remain relevant regression matrices. R12: bounded diagnostics/ownership/corruption and resource measurements. R15: source, logs, failure, limitations and explicit pending Windows/device acceptance.
 
-No milestone-governed runs recorded. Existing WORK_CHECKLIST.md/artifacts evidence is historical until reconciled and rerun where required. Planned checks above are not test results.
-
-## Platform and user acceptance
-
-Windows: not verified. Linux: not verified for this production milestone. User acceptance: pending. For M01, these runtime fields are not applicable to documentation verification; no host runtime claim follows.
+[Security/support/key lifecycle/recovery procedure](../../docs/SECURITY_AND_RECOVERY.md) records root-compromise response and residual host/forced-exit/draft risks. M10 does not deploy backend, install telemetry, reset clinical records, add a write queue or certify complete dental UI. M11 signed installers/host updater, physical Windows/Linux/assistive/multi-hour testing and final user release acceptance remain separate. Final Windows gate and normal merge are pending.

@@ -18,3 +18,5 @@ Local state schemas need tested migrations and failure handling. Never delete su
 Logs are rotated, size-limited, redacted and correlated with platform/app versions and operation IDs. Default logs exclude tokens, passwords, download signatures, patient payloads, screenshots and clinical notes. Export of support diagnostics is an explicit action with safe preview/policy. Operational telemetry requires a defined minimum-data policy, not an automatic requirement for patient-data collection.
 
 Supervise actual runtime health; a painted window is not proof an app is operational. Bound crash loops, handles, listeners, GPU snapshots and background requests. User-facing recovery must be actionable and distinguish a local runtime failure from a server outage.
+
+M10 concrete implementation and limits: [security/support/recovery procedure](../docs/SECURITY_AND_RECOVERY.md). Fixed-schema diagnostic events and explicit native export exclude arbitrary error payloads. Failed snapshots are cleared and late captures fenced; manual restart is bounded. Physical/multi-hour/assistive release evidence remains distinct.

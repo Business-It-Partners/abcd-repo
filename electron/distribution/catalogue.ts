@@ -1,5 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
-import { canonical, limits, sha256, type TrustPolicy } from '../packages/format';
+import { parseCanonical, canonical, limits, sha256, type TrustPolicy } from '../packages/format';
 import { operations, type Operation } from '../sdk/contracts';
 export type Release = { id: string; title: string; description: string; version: string; notes: string; capabilities: Operation[]; platforms: ('linux' | 'win32')[]; sdkMajor: 1; apiMajor: 1; objectKey: string; packageSha256: string; packageBytes: number; payloadDigest: string; status: 'approved' | 'withdrawn'; minimumVersion: string };
 export type Catalogue = { format: 1; environment: 'cloudfare-staging'; channel: 'staging'; sequence: number; issuedAt: number; expiresAt: number; releases: Release[] };
@@ -12,7 +12,7 @@ export function compareVersion(a: string, b: string) { const aa = a.split('.').m
 function shape(v: any, keys: string[]) { if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).sort().join() !== keys.sort().join()) throw new Error('Invalid catalogue schema'); }
 export function verifyCatalogue(bytes: Buffer, policy: TrustPolicy, watermark: Watermark, now = Date.now()): { catalogue: Catalogue; watermark: Watermark } {
   if (!bytes.length || bytes.length > 65536) throw new Error('Catalogue size');
-  const envelope = JSON.parse(bytes.toString('utf8')); if (canonical(envelope) !== bytes.toString('utf8')) throw new Error('Catalogue encoding');
+  const envelope = parseCanonical(bytes);
   shape(envelope, ['catalogue', 'keyId', 'signature']);
   if (typeof envelope.keyId !== 'string' || !Object.hasOwn(policy.keys, envelope.keyId)) throw new Error('Unknown catalogue key');
   const key = policy.keys[envelope.keyId], publicKey = createPublicKey(key.publicKey);

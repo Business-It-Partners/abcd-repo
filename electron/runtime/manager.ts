@@ -3,6 +3,8 @@ import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/br
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
 import { PackageRegistry, type Lease } from '../packages/registry';
+import { RestartBudget } from './restartBudget';
+import type { EventCode, Target } from '../diagnostics/store';
 import { randomUUID } from 'node:crypto';
 import { compositePixels, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
 type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
@@ -14,11 +16,14 @@ export class FixtureRuntime {
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private instance = randomUUID();
   private lastEmission = '';
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean}={transport:'fixture'}) {
+  private restartBudget=new RestartBudget();
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
+    this.diagnostic=options.diagnostic??(()=>{});
     const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
     const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
     this.broker=new ApiBroker(staging,identity??this.services.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}});
   }
+  private diagnostic:(code:EventCode,target:Target)=>void;
   private emit() {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
@@ -26,6 +31,8 @@ export class FixtureRuntime {
   private fail(e: Entry, reason: string) {
     if (this.entries.get(e.state.id)!==e || e.state.phase === 'failed') return;
     const wasVisible = e.view.getVisible();
+    this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id);
+    e.image=undefined;e.state.snapshot=undefined;clearTimeout(e.captureTimer);
     clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
     this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
@@ -45,7 +52,7 @@ export class FixtureRuntime {
     e.capturePromise = (async () => {
       try {
         const image = await e.view.webContents.capturePage();
-        if (this.entries.get(e.state.id) === e && !image.isEmpty()) { e.image = image; e.state.snapshot=image.toDataURL(); this.emit(); }
+        if (this.entries.get(e.state.id) === e && e.state.phase==='ready' && !image.isEmpty()) { e.image = image; e.state.snapshot=image.resize({width:Math.min(640,image.getSize().width)}).toDataURL(); this.emit(); }
       } catch { /* Failed renderer is handled by lifecycle supervision. */ }
       finally { e.capturePromise = undefined; }
     })();
@@ -84,6 +91,7 @@ export class FixtureRuntime {
     this.entries.set(id, e); view.setVisible(false); this.win.contentView.addChildView(view);
     view.setBounds(rect);
     const wc = view.webContents;
+    if(this.restartBudget.remaining(id)){e.state.phase='failed';e.state.reason='restart-limit';this.emit();return e;}
     try { e.lease = this.packages.launch(`company.sample.${host}`); } catch { this.fail(e, 'package-verification-failed'); return e; }
     e.healthTimer=setTimeout(()=>this.fail(e,'launch-health-timeout'),8000);
     const lease = e.lease, entryURL = `dental-fixture://${host}/${lease.manifest.entry}`;
@@ -137,7 +145,9 @@ export class FixtureRuntime {
     if (!runtimeIds.includes(id as RuntimeId)) throw new Error('Invalid runtime');
     const e = this.entries.get(id as RuntimeId);
     if (!e || e.state.phase !== 'failed') throw new Error('Runtime not failed');
-    const rect = e.rect; this.close(id as RuntimeId); this.create(id as RuntimeId, rect);
+    if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''))throw Error('Resolve the server change before restarting');
+    if(this.restartBudget.remaining(id as string)){e.state.reason='restart-limit';this.emit();throw Error('Restart limit reached. Wait one minute, then try again.');}
+    this.diagnostic('app-restarted',id as RuntimeId);const rect = e.rect; this.close(id as RuntimeId); this.create(id as RuntimeId, rect);
   }
   report(event: IpcMainEvent, input: unknown) {
     const e = [...this.entries.values()].find(e => e.view.webContents === event.sender);
@@ -198,6 +208,7 @@ export class FixtureRuntime {
     if(e&&(e.state.dirty||e.state.modal||e.state.phase!=='ready'))throw Error('Save work and close dialogs before updating');
     if(e){const rect=e.rect;this.close(id);this.create(id,rect);}this.changed();
   }
+  blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
     // Closing a WebContents does not erase session storage. Never reuse a prior

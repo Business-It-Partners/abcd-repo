@@ -3,7 +3,7 @@
 **Updated:** 2026-10-16.
 **Active scope:** M01 documentation baseline complete; M02–M06 required automated gates passed, with M05 live staging identity acceptance and M06 verified local packages; physical Windows acceptance deferred.
 **Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
-**Active milestone:** M08 verified and integrated at dce9d589; M09 G09 verified; evidence-only normal integration in progress. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M09 verified and integrated at bd0cea01; M10 security/resilience/usability implementing. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -19,7 +19,7 @@
 | [M07 — First-party store and Cloudflare delivery](milestone-07-store-and-distribution/STATUS.md) | VERIFIED — Linux/Windows CI and actual staging delivery | [Evidence](milestone-07-store-and-distribution/VERIFICATION_EVIDENCE.md) |
 | [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | VERIFIED — Linux/Windows and actual staging updates | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
-| [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | PLANNED | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
+| [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | IMPLEMENTING | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
 | [M11 — Windows/Linux release and operations](milestone-11-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
 ## Starting reality

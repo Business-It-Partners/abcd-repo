@@ -1,0 +1,24 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS sampled text contrast >=4.5: .identity-card h1
+PASS sampled text contrast >=4.5: .identity-card label
+PASS sampled text contrast >=4.5: .identity-note
+PASS sampled text contrast >=4.5: .identity-card button
+PASS Store capability labels describe access without raw SDK names
+PASS sampled text contrast >=4.5: .store-copy p
+PASS explicit native preview/save exports only safe fixed OS events
+PASS support export preserves existing files and reports a new-name recovery action
+PASS sample apps have no support/filesystem bridge
+PASS scoped close dialog traps reverse keyboard focus
+PASS scoped close dialog traps forward keyboard focus
+PASS Escape dismisses only the dialog and preserves draft
+PASS reduced-motion minimize/restore preserves shared lifecycle
+PASS 200 percent zoom retains labeled login controls inside scrollable layout
+PASS account reset permits immediate launch from fresh signed public metadata
+PASS compact 1024x768 host retains session and Store controls
+PASS failed app clears its mirrored preview while other app remains usable
+PASS three failures stop manual restart loops without an automatic relaunch
+PASS closing/reopening cannot bypass crash cooldown
+PASS watchdog contains a real busy-loop renderer while shell remains responsive
+PASS suspend locks and erases all failed/healthy native views and previews
+PASS closed crash/hang/suspend profile contains no password or private draft canary
+PASS corrupt local OS state preserved with narrow support-only recovery view known-good OS-only fixture restored offline after shutdown; corrupt evidence remains

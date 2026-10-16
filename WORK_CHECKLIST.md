@@ -569,3 +569,7 @@ M08 closeout: final tested source 857b2c4f / Windows 38857330434 passes 240 unit
 Started after M08 verified normal merge dce9d589. Detailed plan freezes real approved package/runtime transport, representative existing appointment APIs, trusted unresolved-write close coordination, synthetic staff/appointment fixtures and cancel/inactivate cleanup before staging mutations. No real patient inputs, new business backend or production changes. G09 implementation/verification in progress; M10 follows under standing authorization.
 
 M09 closeout: final source 54be1c06 / Windows 38922410037 and 21 real-staging desktop checks pass G09. Original-key unknown write reconciliation, conflict/read-only denial, guarded close/update, independent pinned app, lock/logout partition/disk privacy and uninstall verified. Owned synthetic fixtures cancelled/inactivated with audits preserved. Backend operator-only SYS-0007 does not change shared Worker/source/config or production. Checkpoint/normal main merge preserves source; proceed authorized M10.
+
+## M10 — Security, resilience and usability, 2026-10-16
+
+Started from verified M09 main bd0cea01 on codex/milestone-10. Detailed plan freezes threat negatives, fixed-schema bounded diagnostics/explicit support export, crash/capture/exit safety, preserved-state recovery, keyboard/scaling/reduced-motion and two-app resource budget. Controlled local checks and Windows CI before normal main merge. No production/M11 release work.

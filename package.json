@@ -31,7 +31,8 @@
     "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs",
     "test:integration": "node tools/run-ui-test.mjs tests/integration.mjs",
     "test:updates": "node tools/run-ui-test.mjs tests/updates.mjs",
-    "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs"
+    "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs",
+    "test:hardening": "node tools/run-ui-test.mjs tests/hardening.mjs tests/resources.mjs tests/recovery.mjs"
   },
   "keywords": [],
   "author": "",

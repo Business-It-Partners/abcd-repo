@@ -1,0 +1,3 @@
+import type {Operation} from '../electron/sdk/contracts';
+const labels:Record<Operation,string>={'session.context':'Clinic workspace context','platform.status':'Platform availability','lifecycle.report':'Window state','notifications.show':'Workspace notices','native.intent':'Approved device actions','preferences.read':'Read workspace preferences','preferences.update':'Change workspace preferences','appointments.list':'Read appointments','appointments.setStatus':'Change appointment status'};
+export const capabilityLabel=(operation:string)=>Object.hasOwn(labels,operation)?labels[operation as Operation]:'Unrecognized access';
