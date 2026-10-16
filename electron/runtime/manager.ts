@@ -1,10 +1,16 @@
 import { WebContentsView, session, net, nativeImage, type BrowserWindow, type IpcMainEvent, type NativeImage } from 'electron';
 import path from 'node:path';
+import { ApiBroker, type Caller } from '../sdk/broker';
+import { staging } from '../sdk/environment';
+import { fixtureServices } from '../sdk/fixtures';
+import { operations } from '../sdk/contracts';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { compositePixels, fixtureAsset, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
 type Entry = { view: WebContentsView; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
 export class FixtureRuntime {
+  private services = fixtureServices();
+  private broker = new ApiBroker(staging, this.services.identity, this.services.transport);
   private entries = new Map<RuntimeId, Entry>();
   private desired: RuntimeLayout[] = [];
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
@@ -18,6 +24,7 @@ export class FixtureRuntime {
   private fail(e: Entry, reason: string) {
     if (this.entries.get(e.state.id)!==e || e.state.phase === 'failed') return;
     const wasVisible = e.view.getVisible();
+    this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
     if (wasVisible && !this.win.isDestroyed()) this.win.webContents.focus();
     clearInterval(e.watchdog); clearTimeout(e.pingTimer); this.emit();
@@ -69,6 +76,7 @@ export class FixtureRuntime {
     wc.on('unresponsive', () => { this.fail(e, 'unresponsive'); if (!wc.isDestroyed()) wc.forcefullyCrashRenderer(); });
     wc.on('did-finish-load', () => {
       if (this.entries.get(id) !== e) return;
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: `dental-fixture://${host}/index.html`, appId: `company.sample.${host}`, appVersion: '1.0.0', capabilities: operations.filter(op => id === 'studio' || op !== 'appointments.setStatus'), report: value => this.reportState(e, value) });
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
       let pending = false;
@@ -116,9 +124,16 @@ export class FixtureRuntime {
     if (!e || event.senderFrame !== event.sender.mainFrame) return;
     const v = input as { dirty: boolean; modal: boolean };
     if (!v || Object.keys(v).sort().join() !== 'dirty,modal' || typeof v.dirty !== 'boolean' || typeof v.modal !== 'boolean') return;
+    this.reportState(e, v);
+  }
+  private reportState(e: Entry, v: { dirty: boolean; modal: boolean }) {
     const changed=e.state.dirty!==v.dirty||e.state.modal!==v.modal;
     e.state.dirty = v.dirty; e.state.modal = v.modal; if(changed)this.emit();
     clearTimeout(e.captureTimer); e.captureTimer = setTimeout(() => void this.refresh(e), 120);
+  }
+  sdk(kind: 'connect' | 'request' | 'cancel', event: { sender: Electron.WebContents; senderFrame: Electron.WebFrameMain | null }, input: unknown) {
+    const caller: Caller = { sender: event.sender, frame: event.senderFrame, url: event.senderFrame?.url ?? '' };
+    return this.broker[kind](caller, input);
   }
   edge(event: IpcMainEvent, input: unknown) {
     const e = [...this.entries.values()].find(e => e.view.webContents === event.sender);
@@ -148,10 +163,11 @@ export class FixtureRuntime {
   }
   close(id: RuntimeId) {
     const e = this.entries.get(id); if (!e) return;
+    this.broker.unregister(e.view.webContents);
     this.entries.delete(id); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
     this.win.contentView.removeChildView(e.view);
     if (!e.view.webContents.isDestroyed()) e.view.webContents.close();
     e.image = undefined;
   }
-  dispose() { for (const id of [...this.entries.keys()]) this.close(id); }
+  dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

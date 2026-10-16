@@ -1,0 +1,45 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS platform binds real alpha sender to company identity
+PASS named API read works through isolated preload and host broker
+PASS named API write preserves backend revision contract
+PASS same-key replay does not create a second synthetic mutation
+PASS beta cannot invoke alpha write capability
+PASS connections are independently generated
+PASS incompatible handshake fails in real bridge
+PASS copied alpha connection rejected by beta sender
+PASS URL and raw-channel injection rejected
+PASS oversized request rejected before IPC
+PASS unconfigured native adapter fails explicitly
+PASS only synthetic display context returned
+PASS no privileged bridge, token getter or raw transport exposed
+PASS close/reopen revokes old connection
+PASS no shell page errors
+PASS two isolated renderer processes and separate shell
+PASS sandbox/context isolation and no Node
+PASS apps have no Node or shell bridge
+PASS storage is separated by app
+PASS forged report rejected
+PASS network and cross-origin fetch denied
+PASS popup denied
+PASS unknown runtime IDs/layouts denied
+PASS modal stays in app content
+PASS local modal traps keyboard focus
+PASS beta-to-alpha switch focuses the native foreground
+PASS alpha-to-beta switch focuses the native foreground
+PASS dirty close cancellation preserves draft
+PASS resize uses shared manager
+PASS overview contains both isolated snapshots
+PASS overview clones have no runtime identities
+PASS native app bottom edge reveals fullscreen dock
+PASS Genie thumbnail contains captured native app
+PASS minimize/restore retains isolated draft and process
+PASS discard destroys the app webContents
+PASS reopen creates clean workflow state
+PASS external navigation denied
+PASS crash is contained to alpha
+PASS watchdog terminates hung renderer without stopping beta
+PASS cleanup cycle 1: no closed sample webContents
+PASS cleanup cycle 2: no closed sample webContents
+PASS cleanup cycle 3: no closed sample webContents
+PASS no shell renderer errors
+PASS isolated capture at DPR 2 1520 960

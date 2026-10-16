@@ -15,3 +15,8 @@ Errors distinguish authentication, access denial, conflict, validation, connecti
 ## Route and environment selection
 
 Keep existing SaaS business/identity routes; only new OS services use `/v1/dental-os/...`. Do not duplicate business handlers to create an OS namespace. Desktop integration targets the verified `fewa_demo` staging API base URL, not production. Bind authentication, API base, catalogue and download configuration to the same verified environment; reject incompatible/mixed environment configuration without automatic production fallback. See [staging/resource policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
+
+
+## M04 implemented contract
+
+SDK 1.0 uses platform-issued connection and generation, named strict requests and fixed connect/request/cancel IPC. The retained M03 two-boolean report is lifecycle compatibility only. The guarded samples use synthetic host-only identity/transport and distinct capabilities; exact appointment list/status routes, revision and idempotency headers match existing SaaS contracts. See [M04 notes and staging mapping](../dental-os_v1_working_info/milestone-04-sdk-and-api-broker/IMPLEMENTATION_NOTES.md) and [evidence](../dental-os_v1_working_info/milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md). Real login is M05 and authenticated SaaS acceptance M09. Typed native print/export is explicitly unavailable pending an adapter; notification is a scoped receipt for app presentation. These fixture implementations do not claim a production package SDK installation.

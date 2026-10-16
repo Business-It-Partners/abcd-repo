@@ -526,3 +526,10 @@ M03 closeout: final source `fc7f3a23248d8acf18c1fc3462dcbcf3095c966a` passes Lin
 ## M03 main integration and standing workflow — 2026-10-16
 
 User authorized integrating verified M03 into main, retaining milestone branches/checkpoint tags, and future merges after each milestone passes required verification. Normal merge preserves M03 and main history; duplicate cleanup-documentation conflict reconciled, no runtime changes. Tested runtime SHA-256 manifest matches; documentation checks pass. No heavy checks repeated, backend deployment, live-session restart or M04 start. Canonical policy: docs/GIT_AND_CI_SETUP.md; enforced through AGENTS.md, DEVELOPMENT.md and roadmap/status records. Physical Windows testing remains after M11/before final release.
+
+
+## M04 SDK/broker implementation — 2026-10-16
+
+User authorized M04 inspection/plan/implementation/verification/integration, then continuing directly to M05. SDK 1.0 and bounded named-operation broker now bind caller/frame/origin, capabilities, connection/generation and staging environment. Host-only fixture identity, preserved existing appointment routes/idempotency/revision, structured errors, cancellation/deadlines/limits and lifecycle/status interfaces are implemented. Linux 64 unit/local HTTP tests, build and private SDK/M03 regressions pass; Windows pending. No backend mutation/deployment, real auth or live-session restart. See M04 notes/evidence; M05 is authorized next but not yet active.
+
+M04 closeout: source `672a8118` / checkpoint/m04-ci passes Linux 64 tests and Windows run 38842666568 (63 tests, one POSIX-only skip), build and private/hosted SDK/runtime checks. G04 verified within fixture scope; runtime hashes unchanged for normal main integration. Milestone branch/checkpoint retained; M05 authorized next; no backend changes or deployment.

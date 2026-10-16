@@ -1,0 +1,16 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS platform binds real alpha sender to company identity
+PASS named API read works through isolated preload and host broker
+PASS named API write preserves backend revision contract
+PASS same-key replay does not create a second synthetic mutation
+PASS beta cannot invoke alpha write capability
+PASS connections are independently generated
+PASS incompatible handshake fails in real bridge
+PASS copied alpha connection rejected by beta sender
+PASS URL and raw-channel injection rejected
+PASS oversized request rejected before IPC
+PASS unconfigured native adapter fails explicitly
+PASS only synthetic display context returned
+PASS no privileged bridge, token getter or raw transport exposed
+PASS close/reopen revokes old connection
+PASS no shell page errors

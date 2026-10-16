@@ -1,0 +1,24 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.4 [39m[90mD:/a/dental-os/dental-os[39m
+
+ [32m✓[39m tests/sdkBroker.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 268[2mms[22m[39m
+ [32m✓[39m tests/sdkHttp.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 382[2mms[22m[39m
+   [32m✓[39m actual loopback HTTP transport fixtures [2m(3)[22m
+     [33m[2m✓[22m[39m stops redirects and times out an incomplete streamed body[33m 313[2mms[22m[39m
+ [32m✓[39m tests/windowManager.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/osState.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 144[2mms[22m[39m
+ [32m✓[39m tests/motion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 426[2mms[22m[39m
+   [32m✓[39m FEWA motion port [2m(6)[22m
+     [33m[2m✓[22m[39m lands on both exact rectangles and keeps the mesh fold-free along the trip[33m 406[2mms[22m[39m
+ [32m✓[39m tests/runtimeContracts.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/overviewLayout.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m      Tests [22m [1m[32m63 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (64)[39m
+[2m   Start at [22m 02:53:18
+[2m   Duration [22m 3.07s[2m (tests 71%, transform 14%, import 13%, worker 2%)[22m
+
+[2m    Isolate [22m [33m7 workers spawned[39m[2m · ~173ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~1.04s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+JSON report written to D:/a/dental-os/dental-os/artifacts/windows-unit.json
