@@ -2,8 +2,8 @@
 
 **Updated:** 2026-10-16.
 **Active scope:** M01 documentation baseline complete; M02–M06 required automated gates passed, with M05 live staging identity acceptance and M06 verified local packages; physical Windows acceptance deferred.
-**Current implementation authorization:** user authorized M07 (next sprint), including detailed planning, implementation, controlled verification and verified main integration; stop after M07.
-**Active milestone:** M07 implemented and Linux/Windows CI passed; approved staging rollout/live G07 acceptance pending; M06 verified and integrated into main. Physical Windows-device testing remains after M11 and before final product release.
+**Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
+**Active milestone:** M07 implemented and Linux/Windows CI passed; authorized staging rollout/live G07 acceptance in progress; M06 verified and integrated into main. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
