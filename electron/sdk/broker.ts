@@ -38,7 +38,7 @@ export class ApiBroker {
   private flight?: { generation: number; controller: AbortController; promise: Promise<string> };
   private environment: Environment;
   private generation: number;
-  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits = { timeoutMs: 8000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }) {
+  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits = { timeoutMs: 8000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }, private activity:(appId:string)=>void=()=>{}) {
     this.environment = bindEnvironment(environment); this.generation = identity.snapshot().generation;
   }
   register(input: Omit<Registration, 'preferences' | 'connection' | 'generation'>) {
@@ -74,18 +74,20 @@ export class ApiBroker {
     const pending = this.pending.get(r)?.get(input.requestId);
     pending?.controller.abort('cancel'); return success({ cancelledLocally: !!pending, serverCommitUndone: false });
   }
+  writeState(appId:string):'none'|'pending'|'unknown' {if(this.writeCalls.get(appId)||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write)))return 'pending';return [...this.uncertain].some(k=>k.startsWith(appId+':'))?'unknown':'none';}
+  private notify(appId:string){try{this.activity(appId);}catch{/* Trusted observer cannot disrupt transport/outcome bookkeeping. */}}
   hasUnsafeWrites(appId:string) {return !!this.writeCalls.get(appId)|| [...this.uncertain].some(k=>k.startsWith(appId+':'))||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write));}
   async request(caller: Caller, input: unknown): Promise<Result> {
     const r=this.caller(caller),v=parseRequest(input),generation=this.identity.snapshot().generation;
     const writing=!!r&&v?.operation==='appointments.setStatus';
-    if(writing)this.writeCalls.set(r!.appId,(this.writeCalls.get(r!.appId)??0)+1);
+    if(writing){this.writeCalls.set(r!.appId,(this.writeCalls.get(r!.appId)??0)+1);this.notify(r!.appId);}
     try {
       const result=await this.execute(caller,input);
       if(writing&&generation===this.identity.snapshot().generation){const key=r!.appId+':'+v!.input.idempotencyKey;if(!result.ok&&result.error.outcome==='unknown')this.uncertain.add(key);else if(result.ok||!result.ok&&result.error.outcome==='rejected')this.uncertain.delete(key);}
       return result;
     } finally {
       // Keep the safety gate continuous through transport cleanup and outcome recording.
-      if(writing&&generation===this.identity.snapshot().generation){const count=(this.writeCalls.get(r!.appId)??1)-1;if(count>0)this.writeCalls.set(r!.appId,count);else this.writeCalls.delete(r!.appId);}
+      if(writing&&generation===this.identity.snapshot().generation){const count=(this.writeCalls.get(r!.appId)??1)-1;if(count>0)this.writeCalls.set(r!.appId,count);else this.writeCalls.delete(r!.appId);this.notify(r!.appId);}
     }
   }
   private async execute(caller: Caller, input: unknown): Promise<Result> {

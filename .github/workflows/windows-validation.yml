@@ -42,6 +42,8 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows integrated OS and API contract proof
+        run: node tests/integration-ci.mjs
       - name: Windows app update process-exit recovery
         run: node tests/updates-crash.mjs
       - name: Windows safe app update proof
@@ -69,6 +71,7 @@ jobs:
             artifacts/win32-updates-crash.json
             artifacts/windows-updates.json
             artifacts/updates-store.png
+            artifacts/windows-integration.json
             artifacts/windows-unit.log
             artifacts/windows-build.log
             artifacts/windows-unit.json

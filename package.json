@@ -29,6 +29,7 @@
     "test:sdk": "node tools/run-ui-test.mjs tests/sdk.mjs",
     "test:identity": "node tools/run-ui-test.mjs tests/identity.mjs",
     "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs",
+    "test:integration": "node tools/run-ui-test.mjs tests/integration.mjs",
     "test:updates": "node tools/run-ui-test.mjs tests/updates.mjs",
     "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs"
   },

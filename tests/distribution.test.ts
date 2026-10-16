@@ -30,9 +30,9 @@ function harness(extra?: (url: string, init: RequestInit, fallback: () => Respon
  return { root, registry, freshness, service, requests, deny: () => { allowed = false; }, switch: () => { generation++; service.invalidate(); }, close: () => { service.dispose(); rmSync(root, { recursive: true, force: true }); } };
 }
 describe('signed catalogue authenticity/freshness and exact destination binding', () => {
- it('normal staging trust excludes private fixture keys and business grants until M09', () => {
+ it('normal staging trust excludes private fixture keys and limits beta to read-only business access', () => {
   expect(() => verifyPackage(readFileSync('fixtures/packages/alpha.dentalpkg'), stagingDistribution.policy)).toThrow('Untrusted');
-  expect(Object.values(stagingDistribution.policy.apps).every(app => app.capabilities.every(op => !op.startsWith('appointments.')))).toBe(true);
+  expect(stagingDistribution.policy.apps['company.sample.alpha'].capabilities).toContain('appointments.setStatus');expect(stagingDistribution.policy.apps['company.sample.beta'].capabilities).not.toContain('appointments.setStatus');
  });
  it('accepts current company metadata and same-byte sequence replay only within expiry', () => { const a = verifyCatalogue(signed(), policy, noWatermark, now); expect(a.catalogue.sequence).toBe(1); expect(verifyCatalogue(signed(), policy, a.watermark, now + 1000).catalogue.releases).toHaveLength(1); });
  it.each(['signature','unsigned','key','altered','encoding','oversize'])('refuses %s metadata', kind => {

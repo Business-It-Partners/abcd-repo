@@ -23,8 +23,9 @@ contextBridge.exposeInMainWorld('desktop', {
       const state = (_event: unknown, value: unknown) => callback('state', value);
       const key = (_event: unknown, value: unknown) => callback('key', value);
       const edge = (_event: unknown, value: unknown) => callback('edge', value);
-      ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge);
-      return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); };
+      const closeBlocked = (_event: unknown,value:unknown)=>callback('close-blocked',value);
+      ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge); ipcRenderer.on('runtime:close-blocked',closeBlocked);
+      return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); };
     },
   },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),

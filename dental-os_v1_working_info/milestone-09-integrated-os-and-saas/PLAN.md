@@ -26,11 +26,11 @@ Prove the complete OS loop using two delivered first-party sample apps and repre
 
 ## Exit criteria and verification
 
-- [ ] Two installed isolated apps share one mediated session without shared credentials or direct communication.
-- [ ] Approved staging data proves a representative authorized read and idempotent write, conflict and lost-response reconciliation.
-- [ ] Repeat dock/overview/Genie/scoped-dialog/native minimize continuity; lock/logout cannot expose prior user views.
+- [x] Two installed isolated apps share one mediated session without shared credentials or direct communication.
+- [x] Approved staging data proves a representative authorized read and idempotent write, conflict and lost-response reconciliation.
+- [x] Repeat dock/overview/Genie/scoped-dialog/native minimize continuity; lock/logout cannot expose prior user views.
 
-- [ ] Execute representative integration against mapped staging resources only; retain existing Dental SaaS and Super Admin regression evidence with isolated synthetic fixtures.
+- [x] Execute representative integration against mapped staging resources only; retain existing Dental SaaS and Super Admin regression evidence with isolated synthetic fixtures.
 
 ## Scope exclusions
 
@@ -59,3 +59,16 @@ New OS-specific services use `/v1/dental-os/...`; existing dental business and i
 ## Windows verification scope
 
 Use the [approved deferred-device policy](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md): Linux checks plus applicable Windows GitHub Actions evidence during milestones; physical Windows interaction/visual checks after M11, before final release. Record remaining device scenarios separately; CI success is not physical-device certification.
+
+## Detailed execution plan and staging mutation policy — 2026-10-16
+
+M08 verified/normal-merged at main dce9d589, branch codex/milestone-09. User explicitly authorizes necessary staging work through M10; continue without permission pause. Preserve first-party-only boundaries, approved physical-Windows deferral and controlled sequential checks.
+
+1. Wire real production-path runtime broker transport to the existing mapped staging Worker. Private runtime/identity/distribution fixtures remain entirely synthetic; real staging acceptance uses explicit trusted staging mode, independently verified downloaded packages and real platform identity. No arbitrary authenticated fetch or credential bridge. Broaden only approved alpha read/write and beta read package capabilities; existing backend business routes stay unchanged.
+2. Freeze representative operation: GET /v1/appointments?date=... and POST /v1/appointments/:id/status with original Idempotency-Key and expectedRowVersion. Extend sample SDK presentation with date selection, read projection, selected record/status/revision, named errors and an explicit same-key reconciliation action. Patient data stays memory-only, no app-to-app channel, cache or automatic retry. Read-only beta must fail write before dispatch.
+3. Make pending/unknown write state a trusted broker/runtime projection, independent of app lifecycle reports. Update-now and ordinary app close must refuse unresolved writes. Keep existing shared window/dock/Genie/dialog ownership; preserve app dirty guard. Session reset intentionally destroys previous contexts and fences late results. Do not introduce a queue or persist patient payloads.
+4. Backend operator ticket SYS-0007 owns synthetic staging fixtures only, using existing SaaS API and approved clinic account. Create one uniquely marked synthetic staff doctor (no email/phone/salary/login) and one uniquely marked future appointment (no real patient/contact). Use only returned owned IDs and a unique isolated date; never select or edit an existing clinic record. No D1 SQL mutation, new business API, Firebase user or production operation.
+5. Freeze cleanup before writes: after proof, cancel only the created appointment through existing idempotent/revision API and mark only the created staff profile inactive. Preserve normal audit/command receipts; do not purge clinical tables. Keep an external protected operator fixture journal for crash-safe cleanup, containing synthetic IDs/input/idempotency keys only, never credentials. Remove it after verified cleanup. If a mutation outcome is unknown, reconcile using its original key before continuing; no blind new-key retries. Report retained audit-only synthetic records explicitly.
+6. Publish signed sample 1.2.0/1.2.1 with current staging trust key and higher catalogue/control sequences, retaining M08 minimum/revocation constraints. First-party grants derive from verified manifest and session role. Existing staging Worker deployment/bindings/business code remain unchanged unless an actual compatibility defect requires a separate reviewed ticket update.
+7. Private end-to-end proof: actual UI sign-in -> authenticated catalogue -> anonymous R2 install -> two isolated app runtimes -> same mediated session -> real representative read/write. Controlled private-only transport fault drops a real successful write response once; prove unknown state, close/update refusal, same-key reconciliation and unchanged server revision on replay, plus stale-revision conflict. Verify beta denial, update and uninstall, lock/logout preview/capture cleanup, no credential or patient disk cache. Existing SaaS/Super Admin health/access/reachability regressions remain explicit, never equated to positive privileged UI acceptance.
+8. Run proportionate unit/build and focused private integration/shared-motion/session regressions, bounded process/resource checks and final Windows Actions (fixtures only). Retain actual source/byte/resource/cleanup identities and failures. Only after G09 passes: VERIFIED, checkpoint and normal merge; continue M10. Full dental application UI/workflows and M11 release remain separate.

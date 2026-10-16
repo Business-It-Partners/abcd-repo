@@ -20,6 +20,7 @@ export async function verifyIdentity(profileArgs,reportName){
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-runtime="studio"]').dataset.runtimePhase==='ready');
   const alpha=app.context().pages().find(p=>p.url().startsWith('dental-fixture://alpha/'));
   const c=await alpha.evaluate(()=>window.dentalApp.connect({major:1,minor:0}));check('app shares platform sign-in without password/token getter',c.ok&&c.value.generation===before.generation&&await alpha.evaluate(()=>!window.desktop&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,report,request'));
+  await alpha.evaluate(()=>localStorage.setItem('private-session-canary','sensitive-fixture-storage'));
   await alpha.getByLabel('Your draft').fill('sensitive-fixture-draft');await shell.getByRole('button',{name:'Minimize Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='minimized');
   await shell.getByRole('button',{name:'Lock',exact:true}).click();await shell.getByRole('heading',{name:'Session locked'}).waitFor();
   check('lock destroys isolated content and removes workflow/previews',await app.evaluate(({webContents})=>webContents.getAllWebContents().every(w=>!w.getURL().startsWith('dental-fixture:')))&&await shell.locator('[data-window-id],.dock-preview,.window-overview').count()===0);
@@ -29,6 +30,7 @@ export async function verifyIdentity(profileArgs,reportName){
   const after=await shell.evaluate(()=>window.desktop.identity.view());check('new user gets new generation and clean workflow',after.generation>locked.generation&&after.userLabel==='second@fixture.invalid'&&await shell.locator('[data-window-id="studio"][data-phase="visible"]').count()===0);
   check('old shell generation cannot capture a new session',await shell.evaluate(async old=>{try{await window.desktop.capture({x:0,y:0,width:10,height:10},old);return false;}catch{return true;}},before.generation));
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-runtime="studio"]').dataset.runtimePhase==='ready');const fresh=app.context().pages().find(p=>p.url().startsWith('dental-fixture://alpha/'));check('old app draft never enters new user workspace',await fresh.getByLabel('Your draft').inputValue()==='');
+  check('previous account storage partition is never reused',await fresh.evaluate(()=>localStorage.getItem('private-session-canary'))===null);
   const forged=await fresh.evaluate(async old=>window.dentalApp.request({version:1,connection:old.connection,generation:old.generation,requestId:'old_user_request',operation:'session.context',input:{}}),c.value);check('old app connection/generation cannot read new session',!forged.ok&&forged.error.code==='STALE_SESSION');
   // Guest frames cannot invoke the shell-only identity channel; test only public bridge shape.
   check('guest cannot obtain shell login controls',await fresh.evaluate(()=>typeof window.desktop==='undefined'&&!('identity' in window.dentalApp)));

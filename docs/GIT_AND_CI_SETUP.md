@@ -75,3 +75,7 @@ User authorized scoped staging operations and continuous work through M10, super
 ## M08 verified update checkpoint — 2026-10-16
 
 `codex/milestone-08` / `checkpoint/m08-ci` retains final tested source `857b2c4fb44a0fa3308db49a222d768fa3eb9800`; Windows [38857330434](https://github.com/Business-It-Partners/dental-os/actions/runs/38857330434) and retained Linux/live-staging G08 gates pass. Evidence-only normal main integration preserves tested source hashes. Earlier CI failures/repairs remain in milestone evidence. Backend SYS-0006 staging deployment and publication sequences 3–7 are accepted without production/clinical mutation. Proceed M09/M10 under standing authorization; physical Windows stays after M11/before release.
+
+## M09 verified integrated checkpoint — 2026-10-16
+
+Source 54be1c0609f367a784de9d06516964da157e6e3e / checkpoint/m09-ci, Windows [38922410037](https://github.com/Business-It-Partners/dental-os/actions/runs/38922410037), final Linux and actual staging 21-case integration pass. Preserve branch/tag, merge normally with identical runtime/source hashes; continue M10 under existing authorization. Physical Windows after M11/before release. No production or shared backend deployment.

@@ -1,0 +1,32 @@
+{
+  "passed": false,
+  "phase": "create-fixture",
+  "cleanupConfirmed": false,
+  "publications": [
+    {
+      "environment": "cloudfare-staging",
+      "bucket": "dentmitra-dental-os-releases-cloudfare-staging",
+      "sequence": 8,
+      "updatePolicySha256": "291cfdcc7ac96544d9e25d61ffaa4c77c9795d623a24156e6d62693ec7a5c295",
+      "catalogueSha256": "2ebffb3cf3c9d03bc18d24bfef18ffb151cab7a55a30793b890dd6d8711e29f4",
+      "expiresAt": 1792217553360,
+      "releases": [
+        {
+          "id": "company.sample.alpha",
+          "objectKey": "releases/company.sample.alpha/1.2.0/93fc87755ccdcc56bd3cade773c58cf7657b4266bb0dbcb94ed78f9842c9d120.dentalpkg",
+          "packageSha256": "93fc87755ccdcc56bd3cade773c58cf7657b4266bb0dbcb94ed78f9842c9d120",
+          "packageBytes": 15358
+        },
+        {
+          "id": "company.sample.beta",
+          "objectKey": "releases/company.sample.beta/1.2.0/a6ee1754b10740b86550ef94be90e14191d7983cd7a4e532480c07ca0f5f0686.dentalpkg",
+          "packageSha256": "a6ee1754b10740b86550ef94be90e14191d7983cd7a4e532480c07ca0f5f0686",
+          "packageBytes": 15325
+        }
+      ]
+    }
+  ],
+  "environment": "cloudfare-staging",
+  "source": "030dd2c50ce11a8a4dcf1ea80a2fe3300ad0aca5",
+  "scope": "Owned synthetic doctor/appointment created through existing staging APIs, appointment cancelled and doctor inactivated with audit/receipts preserved. No production, SQL, Firebase user provisioning or existing record edit."
+}
