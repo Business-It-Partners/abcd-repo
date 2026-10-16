@@ -1,0 +1,8 @@
+
+ RUN  v5.0.3 /home/master-x/Desktop/fewa_demo/dental-os-m07-backend/apps/platform-worker
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  10:10:21
+   Duration  357ms (transform 48%, tests 32%, import 18%, worker 2%)

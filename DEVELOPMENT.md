@@ -57,3 +57,7 @@ M05 identity checks: `npm run test:identity` runs synthetic private desktop veri
 ## M06 verified local packages
 
 Read [dentalpkg/1](dental-os_v1-documentation/23_V1_PACKAGE_FORMAT.md) and [internal tooling](tools/app-packages/README.md). `npm run test:packages` uses the private display; `node tests/packages-crash.mjs` checks abrupt installer exits after a controlled build. Run these sequentially under resource rules. Normal launches trust no fixture signing keys. The existing sample-runtime flag now installs signed fixtures into the isolated profile and revalidates at launch; it never exposes a package file picker or production sideload command. Cloud delivery/Store wiring and full update policy remain M07/M08. Current user session remains untouched; new builds take effect on full relaunch.
+
+## M07 Store delivery checks
+
+`npm run test:distribution` exercises signed fixture catalogue → bounded download → registry → isolated launch → uninstall/relaunch under the private display. The guarded `--distribution-fixtures` path cannot call the network. Normal Store uses host catalogue/registry truth and stays unavailable while its pinned staging public origin is unconfigured. `tools/app-packages/prepare-staging.mjs --staging-only <external-key> <sequence> <new-output>` prepares two signed samples/catalogue without cloud calls; do not commit its signing key. See M07 rollout record for separately approved staging operations. Never deploy the SaaS branch or create a bucket merely to make local tests green.

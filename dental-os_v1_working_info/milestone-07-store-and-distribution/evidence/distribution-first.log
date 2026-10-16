@@ -1,0 +1,8 @@
+
+ RUN  v5.0.4 /home/master-x/Desktop/fewa_business_os
+
+
+ Test Files  1 passed (1)
+      Tests  40 passed (40)
+   Start at  09:56:25
+   Duration  1.03s (tests 76%, transform 17%, import 5%, worker 1%)

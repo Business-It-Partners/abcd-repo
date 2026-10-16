@@ -1,12 +1,12 @@
 # M07 Status — First-party store and Cloudflare delivery
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** IMPLEMENTED
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+User authorized the next sprint (M07). Desktop and isolated staging backend implementation/local verification complete. Windows CI pending; actual G07 catalogue/R2 acceptance remains pending. Actual cloud rollout requires separately authorized deployment under existing repository rules.
 
 **Dependencies:** [M06](../milestone-06-verified-packages/PLAN.md)
 

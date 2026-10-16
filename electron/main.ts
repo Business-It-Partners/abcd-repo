@@ -9,15 +9,21 @@ import { systemSecretProvider } from './identity/provider';
 import { identityFixtures } from './identity/fixtures';
 import { fixtureRegistry } from './packages/fixtures';
 import { PackageRegistry } from './packages/registry';
-import { productionTrust } from './packages/format';
+import { stagingDistribution } from './distribution/staging';
+import { DistributionService } from './distribution/service';
+import { CatalogueStore } from './distribution/storage';
+import { distributionFixtures as createDistributionFixtures } from './distribution/fixtures';
+import { fixtureServices } from './sdk/fixtures';
 import type { SessionView } from './identity/contracts';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
+let distribution: DistributionService;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
 const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
 const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSwitch('identity-staging');
 let identity: SessionManager | undefined;
@@ -47,7 +53,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity);
+  if (runtimeFixtures || storeFixtures || !trustedTest) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity);
   win.on('close', () => runtime?.dispose());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
@@ -98,7 +104,7 @@ function createWindow() {
       if (win.isMinimized()) win.restore();
     } else { win.show(); win.focus(); }
   };
-  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1' } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1' } : {} });
+  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: storeFixtures ? {} : process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1' } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1' } : {} });
 }
 
 ipcMain.handle('window:control', (event, action: unknown) => {
@@ -150,6 +156,15 @@ ipcMain.handle('identity:action', (event, kind: unknown, input: unknown) => {
   if (kind === 'logout') return identity.logout();
   return { ok: false, code: 'INVALID_INPUT' };
 });
+ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation: unknown) => {
+  if (!isShell(event) || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) return { ok: false, code: 'DENIED' };
+  if (kind === 'view' && input === undefined) return distribution.view();
+  if (kind === 'refresh' && input === undefined) return distribution.refresh();
+  if (kind === 'cancel' && input === undefined) return distribution.cancel();
+  if (kind === 'install') return distribution.install(input);
+  if (kind === 'uninstall') return distribution.uninstall(input);
+  return { ok: false, code: 'INVALID' };
+});
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
@@ -158,14 +173,18 @@ if (primary) void app.whenReady().then(async () => {
     osStore = new OsStateStore(path.join(app.getPath('userData'), 'state'));
     osStore.load();
     const packageRoot = path.join(app.getPath('userData'), 'packages');
-    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages')) : new PackageRegistry(packageRoot, productionTrust);
+    const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
+    const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1) : undefined;
+    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages')) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
-      identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => runtime?.clearSession(), identityFixture ? 'fixture' : 'staging');
+      identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
       identity.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
+    distribution = new DistributionService(storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
+    distribution.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
     bootPhase = 'ready'; createWindow(); if (identity) void identity.restore();
   } catch {
     bootPhase = 'recovery';
@@ -173,12 +192,12 @@ if (primary) void app.whenReady().then(async () => {
     recovery.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     recovery.webContents.on('will-navigate', event => event.preventDefault());
     activateExisting = () => { if (!recovery.isDestroyed()) { recovery.show(); recovery.focus(); } };
-    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS settings could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the state folder in the application user-data directory. No reset was performed.</p>`));
+    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS state or installed applications could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the application user-data directory. No reset was performed.</p>`));
   }
 });
 let quitFlushed = false;
 app.on('before-quit', event => {
-  bootPhase = 'exiting';
+  bootPhase = 'exiting'; distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

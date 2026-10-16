@@ -1,0 +1,25 @@
+{
+  "environment": "cloudfare-staging",
+  "bucket": "dentmitra-dental-os-releases-cloudfare-staging",
+  "sequence": 2,
+  "catalogueSha256": "3119aa8b76c1408b4ba93147bc871accf3575eb269b63daa0398c0ed704993a7",
+  "expiresAt": 1792210974028,
+  "releases": [
+    {
+      "id": "company.sample.alpha",
+      "objectKey": "releases/company.sample.alpha/1.0.0/f1958349f793acab7266badc23014b4bbc8b339bf74005e4ef36b2553e17fba2.dentalpkg",
+      "packageSha256": "f1958349f793acab7266badc23014b4bbc8b339bf74005e4ef36b2553e17fba2",
+      "packageBytes": 8802
+    },
+    {
+      "id": "company.sample.beta",
+      "objectKey": "releases/company.sample.beta/1.0.0/d8a1b2d68cfbded6a17f703173132c347cd76e11b80215ff12264f13aa434a97.dentalpkg",
+      "packageSha256": "d8a1b2d68cfbded6a17f703173132c347cd76e11b80215ff12264f13aa434a97",
+      "packageBytes": 8801
+    }
+  ],
+  "local_only": true,
+  "review_directory": "release/m07-staging-review-2",
+  "publisher_validation": "--validate-only passed, no cloud calls",
+  "private_key": "external protected staging signing file; never copied into release/source/artifacts"
+}
