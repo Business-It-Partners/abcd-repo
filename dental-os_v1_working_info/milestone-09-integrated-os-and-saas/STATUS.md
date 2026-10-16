@@ -1,17 +1,8 @@
 # M09 Status — Integrated OS and SaaS contract proof
 
-**Status:** IMPLEMENTED — final staging and Windows gates pending.
+**Status:** VERIFIED — automated Linux/Windows and actual staging scope.
 **Updated:** 2026-10-16.
-**User acceptance:** pending; no production acceptance claimed.
+**Tested source:** 54be1c0609f367a784de9d06516964da157e6e3e, checkpoint/m09-ci.
+**User acceptance:** pending. Physical Windows remains deferred after M11/before release.
 
-## Current position
-
-Two independently delivered apps use one mediated identity with separate runtimes. Real staging transport, appointment read/status operations, explicit same-key lost-response reconciliation and trusted close/update write guards are implemented. Identity reset destroys the previous app partition. Local unit/build and private desktop checks pass; actual staging synthetic-record acceptance and Windows CI remain required before VERIFIED/integration.
-
-**Dependencies:** verified M08 main dce9d589.
-
-## Remaining work
-
-- Execute owned staging fixture acceptance and audited cancellation/inactivation cleanup.
-- Retain Windows Actions proof; preserve branch/checkpoint, normal merge tested source into main.
-- Physical Windows tests stay deferred until after M11 and before release.
+Two independently delivered apps share one mediated identity in separate runtimes. Real staging appointment read/write, lost-response original-key reconciliation, conflict, read-only denial, trusted close/update write guards, safe update/uninstall, lock/logout partitions and disk privacy pass. Required G09 gates closed; evidence-only normal main integration follows. Complete dental UI/workflows remain a separate delivery. M10 is authorized next; production untouched.

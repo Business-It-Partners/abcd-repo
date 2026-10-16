@@ -26,11 +26,11 @@ Prove the complete OS loop using two delivered first-party sample apps and repre
 
 ## Exit criteria and verification
 
-- [ ] Two installed isolated apps share one mediated session without shared credentials or direct communication.
-- [ ] Approved staging data proves a representative authorized read and idempotent write, conflict and lost-response reconciliation.
-- [ ] Repeat dock/overview/Genie/scoped-dialog/native minimize continuity; lock/logout cannot expose prior user views.
+- [x] Two installed isolated apps share one mediated session without shared credentials or direct communication.
+- [x] Approved staging data proves a representative authorized read and idempotent write, conflict and lost-response reconciliation.
+- [x] Repeat dock/overview/Genie/scoped-dialog/native minimize continuity; lock/logout cannot expose prior user views.
 
-- [ ] Execute representative integration against mapped staging resources only; retain existing Dental SaaS and Super Admin regression evidence with isolated synthetic fixtures.
+- [x] Execute representative integration against mapped staging resources only; retain existing Dental SaaS and Super Admin regression evidence with isolated synthetic fixtures.
 
 ## Scope exclusions
 
