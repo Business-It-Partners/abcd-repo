@@ -1,0 +1,21 @@
+UI tests isolated on a private headless GNOME display; your desktop is untouched.
+PASS signed-out shell has no desktop workflow or preview
+PASS remember-me is disabled without adequate secret provider
+PASS disabled fixture identity cannot enter the desktop
+PASS unavailable identity service remains gated
+PASS platform sign-in gates ready on resolved clinic access
+PASS shell view exposes no credential fields
+PASS app shares platform sign-in without password/token getter
+PASS lock destroys isolated content and removes workflow/previews
+PASS locked shell capture and runtime layout are refused
+PASS lock clears display context and advances generation
+PASS new user gets new generation and clean workflow
+PASS old shell generation cannot capture a new session
+PASS old app draft never enters new user workspace
+PASS old app connection/generation cannot read new session
+PASS guest cannot obtain shell login controls
+PASS native secret-provider classification is explicit
+PASS logout destroys guest runtimes and clears authority
+PASS signed-out form clears account identifier and keeps exit available
+PASS no shell page errors
+PASS closed profile contains no plaintext fixture password/refresh token

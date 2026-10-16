@@ -1,3 +1,4 @@
+import { useSessionGeneration } from './SessionBoundary';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
@@ -12,6 +13,7 @@ type Gesture = { pointerId: number; element: HTMLElement; bounds: Rect; size: Si
 
 /** One lifecycle/animation/gesture implementation shared by every internal app. */
 export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonElement | null>) {
+  const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager(), { state, dispatch, getState } = manager;
   const win = state.windows[id], active = activeWindow(state) === id;
   const windowRef = useRef<HTMLElement>(null), canvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,7 +99,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     try {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const source = rectOf(windowRef.current), destination = rectOf(target.current);
-      const data = minimizing ? await window.desktop?.capture(source) : snapshotRef.current;
+      const data = minimizing ? await window.desktop?.capture(source, sessionGeneration) : snapshotRef.current;
       if (!data) return;
       const image = new Image(); image.src = data; await image.decode();
       if (generation.current !== token) return;
@@ -141,6 +143,7 @@ export type WindowController = ReturnType<typeof useManagedWindow>;
 
 export function ManagedWindowFrame({ controller: c, children }: { controller: WindowController; children: ReactNode }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
+  const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
   const order = manager.state.order.indexOf(c.id);
   return <>

@@ -1,6 +1,6 @@
 import { WebContentsView, session, net, nativeImage, type BrowserWindow, type IpcMainEvent, type NativeImage } from 'electron';
 import path from 'node:path';
-import { ApiBroker, type Caller } from '../sdk/broker';
+import { ApiBroker, type Caller, type Identity } from '../sdk/broker';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
 import { operations } from '../sdk/contracts';
@@ -10,13 +10,13 @@ import { compositePixels, fixtureAsset, parseLayout, runtimeIds, type RuntimeId,
 type Entry = { view: WebContentsView; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
 export class FixtureRuntime {
   private services = fixtureServices();
-  private broker = new ApiBroker(staging, this.services.identity, this.services.transport);
+  private broker: ApiBroker;
   private entries = new Map<RuntimeId, Entry>();
   private desired: RuntimeLayout[] = [];
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private instance = randomUUID();
   private lastEmission = '';
-  constructor(private win: BrowserWindow, private assets: string, private preload: string) {}
+  constructor(private win: BrowserWindow, private assets: string, private preload: string, identity?: Identity) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
   private emit() {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
@@ -169,5 +169,6 @@ export class FixtureRuntime {
     if (!e.view.webContents.isDestroyed()) e.view.webContents.close();
     e.image = undefined;
   }
+  clearSession() { this.broker.invalidateSession(); for (const id of [...this.entries.keys()]) this.close(id); }
   dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

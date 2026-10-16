@@ -7,9 +7,14 @@ function publishHostTransition(transitioning: boolean) {
 }
 ipcRenderer.on('window:host-transition', (_event, value: boolean) => publishHostTransition(value));
 contextBridge.exposeInMainWorld('desktop', {
+  identity: {
+    view: () => ipcRenderer.invoke('identity:view'),
+    action: (kind: 'login' | 'lock' | 'logout', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
+    subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('identity:state', listener); return () => ipcRenderer.removeListener('identity:state', listener); },
+  },
   runtime: {
-    sync: (value: unknown) => ipcRenderer.invoke('runtime:sync', value),
-    restart: (id: string) => ipcRenderer.invoke('runtime:restart', id),
+    sync: (value: unknown, generation?: number) => ipcRenderer.invoke('runtime:sync', value, generation),
+    restart: (id: string, generation?: number) => ipcRenderer.invoke('runtime:restart', id, generation),
     subscribe: (callback: (kind: string, value: unknown) => void) => {
       const state = (_event: unknown, value: unknown) => callback('state', value);
       const key = (_event: unknown, value: unknown) => callback('key', value);
@@ -33,5 +38,5 @@ contextBridge.exposeInMainWorld('desktop', {
     hostListeners.add(listener); listener(hostTransitioning);
     return () => { hostListeners.delete(listener); };
   },
-  capture: (rect: { x: number; y: number; width: number; height: number }) => ipcRenderer.invoke('window:capture', rect),
+  capture: (rect: { x: number; y: number; width: number; height: number }, generation?: number) => ipcRenderer.invoke('window:capture', rect, generation),
 });

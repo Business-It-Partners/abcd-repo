@@ -1,0 +1,12 @@
+
+ RUN  v5.0.4 /home/master-x/Desktop/fewa_business_os
+
+
+ Test Files  8 passed (8)
+      Tests  76 passed (76)
+   Start at  08:49:55
+   Duration  2.37s (tests 80%, import 9%, transform 8%, worker 2%)
+
+    Isolate  8 workers spawned · ~94ms startup each (spawn + environment, per file)
+             at least ~659ms faster with isolate: false — reuses workers across files instead of one per file
+

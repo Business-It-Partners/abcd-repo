@@ -1,0 +1,9 @@
+
+> electron-desktop-prototype@0.1.0 build
+> npm run typecheck && vite build && tsc -p tsconfig.electron.json
+
+
+> electron-desktop-prototype@0.1.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.electron.json --noEmit
+
+tests/identity.test.ts(15,144): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?

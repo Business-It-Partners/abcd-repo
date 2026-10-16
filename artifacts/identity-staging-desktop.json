@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "phase": "logout",
+  "checks": [
+    "real staging mode starts gated",
+    "actual desktop sign-in reaches Worker-authorized staging workspace without remember-me",
+    "real session lock clears context and advances generation",
+    "real desktop local logout returns to sign-in"
+  ],
+  "scope": "Private Linux desktop with approved staging identity; no business operations, user mutations or global revocation."
+}

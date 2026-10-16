@@ -274,3 +274,8 @@ The bounded runtime proof introduces `electron/runtime/` for the trusted fixture
 ## M04 source mapping
 
 `electron/sdk/contracts.ts` is a pure renderer-safe transitional SDK contract; `environment.ts`, `broker.ts` and `fixtures.ts` are trusted main-process code. Application preload uses a type-only contract import and fixed IPC channels, without importing host implementations into sandboxed app JavaScript. Existing src/electron paths/build remain stable; planned packages migration is not claimed. SDK integration/transport fixtures are `tests/sdk*.mjs` / `tests/sdk*.test.ts`. Scoped preference/operation fingerprints are memory-only OS coordination, not authoritative business storage.
+
+
+## M05 source mapping
+
+Trusted identity/REST/session/protected-store adapters live in `electron/identity/`; only its pure contracts are type-imported into the shell. `src/IdentityGate.tsx` owns platform sign-in and `src/SessionBoundary.tsx` scopes shell generation. App code has no identity-client/store imports. `tests/identity*` owns controlled integration/security/live optional acceptance; `tools/verify-staging-identity.mjs` is explicit approved-account, identity-only staging acceptance. No credential input is stored in the repository. Broad packages/apps migration remains separate work.

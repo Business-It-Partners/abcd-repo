@@ -48,6 +48,8 @@ jobs:
         run: node tests/runtime-ci.mjs
       - name: Windows SDK and broker proof
         run: node tests/sdk-ci.mjs
+      - name: Windows identity and session proof
+        run: node tests/identity-ci.mjs
       - name: Retain evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,6 +62,8 @@ jobs:
             artifacts/windows-host-ci.json
             artifacts/windows-runtime.json
             artifacts/windows-sdk.json
+            artifacts/windows-identity.json
+            artifacts/identity-gate.png
             artifacts/sdk-fixtures.png
             artifacts/runtime-overlap.png
             artifacts/runtime-crash.png
