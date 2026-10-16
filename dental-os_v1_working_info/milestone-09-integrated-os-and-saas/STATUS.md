@@ -1,21 +1,17 @@
 # M09 Status — Integrated OS and SaaS contract proof
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** IMPLEMENTED — final staging and Windows gates pending.
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+Two independently delivered apps use one mediated identity with separate runtimes. Real staging transport, appointment read/status operations, explicit same-key lost-response reconciliation and trusted close/update write guards are implemented. Identity reset destroys the previous app partition. Local unit/build and private desktop checks pass; actual staging synthetic-record acceptance and Windows CI remain required before VERIFIED/integration.
 
-**Dependencies:** [M08](../milestone-08-safe-app-updates/PLAN.md)
+**Dependencies:** verified M08 main dce9d589.
 
 ## Remaining work
 
-- Two installed isolated apps share one mediated session without shared credentials or direct communication.
-- Approved staging data proves a representative authorized read and idempotent write, conflict and lost-response reconciliation.
-- Repeat dock/overview/Genie/scoped-dialog/native minimize continuity; lock/logout cannot expose prior user views.
-
-## Status rules
-
-PLANNED -> IMPLEMENTING -> IMPLEMENTED -> VERIFIED. VERIFIED is limited to named scope and retained evidence, not implied production release. BLOCKED identifies a concrete dependency; DEFERRED/REMOVED need a recorded product decision. Do not mark a milestone verified with missing required host evidence. Update the global status when this file changes.
+- Execute owned staging fixture acceptance and audited cancellation/inactivation cleanup.
+- Retain Windows Actions proof; preserve branch/checkpoint, normal merge tested source into main.
+- Physical Windows tests stay deferred until after M11 and before release.

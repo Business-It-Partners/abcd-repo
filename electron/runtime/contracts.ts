@@ -2,7 +2,7 @@ export const runtimeIds = ['studio', 'records'] as const;
 export type RuntimeId = typeof runtimeIds[number];
 export type RuntimeRect = { x: number; y: number; width: number; height: number };
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
-export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'failed'; dirty: boolean; modal: boolean; reason?: string; snapshot?: string };
+export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; reason?: string; snapshot?: string };
 export function parseLayout(input: unknown): RuntimeLayout[] {
   if (!Array.isArray(input) || input.length !== 2) throw new Error('Invalid runtime layout');
   const seen = new Set();

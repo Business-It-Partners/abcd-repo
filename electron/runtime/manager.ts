@@ -1,5 +1,5 @@
 import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMainEvent, type NativeImage } from 'electron';
-import { ApiBroker, type Caller, type Identity } from '../sdk/broker';
+import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/broker';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
 import { PackageRegistry, type Lease } from '../packages/registry';
@@ -14,7 +14,11 @@ export class FixtureRuntime {
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private instance = randomUUID();
   private lastEmission = '';
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}) { this.broker = new ApiBroker(staging, identity ?? this.services.identity, this.services.transport); }
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean}={transport:'fixture'}) {
+    const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
+    const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
+    this.broker=new ApiBroker(staging,identity??this.services.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}});
+  }
   private emit() {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
@@ -114,7 +118,7 @@ export class FixtureRuntime {
     this.desired = next;
     for (const layout of this.desired) {
       let e = this.entries.get(layout.id);
-      if (!layout.open) { if (e) this.close(layout.id); continue; }
+      if (!layout.open) { if (e) {if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??'')){e.view.setVisible(false);this.win.webContents.send('runtime:close-blocked',{id:layout.id});}else this.close(layout.id);} continue; }
       const rect = Object.fromEntries(Object.entries(layout.rect).map(([k, v]) => [k, Math.round(v)])) as RuntimeRect;
       e ??= this.create(layout.id, rect);
       e.rect = rect; e.view.setBounds(rect); e.view.setBorderRadius(rect.x===0&&rect.width===width?0:10);
@@ -192,6 +196,12 @@ export class FixtureRuntime {
     if(e&&(e.state.dirty||e.state.modal||e.state.phase!=='ready'))throw Error('Save work and close dialogs before updating');
     if(e){const rect=e.rect;this.close(id);this.create(id,rect);}this.changed();
   }
-  clearSession() { this.broker.invalidateSession(); for (const id of [...this.entries.keys()]) this.close(id); }
+  clearSession() {
+    this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
+    // Closing a WebContents does not erase session storage. Never reuse a prior
+    // account's in-memory partition, even while asynchronous erasure completes.
+    const previous=[...this.sessions.values()];this.sessions.clear();this.instance=randomUUID();
+    for(const ses of previous){try{ses.protocol.unhandle('dental-fixture');}catch{}void ses.clearStorageData().catch(()=>{});void ses.clearCache().catch(()=>{});}
+  }
   dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

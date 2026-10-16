@@ -4,12 +4,12 @@ import { operations, parseRequest, type Connection, type Result } from '../elect
 import { staging, bindEnvironment } from '../electron/sdk/environment';
 import { sampleAppointment } from '../electron/sdk/fixtures';
 const limits = { timeoutMs: 150, responseBytes: 4096, perApp: 2, total: 3, operationKeys: 4 };
-function harness(transport: Transport = async () => Response.json({ appointments: [sampleAppointment] }), options = limits) {
+function harness(transport: Transport = async () => Response.json({ appointments: [sampleAppointment] }), options = limits,activity:(appId:string)=>void=()=>{}) {
  let generation=1, active=true, credentialCalls=0;
  const identity: Identity = { snapshot:()=>({generation,active,userLabel:'Synthetic user',clinicLabel:'Synthetic clinic'}), credential:async()=>{credentialCalls++;return 'fixture-secret';} };
  const sender={},frame={},caller:Caller={sender,frame,url:'dental-fixture://alpha/index.html'};
  const reports:unknown[]=[];
- const broker=new ApiBroker(staging,identity,transport,options);
+ const broker=new ApiBroker(staging,identity,transport,options,activity);
  const register=(s=sender,f=frame,capabilities=[...operations])=>broker.register({sender:s,frame:f,origin:caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities,report:v=>reports.push(v)});
  register();
  const connect=(who=caller)=>{const result=broker.connect(who,{major:1,minor:0});if(!result.ok)throw new Error(result.error.code);return result.value;};
@@ -121,3 +121,5 @@ describe('safe-update broker coordination',()=>{
   let allowed=true;h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{},authorize:()=>allowed});const connection=h.connect();allowed=false;expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,connection)))).toBe('ACCESS_DENIED');expect(calls).toBe(1);h.broker.dispose();
  });
 });
+
+describe('trusted write-state projection',()=>{it('reports pending then unknown independently of app reports, and clears only after same-key outcome',async()=>{const states:string[]=[];let lost=true;const h=harness(async()=>{if(lost)throw Error('lost');return Response.json({appointment:sampleAppointment});},limits,id=>states.push(h.broker.writeState(id)));await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(states).toEqual(['pending','unknown']);h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{}});expect(h.broker.writeState('company.sample.alpha')).toBe('unknown');const c=h.connect();lost=false;await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,c));expect(states.slice(-2)).toEqual(['pending','none']);h.broker.dispose();});});
