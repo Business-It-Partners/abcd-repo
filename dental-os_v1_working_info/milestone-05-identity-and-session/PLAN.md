@@ -26,11 +26,11 @@ Integrate the existing Firebase identity and Worker authorization through one tr
 
 ## Exit criteria and verification
 
-- [ ] Use approved staging accounts to test real login, token renewal, denial, disabled access and unavailable backend.
-- [ ] Test unavailable/inadequate Linux key storage: session-only behavior and no plaintext persisted credentials.
-- [ ] Switch users during in-flight responses/writes; old data never enters the new session; no app receives password/refresh token.
+- [x] Use approved staging accounts to test real login, token renewal, denial, disabled access and unavailable backend.
+- [x] Test unavailable/inadequate Linux key storage: session-only behavior and no plaintext persisted credentials.
+- [x] Switch users during in-flight responses/writes; old data never enters the new session; no app receives password/refresh token.
 
-- [ ] Verify existing staging Firebase/Worker mapping, clinic/Super Admin authority separation and unchanged web login behavior; never modify production identity configuration.
+- [x] Verify existing staging Firebase/Worker mapping, clinic/Super Admin authority separation and unchanged web login behavior; never modify production identity configuration.
 
 ## Scope exclusions
 
@@ -75,3 +75,6 @@ Baseline: main `4ad8e32f`, verified/integrated M04. SaaS staging branch/environm
 8. After all applicable M05 gates pass, record source/run evidence, create checkpoint, merge normally to main, retain branch/tags and stop. Physical Windows remains after M11/before release. M06 is not authorized.
 
 API references: Firebase Auth REST reference (signInWithPassword/securetoken refresh) and Electron safeStorage documentation. Linux basic_text is explicitly inadequate. No third-party accounts/platforms or backend deployment.
+
+
+Completion scope: real approved staging login/renewal/denial/local logout and actual private desktop sign-in/lock/logout passed. Disabled membership, outage and in-flight write/account-switch negatives are controlled fixtures; no live account was disabled or service interrupted. Required automated Windows gate passed; physical device/provider matrix remains under the existing after-M11 policy.

@@ -1,6 +1,6 @@
 # M05 Verification Evidence — Single login and protected sessions
 
-**Verification:** Linux/local/live-staging passed; hosted Windows pending. User acceptance pending.
+**Verification:** VERIFIED — Linux/Windows automation plus approved live staging CLI/desktop identity. User acceptance pending.
 
 ## Source/environment
 
@@ -33,9 +33,16 @@ The live runner targets only mapped Firebase/Worker identity endpoints and a den
 
 All heavy operations were sequential, low priority and bounded; one test worker. Preflight found adequate available memory/no owned stale loop. Private apps/compositors/HTTP fixtures completed and were cleaned; Brave and the live OS remained intact. No backend/cloud configuration or deployment.
 
-Hosted Windows must pass before G05 closeout/merge. Physical Windows and positive GNOME/KWallet device behavior remain after M11/before release; no production certification. Broader UI/application privacy and real business integration remain later milestones. Stop after M05; M06 is not authorized.
+Hosted Windows passed; G05 is closed in the declared scope. Physical Windows and positive GNOME/KWallet device behavior remain after M11/before release; no production certification. Broader UI/application privacy and real business integration remain later milestones. Stop after M05; M06 is not authorized.
 
 
 ## Initial Windows run and profile-scan repair
 
-[Run 38844751321](https://github.com/Business-It-Partners/dental-os/actions/runs/38844751321) at `042728e9997cdeb87a1add5a255031cc7c39b287` passed unit/build/host/runtime/SDK and all functional identity cases, including native OS-protected encryption/decryption. It failed only when scanning an actively locked Chromium profile file (`EBUSY`). [Failure log](evidence/windows-ci-first/identity-failure.log), [metadata](evidence/windows-ci-first/run.json) and intermediate artifacts are retained. The repaired harness closes Electron before reading profile files, streams all sizes in 64 KiB chunks and uses bounded retry for transient Windows sharing locks. It does not ignore locked files or skip the privacy assertion. [Focused Linux rerun](evidence/private-profile-final.log) passes. Runtime code is unchanged; final hosted rerun remains required.
+[Run 38844751321](https://github.com/Business-It-Partners/dental-os/actions/runs/38844751321) at `042728e9997cdeb87a1add5a255031cc7c39b287` passed unit/build/host/runtime/SDK and all functional identity cases, including native OS-protected encryption/decryption. It failed only when scanning an actively locked Chromium profile file (`EBUSY`). [Failure log](evidence/windows-ci-first/identity-failure.log), [metadata](evidence/windows-ci-first/run.json) and intermediate artifacts are retained. The repaired harness closes Electron before reading profile files, streams all sizes in 64 KiB chunks and uses bounded retry for transient Windows sharing locks. It does not ignore locked files or skip the privacy assertion. [Focused Linux rerun](evidence/private-profile-final.log) passes. Runtime code is unchanged; the final hosted rerun below supersedes this failed harness result.
+
+
+## Final Windows G05 and main integration
+
+[Run 38845000521](https://github.com/Business-It-Partners/dental-os/actions/runs/38845000521) passed at `07c2fb21575dc6b575ad664a9bb3b3466c0fd6e3` (`checkpoint/m05-ci`). [Metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [build](evidence/windows-ci/windows-build.log), [host](evidence/windows-ci/windows-host-ci.json), [runtime](evidence/windows-ci/windows-runtime.json), [SDK](evidence/windows-ci/windows-sdk.json) and [identity/privacy](evidence/windows-ci/windows-identity.json) evidence are retained beyond GitHub artifact expiry. Windows: 76 tests passed, one POSIX-only skip, zero failures; all hosted checks pass, including 20 identity cases and native OS-protected encryption/decryption/ciphertext checks. The closed-profile streamed scan passed without skipping locked/large regular files.
+
+M05 is VERIFIED for this automated/live-staging scope. Live account disabling, induced service outages, global revocation and business writes were not performed; controlled negative fixtures are explicitly identified above. Physical Windows and positive Linux keyring/device coverage remain final-release gates under approved deferral. User visual acceptance is separate. A normal merge to main preserves the exact tested runtime bytes; no repeat heavy checks for evidence-only closeout. Branch/checkpoint retained. Stop after M05; M06 not started.

@@ -1,5 +1,7 @@
 # Run Electron OS
 
+Normal launches require your existing **staging clinic account** after M05. The platform resolves clinic access before opening the desktop. Remember-me is offered only with adequate protected storage; otherwise login is session-only. Lock, sign-out and account switching clear in-memory workspaces. The currently running session is untouched; this appears after your next full relaunch.
+
 Click **Electron OS** in the Applications menu or pinned dock. Its launcher at `~/.local/bin/electron-os` uses `/home/master-x/Desktop/fewa_business_os`.
 
 From a terminal:

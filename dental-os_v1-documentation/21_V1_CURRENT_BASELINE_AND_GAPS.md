@@ -34,3 +34,8 @@ The table above records the starting snapshot. M02 now implements strict OS-only
 ## M03 implementation reconciliation — 2026-10-15
 
 Two fixed sample apps now use separate sandboxed renderers, origins and memory partitions through `electron/runtime/` and `src/RuntimeFixtures.tsx`, gated to private Linux tests/Windows CI. Foreground native content and inactive snapshots integrate with existing shared frames/dock/overview/Genie. Linux and hosted Windows G03 checks pass; physical-device testing is deferred. Ordinary demo apps remain unchanged outside the fixture mode. This is not installed production package execution, auth, SDK/API integration or store delivery. [M03 status](../dental-os_v1_working_info/milestone-03-isolated-runtime-and-shell/STATUS.md) governs the exact scope.
+
+
+## M04/M05 reconciliation — 2026-10-16
+
+M04 now implements a versioned bounded SDK/API broker with fixed staging binding, sender/frame/generation/capability enforcement, named appointment contract fixtures and preserved idempotency/revision semantics. M05 implements trusted Firebase/Worker clinic sign-in, renewal, protected optional refresh persistence, explicit session-only fallback and generation-fenced lock/logout/switch. Both pass applicable Linux/Windows automation; M05 also passed approved actual staging identity and private desktop sign-in checks. See their milestone evidence for controlled negatives and physical-provider limits. Normal launches now require staging sign-in; existing app workflows remain synthetic and installed package/runtime delivery is later work. No backend changes/deployment or production identity certification.

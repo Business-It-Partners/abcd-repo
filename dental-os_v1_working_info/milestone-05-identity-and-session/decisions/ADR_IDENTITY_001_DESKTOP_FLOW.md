@@ -1,6 +1,6 @@
 # ADR Identity 001 — Host-owned Firebase REST session
 
-**State:** implemented; final hosted Windows gate pending. **Date:** 2026-10-16.
+**State:** accepted for the declared staging/automated host scope after live Linux and hosted Windows proof; physical-provider matrix deferred. **Date:** 2026-10-16.
 
 Use the existing staging email/password Firebase REST flow in main, then Worker `/v1/me`. This avoids browser localPersistence or refresh tokens in independently updated app renderers. Google endpoints and staging Worker are fixed; no user-selected tenant/project/token URL. The existing clinic account remains the identity; no desktop-only account or Super Admin authority.
 

@@ -1,12 +1,12 @@
 # M05 Status — Single login and protected sessions
 
-**Status:** IMPLEMENTING
+**Status:** VERIFIED — Linux/Windows automation and live staging identity
 **Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-Implementation complete. Linux 77 unit tests, build, six focused private regressions and approved real staging CLI/desktop identity checks pass. Windows hosted gate pending; no production or physical-device acceptance claimed.
+G05 passed in the declared scope. Linux 77 tests/build/private regressions and real staging CLI/desktop identity checks pass. Windows run 38845000521 passed 76 tests with one POSIX-specific skip, build, host/runtime/SDK and all identity/privacy checks. Tested source `07c2fb21575dc6b575ad664a9bb3b3466c0fd6e3` / `checkpoint/m05-ci`. Verified M05 is integrated into main; milestone branch/checkpoint retained. User asked to stop after M05; M06 has not started. Physical-device and production release acceptance remain pending.
 
 **Dependencies:** [M04](../milestone-04-sdk-and-api-broker/PLAN.md)
 
