@@ -3,7 +3,7 @@
 **Updated:** 2026-10-15.
 **Active scope:** M01 documentation baseline complete; M02 and M03 automated Linux/Windows gates passed; physical Windows acceptance deferred.
 **Current implementation authorization:** user authorized M04 inspection, detailed planning, implementation, controlled verification and verified integration into main.
-**Active milestone:** M04 implementation; M03 verified and integrated into main. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M04 verified/integrated; M05 authorized next. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
 
 ## Milestones
@@ -13,7 +13,7 @@
 | [M01 — Architecture and baseline](milestone-01-architecture-baseline/STATUS.md) | VERIFIED — documentation scope only | [Evidence](milestone-01-architecture-baseline/VERIFICATION_EVIDENCE.md) |
 | [M02 — Trusted host and OS state](milestone-02-host-and-os-state/STATUS.md) | VERIFIED — automated Linux/Windows; device testing deferred | [Evidence](milestone-02-host-and-os-state/VERIFICATION_EVIDENCE.md) |
 | [M03 — Isolated runtime and shared shell](milestone-03-isolated-runtime-and-shell/STATUS.md) | VERIFIED — automated Linux/Windows; device testing deferred | [Evidence](milestone-03-isolated-runtime-and-shell/VERIFICATION_EVIDENCE.md) |
-| [M04 — Internal SDK and API boundary](milestone-04-sdk-and-api-broker/STATUS.md) | IMPLEMENTING | [Evidence](milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md) |
+| [M04 — Internal SDK and API boundary](milestone-04-sdk-and-api-broker/STATUS.md) | VERIFIED — automated Linux/Windows fixture scope | [Evidence](milestone-04-sdk-and-api-broker/VERIFICATION_EVIDENCE.md) |
 | [M05 — Single login and protected sessions](milestone-05-identity-and-session/STATUS.md) | PLANNED | [Evidence](milestone-05-identity-and-session/VERIFICATION_EVIDENCE.md) |
 | [M06 — Verified packages and local lifecycle](milestone-06-verified-packages/STATUS.md) | PLANNED | [Evidence](milestone-06-verified-packages/VERIFICATION_EVIDENCE.md) |
 | [M07 — First-party store and Cloudflare delivery](milestone-07-store-and-distribution/STATUS.md) | PLANNED | [Evidence](milestone-07-store-and-distribution/VERIFICATION_EVIDENCE.md) |

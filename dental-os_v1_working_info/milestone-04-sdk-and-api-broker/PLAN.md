@@ -26,11 +26,11 @@ Create a versioned, bounded application contract that can use existing SaaS APIs
 
 ## Exit criteria and verification
 
-- [ ] Negative cases: spoofed app/frame, malformed/oversized requests, forbidden URLs/redirects/channels and stale sessions.
-- [ ] Transport fixtures prove conflict, timeout, 401/403/503, ambiguous write result and preserved idempotency semantics.
-- [ ] Compatible/incompatible SDK handshake and cleanup; no arbitrary authenticated fetch, token getter or direct app messaging.
+- [x] Negative cases: spoofed app/frame, malformed/oversized requests, forbidden URLs/redirects/channels and stale sessions.
+- [x] Transport fixtures prove conflict, timeout, 401/403/503, ambiguous write result and preserved idempotency semantics.
+- [x] Compatible/incompatible SDK handshake and cleanup; no arbitrary authenticated fetch, token getter or direct app messaging.
 
-- [ ] Verify broker environment binding uses the mapped staging API, rejects mixed/production fallback configuration, and preserves existing business routes; OS services alone use `/v1/dental-os/...`.
+- [x] Verify broker environment binding uses the mapped staging API, rejects mixed/production fallback configuration, and preserves existing business routes; OS services alone use `/v1/dental-os/...`.
 
 ## Scope exclusions
 

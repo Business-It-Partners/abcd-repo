@@ -1,6 +1,6 @@
 # M04 Verification Evidence — Internal SDK and API boundary
 
-**Verification:** Linux passed; hosted Windows pending. User acceptance pending.
+**Verification:** VERIFIED — automated Linux/Windows fixture scope. User acceptance pending.
 
 ## Source and environment
 
@@ -27,4 +27,9 @@ G04/R05/R07/R13: forged sender/frame/origin/connection and stale generations rej
 
 Resource preflight found adequate memory and no stale task-owned job. All heavy work sequential, bounded, low priority and one test worker. Private app/compositor/servers closed; no unrelated process terminated. No live OS reload.
 
-Windows CI must pass before G04 closeout. Physical Windows interaction remains deferred under the approved policy; real Firebase login/token protection is M05, real SaaS operations M09. No third-party apps or production package trust is claimed.
+Windows CI passed; G04 is closed for the declared fixture scope. Physical Windows interaction remains deferred under the approved policy; real Firebase login/token protection is M05, real SaaS operations M09. No third-party apps or production package trust is claimed.
+
+
+## Windows and integration closeout
+
+[Windows run 38842666568](https://github.com/Business-It-Partners/dental-os/actions/runs/38842666568) passed at `672a81180336b535d90ee9c2d92917354dc1c6e5` (`checkpoint/m04-ci`). [Metadata](evidence/windows-ci/run.json), [unit results](evidence/windows-ci/windows-unit.json), [build](evidence/windows-ci/windows-build.log), [SDK integration](evidence/windows-ci/windows-sdk.json), [runtime regressions](evidence/windows-ci/windows-runtime.json) and [host recovery](evidence/windows-ci/windows-host-ci.json) are retained. Windows: 63 tests passed, one POSIX-specific skip, zero failures; all hosted SDK/runtime/host checks pass. Documentation/source-only closeout preserves the tested runtime file hashes. Normal merge into main retains milestone branch/checkpoint; no deployment or physical-device certification. User authorized continuing directly to M05 after this integration.

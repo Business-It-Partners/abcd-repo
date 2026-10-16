@@ -1,0 +1,60 @@
+{
+  "checks": [
+    "two isolated renderer processes and separate shell",
+    "sandbox/context isolation and no Node",
+    "apps have no Node or shell bridge",
+    "storage is separated by app",
+    "forged report rejected",
+    "network and cross-origin fetch denied",
+    "popup denied",
+    "unknown runtime IDs/layouts denied",
+    "modal stays in app content",
+    "local modal traps keyboard focus",
+    "beta-to-alpha switch focuses the native foreground",
+    "alpha-to-beta switch focuses the native foreground",
+    "dirty close cancellation preserves draft",
+    "resize uses shared manager",
+    "overview contains both isolated snapshots",
+    "overview clones have no runtime identities",
+    "native app bottom edge reveals fullscreen dock",
+    "Genie thumbnail contains captured native app",
+    "minimize/restore retains isolated draft and process",
+    "discard destroys the app webContents",
+    "reopen creates clean workflow state",
+    "external navigation denied",
+    "crash is contained to alpha",
+    "watchdog terminates hung renderer without stopping beta",
+    "cleanup cycle 1: no closed sample webContents",
+    "cleanup cycle 2: no closed sample webContents",
+    "cleanup cycle 3: no closed sample webContents",
+    "no shell renderer errors"
+  ],
+  "topology": {
+    "shell": 2728,
+    "apps": [
+      {
+        "id": 3,
+        "url": "dental-fixture://beta/index.html",
+        "pid": 5680,
+        "prefs": {
+          "sandbox": true,
+          "contextIsolation": true,
+          "nodeIntegration": false
+        }
+      },
+      {
+        "id": 2,
+        "url": "dental-fixture://alpha/index.html",
+        "pid": 1996,
+        "prefs": {
+          "sandbox": true,
+          "contextIsolation": true,
+          "nodeIntegration": false
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "platform": "win32",
+  "sha": "672a81180336b535d90ee9c2d92917354dc1c6e5"
+}
