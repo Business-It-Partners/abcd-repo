@@ -46,6 +46,8 @@ jobs:
         run: node tests/windows-host-ci.mjs
       - name: Windows isolated runtime proof
         run: node tests/runtime-ci.mjs
+      - name: Windows SDK and broker proof
+        run: node tests/sdk-ci.mjs
       - name: Retain evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,6 +59,8 @@ jobs:
             artifacts/windows-unit.json
             artifacts/windows-host-ci.json
             artifacts/windows-runtime.json
+            artifacts/windows-sdk.json
+            artifacts/sdk-fixtures.png
             artifacts/runtime-overlap.png
             artifacts/runtime-crash.png
           retention-days: 30

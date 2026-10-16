@@ -1,12 +1,12 @@
 # M04 Status — Internal SDK and API boundary
 
-**Status:** PLANNED
-**Updated:** 2026-10-15.
+**Status:** IMPLEMENTING
+**Updated:** 2026-10-16.
 **User acceptance:** pending; no production acceptance claimed.
 
 ## Current position
 
-No milestone-governed implementation or verification has started. Existing prototype work must be reconciled against this plan before it can satisfy any exit criterion.
+SDK/broker implemented; Linux 64 unit/local-HTTP tests, build and private SDK/M03 regressions pass. Hosted Windows gate pending. No real identity acceptance claimed.
 
 **Dependencies:** [M03](../milestone-03-isolated-runtime-and-shell/PLAN.md)
 

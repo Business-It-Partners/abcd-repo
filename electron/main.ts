@@ -121,6 +121,7 @@ ipcMain.handle('os:status', event => {
 });
 ipcMain.handle('runtime:sync', (event, value: unknown) => { if (!isShell(event) || !runtime) throw new Error('Unavailable'); runtime.sync(value); });
 ipcMain.handle('runtime:restart', (event, id: unknown) => { if (!isShell(event) || !runtime) throw new Error('Unavailable'); runtime.restart(id); });
+for (const kind of ['connect', 'request', 'cancel'] as const) ipcMain.handle(`sdk:${kind}`, (event, input: unknown) => runtime ? runtime.sdk(kind, event, input) : { ok: false, error: { code: 'UNAVAILABLE', message: 'No application runtime.', outcome: 'not_sent' } });
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));

@@ -269,3 +269,8 @@ The dedicated remote is https://github.com/Business-It-Partners/dental-os. Prese
 ## M03 transitional source mapping
 
 The bounded runtime proof introduces `electron/runtime/` for the trusted fixture supervisor/preload and `fixtures/runtime-apps/` for fixed synthetic assets, plus `src/RuntimeFixtures.tsx` for shared-frame integration. `electron/runtime/contracts.ts` is an explicitly renderer-safe transitional contract (pure schemas/types/pixel helper, no Node/Electron imports); the shell may consume its safe exports until M04 extracts the governed shared SDK/contracts package. This is not permission to import other trusted runtime internals. No full apps/packages migration or production app registry is claimed.
+
+
+## M04 source mapping
+
+`electron/sdk/contracts.ts` is a pure renderer-safe transitional SDK contract; `environment.ts`, `broker.ts` and `fixtures.ts` are trusted main-process code. Application preload uses a type-only contract import and fixed IPC channels, without importing host implementations into sandboxed app JavaScript. Existing src/electron paths/build remain stable; planned packages migration is not claimed. SDK integration/transport fixtures are `tests/sdk*.mjs` / `tests/sdk*.test.ts`. Scoped preference/operation fingerprints are memory-only OS coordination, not authoritative business storage.

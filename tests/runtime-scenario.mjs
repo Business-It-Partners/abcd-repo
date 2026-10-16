@@ -17,7 +17,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.getByRole('button',{name:'Records',exact:true}).click();await ready('records');const beta=await guest('beta');
   topology=await native();check('two isolated renderer processes and separate shell',topology.apps.length===2&&new Set([topology.shell,...topology.apps.map(w=>w.pid)]).size===3);
   check('sandbox/context isolation and no Node',topology.apps.every(w=>w.prefs.sandbox&&w.prefs.contextIsolation&&!w.prefs.nodeIntegration));
-  check('apps have no Node or shell bridge',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).join()==='report'));
+  check('apps have no Node or shell bridge',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,report,request'));
   await alpha.evaluate(()=>localStorage.setItem('isolation','alpha-only'));
   check('storage is separated by app',await beta.evaluate(()=>localStorage.getItem('isolation'))===null);
   check('forged report rejected',await beta.evaluate(()=>{try{window.dentalApp.report({dirty:false,modal:false,id:'studio'});return false;}catch{return true;}}));
