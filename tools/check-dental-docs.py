@@ -69,6 +69,7 @@ def check():
     for path in contract_files:
         digest.update(str(path.relative_to(ROOT)).encode())
         digest.update(b'\0' + path.read_bytes() + b'\0')
+    dirty_tree = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip())
     result = {
         'scope': 'documentation links/structure/requirement ownership only; no runtime certification',
         'architecture_documents': 24,
@@ -79,7 +80,7 @@ def check():
         'invariants': 14,
         'contract_sha256': digest.hexdigest(),
         'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        'working_tree': 'uncommitted; contract digest identifies authored architecture/plans',
+        'working_tree': 'dirty; contract digest identifies authored architecture/plans' if dirty_tree else 'clean',
         'errors': errors,
         'passed': not errors,
     }
