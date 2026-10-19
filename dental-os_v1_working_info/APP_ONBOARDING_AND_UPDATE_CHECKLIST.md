@@ -1,7 +1,7 @@
 # First-Party App Onboarding and Independent Update — Working Checklist
 
-**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; Windows CI and M11 resource/host gates remain open.
-**Milestone assignment:** M11 — Windows/Linux release and operations.
+**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; the 1.3.0 manual click-through, safety matrix, 16-app resource measurement and applicable M11 Windows CI remain open.
+**Milestone assignment:** M11 — flexible first-party app onboarding and independent updates.
 **Purpose:** The sole detailed implementation and acceptance checklist for proving that a newly approved first-party app can be installed from the Store and then updated independently of the Dental OS platform.
 
 ## Authority and scope
@@ -35,7 +35,7 @@ The first-party boundary remains company-controlled. This enables new company ap
 
 ### 0. Assign and freeze the work scope
 
-- [x] Assign the follow-up to M11 as a scoped amendment after the user authorized implementation on 2026-10-19. M11 is active; its original release/operations gates remain required.
+- [x] Assign this scope to M11 under the user-directed 2026-10-19 milestone realignment. M11 now owns flexible first-party app onboarding/update; M12 owns shell/workspace UI; M13 owns Windows/Linux release and operations.
 - [x] Record the exact starting branch `codex/milestone-11`, source SHA `7f6e65bf2b8990ba656ed66261670e4f842439dc`, named Cloudflare staging bucket/origin, live predecessor sequence 11, and existing artifacts before changes.
 - [x] Keep onboarding a new app ID separate from updating an installed app; authenticated staging evidence records both service and live desktop flows.
 - [x] Freeze the test identity as `company.sample.preview` and use that exact ID across `1.0.0` → `1.1.0` → `1.2.0`.
@@ -118,11 +118,11 @@ The first-party boundary remains company-controlled. This enables new company ap
 - [x] Add and pass a private Linux onboarding UI scenario covering third-app install/arrival flight, v1.1/v1.2 Update actions, safe health, bounded history, and v1.2 relaunch.
 - [x] Run read-only authenticated staging acceptance with the real clinic session: fresh Store install of 1.2.0 and update from a verified 1.0.0 install to live 1.2.0; old lease pinning and health acknowledgement pass. See [authenticated staging evidence](../artifacts/staging-onboarding-auth-verification.json).
 - [x] Linux `npm run build`, the full serial unit suite (13 files / 259 tests), and the private onboarding/distribution/update UI suites pass.
-- [ ] Full Windows CI has not run for this M11 branch; physical Windows is deferred under the existing decision.
+- [ ] Applicable Windows CI has not run for this M11 branch; physical Windows acceptance is G14 after M13.
 - [ ] The installed/open-app limit is bounded, but memory/process measurements at that limit have not been run.
 - [x] Run the operator publisher validator plus conditional-publisher/transport tests (13 passed); no shared Worker/API/config/binding changed, so existing-client deployment regressions were not applicable.
 - [x] Retain exact app hashes, sequence/policy/catalogue digests, named staging bucket/origin, test commands/results, and private UI screenshots without secrets or clinical data. Resource/process counts remain open.
-- [x] Update this checklist, M11 status/evidence, requirement traceability, architecture ADR, tooling guide, and root work index; keep Windows CI, resource/process, and remaining host gates open.
+- [x] Update this checklist, M11 status/evidence, requirement traceability, architecture ADR, tooling guide, and root work index; keep Windows CI, resource/process and remaining safety gates open.
 
 ## Acceptance gate
 
@@ -142,5 +142,5 @@ This work is complete only when all of the following are true:
 - No production catalogue, production bucket, production key, or production deployment/promotion.
 - No third-party publisher, public extension API, arbitrary sideload, app-owned native code, or app-selected preload.
 - No Dental SaaS production feature work, patient data, clinical writes, local business database, or offline write queue.
-- No Electron/Dental OS platform update in the app-update scenario. Platform updater/install certification remains in M11.
+- No Electron/Dental OS platform update in the app-update scenario. Platform updater/install certification belongs to M13.
 - No claim of physical Windows-device acceptance, broad Windows 8 support, or final product release from this checklist alone.

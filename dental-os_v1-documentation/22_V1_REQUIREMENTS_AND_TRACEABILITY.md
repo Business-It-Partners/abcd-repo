@@ -6,21 +6,21 @@ This matrix connects the constitution to acceptance gates and execution owners. 
 
 | Requirement | Contract | Gate / milestone |
 | --- | --- | --- |
-| R01 Hosted Windows/Linux product, clear authority | 02,04,16; INV-01/03/05 | G01/G11; M01/M11 |
-| R02 Company-only executable apps forever | 02,08,09,14,19,23; INV-02/06 | G06/G07; M06/M07 |
-| R03 Independent web package lifecycle | 08..10,23; INV-04/06/12 | G06..G08; M06..M08 |
-| R04 Shared desktop continuity and accessibility | 05..07; INV-05/09/14 | G03/G09/G10; M03/M09/M10 |
-| R05 Isolated apps and bounded privileges | 07,11,14; INV-07 | G03/G04/G10; M03/M04/M10 |
+| R01 Hosted Windows/Linux product, clear authority | 02,04,16; INV-01/03/05 | G01/G13/G14; M01/M13 |
+| R02 Company-only executable apps forever | 02,08,09,14,19,23; INV-02/06 | G06/G07/G11; M06/M07/M11 |
+| R03 Independent web package lifecycle | 08..10,23; INV-04/06/12 | G06..G08/G11; M06..M08/M11 |
+| R04 Shared desktop continuity and accessibility | 05..07; INV-05/09/14 | G03/G09/G10/G12/G14; M03/M09/M10/M12 |
+| R05 Isolated apps and bounded privileges | 07,11,14; INV-07 | G03/G04/G10/G11/G12; M03/M04/M10..M12 |
 | R06 Single login, protected secrets, session switching | 12; INV-08/11 | G05; M05 |
 | R07 Existing API authority, safe writes/conflicts | 04,11,12; INV-03/10 | G04/G09; M04/M09 |
-| R08 R2 catalogue/distribution, fewa_demo staging-only reuse and /v1/dental-os OS routes | 09,14; INV-02/06/12 | G07; M07 |
-| R09 Safe activation, dirty work, rollback and revocation | 10; INV-09/12 | G08; M08 |
-| R10 OS-only durability and online-dependent privacy | 13,14; INV-10/11 | G02/G10; M02/M10 |
-| R11 App-contained failure and actionable recovery | 07,15; INV-10/12 | G03/G10; M03/M10 |
-| R12 Bounded operational diagnostics/resource management | 15; INV-11/13 | G10; M10 |
+| R08 R2 catalogue/distribution, fewa_demo staging-only reuse and /v1/dental-os OS routes | 09,14; INV-02/06/12 | G07/G11; M07/M11 |
+| R09 Safe activation, dirty work, rollback and revocation | 10; INV-09/12 | G08/G11; M08/M11 |
+| R10 OS-only durability and online-dependent privacy | 13,14; INV-10/11 | G02/G10/G14; M02/M10/M13 |
+| R11 App-contained failure and actionable recovery | 07,15; INV-10/12 | G03/G10/G12; M03/M10/M12 |
+| R12 Bounded operational diagnostics/resource management | 15; INV-11/13 | G10/G11/G12/G13; M10..M13 |
 | R13 No direct app-to-app system | 11,19; INV-05/07 | G04/G09; M04/M09 |
-| R14 Platform release/update and supported-host proof | 10,16,18; INV-12/13 | G11; M11 |
-| R15 Honest baseline, decisions and acceptance evidence | 20,21; INV-10/13 | G01 and every milestone |
+| R14 Platform release/update and supported-host proof | 10,16,18; INV-12/13 | G13/G14; M13 |
+| R15 Honest baseline, decisions and acceptance evidence | 20,21; INV-10/13 | G01/G11/G12/G13/G14 and every milestone |
 
 ## Research references and interpretation
 
@@ -38,8 +38,8 @@ Links were consulted during the preceding architecture discussion. Recheck versi
 
 ## Staging amendment coverage
 
-R07 retains existing business routes and SaaS authority. R08 includes the canonical [staging/resource/namespace policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md). M04/M05 record transport/identity mapping; M07 records catalogue/resource mapping; M08 covers update metadata; M09 verifies existing Dental SaaS/Super Admin client compatibility. Each milestone's documented verification remains authoritative. G11 does not authorize production promotion.
+R07 retains existing business routes and SaaS authority. R08 includes the canonical [staging/resource/namespace policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md). M04/M05 record transport/identity mapping; M07 records catalogue/resource mapping; M08 covers safe update metadata; M09 verifies existing Dental SaaS/Super Admin client compatibility. M11 proves generic first-party app onboarding/update; M12 owns shell UI; M13 owns platform installers/host operations; G14 is final physical/user acceptance. Each milestone's documented verification remains authoritative. No gate authorizes production promotion.
 
-### M11 first-party onboarding slice — evidence status
+### M11 flexible first-party app onboarding/update — evidence status
 
-The scoped `company.sample.preview` implementation contributes evidence to R02, R03, R05, R08, R09, R14 and R15. See the [working checklist](../dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md), [live signed staging report](../artifacts/staging-onboarding-verification.json), [private Linux onboarding UI report](../artifacts/app-onboarding-verification.json), and [M11 evidence](../dental-os_v1_working_info/milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md). Catalogue/policy/package signatures and public R2 bytes were live; the clinic install-policy authorization response in the Store-service run was simulated. This does not close authenticated Store authorization, the overall G11 release gate, Windows CI, or resource/process acceptance.
+The scoped `company.sample.preview` implementation contributes evidence to R02, R03, R05, R08, R09, R12 and R15. See the [working checklist](../dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md), [live signed staging report](../artifacts/staging-onboarding-verification.json), [authenticated service report](../artifacts/staging-onboarding-auth-verification.json), [private Linux onboarding UI report](../artifacts/app-onboarding-verification.json), and [M11 evidence](../dental-os_v1_working_info/milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md). Live metadata/package signatures and clinic install authorization have been verified for the recorded scope. The manual 1.3.0 desktop click-through, full safety/resource matrix and applicable Windows CI remain open; G11 is not closed. This evidence does not close M13/G13 or G14.

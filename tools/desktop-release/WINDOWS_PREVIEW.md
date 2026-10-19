@@ -1,6 +1,6 @@
 # Dental OS Windows preview
 
-This is an unsigned, local test installer for the current Electron prototype. It does not complete M11 or introduce production authentication, package delivery, updates, backend integration or durable business records.
+This is an unsigned, local test installer for the current Electron prototype. It does not complete M13/G13 or G14, and does not introduce production authentication, package delivery, updates, backend integration or durable business records.
 
 ## On the Windows computer
 

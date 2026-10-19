@@ -9,7 +9,11 @@ This file is the single source of truth for this prototype's scope, implementati
 
 ## First-party app onboarding and independent-update follow-up
 
-The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). The user authorized this scoped M11 implementation on 2026-10-19. The signed feed/package/update path and authenticated staging Store install/update service pass; the generic new-app Store-to-dock arrival flight is restored and privately verified. Live-feed desktop UI click-through and remaining M11 host/resource gates are explicitly pending there. M07/M08 retain their original verified scope.
+The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). This is now M11: flexible first-party app onboarding and independent updates. The signed feed/package/update path, authenticated Store install/update service and private live-feed Linux install/update/restart pass for their recorded scope. The 1.3.0 manual click-through, full safety matrix, 16-app resource measurement and applicable M11 Windows CI remain pending there. M07/M08 retain their original verified scope.
+
+## Milestone sequence realignment — 2026-10-19
+
+At the user's direction, the active/future sequence is M11 flexible first-party app onboarding and independent updates; M12 Dental OS workspace/shell UI, delivered through submilestones M12.1–M12.5; M13 Windows/Linux release and operations. G14 is final physical Windows-device and user/product acceptance after M13. M01–M10 histories and verification remain unchanged. M11 stays active on `codex/milestone-11`; M12/M13 branches are not created until those milestones start. The [master roadmap](dental-os_v1_working_info/00_V1_MASTER_ROADMAP.md), [global status](dental-os_v1_working_info/00_V1_STATUS.md), M11–M13 plans and [acceptance gates](dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md) are the coordinated source of truth.
 
 ## Dental OS canonical repository structure — documented, 2026-10-15
 
@@ -128,7 +132,7 @@ Validation: build/typecheck and 25 unit tests pass. All nine UI suites pass on t
 
 ## Windows preview installer — 2026-10-15, built; Windows acceptance pending
 
-User-authorized out-of-sequence prototype packaging experiment related to M11. Package only the current shell/demo as an unsigned Windows x64 installer; do not advance M02–M11 or select a production installer/update channel. No backend, publishing, signing identity or production acceptance is included.
+User-authorized out-of-sequence prototype packaging experiment originally recorded alongside M11 and now retained as historical input for M13. Package only the current shell/demo as an unsigned Windows x64 installer; do not claim M13 acceptance or select a production installer/update channel. No backend, publishing, signing identity or production acceptance is included.
 
 - [x] Add a reproducible, allowlisted Windows preview installer configuration and icon.
 - [x] Build the current renderer/host, run unit checks and a relevant private host suite sequentially with bounded resources.

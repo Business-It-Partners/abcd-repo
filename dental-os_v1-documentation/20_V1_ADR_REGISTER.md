@@ -21,16 +21,16 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-013 | No general app-to-app communication | Accepted baseline | backend coordination only; 11/19 |
 | ADR-014 | Signed metadata/packages, freshness and key lifecycle | Accepted requirement | wire format/algorithm frozen in M06/M07; 08/14 |
 | ADR-015 | Ed25519 signatures over canonical release metadata | Accepted for dentalpkg/1 | SHA-256 payload/inventory binding; exact format in 23; M06 evidence governs implementation acceptance |
-| ADR-016 | Windows/Linux installer/update formats | Open release decision | select supported matrix before M11 acceptance; 16 |
+| ADR-016 | Windows/Linux installer/update formats | Open release decision | select supported matrix before M13 acceptance; 16 |
 | ADR-017 | Reuse fewa_demo infrastructure; staging-only backend execution | Accepted execution constraint | verify repository/branch/GitHub environment/resource mapping; production changes/promotion separately authorized; 09 |
 | ADR-018 | New OS APIs under /v1/dental-os; existing business routes unchanged | Accepted route boundary | additive services with explicit authorization; prefix is not deployment isolation; 09/11 |
 | ADR-023 | Company-signed catalogue registers first-party app IDs within a platform capability ceiling | Accepted for V1 company apps | new IDs do not require per-app shell branches; platform still pins company roots and a capability ceiling; 09/10/14/23 |
 
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 
-## ADR-019 — GitHub Windows CI during milestones; device testing after M11
+## ADR-019 — GitHub Windows CI during milestones; physical device testing after M13
 
-Accepted user decision, 2026-10-15. Automated Windows evidence permits milestone progression when applicable gates pass; native physical-device acceptance remains a separate mandatory gate before final product release. Record CI limitations and deferred scenarios. main plus started milestone branches and immutable identified checkpoints provide regression traceability. No claim that hosted-runner automation certifies a physical device.
+Accepted user decision, 2026-10-15: automated Windows evidence permits milestone progression when applicable gates pass; native physical-device acceptance remains a separate mandatory gate before final product release. On 2026-10-19, the user re-sequenced the remaining work: M11 is flexible app onboarding/update, M12 is OS shell UI, and M13 is Windows/Linux release/operations. The device deadline therefore moves from after the former M11 release milestone to after M13 under G14. This reassigns future milestone ownership only; prior results are preserved. Record CI limitations and deferred scenarios. Hosted-runner automation never certifies a physical device.
 
 ## ADR-020 — Bounded uncompressed dentalpkg/1 web container
 
@@ -38,7 +38,7 @@ M06 chooses canonical JSON with base64 file records over ZIP/TAR: deterministic 
 
 ## ADR-021 — Public staging package bytes, authenticated install authority
 
-User direction for platform milestones through M11: dedicated public staging bucket with signed non-sensitive company samples; private package delivery is deferred to actual dental-application delivery. Catalogue and current admin policy remain existing-Worker authenticated. Main owns credentials and never sends them to R2. Signed fresh metadata, pinned origin, exact byte identities and local registry remain installation prerequisites. Public readability does not authorize clinical API use. M07 uses a controlled operator publisher, no clinic upload route or third-party publishing. User authorized the named staging provisioning, publication, and deployments on 2026-10-16; production remains excluded. Live publication and current signed-package verification are recorded in milestone evidence.
+User direction for platform milestones through M13: dedicated public staging bucket with signed non-sensitive company samples; private package delivery is deferred to actual dental-application delivery. Catalogue and current admin policy remain existing-Worker authenticated. Main owns credentials and never sends them to R2. Signed fresh metadata, pinned origin, exact byte identities and local registry remain installation prerequisites. Public readability does not authorize clinical API use. M07 uses a controlled operator publisher, no clinic upload route or third-party publishing. User authorized the named staging provisioning, publication, and deployments on 2026-10-16; production remains excluded. Live publication and current signed-package verification are recorded in milestone evidence.
 
 ## ADR-022 — Separate signed update controls with persisted trial state
 
@@ -50,4 +50,4 @@ M08 selects an additive signed update-policy document over changing the M07 cata
 
 **Tradeoff:** An approved company signing key can onboard new first-party IDs without an Electron release, while compromise of that key could authorize an app within the shipped company capability ceiling. Revocation, expiry, sequence freshness, minimum versions, and digest/key revocation remain signed controls. Adding a capability outside the ceiling still requires a trusted platform policy/release change. This does not create third-party publishing, arbitrary sideloading, or a public extension API.
 
-**Evidence and limits:** Linux tests cover the generic runtime and Store path; Cloudflare staging sequences 12–14 demonstrate `company.sample.preview` `1.0.0` → `1.1.0` → `1.2.0`. The real public signed metadata and package bytes passed the current verifier and registry. The Worker install-authorization response was simulated in that test because an external clinic credential was unavailable; full authenticated desktop Store acceptance, Windows CI, and resource-limit acceptance remain open under M11.
+**Evidence and limits:** Linux tests cover the generic runtime and Store path; Cloudflare staging sequences 12–14 demonstrate `company.sample.preview` `1.0.0` → `1.1.0` → `1.2.0`, with sequence 15 publishing 1.3.0 for a manual Store update check. Authenticated clinic Store install/update service acceptance and a private live-feed desktop install/update/restart pass are recorded in [M11 evidence](../dental-os_v1_working_info/milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md). Manual 1.3.0 click-through, full failure/resource matrix and applicable Windows CI remain open; G11 is not closed. This does not certify Windows release operations (M13/G13) or final device acceptance (G14).

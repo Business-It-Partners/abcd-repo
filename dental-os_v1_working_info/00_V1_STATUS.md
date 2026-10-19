@@ -1,12 +1,12 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-19.
-**Active scope:** M01–M10 VERIFIED for their documented scope; M11 release/operations is IMPLEMENTING under the user's 2026-10-19 authorization. No final production/device certification is claimed.
-**Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
-**Active milestone:** M11 — Windows/Linux release and operations, including the scoped first-party app onboarding/update amendment. Physical Windows-device testing remains after M11 and before final product release.
+**Active scope:** M01–M10 VERIFIED for their documented scope; M11 flexible first-party app onboarding/updates is IMPLEMENTING; M12 OS workspace/shell UI and M13 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
+**Current implementation authorization:** M07–M10 staging work was previously authorized and is closed for its recorded scope. M11 app-onboarding/update work and staging acceptance were separately requested; this roadmap realignment is documentation-only. Production remains excluded.
+**Active milestone:** M11 — flexible first-party app onboarding and independent updates on `codex/milestone-11`. M12 and M13 have no active branches yet. Physical Windows-device testing is G14 after M13 and before final product release.
 **User review/acceptance:** pending.
 
-**M11 scope:** [First-party app onboarding and independent update](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) defines the third-app staging scenario and sequential v1.0.0 → v1.1.0 → v1.2.0 updates. Generic Linux runtime/Store tests, live signed Cloudflare staging sequences 12–14, authenticated staging Store install/update service acceptance, the live-feed private desktop install/update/restart, and the new-app Store-to-dock flight pass for this slice. Windows CI, resource/process acceptance, and remaining M11 release gates remain open. M07/M08 original status and evidence remain unchanged.
+**M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance and private live-feed install/update/restart pass for their recorded scope. The manual 1.3.0 click-through, full safety matrix, 16-app resource/process measurement and applicable Windows CI remain open. M07/M08 original status and evidence remain unchanged.
 
 ## Milestones
 
@@ -22,7 +22,9 @@
 | [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | VERIFIED — Linux/Windows and actual staging updates | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | VERIFIED — automated Linux/Windows hardening and bounded resource scope | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
-| [M11 — Windows/Linux release and operations](milestone-11-windows-linux-release/STATUS.md) | IMPLEMENTING | [Evidence](milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md) |
+| [M11 — Flexible first-party app onboarding and updates](milestone-11-flexible-first-party-app-updates/STATUS.md) | IMPLEMENTING | [Evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md) |
+| [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | PLANNED | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
+| [M13 — Windows/Linux release and operations](milestone-13-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-13-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
 ## Starting reality
 
@@ -36,8 +38,8 @@ Documentation now requires reuse of `fewa_demo` resources, Cloudflare staging-on
 
 ## Separate Windows preview packaging experiment — 2026-10-15
 
-The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of production M11, a production installer decision, or backend deployment authorization. That was the preview-time state. Current milestone/Windows CI progress is recorded in the table above; physical Windows acceptance remains pending.
+The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of M13, a production installer decision, or backend deployment authorization. That was the preview-time state. Current milestone/Windows CI progress is recorded in the table above; physical Windows acceptance remains pending under G14.
 
 ## Approved verification revision
 
-Windows GitHub Actions provide automated milestone evidence during M02–M11. Physical Windows tests are explicitly deferred until after M11, before final product release. Prior statements treating device evidence as an immediate progression blocker are superseded by this user decision; CI success must not be presented as physical certification.
+Windows GitHub Actions provide automated milestone evidence during M02–M13. Under the 2026-10-19 milestone re-sequencing, physical Windows tests are deferred until after M13 and before final product release. Earlier “after M11” wording is historical and superseded; CI success must not be presented as physical certification.

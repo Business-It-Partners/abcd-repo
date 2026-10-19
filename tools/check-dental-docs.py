@@ -17,8 +17,8 @@ def check():
     milestones = sorted(WORK.glob('milestone-*'))
     if len(list(ARCH.glob('*.md'))) != 24:
         errors.append('Expected 24 numbered architecture documents')
-    if len(milestones) != 11:
-        errors.append('Expected eleven milestone folders')
+    if len(milestones) != 13:
+        errors.append('Expected thirteen milestone folders')
     for index, folder in enumerate(milestones, 1):
         if not folder.name.startswith(f'milestone-{index:02d}-'):
             errors.append(f'Milestone sequence mismatch: {folder.name}')
@@ -50,7 +50,7 @@ def check():
         req = f'R{n:02d}'
         if not re.search(rf'\b{req}\b', plans) or not re.search(rf'\b{req}\b', trace):
             errors.append(f'Unmapped requirement {req}')
-    for n in range(1, 12):
+    for n in range(1, 15):
         gate = f'G{n:02d}'
         if not re.search(rf'\b{gate}\b', plans) or not re.search(rf'\b{gate}\b', gate_doc):
             errors.append(f'Unmapped gate {gate}')
@@ -75,7 +75,7 @@ def check():
         'milestones': len(milestones),
         'required_milestone_files': len(milestones) * len(REQUIRED),
         'requirements': 15,
-        'acceptance_gates': 11,
+        'acceptance_gates': 14,
         'invariants': 14,
         'contract_sha256': digest.hexdigest(),
         'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
