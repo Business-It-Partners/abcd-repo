@@ -9,5 +9,5 @@ export const stagingDistribution: DistributionConfig = {
  policy: { keys: { 'company-staging-m08-20261016': { publicKey: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEANjpu00Rwhyl+ig7+JjWGEZUi3h/cY5XV4Lb9kW7UWiU=\n-----END PUBLIC KEY-----\n", publisher: 'company' }, [stagingKeyId]: { publicKey: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAEWtgyVLsULX0Zl8ZzypDXHjSC2FT0RgUQoaI/q2x7iE=\n-----END PUBLIC KEY-----\n", publisher: 'company' } }, apps: {
   'company.sample.alpha': { publisher: 'company', capabilities: operations },
   'company.sample.beta': { publisher: 'company', capabilities: operations.filter(o=>o!=='appointments.setStatus') },
- } },
+ }, companyApps: { publisher: 'company', capabilities: operations } },
 };

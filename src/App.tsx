@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type RefObject } from 'react';
 import { Check, ChevronRight, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeight, dockLayout, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
@@ -9,19 +9,22 @@ import { StoreApp, catalogIds, type StoreJob } from './StoreApp';
 import { celebrateStoreArrival } from './storeArrival';
 import { DeliveryStore, useDeliveryStore } from './DeliveryStore';
 import { sampleWindows } from '../electron/distribution/contracts';
+import { packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/contracts';
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
 import { ManagedWindowFrame } from './ManagedWindow';
+import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
-import { WINDOW_IDS, WINDOW_SPECS, type WindowId } from './windowGeometry';
+import { WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
 import { dockArtwork } from './dockArtwork';
+import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
 const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
 const fixtures = new URLSearchParams(location.search).get('prototypeFixtures') === '1';
-const makeIcons = (ids: WindowId[]) => ids.map(id => ({ id, label: WINDOW_SPECS[id].title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
+const makeIcons = (ids: string[], titles: Record<string,string>) => ids.map(id => ({ id, label: titles[id] ?? windowSpec(id).title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
 const previewId = (id: WindowId) => id === 'studio' ? 'preview' : `${id}-preview`;
 const isPrototype = (id: WindowId) => id === 'studio' || id === 'records' || id === 'followups';
 function useDock(size: { width: number; height: number }, frozen: boolean, specs: DockSpec[]) {
@@ -67,29 +70,39 @@ export function App() { return <WindowManagerProvider><Desktop /></WindowManager
 function Desktop() {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
   const { targets, controllers } = useAppWindows();
+  const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups } = controllers;
   const phase = studio.win.phase;
-  const [installed, setInstalled] = useState<WindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
-  const delivery = useDeliveryStore(!fixtures, id=>{const windowId=sampleWindows[id];if(!windowId||getState().windows[windowId].phase!=='closed')return;setReservation(0);setReadyId(null);setArrivalId(windowId);});
-  const deliveredIds = delivery.installedOrder.filter(id=>sampleWindows[id]).map(id=>sampleWindows[id]);
-  const icons = makeIcons(fixtures ? WINDOW_IDS : ['store', ...deliveredIds]);
-  const pendingArrivalId=delivery.installingId?sampleWindows[delivery.installingId]:undefined;
-  const [updates, setUpdates] = useState<WindowId[]>(['staff', 'lab']);
+  const [installed, setInstalled] = useState<StaticWindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
+  const [dynamicControllerRefs,setDynamicControllerRefs]=useState<Record<string,MutableRefObject<WindowController>>>({});
+  const onControllerRef=useCallback((id:string,ref:MutableRefObject<WindowController>|null)=>setDynamicControllerRefs(previous=>{if(ref){if(previous[id]===ref)return previous;return{...previous,[id]:ref};}if(!previous[id])return previous;const next={...previous};delete next[id];return next;}),[]);
+  const dynamicControllers:Record<string,WindowController>=Object.fromEntries(Object.entries(dynamicControllerRefs).map(([id,ref])=>[id,ref.current]));
+  const allControllers:Record<string,WindowController>={...staticControllers,...dynamicControllers};
+  const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
-  const queue = useRef<WindowId[]>([]);
+  const queue = useRef<StaticWindowId[]>([]);
   const [reservation,setReservation]=useState(1);
   const [readyId,setReadyId]=useState<WindowId|null>(null);
   const [updatedId,setUpdatedId]=useState<WindowId|null>(null);
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
-  function startStoreJob(id:WindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
+  const delivery = useDeliveryStore(!fixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
+  const dynamicTargets=useRef<Record<string,RefObject<HTMLButtonElement|null>>>({});
+  for(const app of delivery.view.apps){const id=runtimeIdForPackage(app.id);if(!sampleWindows[app.id])dynamicTargets.current[id]??=createRef<HTMLButtonElement>();}
+  const runtimeTargets:Record<string,RefObject<HTMLButtonElement|null>>={...targets,...dynamicTargets.current};
+  const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
+  const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
+  const deliveredIds = delivery.installedOrder.map(runtimeIdForPackage);
+  const icons = makeIcons(fixtures ? WINDOW_IDS : ['store', ...deliveredIds], titleByWindow);
+  const pendingArrivalId=delivery.installingId?runtimeIdForPackage(delivery.installingId):undefined;
+  function startStoreJob(id:StaticWindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
   useEffect(() => {
     if(!job) return;
     const timer = setTimeout(() => {
       if(job.progress < 100) { setJob({...job,progress:Math.min(100,job.progress+10)}); return; }
-      if(job.update) { setUpdatedId(job.id);setUpdates(old=>old.filter(id=>id!==job.id)); setStoreMessage(`${WINDOW_SPECS[job.id].title} updated.`); }
-      else { setReservation(0);setReadyId(null);setInstalled(old=>old.includes(job.id)?old:[...old,job.id]); setArrivalId(job.id); setStoreMessage(`${WINDOW_SPECS[job.id].title} installed.`); }
+      if(job.update) { setUpdatedId(job.id);setUpdates(old=>old.filter(id=>id!==job.id)); setStoreMessage(`${windowSpec(job.id).title} updated.`); }
+      else { setReservation(0);setReadyId(null);setInstalled(old=>old.includes(job.id)?old:[...old,job.id]); setArrivalId(job.id); setStoreMessage(`${windowSpec(job.id).title} installed.`); }
       const next=queue.current.shift(); setJob(next?{id:next,update:true,progress:0}:null);
     }, job.progress===100?350:260);
     return ()=>clearTimeout(timer);
@@ -104,11 +117,11 @@ function Desktop() {
   },[arrivalId]);
   useEffect(()=>{if(!readyId)return;const timer=setTimeout(()=>setReadyId(null),5000);return ()=>clearTimeout(timer);},[readyId]);
   useEffect(()=>{if(!updatedId)return;const timer=setTimeout(()=>setUpdatedId(null),900);return ()=>clearTimeout(timer);},[updatedId]);
-  function openStoreApp(id:WindowId){if(arrivalId){finishArrival.current?.();setArrivalId(null);}setReadyId(null);controllers[id].open();}
+  function openStoreApp(id:WindowId){const controller=allControllers[id];if(!controller){setReadyId(id);return;}if(arrivalId){finishArrival.current?.();setArrivalId(null);}setReadyId(null);controller.open();}
 
   // Reserve a thumbnail destination synchronously when capture starts, before
   // measuring Genie geometry. In normal use, previews appear only for minimized apps.
-  const hasPreview = (id: WindowId) => fixtures && isPrototype(id) || state.windows[id].busy || ['minimizing', 'minimized', 'restoring'].includes(state.windows[id].phase);
+  const hasPreview = (id: WindowId) => {const win=state.windows[id];return !!win&&(fixtures && isPrototype(id) || win.busy || ['minimizing', 'minimized', 'restoring'].includes(win.phase));};
   const specs: DockSpec[] = [{ id: 'host-minimize', width: DOCK.size, height: DOCK.size }, { id: 'host-shutdown', width: DOCK.size, height: DOCK.size }, { id: 'control-divider', width: .9, height: 28.8, magnifies: false }, ...icons.map(i => ({ id: i.id, width: DOCK.size*(i.id===arrivalId?reservation:i.id===pendingArrivalId?0:1), height: DOCK.size })),
     ...(icons.some(icon => hasPreview(icon.id)) ? [{ id: 'divider', width: .9, height: 28.8, magnifies: false }] : []),
     ...icons.map(icon => icon.id).filter(hasPreview).map(id => ({ id: previewId(id), width: DOCK.previewWidth, height: DOCK.previewHeight }))];
@@ -192,7 +205,7 @@ function Desktop() {
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records}} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -205,13 +218,13 @@ function Desktop() {
     </ManagedWindowFrame>}
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
-    {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={controllers[id]}>
+    {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
       {id === 'store' && !fixtures ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openStoreApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));
-        setStoreMessage(`${WINDOW_SPECS[id].title} uninstalled. Demo records retained for this session.`);
-      }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{WINDOW_SPECS[id].title}</h2><p>Coming soon</p></div>}
+        setStoreMessage(`${windowSpec(id).title} uninstalled. Demo records retained for this session.`);
+      }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
     <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} inert={!showDock} aria-label="Application dock">
       <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * 2, height: DOCK.bottom + dockHeight }}/>
@@ -225,23 +238,23 @@ function Desktop() {
           </button>;
         }
         if (item.id === 'divider' || item.id === 'control-divider') return <span key={item.id} className="dock-divider" style={style}/>;
-        const previewApp = WINDOW_IDS.find(id => previewId(id) === item.id);
+        const previewApp = Object.keys(allControllers).find(id => previewId(id) === item.id);
         if (previewApp) {
-          const controller = controllers[previewApp], title = WINDOW_SPECS[previewApp].title;
-          return <button ref={targets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostActionPending || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${title}` : `Open ${title} preview`}>
-            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{title}</span>
+          const controller = allControllers[previewApp], title = state.windows[previewApp]?.title ?? titleByWindow[previewApp] ?? previewApp;
+          return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostActionPending || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${title}` : `Open ${title} preview`}>
+            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{title}</span>
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
-        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : targets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={()=>openStoreApp(icon.id)}>
-          {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
-          {state.windows[icon.id].phase !== 'closed' && <span className="running-dot"/>}
+        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={()=>openStoreApp(icon.id)}>
+          {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
+          {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;
       })}
     </nav>
-    {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22}}><img src={dockArtwork(readyId)} alt=""/><span>{WINDOW_SPECS[readyId].title}<small>Ready to open</small></span><button aria-label={`Open ${WINDOW_SPECS[readyId].title} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
+    {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
     {immersive && !state.overview && <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)}/>}
-    {state.overview && <WindowOverview controllers={controllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
+    {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
     <div className="desktop-footnote"><span className="experiment-dot"/> ELECTRON / TYPESCRIPT<span className="footnote-line"/>DOCK + GENIE</div>
   </main>;
 }

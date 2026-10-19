@@ -1,0 +1,10 @@
+{
+  "environment": "cloudfare-staging",
+  "staffId": "d05df2cc-5899-40d6-902f-cbe962a7999c",
+  "appointmentId": "19cf92f8-72f0-40a8-a8fa-cfcdc46b58be",
+  "date": "2105-10-11",
+  "appointmentCancelled": true,
+  "staffInactive": true,
+  "auditReceiptsPreserved": true,
+  "noProductionChange": true
+}

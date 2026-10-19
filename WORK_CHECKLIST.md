@@ -7,6 +7,10 @@
 
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
 
+## First-party app onboarding and independent-update follow-up
+
+The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). The user authorized this scoped M11 implementation on 2026-10-19. The signed feed/package/update path and authenticated staging Store install/update service pass; the generic new-app Store-to-dock arrival flight is restored and privately verified. Live-feed desktop UI click-through and remaining M11 host/resource gates are explicitly pending there. M07/M08 retain their original verified scope.
+
 ## Dental OS canonical repository structure — documented, 2026-10-15
 
 Expanded [00_REPOSITORY_STRUCTURE.md](dental-os_v1_working_info/00_REPOSITORY_STRUCTURE.md) as the sole target folder/ownership/import-boundary guide. It covers desktop main/preload/renderer, shared packages, future first-party apps, fixtures, tests/tools/config, separate fewa_demo backend repositories, installed OS state and incremental migration. Root instructions/development/README and architecture link to it rather than copying the tree. Current src/electron source remains in place; no new implementation packages, source migration, backend change or deployment. Lightweight documentation checks only; no builds/runtime tests or live-session changes. See M01 amendment evidence.

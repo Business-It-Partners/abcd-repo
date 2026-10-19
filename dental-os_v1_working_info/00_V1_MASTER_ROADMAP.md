@@ -41,7 +41,11 @@ Use [requirements](../dental-os_v1-documentation/22_V1_REQUIREMENTS_AND_TRACEABI
 
 Reuse `fewa_demo` Dental SaaS/Super Admin infrastructure and existing GitHub environments/deployment workflows. All backend changes, remote catalogue/update work and API/login integration in this roadmap target verified Cloudflare staging only. Record exact branch/environment/resource identity before execution; preserve existing clients through additive changes and regression evidence. Use `/v1/dental-os/...` for new OS services only; existing business APIs keep their routes. [Canonical policy](../dental-os_v1-documentation/09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
 
-M04/M05 verify relevant API/identity staging mapping; M07 owns distribution contracts/resources, M08 update metadata, M09 connected regression proof. M11 release certification does not authorize production promotion/deployment. Complete dental application UI/workflows remain a separate delivery. No implementation milestone is started by this amendment.
+M04/M05 record API/identity staging mapping; M07 owns distribution contracts/resources, M08 update metadata, and M09 connected regression proof. Their verified scope remains in those milestone records. M11 release certification does not authorize production promotion/deployment. Complete dental application UI/workflows remain a separate delivery. M11 implementation is active under the scoped amendment below.
+
+## M11 scope amendment — first-party app onboarding and app-only updates
+
+The user authorized this scoped M11 work on 2026-10-19. The [working checklist](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) defines a new-app Store install followed by app-only v1.0.0-to-v1.1.0-to-v1.2.0 updates. Linux private UI, live signed staging/package acceptance, authenticated Store service acceptance, and the private live-feed desktop install/update/restart pass for the named scope; Windows CI and M11 host/resource gates remain open. It does not revise or reopen the verified M07/M08 sample gates. M11 implementation is active on `codex/milestone-11`; production promotion remains excluded.
 
 ## Verification policy revision — deferred physical Windows testing
 

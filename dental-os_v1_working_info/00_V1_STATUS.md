@@ -1,10 +1,12 @@
 # Dental OS V1 — Global Status
 
-**Updated:** 2026-10-16.
-**Active scope:** M01–M10 VERIFIED for their documented scope; M11 release/operations remains planned. No final production/device certification is claimed.
+**Updated:** 2026-10-19.
+**Active scope:** M01–M10 VERIFIED for their documented scope; M11 release/operations is IMPLEMENTING under the user's 2026-10-19 authorization. No final production/device certification is claimed.
 **Current implementation authorization:** user explicitly authorized all necessary Dental OS work through M10, including scoped staging provisioning/publication/backend deployment and verified integration. Complete M07 then M08/M09 continuously; no permission pause between them. Production remains excluded.
-**Active milestone:** M10 verified; evidence-only normal integration into main closes the through-M10 authorization. M11 has not started. Physical Windows-device testing remains after M11 and before final product release.
+**Active milestone:** M11 — Windows/Linux release and operations, including the scoped first-party app onboarding/update amendment. Physical Windows-device testing remains after M11 and before final product release.
 **User review/acceptance:** pending.
+
+**M11 scope:** [First-party app onboarding and independent update](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) defines the third-app staging scenario and sequential v1.0.0 → v1.1.0 → v1.2.0 updates. Generic Linux runtime/Store tests, live signed Cloudflare staging sequences 12–14, authenticated staging Store install/update service acceptance, the live-feed private desktop install/update/restart, and the new-app Store-to-dock flight pass for this slice. Windows CI, resource/process acceptance, and remaining M11 release gates remain open. M07/M08 original status and evidence remain unchanged.
 
 ## Milestones
 
@@ -20,7 +22,7 @@
 | [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | VERIFIED — Linux/Windows and actual staging updates | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | VERIFIED — automated Linux/Windows hardening and bounded resource scope | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
-| [M11 — Windows/Linux release and operations](milestone-11-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md) |
+| [M11 — Windows/Linux release and operations](milestone-11-windows-linux-release/STATUS.md) | IMPLEMENTING | [Evidence](milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
 ## Starting reality
 

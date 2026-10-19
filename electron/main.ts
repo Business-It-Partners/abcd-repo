@@ -28,6 +28,7 @@ const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPL
 const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
+const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
 const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSwitch('identity-staging');
 let identity: SessionManager | undefined;
@@ -206,7 +207,7 @@ if (primary) void app.whenReady().then(async () => {
     osStore.load();
     const packageRoot = path.join(app.getPath('userData'), 'packages');
     const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
-    const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined) : undefined;
+    const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined, onboardingFixtures) : undefined;
     packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages')) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {

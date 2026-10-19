@@ -33,7 +33,9 @@
     "test:updates": "node tools/run-ui-test.mjs tests/updates.mjs",
     "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs",
     "test:hardening": "node tools/run-ui-test.mjs tests/hardening.mjs tests/resources.mjs tests/recovery.mjs",
-    "test:store-arrival": "node tools/run-ui-test.mjs tests/store-arrival-delivery.mjs"
+    "test:store-arrival": "node tools/run-ui-test.mjs tests/store-arrival-delivery.mjs",
+    "test:onboarding": "node tools/run-ui-test.mjs tests/onboarding.mjs",
+    "test:staging-onboarding-desktop": "node tools/run-ui-test.mjs tests/staging-onboarding-desktop.mjs"
   },
   "keywords": [],
   "author": "",

@@ -18,8 +18,14 @@ export const WINDOW_SPECS = {
   protocols: comingSoon('Treatment Protocols'),
   calendar: comingSoon('Calendar'),
 } as const;
-export type WindowId = keyof typeof WINDOW_SPECS;
+export type StaticWindowId = keyof typeof WINDOW_SPECS;
+export type WindowId = StaticWindowId | (string & {});
 export const WINDOW_IDS = Object.keys(WINDOW_SPECS) as WindowId[];
+export type WindowSpec = { title: string; preferred: Size; minimum: Size };
+const companyAppSpec: WindowSpec = { title: 'Company App', preferred: { width: 980, height: 620 }, minimum: { width: 520, height: 360 } };
+export function windowSpec(id: WindowId): WindowSpec {
+  return Object.hasOwn(WINDOW_SPECS, id) ? WINDOW_SPECS[id as keyof typeof WINDOW_SPECS] : companyAppSpec;
+}
 
 export function workArea(size: Size): Rect {
   const x = Math.min(12, size.width * .05), y = Math.min(4, size.height * .1);
@@ -35,7 +41,7 @@ export function fitBounds(bounds: Rect, size: Size, minimum: Size): Rect {
 }
 
 export function initialBounds(id: WindowId, size: Size): Rect {
-  const spec = WINDOW_SPECS[id], area = workArea(size);
+  const spec = windowSpec(id), area = workArea(size);
   if (id === 'records' || id === 'followups') return { ...area };
   const width = Math.min(spec.preferred.width, area.width), height = Math.min(spec.preferred.height, area.height);
   return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y + (area.height - height) / 2, width, height }, size, spec.minimum);

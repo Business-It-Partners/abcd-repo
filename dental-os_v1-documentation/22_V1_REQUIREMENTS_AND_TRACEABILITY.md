@@ -38,4 +38,8 @@ Links were consulted during the preceding architecture discussion. Recheck versi
 
 ## Staging amendment coverage
 
-R07 retains existing business routes and SaaS authority. R08 includes the canonical [staging/resource/namespace policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md). M04/M05 bind transport/identity to verified staging resources; M07 records catalogue/resource mapping; M08 covers update metadata; M09 verifies existing Dental SaaS/Super Admin clients remain compatible. G11 does not authorize production promotion. These are planned acceptance requirements, not executed backend proof.
+R07 retains existing business routes and SaaS authority. R08 includes the canonical [staging/resource/namespace policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md). M04/M05 record transport/identity mapping; M07 records catalogue/resource mapping; M08 covers update metadata; M09 verifies existing Dental SaaS/Super Admin client compatibility. Each milestone's documented verification remains authoritative. G11 does not authorize production promotion.
+
+### M11 first-party onboarding slice — evidence status
+
+The scoped `company.sample.preview` implementation contributes evidence to R02, R03, R05, R08, R09, R14 and R15. See the [working checklist](../dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md), [live signed staging report](../artifacts/staging-onboarding-verification.json), [private Linux onboarding UI report](../artifacts/app-onboarding-verification.json), and [M11 evidence](../dental-os_v1_working_info/milestone-11-windows-linux-release/VERIFICATION_EVIDENCE.md). Catalogue/policy/package signatures and public R2 bytes were live; the clinic install-policy authorization response in the Store-service run was simulated. This does not close authenticated Store authorization, the overall G11 release gate, Windows CI, or resource/process acceptance.

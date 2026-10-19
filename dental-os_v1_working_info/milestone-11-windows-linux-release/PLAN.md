@@ -2,19 +2,21 @@
 
 **Status:** see [STATUS.md](STATUS.md).
 **Dependencies:** [M10](../milestone-10-security-resilience-and-usability/PLAN.md)
-**Requirements:** R01, R14, R15
+**Requirements:** R01–R05, R08–R09, R14–R15 (M11 scoped app-onboarding/update amendment; earlier gates remain closed for their recorded scope)
 **Exit gates:** G11
 **Architecture:** [contract index](../../dental-os_v1-documentation/00_V1_README.md), [gate matrix](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md).
 
 ## Outcome
 
-Certify installable, maintainable Dental OS releases on explicitly named Windows/Linux targets.
+Certify installable, maintainable Dental OS releases on explicitly named Windows/Linux targets, and prove a newly approved first-party app can be onboarded and updated repeatedly without a Dental OS platform release.
 
 ## Deliverables and scope
 
 - Frozen support matrix, signed installer formats, trusted platform-update paths and release provenance/key custody.
 - Install/upgrade/uninstall/recovery runbooks, support/version diagnostics and compatibility retirement policy.
 - Requirement coverage bound to exact source/build/host evidence and separate user acceptance/release decision.
+- Generic first-party catalogue-to-runtime onboarding for a third app, without another app-specific renderer/runtime branch.
+- Real Cloudflare staging Store acceptance for one synthetic app's `1.0.0` “Coming Soon” release, followed by app-only `1.1.0` and `1.2.0` releases.
 
 ## Execution sequence
 
@@ -28,6 +30,9 @@ Certify installable, maintainable Dental OS releases on explicitly named Windows
 
 - [ ] Clean-device and upgrade tests on each supported Windows/Linux target; installation permissions and secret providers verified.
 - [ ] Platform update interruption/restart/recovery with installed app compatibility and dirty-work protection.
+- [ ] Install and launch a third approved first-party app from the actual staging Store with no platform build change; preserve the existing two apps.
+- [ ] Update that app sequentially from `1.0.0` to `1.1.0` and `1.2.0` through the Store, observe both new features, and prove the Dental OS platform build remains unchanged.
+- [ ] Pass the new-app authorization, capability-boundary, interruption, dirty-work, rollback, and version-retention checks in the [single detailed checklist](../APP_ONBOARDING_AND_UPDATE_CHECKLIST.md).
 - [ ] Complete G01–G11/R01–R15 evidence review, authentic release artifacts, rollback/revocation drill and operations handoff.
 
 - [ ] Record that certification uses local/staging artifacts and feeds; production backend promotion or public production publishing remains a separately authorized task.

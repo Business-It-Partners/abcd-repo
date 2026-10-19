@@ -4,9 +4,19 @@ import { operations, type Operation } from '../sdk/contracts';
 export const limits = Object.freeze({ wire: 16 * 1024 * 1024, expanded: 8 * 1024 * 1024, file: 2 * 1024 * 1024, count: 128, path: 160 });
 export type Manifest = { format: 1; appId: string; publisher: string; version: string; entry: string; sdkMajor: 1; apiMajor: 1; capabilities: Operation[]; assets: { path: string; size: number; sha256: string }[] };
 export type Release = { format: 1; appId: string; publisher: string; version: string; digest: string; keyId: string };
-export type TrustPolicy = Readonly<{ keys: Readonly<Record<string, { publicKey: string; publisher: string }>>; apps: Readonly<Record<string, { publisher: string; capabilities: readonly Operation[] }>> }>;
+export type AppTrust = Readonly<{ publisher: string; capabilities: readonly Operation[] }>;
+export type TrustPolicy = Readonly<{
+  keys: Readonly<Record<string, { publicKey: string; publisher: string }>>;
+  /** Explicit entries remain useful for local fixtures. Production first-party IDs are authorized by signed catalogue/policy metadata, within this platform ceiling. */
+  apps: Readonly<Record<string, AppTrust>>;
+  companyApps?: AppTrust;
+}>;
 export type VerifiedPackage = Readonly<{ manifest: Manifest; release: Release; files: ReadonlyMap<string, Buffer>; capabilities: readonly Operation[] }>;
 const hashPattern = /^[a-f0-9]{64}$/;
+export function isCompanyAppId(value: unknown): value is string { return typeof value === 'string' && /^company\.[a-z][a-z0-9.-]{1,70}$/.test(value); }
+export function appTrust(policy: TrustPolicy, id: string): AppTrust | undefined {
+  return Object.hasOwn(policy.apps, id) ? policy.apps[id] : isCompanyAppId(id) ? policy.companyApps : undefined;
+}
 export function sha256(bytes: Uint8Array) { return createHash('sha256').update(bytes).digest('hex'); }
 export function canonical(value: unknown): string {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return JSON.stringify(value);
@@ -54,7 +64,7 @@ export function verifyPackage(bytes: Buffer, policy: TrustPolicy): VerifiedPacka
   const release = envelope.release; object(release, ['format', 'appId', 'publisher', 'version', 'digest', 'keyId']);
   if (release.format !== 1 || typeof release.keyId !== 'string' || !/^[a-z0-9-]{1,48}$/.test(release.keyId) || typeof release.digest !== 'string' || !hashPattern.test(release.digest)) throw new Error('Invalid release');
   const key = Object.hasOwn(policy.keys, release.keyId) ? policy.keys[release.keyId] : undefined;
-  const app = Object.hasOwn(policy.apps, release.appId) ? policy.apps[release.appId] : undefined;
+  const app = appTrust(policy, release.appId);
   if (!key || !app || key.publisher !== release.publisher || app.publisher !== release.publisher) throw new Error('Untrusted release');
   const publicKey = createPublicKey(key.publicKey);
   if (publicKey.asymmetricKeyType !== 'ed25519' || !verify(null, Buffer.from(canonical(release)), publicKey, base64(envelope.signature, 64))) throw new Error('Invalid signature');

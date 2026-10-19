@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "both original company apps have actual runtime health acknowledgements",
+    "background download leaves running active digest pinned",
+    "unfinished draft survives download",
+    "update-now refuses dirty work without closing or replacing its lease",
+    "update-now refuses an app-owned modal",
+    "clean update-now selects successor and records new runtime health",
+    "other app remains pinned to original active digest",
+    "failed successor launch rolls back only its own verified known-good pointer"
+  ],
+  "platform": "linux",
+  "sha": null,
+  "sourceHead": "7f6e65bf2b8990ba656ed66261670e4f842439dc",
+  "sourceBranch": "codex/milestone-11",
+  "command": "npm run test:updates",
+  "status": "passed",
+  "display": "private isolated headless GNOME"
+}
