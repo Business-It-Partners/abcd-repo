@@ -42,10 +42,10 @@ def check():
             target = target.split('#', 1)[0]
             if target and not (path.parent / target).exists():
                 errors.append(f'Broken link in {path.relative_to(ROOT)}: {target}')
-    plans = '\n'.join((p / 'PLAN.md').read_text() for p in milestones if (p / 'PLAN.md').exists())
-    trace = (ARCH / '22_V1_REQUIREMENTS_AND_TRACEABILITY.md').read_text()
-    gate_doc = (ARCH / '18_V1_ACCEPTANCE_GATES.md').read_text()
-    inv = (ARCH / '03_V1_PRINCIPLES_AND_INVARIANTS.md').read_text()
+    plans = '\n'.join((p / 'PLAN.md').read_text(encoding='utf-8') for p in milestones if (p / 'PLAN.md').exists())
+    trace = (ARCH / '22_V1_REQUIREMENTS_AND_TRACEABILITY.md').read_text(encoding='utf-8')
+    gate_doc = (ARCH / '18_V1_ACCEPTANCE_GATES.md').read_text(encoding='utf-8')
+    inv = (ARCH / '03_V1_PRINCIPLES_AND_INVARIANTS.md').read_text(encoding='utf-8')
     for n in range(1, 16):
         req = f'R{n:02d}'
         if not re.search(rf'\b{req}\b', plans) or not re.search(rf'\b{req}\b', trace):
@@ -58,10 +58,10 @@ def check():
         if f'INV-{n:02d}' not in inv:
             errors.append(f'Missing invariant INV-{n:02d}')
     for folder in milestones[1:]:
-        status = (folder / 'STATUS.md').read_text()
+        status = (folder / 'STATUS.md').read_text(encoding='utf-8')
         if not re.search(r'\*\*Status:\*\* (PLANNED|IMPLEMENTING|IMPLEMENTED|VERIFIED|BLOCKED|DEFERRED|REMOVED)\b', status):
             errors.append(f'Missing valid milestone status: {folder.name}')
-    if 'permanent' not in (ARCH / '02_V1_PRODUCT_DEFINITION.md').read_text().lower():
+    if 'permanent' not in (ARCH / '02_V1_PRODUCT_DEFINITION.md').read_text(encoding='utf-8').lower():
         errors.append('Missing permanent first-party policy')
     # Stable content identity excludes evolving progress/evidence files.
     contract_files = sorted(ARCH.glob('*.md')) + [p / 'PLAN.md' for p in milestones]
