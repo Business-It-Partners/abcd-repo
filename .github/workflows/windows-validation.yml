@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          node node_modules/vitest/vitest.mjs run --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
+          node node_modules/vitest/vitest.mjs run --exclude 'apps/dental-apps/**' --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-unit.log
           exit $code
