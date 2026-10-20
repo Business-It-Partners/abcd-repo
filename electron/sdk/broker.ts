@@ -1,12 +1,13 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
+import { allowedClinicApiPath, appOperation, containsPresignedHandle } from './appPolicy';
 
 export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
   allowed?(operation: Operation): boolean;
   rejected?(status: 401 | 403): void;
-  snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string };
+  snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
 type Registration = { authorize?(): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
@@ -15,7 +16,7 @@ export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 const messages: Record<ErrorCode, string> = {
   INVALID_REQUEST: 'Invalid SDK request.', UNKNOWN_CALLER: 'Unregistered application frame.', INCOMPATIBLE_SDK: 'Unsupported SDK contract.', STALE_SESSION: 'Session changed; discard this result.', FORBIDDEN: 'Operation is not granted to this app.', BUSY: 'Request capacity reached.', AUTH_REQUIRED: 'Sign in is required.', ACCESS_DENIED: 'Access denied by the service.', CONFLICT: 'The record changed; refresh before deciding.', VALIDATION: 'The service rejected the input.', OFFLINE: 'Service connection failed.', MAINTENANCE: 'Service temporarily unavailable.', TIMEOUT: 'Request deadline exceeded.', CANCELLED: 'Request stopped locally.', UNKNOWN_OUTCOME: 'Write outcome is unknown. Reconcile using the original operation key.', INVALID_RESPONSE: 'Service response did not match the contract.', REDIRECT_DENIED: 'Service redirect refused.', UNAVAILABLE: 'This platform adapter is not available yet.',
 };
-export const failure = (code: ErrorCode, outcome: Outcome = 'not_sent', r?: Request): Result<never> => ({ ok: false, error: { code, message: messages[code], outcome, ...(r ? { requestId: r.requestId, ...(r.operation === 'appointments.setStatus' ? { operationId: r.input.idempotencyKey as string } : {}) } : {}) } });
+export const failure = (code: ErrorCode, outcome: Outcome = 'not_sent', r?: Request): Result<never> => ({ ok: false, error: { code, message: messages[code], outcome, ...(r ? { requestId: r.requestId, ...(['appointments.setStatus', 'clinic.api.request'].includes(r.operation) && r.input.idempotencyKey ? { operationId: r.input.idempotencyKey as string } : {}) } : {}) } });
 const success = <T>(value: T): Result<T> => ({ ok: true, value });
 function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -79,11 +80,11 @@ export class ApiBroker {
   hasUnsafeWrites(appId:string) {return !!this.writeCalls.get(appId)|| [...this.uncertain].some(k=>k.startsWith(appId+':'))||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write));}
   async request(caller: Caller, input: unknown): Promise<Result> {
     const r=this.caller(caller),v=parseRequest(input),generation=this.identity.snapshot().generation;
-    const writing=!!r&&v?.operation==='appointments.setStatus';
+    const writing=!!r&&!!v&&(v.operation==='appointments.setStatus'||v.operation==='clinic.api.request'&&v.input.method!=='GET');
     if(writing){this.writeCalls.set(r!.appId,(this.writeCalls.get(r!.appId)??0)+1);this.notify(r!.appId);}
     try {
       const result=await this.execute(caller,input);
-      if(writing&&generation===this.identity.snapshot().generation){const key=r!.appId+':'+v!.input.idempotencyKey;if(!result.ok&&result.error.outcome==='unknown')this.uncertain.add(key);else if(result.ok||!result.ok&&result.error.outcome==='rejected')this.uncertain.delete(key);}
+      if(writing&&generation===this.identity.snapshot().generation){const key=r!.appId+':'+(v!.input.idempotencyKey as string);if(!result.ok&&result.error.outcome==='unknown')this.uncertain.add(key);else if(result.ok||!result.ok&&result.error.outcome==='rejected')this.uncertain.delete(key);}
       return result;
     } finally {
       // Keep the safety gate continuous through transport cleanup and outcome recording.
@@ -99,10 +100,12 @@ export class ApiBroker {
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
     if (active.has(v.requestId) || active.size >= this.limits.perApp || total >= this.limits.total) return failure('BUSY', 'not_sent', v);
-    const write = v.operation === 'appointments.setStatus';
+    const write = v.operation === 'appointments.setStatus' || v.operation === 'clinic.api.request' && v.input.method !== 'GET';
     if (write) {
       const key = v.input.idempotencyKey as string;
-      const fingerprint = createHash('sha256').update(JSON.stringify([v.operation, v.input.appointmentId, v.input.status, v.input.expectedRowVersion])).digest('hex');
+      const fingerprint = v.operation === 'appointments.setStatus'
+        ? createHash('sha256').update(JSON.stringify([v.operation, v.input.appointmentId, v.input.status, v.input.expectedRowVersion])).digest('hex')
+        : createHash('sha256').update(JSON.stringify([v.operation, v.input.method, v.input.path, v.input.body])).digest('hex');
       if (this.writing.has(key)) return failure('BUSY', 'not_sent', v);
       const prior = this.writes.get(key);
       if (prior && prior !== fingerprint) return failure('CONFLICT', 'not_sent', v);
@@ -114,29 +117,63 @@ export class ApiBroker {
     let dispatched = false;
     try {
       let value: unknown;
-      if (v.operation.startsWith('appointments.')) {
+      if (v.operation.startsWith('appointments.') || v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
         const token = await abortable(this.credential(v.generation), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
         if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
         if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
-        const path = write ? `/v1/appointments/${v.input.appointmentId}/status` : `/v1/appointments?${new URLSearchParams({ date: v.input.date as string })}`;
+        const path = v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read'
+          ? v.input.path as string
+          : write ? `/v1/appointments/${v.input.appointmentId}/status` : `/v1/appointments?${new URLSearchParams({ date: v.input.date as string })}`;
+        if (v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
+          const rawPath = path.split('?', 1)[0];
+          const requestMethod = v.operation === 'clinic.api.request' ? v.input.method as string : v.operation === 'clinic.api.blob.read' ? 'POST' : 'GET';
+          if (rawPath.split('/').some(part => part === '.' || part === '..') || /%(?:2f|5c|2e)/i.test(rawPath) || !allowedClinicApiPath(r.appId, path, requestMethod)) return failure('FORBIDDEN', 'not_sent', v);
+          const family = appOperation(r.appId);
+          if (!family || !r.capabilities.includes(family) || this.identity.allowed?.(family) === false) return failure('FORBIDDEN', 'not_sent', v);
+        }
         const url = new URL(path, this.environment.apiBase);
-        if (url.origin !== this.environment.apiBase) return failure('FORBIDDEN', 'not_sent', v);
-        const headers: Record<string, string> = { authorization: `Bearer ${token}`, accept: 'application/json', 'x-request-id': v.requestId };
-        if (write) { headers['content-type'] = 'application/json'; headers['idempotency-key'] = v.input.idempotencyKey as string; }
+        if (url.origin !== this.environment.apiBase || url.username || url.password || url.hash || !url.pathname.startsWith('/v1/')) return failure('FORBIDDEN', 'not_sent', v);
+        const blobRead=v.operation==='clinic.api.blob.read';
+        const headers: Record<string, string> = { authorization: `Bearer ${token}`, accept: blobRead ? 'image/jpeg, image/png, image/webp, application/pdf' : 'application/json', 'x-request-id': v.requestId };
+        const method = v.operation === 'clinic.api.request' ? v.input.method as string : write || blobRead ? 'POST' : 'GET';
+        if (write) headers['idempotency-key'] = v.input.idempotencyKey as string;
+        if (v.operation === 'clinic.api.request' && v.input.body !== null) headers['content-type'] = 'application/json';
+        else if (v.operation === 'appointments.setStatus') headers['content-type'] = 'application/json';
         dispatched = true;
-        const response = await abortable(this.transport(url.href, { method: write ? 'POST' : 'GET', headers, redirect: 'manual', credentials: 'omit', cache: 'no-store', signal: controller.signal, ...(write ? { body: JSON.stringify({ status: v.input.status, expectedRowVersion: v.input.expectedRowVersion }) } : {}) }), controller.signal);
+        const body = v.operation === 'clinic.api.request' ? v.input.body as string | null : write ? JSON.stringify({ status: v.input.status, expectedRowVersion: v.input.expectedRowVersion }) : null;
+        const response = await abortable(this.transport(url.href, { method, headers, redirect: 'manual', credentials: 'omit', cache: 'no-store', signal: controller.signal, ...(body !== null ? { body } : {}) }), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', write ? 'unknown' : 'not_sent', v);
         if (response.redirected || response.status >= 300 && response.status < 400) { void response.body?.cancel(); throw new TransportError('REDIRECT_DENIED'); }
-        if (!response.ok) {
+        if (v.operation === 'clinic.api.request') {
+          if (response.status === 401 || response.status === 403) this.identity.rejected?.(response.status);
+          if (write && response.status >= 500) { void response.body?.cancel(); return failure('UNKNOWN_OUTCOME', 'unknown', v); }
+          const responseBody = response.status === 204 ? null : await this.read(response, controller.signal);
+          if(containsPresignedHandle(responseBody))throw new TransportError('INVALID_RESPONSE');
+          try { value = apiResponse(v.operation, { status: response.status, body: responseBody }); }
+          catch { throw new TransportError('INVALID_RESPONSE'); }
+        } else if(blobRead) {
+          if(response.status===401||response.status===403)this.identity.rejected?.(response.status);
+          if(!response.ok){void response.body?.cancel();const code:ErrorCode=response.status===401?'AUTH_REQUIRED':response.status===403?'ACCESS_DENIED':response.status===404?'ACCESS_DENIED':'MAINTENANCE';return failure(code,'rejected',v);}
+          const contentType=response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase()??'';
+          if(!['image/jpeg','image/png','image/webp','application/pdf'].includes(contentType)){void response.body?.cancel();throw new TransportError('INVALID_RESPONSE');}
+          const size=response.headers.get('content-length');
+          if(size&&(!/^\d+$/.test(size)||Number(size)>8*1024*1024)){void response.body?.cancel();throw new TransportError('INVALID_RESPONSE');}
+          if(!response.body)throw new TransportError('INVALID_RESPONSE');
+          const reader=response.body.getReader();let length=0;const chunks:Uint8Array[]=[];
+          try{while(true){const chunk=await abortable(reader.read(),controller.signal);if(chunk.done)break;length+=chunk.value.length;if(length>8*1024*1024)throw new TransportError('INVALID_RESPONSE');chunks.push(chunk.value);}const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}value={status:200,contentType,body:bytes};}
+          finally{void reader.cancel().catch(()=>{});reader.releaseLock();}
+          try{value=apiResponse(v.operation,value);}catch{throw new TransportError('INVALID_RESPONSE');}
+        } else if (!response.ok) {
           void response.body?.cancel();
           if (response.status === 401 || response.status === 403) this.identity.rejected?.(response.status);
           const code: ErrorCode = response.status === 401 ? 'AUTH_REQUIRED' : response.status === 403 ? 'ACCESS_DENIED' : response.status === 409 ? 'CONFLICT' : response.status === 400 || response.status === 422 ? 'VALIDATION' : 'MAINTENANCE';
           if (write && response.status >= 500) return failure('UNKNOWN_OUTCOME', 'unknown', v);
           return failure(code, 'rejected', v);
+        } else {
+          const responseBody = await this.read(response, controller.signal);
+          try { value = apiResponse(v.operation, responseBody); } catch { throw new TransportError('INVALID_RESPONSE'); }
         }
-        const body = await this.read(response, controller.signal);
-        try { value = apiResponse(v.operation, body); } catch { throw new TransportError('INVALID_RESPONSE'); }
       } else value = this.local(r, v);
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
       return success(value);
@@ -152,7 +189,7 @@ export class ApiBroker {
   private local(r: Registration, v: Request): unknown {
     switch (v.operation) {
       case 'platform.status': return { sdk: SDK, environment: this.environment.environment, transport: 'fixture-or-provider', activeRequests: this.pending.get(r)?.size ?? 0 };
-      case 'session.context': { const s = this.current(); return { userLabel: s.userLabel, clinicLabel: s.clinicLabel, generation: s.generation }; }
+      case 'session.context': { const s = this.current(); return { userLabel: s.userLabel, clinicLabel: s.clinicLabel, generation: s.generation, ...(s.clinicSession ? { clinicSession: s.clinicSession } : {}) }; }
       case 'preferences.read': return { ...r.preferences };
       case 'preferences.update': r.preferences.textScale = v.input.textScale as number; return { ...r.preferences };
       case 'lifecycle.report': r.report(v.input as { dirty: boolean; modal: boolean }); return { accepted: true };
@@ -173,7 +210,10 @@ export class ApiBroker {
     if (!response.headers.get('content-type')?.toLowerCase().startsWith('application/json')) { void response.body?.cancel(); throw new TransportError('INVALID_RESPONSE'); }
     const size = response.headers.get('content-length');
     if (size && (!/^\d+$/.test(size) || Number(size) > this.limits.responseBytes)) { void response.body?.cancel(); throw new TransportError('INVALID_RESPONSE'); }
-    if (!response.body) throw new TransportError('INVALID_RESPONSE');
+    if (!response.body) {
+      if (response.status === 204) return null;
+      throw new TransportError('INVALID_RESPONSE');
+    }
     const reader = response.body.getReader(); let length = 0; const chunks: Uint8Array[] = [];
     try {
       while (true) {

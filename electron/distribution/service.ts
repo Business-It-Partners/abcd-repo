@@ -3,6 +3,7 @@ import { PackageRegistry } from '../packages/registry';
 import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
 import { verifyUpdatePolicy, allowUpdatedPackage, type UpdatePolicy } from './updatePolicy';
+import { appOperation } from '../sdk/appPolicy';
 import type { StoreResult, StoreView } from './contracts';
 export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean };
 export interface FreshnessStore { load(): Watermark; save(value: Watermark): void; loadUpdate?(): Watermark; saveUpdate?(value: Watermark): void; loadMetadata?(): {catalogue:string;policy:string} | undefined; saveMetadata?(value:{catalogue:string;policy:string}): void }
@@ -22,13 +23,16 @@ export class DistributionService {
  }
  subscribe(fn: (v: StoreView) => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
  view(): StoreView {
-  const releases = this.catalogue?.releases ?? [];
+  const releases = (this.catalogue?.releases ?? []).filter(r => {
+   const family = r.capabilities.filter(capability => capability.startsWith('clinic.app.'));
+   return !family.length || family.some(capability => this.identity.allowed?.(capability) !== false);
+  });
   const apps = releases.map(r => ({ id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, pendingVersion: this.pendingVersions.get(r.id) ?? null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' }));
-  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id)) apps.push({ id, title: id, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
+  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id) && (!appOperation(id) || this.identity.allowed?.(appOperation(id)!) !== false)) apps.push({ id, title: id, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
   return { phase: this.phase, apps, canInstall: this.canInstall, job: this.job ? { ...this.job } : null, message: this.message };
  }
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }
- private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32'); }
+ private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32') && r.capabilities.every(capability => this.identity.allowed?.(capability) !== false); }
  invalidate() { this.action?.abort(); this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
  dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); }
  private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.version);if(v.pendingVersion)pending.set(id,v.pendingVersion);}this.installed=installed;this.pendingVersions=pending;this.quarantined=quarantined;}

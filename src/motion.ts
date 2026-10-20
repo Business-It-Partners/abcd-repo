@@ -11,7 +11,7 @@ export const dockHeight = DOCK.previewHeight + 2 * DOCK.verticalPad;
 export const dockScaleForWidth = (width: number) => clamp(width / 1366, .72, 1.15);
 export const dockHeightForWidth = (width: number) => dockHeight * dockScaleForWidth(width);
 export interface Rect { x: number; y: number; width: number; height: number }
-export interface DockSpec { id: string; width: number; height: number; magnifies?: boolean }
+export interface DockSpec { id: string; width: number; height: number; magnifies?: boolean; maxHeight?: number }
 export function bell(distance: number, spread = DOCK.spread) {
   return Math.abs(distance) >= spread ? 0 : Math.cos(Math.abs(distance) / spread * Math.PI / 2) ** 2;
 }
@@ -22,7 +22,8 @@ export function dockLayout(items: DockSpec[], center: number, baseline: number, 
   const measured = items.map(item => {
     const restCenter = rest + item.width / 2;
     rest += item.width + gap;
-    const magnification = cursor === null || item.magnifies === false ? 1 : 1 + (DOCK.peak - 1) * bell(restCenter - cursor, DOCK.spread * scale) * clamp(intensity);
+    const requestedMagnification = cursor === null || item.magnifies === false ? 1 : 1 + (DOCK.peak - 1) * bell(restCenter - cursor, DOCK.spread * scale) * clamp(intensity);
+    const magnification = item.maxHeight ? Math.min(requestedMagnification, item.maxHeight / item.height) : requestedMagnification;
     return { ...item, scale: magnification, restCenter, width: item.width * magnification, height: item.height * magnification };
   });
   const liveWidth = measured.reduce((n, i) => n + i.width, 0) + gap * (items.length - 1);

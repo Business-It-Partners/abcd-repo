@@ -53,9 +53,10 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
   }
   if (action.type === 'patch') return { ...state, windows: { ...state.windows, [action.id]: { ...win, ...action.patch } } };
   const closed = action.phase === 'closed';
+  const reopening = win.phase === 'closed' && action.phase === 'visible';
   return { ...state,
     order: action.phase === 'visible' ? focus() : state.order,
-    windows: { ...state.windows, [action.id]: { ...win, phase: action.phase, interaction: 'idle', ...(closed ? { presentation: 'normal', busy: false, modal: false } : {}) } },
+    windows: { ...state.windows, [action.id]: { ...win, phase: action.phase, interaction: 'idle', ...(reopening ? { normalBounds: fitBounds(win.normalBounds, state.size, windowSpec(action.id).minimum) } : {}), ...(closed ? { presentation: 'normal', busy: false, modal: false } : {}) } },
   };
 }
 

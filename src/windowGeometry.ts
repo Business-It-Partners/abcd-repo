@@ -31,9 +31,14 @@ export function windowSpec(id: WindowId): WindowSpec {
   return Object.hasOwn(WINDOW_SPECS, id) ? WINDOW_SPECS[id as keyof typeof WINDOW_SPECS] : companyAppSpec;
 }
 
+/** Top edge of the resting dock surface; windows keep a narrow gap above it. */
+export function dockZoneTop(size: Size): number {
+  return size.height - DOCK.bottom - dockHeightForWidth(size.width);
+}
+
 export function workArea(size: Size): Rect {
   const x = Math.min(12, size.width * .05), y = statusBarHeightForWidth(size.width);
-  const dockTop = size.height - DOCK.bottom - dockHeightForWidth(size.width);
+  const dockTop = dockZoneTop(size);
   return { x, y, width: Math.max(1, size.width - 2 * x), height: Math.max(1, dockTop - y - dockWindowGap) };
 }
 

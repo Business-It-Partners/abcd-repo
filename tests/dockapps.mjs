@@ -21,10 +21,11 @@ try{
  check('Normal dock has no empty thumbnail slots',await page.locator('.dock-preview').count()===0);
  await page.mouse.move(20,20);await page.screenshot({path:path.join(root,'artifacts/clinic-dock.png')});
  for(const [id,name] of Object.entries(names)){
-  await page.getByRole('button',{name,exact:true}).click();await phase(id,'visible');const frame=page.getByTestId(`${id}-window`);
-  check(`${name} opens its app content and eight resize handles`,await frame.getByRole('heading',{name:id==='finance'?'Transaction Record':name,exact:true}).isVisible()&&(id==='staff'?await frame.getByRole('table',{name:'Staff list'}).isVisible():id==='lab'?await frame.getByRole('table',{name:'Lab orders',exact:true}).isVisible():await frame.getByText('Coming soon',{exact:true}).isVisible())&&await frame.locator('[data-resize]').count()===8);
+  await page.getByRole('button',{name,exact:true}).click();if(id==='finance')await page.getByTestId('finance-explorer').getByRole('button',{name:'Transaction Record',exact:true}).click();await phase(id,'visible');const frame=page.getByTestId(`${id}-window`);
+  const appContent=id==='finance'?await frame.getByRole('heading',{name:'Transaction Record',exact:true}).isVisible():id==='staff'?await frame.getByRole('table',{name:'Staff list'}).isVisible():id==='lab'?await frame.getByRole('table',{name:'Lab orders',exact:true}).isVisible():await frame.getByText('Coming soon',{exact:true}).isVisible();
+  check(`${name} opens its app content and eight resize handles`,appContent&&await frame.locator('[data-resize]').count()===8);
   const before=await frame.boundingBox();await page.getByRole('button',{name:`Maximize ${name}`,exact:true}).click();
-  check(`${name} maximizes below the status bar with a small dock gap`,await frame.evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dock=Number.parseFloat(document.querySelector('.dock-pill').style.top);return r.x===0&&r.y===bar.bottom&&r.width===innerWidth&&Math.abs(r.bottom-(dock-12))<1;}));
+  check(`${name} maximizes below the status bar with a clear dock hover gap`,await frame.evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dock=document.querySelector('.window-stage').getBoundingClientRect().bottom;return r.x===0&&r.y===bar.bottom&&r.width===innerWidth&&Math.abs(r.bottom-(dock-12))<1;}));
   await page.getByRole('button',{name:`Restore ${name} size`,exact:true}).click();assert.deepEqual(await frame.boundingBox(),before);
   await page.getByRole('button',{name:`Minimize ${name}`,exact:true}).click();await phase(id,'minimized');
   check(`${name} minimizes to a real captured window thumbnail`,await page.getByAltText(`${name} snapshot`,{exact:true}).isVisible());
@@ -36,9 +37,9 @@ try{
  await page.getByRole('button',{name:'Close Follow-ups',exact:true}).click();
  for(const name of Object.values(names)) await page.getByRole('button',{name,exact:true}).click();
  await page.mouse.move(20,20);await page.waitForTimeout(350);check('Dock fits with all nine new apps open',await fits());
- await page.getByRole('button',{name:'Finance',exact:true}).click();await page.mouse.move(20,20);await page.waitForTimeout(350);await page.screenshot({path:path.join(root,'artifacts/clinic-coming-soon.png')});
+ await page.getByRole('button',{name:'Finance',exact:true}).click();await page.mouse.move(20,20);await page.waitForTimeout(350);await page.screenshot({path:path.join(root,'artifacts/clinic-finance-modules.png')});await page.keyboard.press('Escape');
  check('Visible apps do not add duplicate icon thumbnails',await page.locator('.dock-preview').count()===0);
- for(const [id,name] of Object.entries(names)){await page.getByRole('button',{name,exact:true}).click();await page.getByRole('button',{name:`Minimize ${name}`,exact:true}).click();await phase(id,'minimized');}
+ for(const [id,name] of Object.entries(names)){await page.getByRole('button',{name,exact:true}).click();if(id==='finance')await page.getByTestId('finance-explorer').getByRole('button',{name:'Transaction Record',exact:true}).click();await page.getByRole('button',{name:`Minimize ${name}`,exact:true}).click();await phase(id,'minimized');}
  check('Nine minimized apps retain nine real window thumbnails',await page.locator('.dock-preview img').count()===9);
  await page.mouse.move(20,20);await page.screenshot({path:path.join(root,'artifacts/clinic-minimized.png')});
  const cdp=await page.context().newCDPSession(page);
@@ -49,7 +50,7 @@ try{
  }
  await cdp.send('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:1,mobile:false});await page.mouse.move(20,20);await page.waitForTimeout(400);
  // Actual gesture smoke check for a new app (focus another title without hitting controls).
- const frame=page.getByTestId('finance-window');await page.getByRole('button',{name:'Finance',exact:true}).click();await phase('finance','visible');
+ const frame=page.getByTestId('finance-window');await page.getByRole('button',{name:'Finance',exact:true}).click();await page.getByTestId('finance-explorer').getByRole('button',{name:'Transaction Record',exact:true}).click();await phase('finance','visible');
  const before=await frame.boundingBox(),bar=await frame.locator('.mac-titlebar').boundingBox();await page.mouse.move(bar.x+bar.width/2,bar.y+20);await page.mouse.down();await page.mouse.move(bar.x+bar.width/2+40,bar.y+50,{steps:6});await page.mouse.up();const moved=await frame.boundingBox();check('New app title bar moves its shared window',moved.x!==before.x||moved.y!==before.y);
  const handle=await frame.locator('[data-resize="se"]').boundingBox();await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(handle.x+80,handle.y+40,{steps:6});await page.mouse.up();check('New app corner resizes its shared window',(await frame.boundingBox()).width>moved.width);
  check('No renderer errors',errors.length===0);await fs.writeFile(path.join(root,'artifacts/dockapps-verification.json'),JSON.stringify({checks,errors},null,2));

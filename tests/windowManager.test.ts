@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, statusBarHeightForWidth, dockWindowGap, type ResizeEdge } from '../src/windowGeometry';
+import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, dockZoneTop, statusBarHeightForWidth, dockWindowGap, type ResizeEdge } from '../src/windowGeometry';
+import { dockHeightForWidth } from '../src/motion';
 import { activeWindow, createDesktop, desktopReducer } from '../src/windowManager';
 
 const screen = { width: 1440, height: 1000 }, minimum = { width: 540, height: 340 };
@@ -8,7 +9,8 @@ describe('Constrained window resizing', () => {
   it('opens app windows flush below the status bar with a small dock gap', () => {
     const area = workArea(screen);
     expect(area.y).toBe(statusBarHeightForWidth(screen.width));
-    expect(area.y + area.height).toBe(screen.height - (38.88 + 2 * 12.6) * Math.max(.72, Math.min(1.15, screen.width / 1366)) - dockWindowGap);
+    expect(dockZoneTop(screen)).toBe(screen.height - dockHeightForWidth(screen.width));
+    expect(area.y + area.height).toBe(dockZoneTop(screen) - dockWindowGap);
     expect(initialBounds('store', screen)).toMatchObject({ y: area.y, height: area.height });
     expect(initialBounds('records', screen)).toEqual(area);
     expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: 59, height: workArea({ width: 580, height: 800 }).height });
@@ -27,6 +29,19 @@ describe('Constrained window resizing', () => {
     expect(right.x).toBe(1260); expect(right.x + right.width).toBe(1860);
     expect(bottom.y).toBe(workArea(screen).y+workArea(screen).height-150); expect(bottom.y + bottom.height).toBe(bottom.y+500);
     expect(top.y).toBe(workArea(screen).y);
+  });
+  it('reopens a closed, edge-hidden window fully inside the current work area', () => {
+    let state = createDesktop(screen);
+    const area = workArea(screen);
+    const hidden = moveBounds({ ...state.windows.studio.normalBounds, x: -10000, y: 10000 }, screen);
+    state = desktopReducer(state, { type: 'patch', id: 'studio', patch: { normalBounds: hidden } });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'closed' });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });
+    const reopened = state.windows.studio.normalBounds;
+    expect(reopened.x).toBeGreaterThanOrEqual(area.x);
+    expect(reopened.y).toBeGreaterThanOrEqual(area.y);
+    expect(reopened.x + reopened.width).toBeLessThanOrEqual(area.x + area.width);
+    expect(reopened.y + reopened.height).toBeLessThanOrEqual(area.y + area.height);
   });
   for (const edge of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'] as ResizeEdge[]) {
     it(`${edge} keeps the opposite boundaries fixed`, () => {

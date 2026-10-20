@@ -19,6 +19,15 @@ describe('FEWA motion port', () => {
       for (let i = 1; i < layout.items.length; i++) expect(layout.items[i].x - layout.items[i - 1].x - layout.items[i - 1].width).toBeCloseTo(DOCK.gap);
     }
   });
+  it('caps magnified artwork at the height of its containing dock sheet', () => {
+    const sheetHeight = 64.08;
+    const specs = [{ id: 'icon', width: 36, height: 36, maxHeight: sheetHeight }, { id: 'preview', width: 57.6, height: 38.88, maxHeight: sheetHeight }];
+    const layout = dockLayout(specs, 450, 768, 450, 1);
+    expect(layout.items.every(item => item.height <= sheetHeight)).toBe(true);
+    expect(layout.items[0].height).toBeCloseTo(sheetHeight);
+    expect(layout.items[1].height).toBeCloseTo(sheetHeight);
+    expect(layout.items[0].scale).toBeLessThan(DOCK.peak);
+  });
   it('fits a large app collection without clipping or overlapping during hover', () => {
     const specs = Array.from({ length: 25 }, (_, i) => ({ id: String(i), width: i < 13 ? 36 : 57.6, height: 36 }));
     for (const width of [480, 800, 1366]) for (const cursor of [12, width / 2, width - 12]) {

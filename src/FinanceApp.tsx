@@ -1,24 +1,24 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
-import { dockArtwork } from './dockArtwork';
+import { useEffect, useRef } from 'react';
+import { Grid2X2 } from 'lucide-react';
 
-const modules = ['Transaction Record', 'Patient payments', 'General expenses', 'Salary payments', 'Product list', 'Purchases', 'Supplier list', 'Supplier payments'];
+export const FINANCE_MODULES = ['Transaction Record', 'Patient payments', 'General expenses', 'Salary payments', 'Product list', 'Purchases', 'Supplier list', 'Supplier payments'];
 
-export function FinanceApp() {
-  const [selected, setSelected] = useState(0);
-  const navigation = useRef<HTMLDivElement>(null);
-  function navigate(event: KeyboardEvent<HTMLButtonElement>) {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? modules.length - 1 : (selected + (event.key === 'ArrowRight' ? 1 : -1) + modules.length) % modules.length;
-    setSelected(next);
-    navigation.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true });
-  }
+export function FinanceApp({ selectedModule, onOpenExplorer }: { selectedModule: string; onOpenExplorer(trigger: HTMLElement): void }) {
+  const moduleHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => { moduleHeading.current?.focus({ preventScroll: true }); }, [selectedModule]);
+
   return <div className="finance-body">
-    <div ref={navigation} className="finance-navigation" role="tablist" aria-label="Finance submodules">
-      {modules.map((name, index) => <button key={name} id={`finance-tab-${index}`} role="tab" aria-selected={selected === index} aria-controls="finance-content" tabIndex={selected === index ? 0 : -1} data-app-focus={selected === index ? true : undefined} onClick={() => setSelected(index)} onKeyDown={navigate}>{name}</button>)}
-    </div>
-    <section className="finance-content" id="finance-content" role="tabpanel" aria-labelledby={`finance-tab-${selected}`} tabIndex={0}>
-      <div className="finance-placeholder"><img src={dockArtwork('finance')} alt=""/><h2>{modules[selected]}</h2><p>Coming soon</p></div>
+    <header className="finance-window-statusbar" aria-label="Finance app toolbar">
+      <span className="finance-current-module" aria-live="polite" data-testid="finance-current-module">{selectedModule}</span>
+      <button className="finance-more-apps" type="button" aria-label="More Finance apps" onClick={event => onOpenExplorer(event.currentTarget)}>
+        <Grid2X2 size={15} aria-hidden="true"/><span>More Apps</span>
+      </button>
+    </header>
+    <section className="finance-selected" aria-labelledby="finance-selected-title">
+      <main className="finance-selected-screen">
+        <h2 ref={moduleHeading} id="finance-selected-title" tabIndex={-1} data-app-focus>{selectedModule}</h2>
+      </main>
     </section>
   </div>;
 }

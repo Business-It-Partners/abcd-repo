@@ -1,5 +1,5 @@
 /** Private-profile transport fixtures; no request can escape to the network. */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { canonical, sha256, type TrustPolicy } from '../packages/format';
@@ -7,7 +7,8 @@ import { operations, type Operation } from '../sdk/contracts';
 import type { Catalogue, Release } from './catalogue';
 
 type FixtureState={version:'1.0.0'|'1.1.0';gammaVersion?:'1.0.0'|'1.1.0'|'1.2.0';offset:number};
-export function distributionFixtures(folder: string, sequence: number, updateControlFile?: string, includeOnboarding=false) {
+type DistributionFixtureOptions={unavailableControlFile?:string;packageDelayMs?:number};
+export function distributionFixtures(folder: string, sequence: number, updateControlFile?: string, includeOnboarding=false, options:DistributionFixtureOptions={}) {
  const key = generateKeyPairSync('ed25519');
  const keys:Record<string,{publicKey:string;publisher:string}>={
   'test-only-m06':{publicKey:readFileSync(path.join(folder,'public-key.txt'),'utf8'),publisher:'company'},
@@ -55,7 +56,9 @@ export function distributionFixtures(folder: string, sequence: number, updateCon
  }
  const transport:typeof fetch=async(input,init)=>{
   const url=new URL(String(input));if(init?.signal?.aborted)throw Error('Cancelled');
+  if(options.unavailableControlFile&&existsSync(options.unavailableControlFile)&&url.origin==='https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev')return new Response(null,{status:503});
   if(url.origin==='https://releases.fixture.invalid'){
+   if(options.packageDelayMs)await new Promise(resolve=>setTimeout(resolve,options.packageDelayMs));
    if(new Headers(init?.headers).has('authorization'))throw Error('Credential leaked');const data=objects.get(url.pathname);return data?new Response(new Uint8Array(data)):new Response(null,{status:404});
   }
   if(url.origin!=='https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev'||!new Headers(init?.headers).get('authorization'))return new Response(null,{status:403});

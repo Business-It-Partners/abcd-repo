@@ -7,14 +7,14 @@ export function runtimeIdForPackage(id: string) { return id === 'company.sample.
 export function runtimeHost(id: RuntimeId) { return id === 'studio' ? 'alpha' : id === 'records' ? 'beta' : packageIdForRuntime(id); }
 export type RuntimeRect = { x: number; y: number; width: number; height: number };
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
-export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; reason?: string; snapshot?: string };
+export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'unresponsive' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; reason?: string; snapshot?: string };
 export function parseLayout(input: unknown): RuntimeLayout[] {
   if (!Array.isArray(input) || input.length > 16) throw new Error('Invalid runtime layout');
   const seen = new Set();
   for (const v of input) {
     if (!v || Object.keys(v).sort().join() !== 'id,open,rect,visible' || !isRuntimeId(v.id) || seen.has(v.id) || typeof v.open !== 'boolean' || typeof v.visible !== 'boolean' || !v.rect || Object.keys(v.rect).sort().join() !== 'height,width,x,y') throw new Error('Invalid runtime layout');
     seen.add(v.id);
-    if (!Object.values(v.rect).every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 8192) || v.rect.width < 1 || v.rect.height < 1 || v.rect.width * v.rect.height > 16_000_000) throw new Error('Invalid runtime bounds');
+    if (!Object.values(v.rect).every(n => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 8192) || v.rect.y < 0 || v.rect.width < 1 || v.rect.height < 1 || v.rect.x + v.rect.width < -8192 || v.rect.x + v.rect.width > 8192 || v.rect.y + v.rect.height > 8192 || v.rect.width * v.rect.height > 16_000_000) throw new Error('Invalid runtime bounds');
   }
   if (input.filter(v => v.visible).length > 1) throw new Error('Only one native input surface');
   return input;

@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "OS explorer discovers Finance modules from its signed app manifest",
+    "a 2.2-second module acknowledgement still starts the selected sub-app instead of stopping its app",
+    "switching Finance sub-apps refreshes the shared mirror before dock-edge preview uses it",
+    "OS explorer discovers Lab Tracker modules from its signed app manifest",
+    "the two signed multi-module apps keep independent native runtimes",
+    "temporary Electron unresponsive notifications show recovery without killing either app",
+    "a delayed but successful OS health ping does not stop either app (ready, ready)",
+    "both module apps remain healthy after repeated dock/window handoffs ([{\"id\":\"company.resource.app-01\",\"phase\":\"ready\",\"reason\":\"\"},{\"id\":\"company.resource.app-02\",\"phase\":\"ready\",\"reason\":\"\"}])",
+    "closing both synthetic module runtimes releases both native views"
+  ],
+  "platform": "linux"
+}

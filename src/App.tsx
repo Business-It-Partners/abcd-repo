@@ -2,7 +2,8 @@ import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, t
 import { Check, ChevronRight, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
-import { FinanceApp } from './FinanceApp';
+import { FinanceApp, FINANCE_MODULES } from './FinanceApp';
+import { AppExplorer } from './AppExplorer';
 import { StaffApp } from './StaffApp';
 import { LabApp } from './LabApp';
 import { StoreApp, catalogIds, type StoreJob } from './StoreApp';
@@ -22,6 +23,8 @@ import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
 import { DesktopChrome } from './DesktopChrome';
 import type { SessionView } from '../electron/identity/contracts';
+
+type RuntimeExplorer = { runtimeId: string; title: string; iconDataUrl: string; modules: { id: string; label: string }[] };
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
 const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
@@ -57,7 +60,7 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   }, []);
   return {
     reset,
-    layout: dockLayout(specs, size.width / 2, size.height - DOCK.bottom - DOCK.verticalPad * scale, field.x, field.intensity, size.width - 24 * scale - 2 * DOCK.pad * scale, scale),
+    layout: dockLayout(specs, size.width / 2, size.height - DOCK.bottom - DOCK.verticalPad * scale + DOCK.verticalPad * scale * field.intensity, field.x, field.intensity, size.width - 24 * scale - 2 * DOCK.pad * scale, scale),
     move(x: number) {
       if (frozenRef.current) return;
       const m = motion.current;
@@ -89,6 +92,13 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const [reservation,setReservation]=useState(1);
   const [readyId,setReadyId]=useState<WindowId|null>(null);
   const [updatedId,setUpdatedId]=useState<WindowId|null>(null);
+  const [financeModule,setFinanceModule]=useState(FINANCE_MODULES[0]);
+  const [financeExplorer,setFinanceExplorer]=useState(false);
+  const [appExplorer,setAppExplorer]=useState<RuntimeExplorer|null>(null);
+  const [appExplorerError,setAppExplorerError]=useState('');
+  const [launchNotice,setLaunchNotice]=useState('');
+  const launchingPackage=useRef(false);
+  const explorerReturnTarget=useRef<HTMLElement|null>(null);
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
@@ -98,7 +108,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
   const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
   const deliveredIds = delivery.installedOrder.map(runtimeIdForPackage);
-  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : ['store', ...deliveredIds], titleByWindow);
+  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['store', ...deliveredIds])], titleByWindow);
   const pendingArrivalId=delivery.installingId?runtimeIdForPackage(delivery.installingId):undefined;
   function startStoreJob(id:StaticWindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
   useEffect(() => {
@@ -122,13 +132,31 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   useEffect(()=>{if(!readyId)return;const timer=setTimeout(()=>setReadyId(null),5000);return ()=>clearTimeout(timer);},[readyId]);
   useEffect(()=>{if(!updatedId)return;const timer=setTimeout(()=>setUpdatedId(null),900);return ()=>clearTimeout(timer);},[updatedId]);
   function openStoreApp(id:WindowId){const controller=allControllers[id];if(!controller){setReadyId(id);return;}if(arrivalId){finishArrival.current?.();setArrivalId(null);}setReadyId(null);controller.open();}
+  async function openInstalledApp(id:WindowId){
+    if(!id.startsWith('company.')){openStoreApp(id);return;}
+    if(launchingPackage.current)return;
+    launchingPackage.current=true;
+    try{
+      const result=await window.desktop?.runtime.discoverApp(id);
+      if(!result?.ok){setLaunchNotice(result?.error?.message??'This app is not available for your current clinic role.');return;}
+      setLaunchNotice('');
+      const info=result.value;
+      if(info&&info.modules.length>1){
+        setFinanceExplorer(false);setAppExplorerError('');setAppExplorer(info);
+        return;
+      }
+      openStoreApp(id);
+    }catch{
+      setLaunchNotice('The installed app could not be verified. Try again or update it from Apps.');
+    }finally{launchingPackage.current=false;}
+  }
 
   // Reserve a thumbnail destination synchronously when capture starts, before
   // measuring Genie geometry. In normal use, previews appear only for minimized apps.
   const hasPreview = (id: WindowId) => {const win=state.windows[id];return !!win&&(fixtures && isPrototype(id) || win.busy || ['minimizing', 'minimized', 'restoring'].includes(win.phase));};
-  const specs: DockSpec[] = [{ id: 'host-minimize', width: DOCK.size * dockScale, height: DOCK.size * dockScale }, { id: 'host-shutdown', width: DOCK.size * dockScale, height: DOCK.size * dockScale }, { id: 'control-divider', width: .9 * dockScale, height: 28.8 * dockScale, magnifies: false }, ...icons.map(i => ({ id: i.id, width: DOCK.size * dockScale * (i.id===arrivalId?reservation:i.id===pendingArrivalId?0:1), height: DOCK.size * dockScale })),
+  const specs: DockSpec[] = [{ id: 'host-minimize', width: DOCK.size * dockScale, height: DOCK.size * dockScale, maxHeight: dockHeight }, { id: 'host-shutdown', width: DOCK.size * dockScale, height: DOCK.size * dockScale, maxHeight: dockHeight }, { id: 'control-divider', width: .9 * dockScale, height: 28.8 * dockScale, magnifies: false }, ...icons.map(i => ({ id: i.id, width: DOCK.size * dockScale * (i.id===arrivalId?reservation:i.id===pendingArrivalId?0:1), height: DOCK.size * dockScale, maxHeight: dockHeight })),
     ...(icons.some(icon => hasPreview(icon.id)) ? [{ id: 'divider', width: .9 * dockScale, height: 28.8 * dockScale, magnifies: false }] : []),
-    ...icons.map(icon => icon.id).filter(hasPreview).map(id => ({ id: previewId(id), width: DOCK.previewWidth * dockScale, height: DOCK.previewHeight * dockScale }))];
+    ...icons.map(icon => icon.id).filter(hasPreview).map(id => ({ id: previewId(id), width: DOCK.previewWidth * dockScale, height: DOCK.previewHeight * dockScale, maxHeight: dockHeight }))];
   const anyMotion = Object.values(state.windows).some(win => win.busy);
   const [count, setCount] = useState(0);
   const [note, setNote] = useState('A little space to make something great.');
@@ -137,19 +165,23 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const hostActionLock = useRef(false);
   const [hostTransitioning, setHostTransitioning] = useState(false);
   const frontApp = activeWindow(state);
-  const activeAppTitle = frontApp ? state.windows[frontApp]?.title : undefined;
+  const activeAppTitle = frontApp === 'finance' || financeExplorer ? 'Finance' : frontApp ? state.windows[frontApp]?.title : undefined;
   const immersive = !!frontApp && state.windows[frontApp].presentation === 'fullscreen';
-  const showDock = !state.overview && (!immersive || dockRevealed || anyMotion || !!arrivalId);
+  const showDock = !state.overview && (!immersive || dockRevealed || anyMotion || !!arrivalId || financeExplorer || !!appExplorer);
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
+  useEffect(()=>{const listener=(event:Event)=>{const value=(event as CustomEvent<RuntimeExplorer>).detail;if(!value||typeof value.runtimeId!=='string'||typeof value.title!=='string'||typeof value.iconDataUrl!=='string'||!Array.isArray(value.modules))return;setFinanceExplorer(false);setAppExplorerError('');setAppExplorer(value);};window.addEventListener('runtime:app-explorer',listener);return()=>window.removeEventListener('runtime:app-explorer',listener);},[]);
   useEffect(() => { setDockRevealed(false); }, [immersive, frontApp]);
   function trackChrome(event: React.PointerEvent<HTMLElement>) {
-    if (state.overview) return;
+    if (state.overview || financeExplorer || appExplorer) { dock.leave(); return; }
     const { clientX: px, clientY: py } = event;
     const target = event.target as HTMLElement;
-    // Observe the hover field without a transparent surface over app windows.
+    // Start magnification only inside the dock's visible hit area; the sheet
+    // itself moves with the live dock width, so use its current rendered box.
     const overWindow = !!target.closest('[data-window-id]');
     const overDock = !!target.closest('.dock-region');
-    if (showDock && Math.abs(px - size.width / 2) < dock.layout.width / 2 + (DOCK.pad + 30) * dockScale && py >= size.height - (dockHeight + 90.72 * dockScale) && (!overWindow || overDock)) dock.move(px);
+    const hitZone = document.querySelector<HTMLElement>('.dock-hit-zone')?.getBoundingClientRect();
+    const insideDock = !!hitZone && px >= hitZone.left && px <= hitZone.right && py >= hitZone.top && py <= hitZone.bottom;
+    if (showDock && insideDock && (!overWindow || overDock)) dock.move(px);
     else dock.leave();
     if (!immersive) return;
     const centered = Math.abs(px - size.width / 2) < dock.layout.width / 2 + (DOCK.pad + 50) * dockScale;
@@ -189,7 +221,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
       event.preventDefault(); event.stopImmediatePropagation();
       if (event.repeat || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
-      if (!current.overview) { dock.reset(); setDockRevealed(false); }
+      if (!current.overview) { dock.reset(); setDockRevealed(false); setFinanceExplorer(false); }
       dispatch({ type: 'overview', open: !current.overview });
     };
     window.addEventListener('keydown', shortcut, true);
@@ -197,24 +229,54 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   }, [dispatch, getState, hostTransitioning, dock.reset]);
   useEffect(() => window.desktop?.onHostTransition(value => {
     setHostTransitioning(value);
-    if (value) { dock.reset(); setDockRevealed(false); }
+    if (value) { setFinanceExplorer(false); dock.reset(); setDockRevealed(false); }
   }), [dock.reset]);
 
 
   async function controlHost(action: 'minimize' | 'close') {
     if (anyMotion || hostTransitioning || hostActionLock.current) return;
     hostActionLock.current = true; setHostActionPending(true);
-    dock.reset(); setDockRevealed(false);
+    setFinanceExplorer(false); dock.reset(); setDockRevealed(false);
     try { await window.desktop?.control(action); }
     finally { hostActionLock.current = false; setHostActionPending(false); }
   }
+  function openFinanceExplorer(trigger?: HTMLElement) {
+    setAppExplorer(null);
+    explorerReturnTarget.current = trigger ?? document.querySelector<HTMLElement>('[data-dock-app="finance"]');
+    setReadyId(null);
+    setFinanceExplorer(true);
+  }
+  function closeFinanceExplorer() {
+    const target = explorerReturnTarget.current;
+    explorerReturnTarget.current = null;
+    setFinanceExplorer(false);
+    requestAnimationFrame(() => {
+      const focusTarget = target?.isConnected ? target : document.querySelector<HTMLElement>('[data-dock-app="finance"]');
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
+  function selectFinanceModule(module: string) {
+    explorerReturnTarget.current = null;
+    setFinanceModule(module);
+    setFinanceExplorer(false);
+    openStoreApp('finance');
+  }
+  async function selectAppModule(moduleId:string) {
+    if(!appExplorer)return;
+    const runtimeId=appExplorer.runtimeId;
+    const result=await window.desktop?.runtime.selectModule(runtimeId,moduleId);
+    if(result?.ok){setAppExplorer(null);setAppExplorerError('');setLaunchNotice('');openStoreApp(runtimeId as WindowId);}
+    else setAppExplorerError('This app could not open that module. Close and reopen the app, or update it from Apps.');
+  }
+  const explorerOpen=financeExplorer||!!appExplorer;
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
     {!state.overview && <DesktopChrome activeApp={activeAppTitle} session={session} sessionControls={sessionControls}
       onOpenApps={() => openStoreApp('store')}
-      onShowWindows={() => dispatch({ type: 'overview', open: true })}
+      onShowWindows={() => { setFinanceExplorer(false); setAppExplorer(null); dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    <div className="window-stage" style={{ bottom: DOCK.bottom + dockHeight }} inert={explorerOpen} aria-hidden={explorerOpen}>
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={explorerOpen || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -228,14 +290,15 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
-      {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openStoreApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
+      {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));
         setStoreMessage(`${windowSpec(id).title} uninstalled. Demo records retained for this session.`);
-      }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
+        }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule} onOpenExplorer={openFinanceExplorer}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
-    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock} aria-label="Application dock">
+    </div>
+    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock || explorerOpen} aria-label="Application dock">
       <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * dockScale * 2, height: DOCK.bottom * dockScale + dockHeight }}/>
       <div className="dock-pill" style={{ left: dock.layout.left - DOCK.pad * dockScale, width: dock.layout.width + 2 * DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, height: dockHeight }}/>
       {dock.layout.items.map(item => {
@@ -255,13 +318,16 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
-        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={()=>openStoreApp(icon.id)}>
+        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={event=>icon.id==='finance'?openFinanceExplorer(event.currentTarget):icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
           {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
           {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;
       })}
     </nav>
-    {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
+    {readyId && !state.overview && !hostTransitioning && !financeExplorer && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
+    {appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} title={appExplorer.title} icon={appExplorer.iconDataUrl} modules={appExplorer.modules} error={appExplorerError} onClose={()=>{setAppExplorer(null);setAppExplorerError('');}} onSelect={moduleId=>void selectAppModule(moduleId)}/>}
+    {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
+    {launchNotice && !appExplorer && !financeExplorer && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}
     {immersive && !state.overview && <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)}/>}
     {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
   </main>;

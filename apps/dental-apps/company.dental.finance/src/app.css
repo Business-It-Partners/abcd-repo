@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #293744;
+  background: #f5f7f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 280px;
+  min-height: 100%;
+  margin: 0;
+}
+
+
+body {
+  min-height: 100vh;
+  background: #f5f7f8;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: 44px minmax(0, 1fr);
+  place-items: center;
+}
+
+.app-toolbar {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid #dfe6e9;
+  background: #f8fafb;
+  color: #526774;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.app-toolbar-start {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+#active-module {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#more-apps,
+.more-apps {
+  display: inline-flex;
+  min-height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #dbe5e9;
+  border-radius: 8px;
+  background: #ffffffc7;
+  color: #526774;
+  font: inherit;
+  cursor: pointer;
+}
+
+#more-apps:hover,
+#more-apps:focus-visible,
+.more-apps:hover,
+.more-apps:focus-visible {
+  background: #fff;
+  color: #293744;
+}
+
+#more-apps:focus-visible,
+.more-apps:focus-visible {
+  outline: 2px solid #8299a6;
+  outline-offset: 2px;
+}
+
+#more-apps svg,
+.more-apps svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.app-content {
+  display: grid;
+  width: 100%;
+  min-height: calc(100vh - 44px);
+  place-items: center;
+  padding: 48px;
+}
+
+h1 {
+  margin: 0;
+  color: #293744;
+  font-size: clamp(1.75rem, 3.4vw, 2.65rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.preview-indicator {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 7px 11px;
+  border: 1px solid #dbe5e9;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  color: #526774;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .app-toolbar {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .app-toolbar-start {
+    gap: 8px;
+  }
+
+  #more-apps,
+  .more-apps {
+    gap: 5px;
+    padding: 0 8px;
+  }
+
+  .preview-indicator {
+    padding: 6px 8px;
+    font-size: 0.65rem;
+  }
+
+  .app-content {
+    padding: 48px 24px;
+  }
+}

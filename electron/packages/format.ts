@@ -34,7 +34,15 @@ export function validPath(value: unknown): asserts value is string {
   for (const part of value.split('/')) if (!part || part === '.' || part === '..' || part.endsWith('.') || /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/.test(part)) throw new Error('Invalid asset path');
 }
 function base64(value: unknown, max: number): Buffer {
-  if (typeof value !== 'string' || value.length > Math.ceil(max / 3) * 4 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error('Invalid base64');
+  if (typeof value !== 'string' || value.length > Math.ceil(max / 3) * 4 || value.length % 4 !== 0) throw new Error('Invalid base64');
+  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0, bodyLength = value.length - padding;
+  // Scan long package payloads without a large backtracking regex (which can overflow the
+  // JavaScript regexp stack on otherwise valid multi-megabyte signed web apps).
+  for (let i = 0; i < bodyLength; i++) {
+    const code = value.charCodeAt(i);
+    if (!(code >= 65 && code <= 90 || code >= 97 && code <= 122 || code >= 48 && code <= 57 || code === 43 || code === 47)) throw new Error('Invalid base64');
+  }
+  for (let i = bodyLength; i < value.length; i++) if (value.charCodeAt(i) !== 61) throw new Error('Invalid base64');
   const bytes = Buffer.from(value, 'base64'); if (bytes.length > max || bytes.toString('base64') !== value) throw new Error('Invalid base64'); return bytes;
 }
 export function parseCanonical(bytes: Buffer): any {

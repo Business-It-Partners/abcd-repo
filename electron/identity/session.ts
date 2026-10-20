@@ -3,6 +3,7 @@ import type { Identity } from '../sdk/broker';
 import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client';
 import { loginInput, type ActionResult, type Phase, type SessionView } from './contracts';
 import type { CredentialStore } from './storage';
+import { appAllowed, clinicApps } from '../sdk/appPolicy';
 /** One platform-owned clinic session. Only view() crosses shell IPC. */
 export class SessionManager implements Identity {
   private phase:Phase='restoring'; private generation=1; private tokens?:Tokens; private clinic?:Clinic;
@@ -11,7 +12,7 @@ export class SessionManager implements Identity {
   private storageChain:Promise<unknown>=Promise.resolve();
   constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000){}
   view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,message:this.message,mode:this.mode};}
-  snapshot(){return{generation:this.generation,active:this.phase==='ready',userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':''};}
+  snapshot(){return{generation:this.generation,active:this.phase==='ready',userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',...(this.phase==='ready'&&this.clinic?.clinicSession?{clinicSession:this.clinic.clinicSession}:{})};}
   subscribe(listener:(v:SessionView)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
   private emit(){const v=this.view();for(const fn of this.listeners)fn(v);}
   private persist<T>(fn:()=>Promise<T>):Promise<T>{const next=this.storageChain.then(fn,fn);this.storageChain=next.catch(()=>{});return next;}
@@ -95,7 +96,15 @@ export class SessionManager implements Identity {
     }catch(error){if(epoch===this.generation){this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Clinic access could not be verified. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});}}};
     const promise=run();this.accessCheck=promise;try{await promise;}finally{if(this.accessCheck===promise)this.accessCheck=undefined;}
   }
-  allowed(operation:Operation){return this.phase==='ready'&&(!operation.startsWith('appointments.')||!!this.clinic?.capabilities.includes('appointments.access'));}
+  allowed(operation:Operation){
+    if(this.phase!=='ready'||!this.clinic)return false;
+    if(operation==='clinic.api.request')return true;
+    if(operation.startsWith('clinic.app.')){
+      const appId=Object.keys(clinicApps).find(id=>clinicApps[id].operation===operation);
+      return !!appId&&appAllowed(appId,this.clinic.role,this.clinic.capabilities);
+    }
+    return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
+  }
   flush(){return this.storageChain;}
   dispose(){this.generation++;this.phase='signed-out';clearTimeout(this.timer);this.action?.abort();this.tokens=undefined;this.clinic=undefined;this.listeners.clear();}
 }

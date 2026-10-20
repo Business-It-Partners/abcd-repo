@@ -10,10 +10,46 @@ export async function verifyRuntime(profileArgs, reportName) {
  const state=id=>shell.locator(`[data-runtime="${id}"]`);
  const ready=id=>shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',id,{timeout:15000});
  const native=()=>app.evaluate(({webContents,BrowserWindow})=>({shell:BrowserWindow.getAllWindows()[0].webContents.getOSProcessId(),apps:webContents.getAllWebContents().filter(w=>w.getURL().startsWith('dental-fixture:')).map(w=>({id:w.id,url:w.getURL(),pid:w.getOSProcessId(),prefs:{sandbox:w.getLastWebPreferences().sandbox,contextIsolation:w.getLastWebPreferences().contextIsolation,nodeIntegration:w.getLastWebPreferences().nodeIntegration}}))}));
+ const nativeView=host=>app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)return null;const b=view.getBounds();return{visible:view.getVisible(),bounds:{x:b.x,y:b.y,width:b.width,height:b.height}};},host);
+ async function waitNativeView(host,predicate){for(let i=0;i<100;i++){const view=await nativeView(host);if(predicate(view))return view;await new Promise(r=>setTimeout(r,20));}throw new Error(`Native app view did not settle: ${host} ${JSON.stringify(await nativeView(host))}`);}
+ async function dragWindow(id,dx,dy){const frame=shell.locator(`[data-testid="${id}-window"]`),b=await frame.boundingBox(),viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));const x=Math.max(2,Math.min(viewport.width-2,b.x+b.width/2)),y=Math.max(35,Math.min(viewport.height-2,b.y+21));await shell.mouse.move(x,y);await shell.mouse.down();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='moving',id);await shell.mouse.move(x+dx,y+dy,{steps:8});await shell.mouse.up();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='idle',id);return frame.boundingBox();}
+ async function expectedNative(host){const surface=shell.locator(`[data-runtime="${host==='alpha'?'studio':'records'}"]`),r=await surface.boundingBox(),dockTop=await shell.locator('.window-stage').evaluate(e=>e.getBoundingClientRect().bottom);const y=Math.max(0,Math.round(r.y)),height=Math.min(Math.max(1,Math.round(r.height)),Math.floor(dockTop-y));return{x:Math.round(r.x),y,width:Math.max(1,Math.round(r.width)),height};}
+ async function waitExpectedNative(host){const expected=await expectedNative(host);return waitNativeView(host,v=>v?.visible&&Math.abs(v.bounds.x-expected.x)<1&&Math.abs(v.bounds.y-expected.y)<1&&Math.abs(v.bounds.width-expected.width)<1&&Math.abs(v.bounds.height-expected.height)<1);}
+ async function mirrorCenterPixel(id){return shell.locator(`[data-runtime="${id}"] .isolated-mirror`).evaluate(image=>{const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const context=canvas.getContext('2d');context.drawImage(image,0,0);return [...context.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data];});}
  async function guest(host){for(let n=0;n<60;n++){const p=app.context().pages().find(p=>p.url().startsWith(`dental-fixture://${host}/`));if(p)return p;await new Promise(r=>setTimeout(r,50));}throw new Error('Guest page missing: '+app.context().pages().map(p=>p.url()).join(','));}
  async function shot(name){const image=await shell.evaluate(()=>window.desktop.capture({x:0,y:0,width:innerWidth,height:innerHeight}));await fs.writeFile(path.join(root,'artifacts',name),Buffer.from(image.split(',')[1],'base64'));}
  try {
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await ready('studio');let alpha=await guest('alpha');
+  await waitExpectedNative('alpha');
+  await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
+  await alpha.evaluate(()=>{const marker=document.createElement('div');marker.id='module-preview-probe';Object.assign(marker.style,{position:'fixed',inset:'0',zIndex:'2147483647',pointerEvents:'none',background:'rgb(20,220,80)'});document.body.append(marker);});
+  await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight}));
+  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-2);
+  await waitNativeView('alpha',view=>view&&!view.visible);
+  await shell.waitForTimeout(160);
+  const edgePreviewPixel=await mirrorCenterPixel('studio');
+  check('dock-edge preview matches the current live app content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
+  await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
+  check('moving away from the dock edge restores the same live app surface',await alpha.evaluate(()=>!!document.querySelector('#module-preview-probe')));
+  await alpha.evaluate(()=>document.querySelector('#module-preview-probe')?.remove());
+  await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-2);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
+  await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
+  await shell.getByRole('button',{name:'Finance',exact:true}).click();
+  const financeExplorer=shell.getByTestId('finance-explorer');await financeExplorer.waitFor();
+  const hiddenForExplorer=await waitNativeView('alpha',view=>view&&!view.visible);
+  check('Finance explorer covers the native app surface instead of appearing beside it',!!hiddenForExplorer);
+  check('Finance explorer receives keyboard focus above the native app',await shell.waitForFunction(()=>document.querySelector('.app-explorer')?.contains(document.activeElement)).then(()=>true));
+  await shell.mouse.move(680,(await shell.evaluate(()=>innerHeight))-150);await new Promise(resolve=>setTimeout(resolve,120));
+  const nativeNearDock=await nativeView('alpha');
+  await shell.mouse.move(20,20);await new Promise(resolve=>setTimeout(resolve,180));
+  const nativeAwayFromDock=await nativeView('alpha');
+  check('Finance explorer stays in front as the pointer moves near and away from the dock',!nativeNearDock?.visible&&!nativeAwayFromDock?.visible&&await financeExplorer.isVisible());
+  await shot('finance-explorer-over-native.png');
+  await shell.keyboard.press('Escape');await financeExplorer.waitFor({state:'detached'});
+  const restoredAfterExplorer=await waitExpectedNative('alpha');
+  check('Closing Finance explorer restores the foreground native app surface',restoredAfterExplorer.visible);
   await shell.getByRole('button',{name:'Records',exact:true}).click();await ready('records');const beta=await guest('beta');
   const inactiveMirror=shell.locator('[data-runtime="studio"] .isolated-mirror');
   await inactiveMirror.waitFor();
@@ -22,7 +58,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('covered app window keeps its existing shadow',await shell.locator('[data-testid="studio-window"]').evaluate(frame=>getComputedStyle(frame).boxShadow!=='none'));
   topology=await native();check('two isolated renderer processes and separate shell',topology.apps.length===2&&new Set([topology.shell,...topology.apps.map(w=>w.pid)]).size===3);
   check('sandbox/context isolation and no Node',topology.apps.every(w=>w.prefs.sandbox&&w.prefs.contextIsolation&&!w.prefs.nodeIntegration));
-  check('apps have no Node or shell bridge',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,report,request'));
+  check('apps have no Node or shell bridge',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request'));
   await alpha.evaluate(()=>localStorage.setItem('isolation','alpha-only'));
   check('storage is separated by app',await beta.evaluate(()=>localStorage.getItem('isolation'))===null);
   await shell.getByRole('button',{name:'Open apps catalog'}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible');
@@ -53,13 +89,14 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shot('runtime-overlap.png');
   await alpha.getByLabel('Your draft').click();
   await alpha.keyboard.press('Backquote');await shell.getByRole('dialog',{name:'Open windows'}).waitFor();
+  await shell.waitForFunction(()=>document.querySelectorAll('.overview-card .isolated-mirror').length===2);
   check('overview contains both isolated snapshots',await shell.locator('.overview-card .isolated-mirror').count()===2);
   check('overview clones have no runtime identities',await shell.locator('.overview-card [data-runtime]').count()===0);
   await shell.getByRole('button',{name:'Switch to Records',exact:true}).click();
   await shell.getByRole('button',{name:'Maximize Records',exact:true}).click();
   await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.presentation==='fullscreen');
   const expected=await shell.locator('[data-runtime="records"]').boundingBox();assert.ok(expected);
-  check('maximized native app begins below the visible title bar with a small dock gap',await shell.evaluate(()=>{const frame=document.querySelector('[data-window-id="records"]'),surface=document.querySelector('[data-runtime="records"]'),status=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dockTop=Number.parseFloat(document.querySelector('.dock-pill').style.top),f=frame.getBoundingClientRect(),s=surface.getBoundingClientRect();return Math.abs(f.top-status.bottom)<1&&Math.abs(s.top-(f.top+43))<1&&Math.abs(f.bottom-(dockTop-12))<1&&Math.abs(s.bottom-f.bottom)<1;}));
+  check('maximized native app begins below the visible title bar with a clear dock hover gap',await shell.evaluate(()=>{const frame=document.querySelector('[data-window-id="records"]'),surface=document.querySelector('[data-runtime="records"]'),status=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dockTop=document.querySelector('.window-stage').getBoundingClientRect().bottom,f=frame.getBoundingClientRect(),s=surface.getBoundingClientRect();return Math.abs(f.top-status.bottom)<1&&Math.abs(s.top-(f.top+43))<1&&Math.abs(f.bottom-(dockTop-12))<1&&Math.abs(s.bottom-f.bottom)<1;}));
   await shot('m12-maximized-window.png');
   // React presentation changes before native layout/guest resize acknowledgement.
   await beta.waitForFunction(({w,h})=>innerWidth===w&&innerHeight===h,{w:Math.round(expected.width),h:Math.round(expected.height)});
@@ -91,6 +128,30 @@ export async function verifyRuntime(profileArgs, reportName) {
    await shell.getByRole('button',{name:'Close Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='closed');
    check(`cleanup cycle ${i+1}: no closed sample webContents`,(await native()).apps.length===1);
   }
+  await shell.getByRole('button',{name:'Records',exact:true}).click();await waitExpectedNative('beta');
+  const recordsFrame=shell.locator('[data-testid="records-window"]'),originalBounds=await recordsFrame.boundingBox();
+  const viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));
+  const frameBox=await recordsFrame.boundingBox(),dragX=Math.max(2,Math.min(viewport.width-2,frameBox.x+frameBox.width/2)),dragY=Math.max(35,Math.min(viewport.height-2,frameBox.y+21));
+  await shell.mouse.move(dragX,dragY);await shell.mouse.down();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='moving');
+  const hiddenDuringDrag=await nativeView('beta');check('native app surface hides synchronously when window movement starts',!!hiddenDuringDrag&&!hiddenDuringDrag.visible);
+  await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="records"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
+  check('moving window uses its crisp full-resolution app preview',await state('records').locator('.isolated-mirror').evaluate(image=>image.naturalWidth>=image.clientWidth&&getComputedStyle(image).filter==='none'&&getComputedStyle(image).backdropFilter==='none'));
+  await shot('runtime-drag-preview.png');
+  await shell.mouse.move(dragX-2000,dragY,{steps:8});await shell.mouse.up();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='idle');
+  let edgeBounds=await recordsFrame.boundingBox(),edgeView=await waitExpectedNative('beta');
+  const leftSurface=await state('records').boundingBox();
+  check('left-edge native surface keeps the window origin and full content width',edgeBounds.x<0&&Math.abs(edgeBounds.x+edgeBounds.width*.7)<1&&edgeView.bounds.x===Math.round(leftSurface.x)&&edgeView.bounds.width===Math.round(leftSurface.width));
+  await shot('runtime-edge-left.png');
+  edgeBounds=await dragWindow('records',2000,0);edgeView=await waitExpectedNative('beta');
+  check('right-edge native surface follows its window without extending its frame',edgeBounds.x>0&&Math.abs(edgeBounds.x+edgeBounds.width*.3-viewport.width)<1&&edgeView.bounds.x===Math.round((await state('records').boundingBox()).x)&&edgeView.bounds.x+edgeView.bounds.width>viewport.width);
+  await shot('runtime-edge-right.png');
+  const dockTop=await shell.locator('.window-stage').evaluate(e=>e.getBoundingClientRect().bottom);
+  edgeBounds=await dragWindow('records',0,10000);edgeView=await waitExpectedNative('beta');
+  check('bottom-edge native content ends at the dock-zone boundary',edgeBounds.y+edgeBounds.height*.3<=dockTop-11&&Math.abs(edgeView.bounds.y+edgeView.bounds.height-dockTop)<1);
+  await shot('runtime-edge-bottom.png');
+  edgeBounds=await recordsFrame.boundingBox();await dragWindow('records',originalBounds.x-edgeBounds.x,originalBounds.y-edgeBounds.y);edgeView=await waitExpectedNative('beta');
+  check('returning the window onscreen restores its live native surface',edgeView.visible&&edgeView.bounds.x>=0&&edgeView.bounds.y+edgeView.bounds.height<=dockTop);
+  check('edge dragging leaves no selected app text',!await shell.evaluate(()=>window.getSelection()?.toString())&&!await betaNew.evaluate(()=>window.getSelection()?.toString()));
   check('no shell renderer errors',errors.length===0);
   return {checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null};
  } finally {await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));await app.close();}

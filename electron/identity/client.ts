@@ -3,7 +3,12 @@ import { text } from '../sdk/contracts';
 // Firebase client API key is public project configuration, not an administrative credential.
 export const firebaseApiKey = 'AIzaSyDA9f3oRA07zV4YdtF7P7ZUVY6iScEku1c';
 export type Tokens = { idToken: string; refreshToken: string; uid: string; expiresAt: number };
-export type Clinic = { userLabel: string; clinicLabel: string; role: 'admin' | 'doctor' | 'reception'; tenantId: string; clinicUserId: string; capabilities: string[] };
+export type ClinicSessionContext = {
+  clinicUser: { clinicUserId: string; displayName: string; role: 'admin' | 'doctor' | 'reception'; capabilities: string[] };
+  clinic: { tenantId: string; displayName: string; timezone: string; currency: string; defaultBranchId: string | null; hasActiveTrial: boolean };
+  branches: Array<{ branchId: string; branchCode: string; name: string }>;
+};
+export type Clinic = { userLabel: string; clinicLabel: string; role: 'admin' | 'doctor' | 'reception'; tenantId: string; clinicUserId: string; capabilities: string[]; clinicSession?: ClinicSessionContext };
 export interface AuthClient {
   signIn(email: string, password: string, signal: AbortSignal): Promise<Tokens>;
   refresh(token: string, signal: AbortSignal): Promise<Tokens>;
@@ -48,8 +53,12 @@ export class FirebaseClient implements AuthClient {
   }
   async resolve(token:string,signal:AbortSignal):Promise<Clinic> {
     const data=await this.json(staging.apiBase+'/v1/me',{method:'GET',headers:{authorization:`Bearer ${token}`}},signal);
-    const s=data.session as Record<string,unknown>|undefined,u=s?.clinicUser as Record<string,unknown>|undefined,c=s?.clinic as Record<string,unknown>|undefined;
+    const s=data.session as Record<string,unknown>|undefined,u=s?.clinicUser as Record<string,unknown>|undefined,c=s?.clinic as Record<string,unknown>|undefined,rawBranches=s?.branches;
     if(!u||!c||!text(u.displayName,160)||!text(c.displayName,160)||!['admin','doctor','reception'].includes(u.role as string)||!text(u.clinicUserId,128)||!text(c.tenantId,128)||!Array.isArray(u.capabilities)||u.capabilities.length>200||!u.capabilities.every(v=>text(v,100)))throw new AuthFailure('denied');
-    return {userLabel:u.displayName,clinicLabel:c.displayName,role:u.role as Clinic['role'],clinicUserId:u.clinicUserId,tenantId:c.tenantId,capabilities:u.capabilities};
+    let clinicSession:ClinicSessionContext|undefined;
+    if(text(c.timezone,100)&&text(c.currency,8)&&(c.defaultBranchId===null||text(c.defaultBranchId,128))&&typeof c.hasActiveTrial==='boolean'&&Array.isArray(rawBranches)&&rawBranches.length<=100&&rawBranches.every(v=>!!v&&typeof v==='object'&&text((v as Record<string,unknown>).branchId,128)&&text((v as Record<string,unknown>).branchCode,40)&&text((v as Record<string,unknown>).name,160))){
+      clinicSession={clinicUser:{clinicUserId:u.clinicUserId,displayName:u.displayName,role:u.role as ClinicSessionContext['clinicUser']['role'],capabilities:[...u.capabilities] as string[]},clinic:{tenantId:c.tenantId,displayName:c.displayName,timezone:c.timezone,currency:c.currency,defaultBranchId:c.defaultBranchId as string|null,hasActiveTrial:c.hasActiveTrial},branches:rawBranches.map(v=>{const b=v as Record<string,unknown>;return{branchId:b.branchId as string,branchCode:b.branchCode as string,name:b.name as string};})};
+    }
+    return {userLabel:u.displayName,clinicLabel:c.displayName,role:u.role as Clinic['role'],clinicUserId:u.clinicUserId,tenantId:c.tenantId,capabilities:u.capabilities as string[],...(clinicSession?{clinicSession}:{})};
   }
 }

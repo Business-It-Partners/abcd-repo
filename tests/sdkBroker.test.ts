@@ -22,7 +22,7 @@ const writeInput={appointmentId:sampleAppointment.appointmentId,status:'arrived'
 describe('SDK registration and request boundary',()=>{
  it('negotiates supported version and binds identity without caller-selected fields',()=>{
   const h=harness();expect(h.connection.appId).toBe('company.sample.alpha');expect(h.connect()).toEqual(h.connection);
-  for(const input of [{major:2,minor:0},{major:1,minor:1},{major:1,minor:-1},{major:1,minor:0,appId:'other'},'1.0'])expect(code(h.broker.connect(h.caller,input))).toBe('INCOMPATIBLE_SDK');h.broker.dispose();
+  for(const input of [{major:2,minor:0},{major:1,minor:2},{major:1,minor:-1},{major:1,minor:0,appId:'other'},'1.0'])expect(code(h.broker.connect(h.caller,input))).toBe('INCOMPATIBLE_SDK');h.broker.dispose();
  });
  it('denies unregistered sender, subframes and changed origin at the host boundary',async()=>{
   const h=harness();for(const caller of [{...h.caller,sender:{}},{...h.caller,frame:{}},{...h.caller,frame:null},{...h.caller,url:'dental-fixture://beta/index.html'}]){

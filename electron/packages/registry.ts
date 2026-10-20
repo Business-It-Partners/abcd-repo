@@ -33,6 +33,15 @@ export class PackageRegistry {
   }
   describe(id: string) { return this.locked(() => { const v = this.state().apps[id]; if (!v) throw new Error('App not installed'); return { version: this.verified(id,v.active).manifest.version, pendingVersion: v.pending ? this.verified(id,v.pending).manifest.version : null, trial: !!v.trial }; }); }
 
+  /** Read verified installed metadata without opening a runtime or activating a staged update. */
+  inspectPackage(id: string) {
+    return this.locked(() => {
+      const installed = this.state().apps[id];
+      if (!installed) throw new Error('App not installed');
+      return this.verified(id, installed.active);
+    });
+  }
+
   constructor(readonly root: string, private policy: TrustPolicy, private capacity: () => number = () => { const s = statfsSync(root); return s.bavail * s.bsize; }, private checkpoint: (phase: Checkpoint) => void = () => {}) {
     // Reject link/reparse ancestors too, including a linked user-data directory.
     const absolute = path.resolve(root); let cursor = path.parse(absolute).root;

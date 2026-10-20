@@ -1,0 +1,9 @@
+{
+  "appId": "company.dental.lab-tracker",
+  "publisher": "company",
+  "version": "1.0.1",
+  "entry": "src/index.html",
+  "sdkMajor": 1,
+  "apiMajor": 1,
+  "capabilities": []
+}

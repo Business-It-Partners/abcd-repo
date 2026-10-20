@@ -2,7 +2,7 @@ import { useSessionGeneration } from './SessionBoundary';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
-import { fitBounds, maximizedBounds, moveBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
+import { dockZoneTop, fitBounds, maximizedBounds, moveBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
 import { activeWindow, useWindowManager } from './windowManager';
 import { WindowTitleBar } from './WindowTitleBar';
 import type { Rect } from './motion';
@@ -72,6 +72,9 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     const current = getState(), w = current.windows[id];
     if (event.button !== 0 || w.phase !== 'visible' || w.presentation !== 'normal' || w.modal || Object.values(current.windows).some(w => w.busy || w.interaction !== 'idle')) return;
     if (!edge && (event.target as HTMLElement).closest('button,input,select,textarea,a')) return;
+    // Native guest views sit above this renderer. Hide them synchronously before
+    // the shell frame starts moving so they cannot trail behind or steal drag input.
+    window.desktop?.runtime.hideAll(sessionGeneration);
     event.preventDefault(); event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     gesture.current = { element: event.currentTarget, pointerId: event.pointerId, bounds: { ...w.normalBounds }, size: { ...current.size }, px: event.clientX, py: event.clientY, edge, cursor: document.body.style.cursor, selection: document.body.style.userSelect };
@@ -146,11 +149,12 @@ export function ManagedWindowFrame({ controller: c, children }: { controller: Wi
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
   const order = manager.state.order.indexOf(c.id);
+  const clippedBottom = Math.max(0, c.bounds.y + c.bounds.height - dockZoneTop(manager.state.size));
   return <>
     <section ref={c.windowRef} className={`studio-window ${c.id === 'records' ? 'records-window' : ''}`} data-testid={`${c.id}-window`}
       data-window-id={c.id} data-phase={c.win.phase} data-presentation={c.win.presentation} data-interaction={c.win.interaction} data-active={c.active}
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
-      style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
+      style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
         onDrag={event => c.startGesture(event)} onClose={c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen}/>
       {children}

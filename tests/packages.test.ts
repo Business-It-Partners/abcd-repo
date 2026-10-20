@@ -24,6 +24,11 @@ describe('dentalpkg/1 signature and portable inventory', () => {
   expect(bundle().equals(bundle())).toBe(true); const verified = verifyPackage(bundle(), policy);
   expect(verified.manifest.appId).toBe('company.sample.alpha'); expect(verified.files.get('sub/app.js')).toEqual(files.get('sub/app.js')); expect(verified.capabilities).toEqual(['platform.status']);
  });
+ it('verifies a large signed web bundle without overflowing the base64 validator', () => {
+  const appFiles = new Map([['index.html', Buffer.from('<h1>Large signed app</h1>')], ['large.js', Buffer.alloc(1_200_000, 97)]]);
+  const verified = verifyPackage(buildPackage(meta(), appFiles, 'test', keys.privateKey), policy);
+  expect(verified.files.get('large.js')?.length).toBe(1_200_000);
+ });
  it('normal production policy never trusts fixture keys or identities', () => { expect(() => verifyPackage(bundle(), productionTrust)).toThrow('Untrusted'); });
  it('refuses an unknown app signed by an untrusted key before installation or launch', () => {
   const outsider = generateKeyPairSync('ed25519');
