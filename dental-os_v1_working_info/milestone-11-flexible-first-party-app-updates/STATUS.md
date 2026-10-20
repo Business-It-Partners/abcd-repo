@@ -1,23 +1,23 @@
 # M11 Status — Flexible first-party app onboarding and updates
 
 **Status:** IMPLEMENTING
-**Updated:** 2026-10-19.
-**User acceptance:** pending; no production acceptance claimed.
+**Updated:** 2026-10-20.
+**User acceptance:** the user reports completing the 1.3.0 staging Store update; broader product acceptance remains pending. No production acceptance is claimed.
 
 ## Current position
 
-M11 is active on `codex/milestone-11`. The current local implementation/evidence checkpoint is commit `fbcd156f`; the build and focused verification were run against the same code worktree before that commit, based on source `7f6e65bf`. The commit records the app-onboarding/update slice and its evidence. Do not treat the commit itself as a verified milestone.
+M11 is active on `codex/milestone-11`. A new update refusal/recovery matrix and Windows 16-app scale profile are being added to close the remaining gates. Final-source Windows Actions have not yet run; the new scale profile has no result until that run completes.
 
-Generic first-party onboarding, signed staging releases `company.sample.preview` 1.0.0 → 1.1.0 → 1.2.0, authenticated Store install/update service acceptance, and the private live-feed Linux install/update/restart flow have passed for their recorded scope. The 1.3.0 staging release adds an app-update status panel; the user's manual Store click-through remains pending. M07/M08 retain their original verified scope.
+Generic first-party onboarding, signed staging releases `company.sample.preview` 1.0.0 → 1.1.0 → 1.2.0, authenticated Store install/update service acceptance, the private live-feed Linux install/update/restart flow, and local safety tests have passed for their recorded scope. The 1.3.0 staging release adds an app-update status panel; the user reports completing its Store update and now sees version 1.3.0 with only **Open**. M07/M08 retain their original verified scope.
 
 ## Phase tracking
 
 | Phase | Status | Current evidence / remaining |
 | --- | --- | --- |
 | M11.1 — Generic first-party identity | IMPLEMENTED for the tested sample | Generic `company.*` path and capability ceiling covered by unit/private UI tests; broader negative package cases remain under G11. |
-| M11.2 — Safe app-only release | IMPLEMENTING | Live authenticated 1.0.0 → 1.2.0 install/update and health acknowledgement pass; full interruption/dirty-write/revocation/rollback matrix remains open. |
-| M11.3 — Staging proof | IMPLEMENTING | Sequences 12–15 published and verified; manual 1.3.0 desktop update click-through pending. |
-| M11.4 — Safety and scale | IMPLEMENTING | Hosted Windows CI passed; 16-app resource/process measurement and full failure matrix remain open. |
+| M11.2 — Safe app-only release | IMPLEMENTED for the tested acceptance matrix | Live authenticated 1.0.0 → 1.2.0 install/update, dirty-write refusal, known-good rollback, interrupted transaction recovery, and the new 14-case update refusal matrix pass locally; final Windows CI for this source is pending. |
+| M11.3 — Staging proof | IMPLEMENTED for recorded scope | Sequences 12–15 published and verified; user reports completing the manual desktop update to 1.3.0 and now seeing only **Open** for the current version. |
+| M11.4 — Safety and scale | IMPLEMENTING | Local safety matrix passes; hosted Windows 16-app resource/process measurement and final Windows CI are pending. |
 
 ## Verification already recorded
 
@@ -25,10 +25,8 @@ Linux `npm run build`; serial unit suite (13 files / 259 tests); private onboard
 
 ## Remaining work
 
-- Finish the unchecked safety cases in the [single acceptance checklist](../APP_ONBOARDING_AND_UPDATE_CHECKLIST.md), including interruption, uncertain writes, dirty work, failed health, revocation and cleanup.
-- Measure memory/process behavior at the supported app limit and record resource thresholds.
-- Complete the 16-app resource/process measurement and full update failure matrix.
-- Complete the user's manual Store refresh/update check for 1.3.0, or retain it explicitly as pending.
+- Complete the hosted Windows 16-app resource/process measurement and retain its artifact.
+- Rerun required Windows Actions on the exact final M11 source and update this evidence record.
 - Close G11 and R02/R03/R05/R08/R09/R12/R15 only when all named evidence passes.
 
 ## Scope boundaries

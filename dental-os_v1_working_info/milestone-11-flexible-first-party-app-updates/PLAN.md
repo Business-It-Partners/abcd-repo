@@ -33,10 +33,10 @@ These are tracked phases under G11, not separately verified top-level milestones
 - [ ] Successive app-only releases add visible features and are usable without changing or rebuilding the Dental OS platform.
 - [ ] Store identity, signing roots, signed catalogue/update policy, app grants and package identity remain bound; over-granted or untrusted apps fail closed.
 - [ ] Network loss, cancellation, malformed/oversized/tampered packages, stale/replayed metadata, incompatibility, withdrawal/revocation and disk pressure preserve a safe known-good install.
-- [ ] Dirty/modal work and uncertain backend writes cannot be silently replaced; failed health checks choose only an authorized compatible known-good version or explicit recovery.
+- [x] Dirty/modal work and uncertain backend writes cannot be silently replaced; failed health checks choose only an authorized compatible known-good version or explicit recovery. Local unit/private UI coverage passes; final-source Windows CI remains required.
 - [ ] App-local update/rollback leaves other apps and the platform unchanged; close, session change and logout clean only the intended runtime state.
-- [ ] Resource/process acceptance at the configured app limit passes; build, units, focused private UI and applicable Windows CI pass with retained evidence.
-- [ ] The 1.3.0 manual staging offer is either accepted by the user's desktop test or clearly retained as pending; do not infer click-through from a simulated offer state.
+- [ ] Resource/process behavior at the configured app limit is measured and reviewed; final-source build, units, focused private UI and applicable Windows CI pass with retained evidence.
+- [x] The user reported completing the 1.3.0 desktop update and now seeing version 1.3.0 with only **Open**; this confirms the manual Store click-through rather than inferring success from simulated offer state.
 - [ ] G11 and its R02/R03/R05/R08/R09/R12/R15 coverage are evidenced. Production promotion remains separate authorization.
 
 ## Boundaries and verification

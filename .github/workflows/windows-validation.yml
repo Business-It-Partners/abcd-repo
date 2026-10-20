@@ -48,6 +48,8 @@ jobs:
         run: node tests/recovery-ci.mjs
       - name: Windows bounded runtime resource profile
         run: node tests/resources-ci.mjs
+      - name: Windows maximum app-count resource profile
+        run: node tests/resources-limit-ci.mjs
       - name: Windows integrated OS and API contract proof
         run: node tests/integration-ci.mjs
       - name: Windows app update process-exit recovery
@@ -80,6 +82,7 @@ jobs:
             artifacts/windows-recovery.json
             artifacts/windows-hardening.json
             artifacts/windows-resources.json
+            artifacts/windows-resources-limit.json
             artifacts/windows-integration.json
             artifacts/windows-unit.log
             artifacts/windows-build.log

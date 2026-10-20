@@ -1,12 +1,12 @@
 # Dental OS V1 — Global Status
 
-**Updated:** 2026-10-19.
+**Updated:** 2026-10-20.
 **Active scope:** M01–M10 VERIFIED for their documented scope; M11 flexible first-party app onboarding/updates is IMPLEMENTING; M12 OS workspace/shell UI and M13 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
 **Current implementation authorization:** M07–M10 staging work was previously authorized and is closed for its recorded scope. M11 app-onboarding/update work and staging acceptance were separately requested; this roadmap realignment is documentation-only. Production remains excluded.
 **Active milestone:** M11 — flexible first-party app onboarding and independent updates on `codex/milestone-11`. M12 and M13 have no active branches yet. Physical Windows-device testing is G14 after M13 and before final product release.
 **User review/acceptance:** pending.
 
-**M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance, private live-feed install/update/restart and hosted Windows CI pass for their recorded scope. The manual 1.3.0 click-through, full safety matrix and 16-app resource/process measurement remain open. M07/M08 original status and evidence remain unchanged.
+**M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance, private live-feed install/update/restart, the local failure/recovery matrix, and the user-reported manual 1.3.0 desktop update pass for their recorded scope. The 16-app resource/process measurement and final-source Windows CI remain open. M07/M08 original status and evidence remain unchanged.
 
 ## Milestones
 

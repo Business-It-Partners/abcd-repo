@@ -37,13 +37,37 @@ describe('signed staging update authority',()=>{
  it('permits supported old client version until minimum/revocation changes',()=>{expect(()=>allowUpdatedPackage(verifyPackage(bundle(),trust),policy(),catalogue(),now)).not.toThrow();});
 });
 describe('real distribution update coordinator with signed metadata cache',()=>{
- function setup(){const h=harness();let bytes=bundle(),c=catalogue(bytes),p=policy(),allowed=true,network=true,clock=now;const requests:string[]=[];
+ function setup(capacity?:()=>number){const h=harness(undefined,capacity);let bytes=bundle(),c=catalogue(bytes),p=policy(),allowed=true,network=true,clock=now;const requests:string[]=[];let packageResponse:((valid:Buffer)=>Response|Promise<Response>)|undefined,packageRequested:(()=>void)|undefined;
   const identity={snapshot:()=>({active:true,generation:1,userLabel:'',clinicLabel:''}),credential:async()=> 'test-only'};
   const config={apiBase:'https://api.fixture.invalid',publicBase:'https://releases.fixture.invalid/',policy:trust,updates:true},store=new CatalogueStore(path.join(h.root,'distribution'));
-  const transport:typeof fetch=async(input,init)=>{if(!network)throw Error('offline');const url=String(input);requests.push(url);if(url.startsWith(config.publicBase)){expect(new Headers(init?.headers).has('authorization')).toBe(false);return new Response(new Uint8Array(bytes));}if(url.endsWith('install-policy'))return Response.json({environment:'cloudfare-staging',canInstall:allowed});const body=url.endsWith('update-policy')?signed(p):Buffer.from(canonical({catalogue:c,keyId:'next',signature:sign(null,Buffer.from(canonical({purpose:'dental-os-catalogue',keyId:'next',catalogue:c})),next.privateKey).toString('base64')}));return new Response(new Uint8Array(body),{headers:{'x-dental-os-time':String(clock)}});};
+  const transport:typeof fetch=async(input,init)=>{if(!network)throw Error('offline');const url=String(input);requests.push(url);if(url.startsWith(config.publicBase)){expect(new Headers(init?.headers).has('authorization')).toBe(false);packageRequested?.();return packageResponse?packageResponse(bytes):new Response(new Uint8Array(bytes));}if(url.endsWith('install-policy'))return Response.json({environment:'cloudfare-staging',canInstall:allowed});const body=url.endsWith('update-policy')?signed(p):Buffer.from(canonical({catalogue:c,keyId:'next',signature:sign(null,Buffer.from(canonical({purpose:'dental-os-catalogue',keyId:'next',catalogue:c})),next.privateKey).toString('base64')}));return new Response(new Uint8Array(body),{headers:{'x-dental-os-time':String(clock)}});};
   const service=new DistributionService(config,h.r,identity,store,transport,()=>clock);
-  return{...h,service,store,requests,advance:()=>{bytes=bundle('1.1.0','next');c=catalogue(bytes,2);p=policy(2);},deny:()=>{allowed=false;},offline:()=>{network=false;},expire:()=>{clock+=3600001;},control:(change:(p:UpdatePolicy)=>void)=>{p=policy(p.sequence+1);change(p);},restore:()=>new DistributionService(config,h.r,identity,store,transport,()=>clock),close:()=>{service.dispose();h.close();}};
+  return{...h,service,store,requests,advance:(keyId='next')=>{bytes=bundle('1.1.0',keyId);c=catalogue(bytes,2);p=policy(2);},deny:()=>{allowed=false;},offline:()=>{network=false;},expire:()=>{clock+=3600001;},control:(change:(p:UpdatePolicy)=>void)=>{p=policy(p.sequence+1);change(p);},mutateCatalogue:(change:(c:Catalogue)=>void)=>change(c),setPackageResponse:(respond:(valid:Buffer)=>Response|Promise<Response>)=>{packageResponse=respond;},setInvalidSignature:()=>{const envelope=JSON.parse(bytes.toString());envelope.signature=Buffer.alloc(64).toString('base64');bytes=Buffer.from(canonical(envelope));const release=c.releases[0];release.packageSha256=sha256(bytes);release.packageBytes=bytes.length;release.objectKey=`releases/${id}/${release.version}/${release.packageSha256}.dentalpkg`;},releaseDigest:()=>JSON.parse(bytes.toString()).release.digest,waitForPackage:()=>new Promise<void>(resolve=>{packageRequested=resolve;}),restore:()=>new DistributionService(config,h.r,identity,store,transport,()=>clock),close:()=>{service.dispose();h.close();}};
  }
+ it.each(['network loss','cancellation','short package','oversized package','digest mismatch','invalid package signature','malformed metadata','stale sequence','incompatible SDK','incompatible API','withdrawn release','revoked digest','revoked signing key','insufficient disk'])('preserves the installed known-good app after %s during an update',async kind=>{
+  let capacity=100_000_000;const h=setup(()=>capacity);try{
+   expect((await h.service.install(id)).ok).toBe(true);healthy(h.r);const before=structuredClone(h.r.inspect().apps[id]);h.advance(kind==='revoked signing key'?'old':'next');
+   if(kind==='network loss')h.offline();
+   if(kind==='cancellation'){h.setPackageResponse(()=>new Promise<Response>(()=>{}));const packageStarted=h.waitForPackage(),pending=h.service.install(id);await packageStarted;h.service.cancel();expect(await pending).toEqual({ok:false,code:'CANCELLED'});}
+   else {
+    if(kind==='short package')h.setPackageResponse(()=>new Response('short'));
+    if(kind==='oversized package')h.setPackageResponse(valid=>new Response(null,{headers:{'content-length':String(valid.length+1)}}));
+    if(kind==='digest mismatch')h.setPackageResponse(valid=>{const changed=Buffer.from(valid);changed[0]^=1;return new Response(new Uint8Array(changed));});
+    if(kind==='invalid package signature')h.setInvalidSignature();
+    if(kind==='malformed metadata')h.mutateCatalogue(value=>{(value as any).unexpected=true;});
+    if(kind==='stale sequence')h.mutateCatalogue(value=>{value.sequence=1;});
+    if(kind==='incompatible SDK')h.mutateCatalogue(value=>{value.releases[0].sdkMajor=2;});
+    if(kind==='incompatible API')h.mutateCatalogue(value=>{value.releases[0].apiMajor=2;});
+    if(kind==='withdrawn release')h.mutateCatalogue(value=>{value.releases[0].status='withdrawn';});
+    if(kind==='revoked digest')h.control(value=>{value.apps[0].revokedDigests=[h.releaseDigest()];});
+    if(kind==='revoked signing key')h.control(value=>{value.revokedKeys=['old'];});
+    if(kind==='insufficient disk')capacity=1;
+    expect((await h.service.install(id)).ok).toBe(false);
+   }
+   expect(h.r.inspect().apps[id]).toMatchObject({active:before.active,knownGood:before.knownGood,pending:null,trial:null});
+   expect(h.r.describe(id).version).toBe('1.0.0');
+  }finally{h.close();}
+ });
  it('background check stages successor while old lease remains pinned; verified cache survives restart',async()=>{const h=setup();try{expect((await h.service.install(id)).ok).toBe(true);healthy(h.r);const oldLease=h.r.launch(id);h.advance();await h.service.checkUpdates();expect(h.service.view().apps[0]).toMatchObject({installedVersion:'1.0.0',pendingVersion:'1.1.0'});expect(oldLease.manifest.version).toBe('1.0.0');h.offline();const restored=h.restore();oldLease.releaseLease();const next=h.r.launch(id);expect(next.manifest.version).toBe('1.1.0');next.releaseLease();restored.dispose();}finally{h.close();}});
  it('quarantined successor is communicated and never automatically redownloaded',async()=>{const h=setup();try{await h.service.install(id);healthy(h.r);h.advance();await h.service.checkUpdates();const lease=h.r.launch(id);h.r.markFailed(id,lease.release.digest);lease.releaseLease();h.service.changed();expect(h.service.view().apps[0]).toMatchObject({available:false,reason:expect.stringContaining('failed its launch check')});const downloads=h.requests.filter(u=>u.startsWith('https://releases.fixture.invalid/')).length;await h.service.checkUpdates();expect(h.requests.filter(u=>u.startsWith('https://releases.fixture.invalid/')).length).toBe(downloads);}finally{h.close();}});
  it('expired cache blocks launch but preserves installed bytes and active pointer',async()=>{const h=setup();try{await h.service.install(id);healthy(h.r);const before=h.r.inspect();h.expire();h.offline();h.restore().dispose();expect(()=>h.r.launch(id)).toThrow('safe update policy');expect(h.r.inspect()).toEqual(before);}finally{h.close();}});

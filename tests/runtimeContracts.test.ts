@@ -7,6 +7,8 @@ describe('isolated runtime boundary',()=>{
   expect(parseLayout([])).toEqual([]);
   const dynamic=['company.sample.preview','company.dental.calendar'].map(id=>({id,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}));
   expect(parseLayout(dynamic).map(v=>v.id)).toEqual(['company.sample.preview','company.dental.calendar']);
+  const atLimit=Array.from({length:16},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}));
+  expect(parseLayout(atLimit)).toHaveLength(16);
   const tooMany=Array.from({length:17},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:false,visible:false,rect:{x:0,y:43,width:640,height:400}}));
   for(const value of [[layouts()[0],layouts()[0]],layouts().map(v=>({...v,identity:'forged'})),layouts().map(v=>({...v,visible:true})),layouts().map(v=>({...v,rect:{...v.rect,width:NaN}})),[{...dynamic[0],id:'company.1bad'}],tooMany])expect(()=>parseLayout(value)).toThrow();
  });

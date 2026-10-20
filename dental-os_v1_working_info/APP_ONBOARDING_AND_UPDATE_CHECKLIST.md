@@ -1,6 +1,6 @@
 # First-Party App Onboarding and Independent Update — Working Checklist
 
-**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; applicable hosted Windows CI passed on 2026-10-20. The 1.3.0 manual click-through, safety matrix and 16-app resource measurement remain open.
+**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; applicable hosted Windows CI passed on 2026-10-20; the user confirmed the manual 1.3.0 Store update. The full safety matrix and 16-app resource measurement remain open.
 **Milestone assignment:** M11 — flexible first-party app onboarding and independent updates.
 **Purpose:** The sole detailed implementation and acceptance checklist for proving that a newly approved first-party app can be installed from the Store and then updated independently of the Dental OS platform.
 
@@ -104,24 +104,25 @@ The first-party boundary remains company-controlled. This enables new company ap
 
 ### 7. Prove safety, recovery, and refusal paths
 
-- [ ] During an update, test network loss, cancellation, short/oversized response, digest mismatch, invalid package signature, malformed metadata, stale/replayed sequence, incompatible SDK/API, withdrawn release, revoked digest/key, and insufficient disk space. In each case keep the installed known-good app coherent.
-- [ ] Verify an unknown/new ID that is not authorized by the approved first-party trust policy cannot install or launch, even if its package is correctly signed by an untrusted key.
-- [ ] Verify an app cannot expand its grants by changing its manifest or catalogue request; undeclared broker operations remain denied.
-- [ ] Verify an app with dirty/modal work or pending/unknown backend writes cannot be silently replaced or closed by Update. Preserve the existing save/reconcile/explicit-close rules.
-- [ ] Inject a v2 launch-health failure and verify the safe compatible known-good version is selected according to M08 policy; do not treat launch health as proof of clinical correctness.
-- [ ] Verify update/lock/logout/session-generation changes close and clear only the intended isolated runtime state, and diagnostics contain no patient data, drafts, tokens, URLs with credentials, or response bodies.
-- [ ] Verify app close/update/uninstall releases renderer views, listeners, timers, captures, leases, and temporary files without deleting another app’s package or SaaS data.
+- [x] During an update, test network loss, cancellation, short/oversized response, digest mismatch, invalid package signature, malformed metadata, stale/replayed sequence, incompatible SDK/API, withdrawn release, revoked digest/key, and insufficient disk space. `tests/updates.test.ts` adds a 14-case `DistributionService` matrix and asserts the installed version, active pointer, and known-good pointer stay coherent; `tests/distribution.test.ts` also covers replay/equivocation.
+- [x] Verify an unknown ID cannot install or launch when signed by a valid but untrusted key. `tests/packages.test.ts` checks that the outsider signature is valid while platform trust refuses the package and the registry has no launchable installation.
+- [x] Verify an app cannot expand its grants by changing its manifest or catalogue request; undeclared broker operations remain denied. Covered by `tests/appOnboarding.test.ts`, `tests/distribution.test.ts`, `tests/packages.test.ts`, and `tests/sdkBroker.test.ts`.
+- [x] Verify an app with dirty/modal work or pending/unknown backend writes cannot be silently replaced or closed by Update. `tests/updates.test.ts`, `tests/sdkBroker.test.ts`, and private `tests/updates.mjs` / `tests/runtime.mjs` cover refusal, reconciliation, and explicit close behavior.
+- [x] Inject launch-health failure and verify the compatible known-good release is restored and the failed digest quarantined. Covered by `tests/updates.test.ts` for explicit failure and process-restart recovery; this is a launch safety check, not clinical correctness proof.
+- [x] Verify update/lock/logout/session-generation changes close and clear the intended runtime state, and diagnostics omit private payloads. Covered by `tests/distribution.test.ts`, `tests/sdkBroker.test.ts`, `tests/identity.mjs`, `tests/hardening.test.ts`, and `tests/hardening.mjs`.
+- [x] Verify app close/update/uninstall releases renderer views, listeners, timers, captures, leases, and temporary files without deleting another app’s package or SaaS data. Existing proof is in `tests/runtime.mjs` and `tests/packages.test.ts`; the new 16-app Windows profile adds a wider cleanup check, pending CI.
 
 ### 8. Verification and evidence
 
-- [x] Add generic onboarding/capability/update unit coverage and private runtime/UI checks; the existing update UI suite exercises dirty-work refusal, lease pinning, clean activation, and app-local rollback.
+- [x] Add generic onboarding/capability/update unit coverage and private runtime/UI checks; the 14-case update failure matrix and existing UI/unit suites cover dirty-work refusal, lease pinning, clean activation, rollback, and recovery.
 - [x] Add and pass a private Linux onboarding UI scenario covering third-app install/arrival flight, v1.1/v1.2 Update actions, safe health, bounded history, and v1.2 relaunch.
 - [x] Run read-only authenticated staging acceptance with the real clinic session: fresh Store install of 1.2.0 and update from a verified 1.0.0 install to live 1.2.0; old lease pinning and health acknowledgement pass. See [authenticated staging evidence](../artifacts/staging-onboarding-auth-verification.json).
 - [x] Linux `npm run build`, the full serial unit suite (13 files / 259 tests), and the private onboarding/distribution/update UI suites pass.
 - [x] Applicable Windows CI passed for source `2a943385c28fe80a3d8cc217a4404463297c0d16`; see [M11 Windows CI evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md). Physical Windows acceptance remains G14 after M13.
-- [ ] The installed/open-app limit is bounded, but memory/process measurements at that limit have not been run.
+- [ ] The installed/open-app limit is bounded, but the 16-app Windows memory/process measurement is still awaiting the hosted Windows run.
 - [x] Run the operator publisher validator plus conditional-publisher/transport tests (13 passed); no shared Worker/API/config/binding changed, so existing-client deployment regressions were not applicable.
 - [x] Retain exact app hashes, sequence/policy/catalogue digests, named staging bucket/origin, test commands/results, and private UI screenshots without secrets or clinical data. Resource/process counts remain open.
+- [x] User manually updated Dental Workspace Preview to 1.3.0 in Dental OS and reports that the current Store page now shows version 1.3.0 with only **Open**. This confirms the real desktop update action completed and the installed version is current; no update action is expected when installed and offered versions match. User-reported acceptance, 2026-10-20.
 - [x] Update this checklist, M11 status/evidence, requirement traceability, architecture ADR, tooling guide, and root work index; retain the remaining resource/process and safety gates as open.
 
 ## Acceptance gate
@@ -132,9 +133,10 @@ This work is complete only when all of the following are true:
 - [x] Native desktop click-through against the authenticated live staging feed and restart of the actual staging-signed package; see [live staging desktop evidence](../artifacts/staging-onboarding-desktop-verification.json).
 - [x] The current Store service/package registry passed live signed/R2 versions 1.0.0 → 1.1.0 → 1.2.0 through the original sequence test; the authenticated live Store path separately passed the 1.0.0 → 1.2.0 update. The platform package stayed fixed.
 - [x] The Dental OS/Electron platform build stays unchanged during the app-only v1.0.0 → v1.2.0 Store update; the signed catalogue keeps the existing apps coherent.
+- [x] User manually updated the local installation to 1.3.0 and confirms the Store now shows 1.3.0 with only **Open**; see the user-reported acceptance recorded above (2026-10-20).
 - [x] New app onboarding and app updates use a generic trusted path rather than adding another per-app runtime branch. The new `company.sample.preview` ID is authorized by the signed staging policy and handled through the shared runtime/Store path.
-- [ ] Dirty work, ambiguous writes, invalid or interrupted packages, revocation, and failed health checks preserve the safe recovery behavior described in M08.
-- [ ] Linux verification, staging evidence, 16-app resource/process regression, and required client regressions pass for the assigned scope. Applicable hosted Windows CI passed on 2026-10-20; see [M11 Windows CI evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md).
+- [x] Dirty work, ambiguous writes, invalid/interrupted packages, revocation, and failed health checks preserve the safe recovery behavior described in M08; see the safety evidence mapping above and existing M08 recovery tests.
+- [ ] Linux verification, staging evidence, 16-app resource/process measurement, final-source Windows CI, and required client regressions pass for the assigned scope. Earlier hosted Windows CI passed on 2026-10-20; the new source is awaiting its run. See [M11 Windows CI evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md).
 - [ ] The assigned milestone and global status identify exactly what passed, what remains unverified, and whether user acceptance or physical-device testing is still pending.
 
 ## Explicit exclusions

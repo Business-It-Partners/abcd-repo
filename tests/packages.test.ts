@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync, unlinkSync, linkSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { generateKeyPairSync, sign } from 'node:crypto';
+import { generateKeyPairSync, sign, verify } from 'node:crypto';
 import { buildPackage, canonical, verifyPackage, sha256, limits, productionTrust, type TrustPolicy, type Manifest } from '../electron/packages/format';
 import { PackageRegistry, type Checkpoint } from '../electron/packages/registry';
 const keys = generateKeyPairSync('ed25519'), publicKey = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
@@ -25,6 +25,16 @@ describe('dentalpkg/1 signature and portable inventory', () => {
   expect(verified.manifest.appId).toBe('company.sample.alpha'); expect(verified.files.get('sub/app.js')).toEqual(files.get('sub/app.js')); expect(verified.capabilities).toEqual(['platform.status']);
  });
  it('normal production policy never trusts fixture keys or identities', () => { expect(() => verifyPackage(bundle(), productionTrust)).toThrow('Untrusted'); });
+ it('refuses an unknown app signed by an untrusted key before installation or launch', () => {
+  const outsider = generateKeyPairSync('ed25519');
+  const bytes = buildPackage(meta('1.0.0', 'company.unknown.app'), files, 'outsider', outsider.privateKey);
+  const envelope = JSON.parse(bytes.toString()), releaseBytes = Buffer.from(canonical(envelope.release));
+  expect(verify(null, releaseBytes, outsider.publicKey, Buffer.from(envelope.signature, 'base64'))).toBe(true);
+  expect(() => verifyPackage(bytes, policy)).toThrow('Untrusted release');
+  const h = harness();
+  try { expect(() => h.registry.install(bytes)).toThrow('Untrusted release'); expect(() => h.registry.launch('company.unknown.app')).toThrow('not installed'); }
+  finally { h.close(); }
+ });
  it.each(['signature', 'payload', 'release', 'unsigned', 'unknown-key', 'unknown-app', 'publisher'])('rejects %s tampering', field => {
   const e = JSON.parse(bundle().toString());
   if (field === 'signature') e.signature = Buffer.alloc(64).toString('base64');
