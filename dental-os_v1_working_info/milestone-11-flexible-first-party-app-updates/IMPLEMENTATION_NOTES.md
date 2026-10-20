@@ -24,7 +24,9 @@ This table describes current repository ownership, not a requirement to keep all
 - Only approved company apps are supported. No third-party marketplace, arbitrary sideloading or general plugin interface is created.
 - The existing Dental SaaS remains business authority; synthetic acceptance packages do not store patient records.
 - App releases update independently of Electron/platform releases. A new capability beyond the shipped ceiling still requires a trusted platform change.
-- M12 is UI/workspace scope; M13 is host installer/release operations. Do not move update authorization into renderer UI.
+- M12 is UI/workspace scope; M13/M14 are first-party app release scope; M20 is host installer/release operations. Do not move update authorization into renderer UI.
+
+2026-10-20 roadmap amendment: M13 now owns minimal first-party app-shell releases, M14 owns functional app packages, and M20 owns host installer/release operations. This changes future assignment only; the prior M11 verification scope and evidence are preserved. Final physical acceptance is G21 after M20.
 
 ## Current implementation/evidence record
 

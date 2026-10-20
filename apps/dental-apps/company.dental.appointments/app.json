@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "appId": "company.dental.appointments",
+  "title": "Appointments",
+  "description": "Appointments staging preview",
+  "icon": "assets/appointments.png",
+  "anyCapabilities": ["appointments.access"],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "appointments",
+      "label": "Appointments",
+      "tab": "appointments",
+      "capability": "appointments.access"
+    }
+  ]
+}

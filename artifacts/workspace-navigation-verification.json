@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "signed-in workspace starts with the desktop shell and no app windows",
+    "Apps opens the authorized first-party Store catalog",
+    "app discovery search narrows the first-party list",
+    "Motion Studio installation exposes live download progress",
+    "Motion Studio install result is announced from verified Store state",
+    "Motion Studio install notification is polite status feedback",
+    "Motion Studio install notification offers a direct open action",
+    "installed app launches inside its isolated runtime",
+    "Records installation exposes live download progress",
+    "Records install result is announced from verified Store state",
+    "Records install notification is polite status feedback",
+    "Records install notification offers a direct open action",
+    "switching from Store to a second app follows shared window focus",
+    "Windows overview discovers both open apps and the Store",
+    "overview returns focus to Motion Studio and preserves its draft",
+    "overview switches directly to Records and updates active-app identity",
+    "dock returns to the existing app without losing unfinished work",
+    "workspace discovery and return flow has no renderer errors"
+  ],
+  "errors": [],
+  "platform": "linux",
+  "sha": null
+}

@@ -1,6 +1,6 @@
-# M13 Verification Evidence — Windows/Linux release and operations
+# M20 Verification Evidence — Windows/Linux release and operations
 
-**Milestone verification:** NOT STARTED. M13 is PLANNED; no production installer or supported-host certification is claimed.
+**Milestone verification:** NOT STARTED. M20 is PLANNED; no production installer or supported-host certification is claimed.
 
 ## Required evidence
 
@@ -13,12 +13,12 @@ For each run retain date, exact source and artifact identity, dependency/build v
 - [ ] Clean install, upgrade, interruption/restart, rollback/recovery and uninstall on named CI/host targets.
 - [ ] Compatibility with M11 app packages and M12 shell/session state.
 - [ ] Diagnostics and operations/incident/retirement runbooks.
-- [ ] G13 evidence for the declared hosted/automated scope.
-- [ ] G14 physical Windows-device and user/product acceptance after M13, before final release.
+- [ ] G20 evidence for the declared hosted/automated scope.
+- [ ] G21 physical Windows-device and user/product acceptance after M20, before final release.
 
 ## Historical prototype installer experiment — 2026-10-15
 
-This out-of-sequence experiment is evidence about a prototype artifact only. It does not satisfy G13 or G14 and does not select a production installer.
+This out-of-sequence experiment is evidence about a prototype artifact only. It does not satisfy G20 or G21 and does not select a production installer.
 
 The user authorized a transferable unsigned Windows x64 preview. [Configuration and build helper](../../tools/desktop-release/windows-preview.cjs), [instructions](../../tools/desktop-release/WINDOWS_PREVIEW.md), [package inspection/provenance](../../artifacts/windows-preview-verification.json) and [native build log](../../artifacts/windows-preview-build-native.log) record it.
 

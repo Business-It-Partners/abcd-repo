@@ -1,6 +1,6 @@
 # M11 Verification Evidence — flexible first-party app onboarding and updates
 
-**Milestone verification:** VERIFIED for the documented automated and staging scope. G11 is closed for this scope; M13/G13 and final physical/product acceptance G14 remain separate.
+**Milestone verification:** VERIFIED for the documented automated and staging scope. G11 is closed for this scope; M13/G13 app shells, M14/G14 functional apps, and M20/G20 plus final physical/product acceptance G21 remain separate.
 
 ## Required proof
 
@@ -9,7 +9,7 @@
 - Dirty-work, uncertain-write, interruption, revocation, failed-health, rollback, retention and session-boundary safety.
 - Resource/process behavior at the app limit.
 - Applicable hosted Windows CI for the exact M11 source.
-- Complete G11/R02/R03/R05/R08/R09/R12/R15 evidence review. Host installers and release operations belong to M13.
+- Complete G11/R02/R03/R05/R08/R09/R12/R15 evidence review. Host installers and release operations belong to M20.
 
 ## Evidence record format
 
@@ -57,3 +57,7 @@ Staging-only operator publication executed against the existing bucket/origin an
 - Live catalogue and update-policy signatures, the immutable public R2 object, package signature, digest, app identity, version, feature content, and zero capabilities were reverified. Exact hashes are in [staging-onboarding-1.3.0.json](../../artifacts/staging-onboarding-1.3.0.json).
 - A disposable `DistributionService` refresh seeded with the prior public 1.2.0 package showed live 1.3.0 over installed 1.2.0 and the Store's **Download update** action enabled alongside **Open**. Its install-policy response was simulated; this verifies the offer state, not the user's authenticated click-through.
 - Manual desktop acceptance: on 2026-10-20 the user reported that they had already updated locally to 1.3.0 and that the Store now shows 1.3.0 with only **Open**. This is the expected current state once installed version equals catalogue version, and confirms the manual app-only update completed. It closes the manual 1.3.0 click-through item; M11's automated/staging completion and the remaining G14 device/product gate are recorded above.
+
+## 2026-10-20 roadmap amendment
+
+The future milestone assignments changed after this M11 evidence was recorded: M13 is now first-party app shells, M14 is functional Dental OS apps, and the former M13 host-release scope is M20. M11's verification results are unchanged. The final physical/device gate is now G21 after M20; older dated run notes above retain their original context.

@@ -35,6 +35,7 @@ try{
  const secondDockApp=shell.locator(`[data-dock-app="${secondId}"]`);await secondDockApp.waitFor();await secondDockApp.click({force:true});
  await explorer.waitFor();
  check('OS explorer discovers Lab Tracker modules from its signed app manifest',await explorer.getByRole('button',{name:'Lab Tracker',exact:true}).isVisible()&&await explorer.getByRole('button',{name:'Lab supplier record',exact:true}).isVisible());
+ check('Lab Tracker apps stay in a compact grid at the top left when only two are available',await explorer.locator('.app-explorer-grid').evaluate(grid=>{const box=grid.getBoundingClientRect(),items=[...grid.querySelectorAll('.app-explorer-item')].map(item=>item.getBoundingClientRect());return getComputedStyle(grid).alignContent==='start'&&items.length===2&&items[0].left<=box.left+1&&Math.abs(items[0].top-items[1].top)<1&&items[0].height<=132&&items[0].top-box.top<=24;}));
  await explorer.getByRole('button',{name:'Lab Tracker',exact:true}).click();
  await shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',secondId,{timeout:15000});
  const secondGuest=app.context().pages().find(page=>page.url().startsWith(`dental-fixture://${secondId}/`));assert.ok(secondGuest,'second module package guest is open');

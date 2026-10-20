@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "environment": "cloudfare-staging",
+  "channel": "staging",
+  "sequence": 21,
+  "releaseCount": 14,
+  "previousTwelveUnchangedReleasesPreserved": true,
+  "allAppAccessPoliciesPreserved": true,
+  "packages": [
+    {
+      "id": "company.dental.finance",
+      "title": "Finance",
+      "version": "1.0.1",
+      "packageBytes": 602980,
+      "packageSha256": "7276714bfd844a06576a1ef5e8c916de47fff4d3c447ced2b1df8a9f765afc0d",
+      "capabilities": [],
+      "modules": [
+        { "id": "transaction-record", "label": "Transaction Record" },
+        { "id": "patient-payments", "label": "Patient payments" },
+        { "id": "general-expenses", "label": "General expenses" },
+        { "id": "salary-payments", "label": "Salary payments" },
+        { "id": "product-list", "label": "Product list" },
+        { "id": "purchases", "label": "Purchases" },
+        { "id": "supplier-list", "label": "Supplier list" },
+        { "id": "supplier-payments", "label": "Supplier payments" }
+      ],
+      "mainThumbnail": "assets/finance.png"
+    },
+    {
+      "id": "company.dental.lab-tracker",
+      "title": "Lab Tracker",
+      "version": "1.0.1",
+      "packageBytes": 647196,
+      "packageSha256": "3b17d56f25f71c3573cac3e11700aa0e8ea47546e7abbcfb1ba3cb3dc47c89ab",
+      "capabilities": [],
+      "modules": [
+        { "id": "lab-tracker", "label": "Lab Tracker" },
+        { "id": "lab-supplier-record", "label": "Lab supplier record" }
+      ],
+      "mainThumbnail": "assets/lab.png"
+    }
+  ],
+  "catalogueSha256": "70004f942302e1cab8ab6b8ee02fa034e751334a4e943e73fc7b9a9a907ef5ba",
+  "updatePolicySha256": "3af49fc013332d888dc9799d42fe8dc8e142c3e55e1361ba6c9ce7479d46388f",
+  "sourceHead": "158f12a776cd3da905c8d0b80bae2bc3aff21d5d",
+  "sourceWorkingTree": "dirty",
+  "verification": {
+    "packagePreparationAndPublisherValidation": "passed",
+    "temporaryPublisher": "conditional writes passed; anonymous and replay denied; removed after publication",
+    "liveSignedCataloguePolicyAndR2PackageBytes": "verified",
+    "packageSignatureAndTrustedMetadata": "verified",
+    "appLocalTestsAfterPatch": "not rerun"
+  },
+  "installAcceptance": "pending user-profile Store update and managed-window/module-switch review",
+  "scope": "Cloudflare staging only; no production resources changed"
+}

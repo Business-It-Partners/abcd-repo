@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "date": "2026-10-20T12:45:42.096041+00:00",
+  "platform": "linux",
+  "environment": "cloudfare-staging",
+  "appId": "company.dental.followups",
+  "version": "1.0.0",
+  "phase": "installed-awaiting-first-runtime-launch",
+  "catalogueSequence": 16,
+  "profile": "existing staging user profile",
+  "activeDigest": "f2422bd6ae93582d68c1d543705262c462e0e8bd58a5ecf09458604f14682fa2",
+  "checks": {
+    "authenticatedStagingStoreRefresh": true,
+    "distributionInstallSucceeded": true,
+    "registryActiveVersion": [
+      "f2422bd6ae93582d68c1d543705262c462e0e8bd58a5ecf09458604f14682fa2"
+    ],
+    "manifestEntryPresent": true,
+    "runtimeLaunchAndHealthAcknowledgement": false,
+    "knownGoodHealthReceipt": false
+  },
+  "scope": "Installed from the Cloudflare staging Store into the existing Electron profile. No clinic business records were changed."
+}

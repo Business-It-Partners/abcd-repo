@@ -34,7 +34,7 @@ Deliver independent app improvements without replacing running code or losing un
 
 ## Scope exclusions
 
-App updates only; trusted Electron platform updates belong to M13 under the 2026-10-19 roadmap re-sequencing. No silent reload of active work or compatibility-blind downgrade.
+App updates only; trusted Electron platform updates were assigned to M13 in the 2026-10-19 roadmap sequence and moved to M20 by the 2026-10-20 amendment. No silent reload of active work or compatibility-blind downgrade.
 
 ## Baseline to reconcile
 
@@ -58,7 +58,7 @@ New OS-specific services use `/v1/dental-os/...`; existing dental business and i
 
 ## Windows verification scope
 
-Use the [approved deferred-device policy](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md): Linux checks plus applicable Windows GitHub Actions evidence during milestones; physical Windows interaction/visual checks after M11, before final release. Record remaining device scenarios separately; CI success is not physical-device certification.
+Use the [approved deferred-device policy](../../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md): Linux checks plus applicable Windows GitHub Actions evidence during milestones; physical Windows interaction/visual checks after M20 under G21, before final release. The earlier after-M11 assignment is historical and superseded. Record remaining device scenarios separately; CI success is not physical-device certification.
 
 ## Detailed implementation plan — 2026-10-16
 
@@ -72,4 +72,4 @@ M07 is verified/normal-merged at main f2361db6; M08 branch codex/milestone-08. U
 6. Prove pinned old app during download, next launch selection, health failure/restart rollback, interrupted persistence/activation, retention/disk exhaustion, duplicate/concurrent operations, dirty/modal/unknown writes, incompatible/minimum/revoked rollback and key rotation. Use unit/process-exit fixtures and focused private update UI; run build/full units once at final source plus applicable Windows CI.
 7. Publish synthetic staging successor and policy using conditional writes; prove fresh control and rollback/revocation behavior with isolated profiles, preserve M07 feed and existing SaaS clients. Retain exact signed byte/deployment/check/source identities; mark VERIFIED/checkpoint/normal merge only after G08 passes. Physical Windows remains deferred; then proceed M09 without pause.
 
-No Electron/platform installer update (now M13), production key/feed, third-party publishing, patient cache or full dental app delivery. Checks are sequential with preflight and owned-process cleanup. A launch health check proves renderer/SDK responsiveness, never clinical correctness.
+No Electron/platform installer update (now M20), production key/feed, third-party publishing, patient cache or full dental app delivery. Checks are sequential with preflight and owned-process cleanup. A launch health check proves renderer/SDK responsiveness, never clinical correctness.

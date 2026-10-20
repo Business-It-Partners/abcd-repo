@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "appId": "company.dental.treatment-progress",
+  "title": "Treatment Progress",
+  "description": "Treatment Progress staging preview.",
+  "icon": "assets/treatment.png",
+  "anyCapabilities": ["treatment_progress.access"],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "treatment-progress",
+      "label": "Treatment Progress",
+      "tab": "treatment-progress",
+      "capability": "treatment_progress.access"
+    }
+  ]
+}

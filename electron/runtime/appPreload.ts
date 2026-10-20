@@ -1,6 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { AppSdk, Result } from '../sdk/contracts';
 import type { DentalAppInfo } from '../packages/appMetadata';
+function acknowledgeAfterPaintOrTimeout(acknowledge: () => void) {
+  let completed = false;
+  let fallback: number | undefined;
+  const finish = () => {
+    if (completed) return;
+    completed = true;
+    if (fallback !== undefined) window.clearTimeout(fallback);
+    acknowledge();
+  };
+  fallback = window.setTimeout(finish, 500);
+  try { window.requestAnimationFrame(() => window.requestAnimationFrame(finish)); }
+  catch { /* A paused or unavailable animation clock must not strand app launch. */ }
+}
 function cloneBounded(value: unknown): unknown {
   const json = JSON.stringify(value);
   if (!json || json.length > 16384) throw new Error('Invalid SDK input');
@@ -22,7 +35,7 @@ ipcRenderer.on('runtime:module-selected',(_event,value:unknown)=>{
   if(selectionId!==undefined&&(typeof selectionId!=='string'||!/^[a-f0-9-]{36}$/.test(selectionId)))return;
   let applied=moduleListeners.size>0;
   for(const listener of moduleListeners){try{listener({moduleId:message.moduleId});}catch{applied=false;}}
-  if(selectionId&&applied)requestAnimationFrame(()=>requestAnimationFrame(()=>ipcRenderer.send('runtime:module-selection-ack',{selectionId})));
+  if(selectionId&&applied)acknowledgeAfterPaintOrTimeout(()=>ipcRenderer.send('runtime:module-selection-ack',{selectionId}));
 });
 // No caller-supplied identity, token getter, raw IPC or native service is exposed.
 contextBridge.exposeInMainWorld('dentalApp', Object.freeze({

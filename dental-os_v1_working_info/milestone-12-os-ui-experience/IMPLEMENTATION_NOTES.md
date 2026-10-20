@@ -6,7 +6,11 @@ M03 already established the shared window manager, app isolation, dock, overview
 
 ## Implementation record
 
-M12.1 and M12.2 are implemented for the tested Linux/private-display scope under the user's 2026-10-20 direction. M12.1 now follows the macOS menu-bar composition: product/active-app identity and functional Apps, Windows and Help actions at left; network and local date/time at right; subtle light glass with soft charcoal lettering. Session actions remain in the clinic widget menu. M12.2 provides the three-card Nepali calendar/time/Gregorian calendar collection, frosted widgets/dock, responsive dock sizing and 20% reduced hover-bell gain. Earlier removal of the prototype footnote and white backing behind session controls is preparatory shell cleanup, not completion evidence for either phase. Exact verification and remaining limits are in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). M12.3–M12.6 and G12 remain open.
+M12.1–M12.5 are implemented for the tested Linux/private-display scope under the user's 2026-10-20 direction. M12.1 follows the macOS menu-bar composition: product/active-app identity and functional Apps, Windows and Help actions at left; network and local date/time at right; subtle glass with readable labels. Session actions remain in the clinic widget menu. M12.2 provides the three-card Nepali calendar/time/Gregorian calendar collection, frosted widgets/dock, responsive dock sizing and 20% reduced hover-bell gain. The reviewed [workspace journey map](WORKSPACE_FLOW_MAP.md) and source-bound test evidence cover M12.3–M12.5. M12.6 and G12 remain open; user visual acceptance is separate.
+
+### 2026-10-20 — Installed multi-module app discovery at launch
+
+The OS now reads the verified active package and filters its module metadata for the current clinic session before launching. Dock and Store opens of installed company apps use that lookup: multiple available modules open the shared OS App Explorer first; one module opens directly. Selecting a module records the choice in the OS runtime and delivers it through the existing preload-owned `onModuleSelected` event. For a new runtime, the native app surface stays hidden until the app handler acknowledges the selected module, avoiding a default-screen flash. Existing app windows receive and acknowledge the same event before the explorer closes. Finance and Lab Tracker already map module IDs to their current content headings, so no app bundle or Cloudflare release was needed for this OS change. `npm run build` passed. The later private multi-module runtime fixture now verifies package discovery, initial selection and a running module switch with a fresh dock-edge mirror; broader M12.3 workspace-flow acceptance, user visual acceptance and G12 remain open.
 
 ## Ownership and boundaries
 
@@ -15,6 +19,29 @@ M12.1 and M12.2 are implemented for the tested Linux/private-display scope under
 Preserve the existing SaaS as business authority, single active clinic session, first-party-only app boundary, shared dock field/Genie fallback and softer clarity style. Any implementation change must retain app-scoped forms/blur and avoid introducing persistent patient data.
 
 ## Change log / deviations
+
+### 2026-10-20 — live app and dock-edge preview coherence
+
+- **Reproduction:** a private runtime test changed the live native app page to a vivid synthetic module state, moved the pointer to its bottom edge, and observed the shell mirror. Before the fix, the mirror retained the previous page image. A separate signed multi-module package reproduced the same transition after changing its selected module.
+- **Cause:** the shell calls the trusted synchronous `runtime.hideAll()` before switching windows or entering dock-edge preview, so native app content cannot paint above the next shell surface. `FixtureRuntime.sync()` then saw the child view as already hidden and skipped its old asynchronous refresh. The shell showed a stale or not-yet-captured mirror. Running module callbacks also acknowledged immediately, before the browser had painted the new module, allowing the same stale-frame race.
+- **Fix:** every visible-to-hidden runtime transition now invalidates the old mirror, starts a fresh full-resolution capture while synchronously hiding the native child, and emits the completed image. The temporary state says the preview is refreshing instead of telling users to open an app that is already open. Module callbacks acknowledge after two animation frames; the host captures the selected module before resolving the OS selection.
+- **Verification:** `npm run build` passed. `node tools/run-ui-test.mjs tests/runtime.mjs tests/runtime-module-preview.mjs` passed 45 shared runtime checks plus 4 signed multi-module fixture checks. The former confirms the live app matches the dock-edge mirror; the latter verifies OS manifest discovery, first selection, running module changes, and the selected module in the preview. Both tests use the private headless GNOME/Wayland display and synthetic data.
+- **Scope:** this is shared OS runtime behavior and covers ordinary app windows and multi-module app windows; Finance and Lab Tracker bundles were not edited or republished. Linux/private-display evidence only. No commit, push, staging publication or live desktop restart.
+
+### 2026-10-20 — edge-drag clipping and native preview repair
+
+- The left-edge native surface had been clamped to x=0 while its shell window moved offscreen, making its content extend past the frame. Right/bottom layouts could be rejected when child bounds exceeded the host, leaving stale pixels, and native child views could trail the renderer during movement.
+- Native bounds now follow the shell frame through the existing 30% visible edge allowance. Each window frame is clipped at the dock-zone top and native content height uses the same boundary; the full-screen Genie canvas remains outside that clip so its dock landing is preserved. Active dragging hides native child views synchronously while showing their full-resolution captures. The normal runtime sync restores the live app surface at the settled bounds.
+- Build, focused runtime-contract tests, 39 private runtime checks plus DPR 2 capture, and 43 private window checks pass. G12, M12.6, user visual acceptance and physical Windows review remain open; the live app was not restarted. See the added edge-drag record in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
+
+### 2026-10-20 — M12.3–M12.5 complete for tested Linux/private-display scope
+
+- M12.3 records the boot/sign-in, discovery, Store/update, window-switch, lock/account and recovery flows in [WORKSPACE_FLOW_MAP.md](WORKSPACE_FLOW_MAP.md). Private signed-in flows prove Store search, install, ready notice, open, overview/dock switching and return to an unfinished draft.
+- M12.4 verification now covers keyboard and pointer title controls, fit and dock clearance, edge recovery, resize cancellation, app-owned dialogs, focus/stacking, maximize/minimize/restore and retained app work.
+- M12.5 makes Store progress/results and unavailable state visible as accessible status/alert feedback, and announces failed/recovery reasons as alerts. Tests cover install/update ready, blocked update, failed-update rollback, catalogue outage/retry, sign-in/lock/logout and boot recovery. The app-ready notice has a direct Open action.
+- The installed-app SDK notification call remains a scoped receipt for app-owned presentation, per the SDK architecture. This work does not add or claim a native OS notification center or renderer-owned trust decisions.
+- Build passed. The full unit run passed 288/289 with one existing 5-second insufficient-disk update test timeout; its focused 15-second rerun passed. At that completion checkpoint, focused private UI suites passed: workspace/delivery 24 checks, window 40, runtime 32 plus DPR 2, updates 12, identity 44, and recovery 3. Later M12.4 edge-drag verification is recorded above and in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
+- M12.6, G12, user visual acceptance, and physical Windows-device review remain open. The user's live app was not restarted.
 
 ### 2026-10-20 — normal app windows fill the vertical desktop work area
 
@@ -25,6 +52,7 @@ Preserve the existing SaaS as business authority, single active clinic session, 
 ### 2026-10-20 — recoverable edge hiding and right-side window controls
 
 - Dragging uses the shared window geometry: the top cannot cross the status bar; bottom, left and right edges allow up to 70% of the window outside the screen, preserving 30% as a visible grab area. The existing constrained resize behavior and shared Genie minimize/restore path remain in place.
+- Window bounds use the resting dock surface as their lower edge, with the existing 12px clearance. Normal, maximized, dragged, resized, and isolated fixture content share that narrow clipping boundary; the dock remains on its higher visual layer while hovered, without reserving a large blank band for its magnified preview and caption.
 - Replaced left-side controls with right-side maximize, minimize and close icon buttons, ordered green/yellow/red. The interim 13px targets were enlarged to 19.5px, then reduced by the user's later 5% refinement to 18.525px. Symbols are 10% smaller than their prior size, centered, and the colored circles/icons are always visible. Accessible action labels remain unchanged.
 - This is partial M12.4 behavior. Focused private edge/control interaction checks pass; full phase acceptance remains open and the user’s live desktop was not restarted.
 
@@ -65,7 +93,7 @@ Preserve the existing SaaS as business authority, single active clinic session, 
 - **Data rules:** active app comes from shared `activeWindow` state; identity comes from the trusted `SessionView`; connectivity is the browser/OS `navigator.onLine` signal and does not certify Dental SaaS availability. Calendar is local date only. This checkout has no approved clinic logo asset or appointment feed, so a clinic-name monogram is used and no appointments are fabricated.
 - **Source:** shell presentation in `src/DesktopChrome.tsx` and `src/DesktopChrome.css`, integrated by `src/App.tsx` and `src/IdentityGate.tsx`; private UI coverage in `tests/identity-scenario.mjs`.
 - **Status:** M12.1 and M12.2 pass their documented Linux/private-display checks. M12 overall remains in progress; M12.3–M12.6 and G12 are open. No broader milestone acceptance is claimed.
-- **Physical Windows visual acceptance:** G14 after M13.
+- **Physical Windows visual acceptance:** G21 after M20 (2026-10-20 roadmap amendment).
 
 ### 2026-10-20 — Nepali calendar date-row cleanup
 

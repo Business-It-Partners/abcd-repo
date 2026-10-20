@@ -1,13 +1,17 @@
 {
   "checks": [
     "both original company apps have actual runtime health acknowledgements",
+    "verified update readiness is announced with the active version preserved",
     "background download leaves running active digest pinned",
     "unfinished draft survives download",
+    "blocked update explains how to safely resume",
     "update-now refuses dirty work without closing or replacing its lease",
     "update-now refuses an app-owned modal",
     "clean update-now selects successor and records new runtime health",
+    "successful update explains the retained recovery path",
     "other app remains pinned to original active digest",
-    "failed successor launch rolls back only its own verified known-good pointer"
+    "failed successor launch rolls back only its own verified known-good pointer",
+    "failed update shows rollback and recovery guidance in Store details"
   ],
   "platform": "linux",
   "sha": null

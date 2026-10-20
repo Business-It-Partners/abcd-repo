@@ -19,7 +19,7 @@ try{
  await page.screenshot({path:path.join(root,'artifacts/clarity-staff.png')});
  await page.getByRole('button',{name:'Add staff',exact:true}).click();await contrast('.staff-modal label');await contrast('.staff-modal .form-context');await contrast('.staff-modal input');await page.screenshot({path:path.join(root,'artifacts/clarity-form.png')});await page.getByRole('button',{name:'Close staff dialog'}).click();
  await page.getByRole('button',{name:'Follow-ups',exact:true}).click();for(const selector of ['.followups-heading p','.followups-card.today strong','.followups-card small','.followups-table-scroll thead th','.followups-table-scroll td small','.followups-primary','.followups-session'])await contrast(selector);await page.screenshot({path:path.join(root,'artifacts/clarity-followups.png')});
- await page.getByRole('button',{name:'Finance',exact:true}).click();await contrast('.finance-navigation button[aria-selected=true]');await contrast('.finance-placeholder p');await page.screenshot({path:path.join(root,'artifacts/clarity-finance.png')});
+ await page.getByRole('button',{name:'Finance',exact:true}).click();await contrast('.app-explorer-item span');await contrast('.app-explorer-heading h2');await page.screenshot({path:path.join(root,'artifacts/clarity-finance.png')});
  await page.getByRole('button',{name:'Appointments',exact:true}).click();await contrast('.coming-soon-body p');await page.keyboard.press('Backquote');await contrast('.overview-heading p');await page.screenshot({path:path.join(root,'artifacts/clarity-overview.png')});
  await fs.writeFile(path.join(root,'artifacts/clarity-verification.json'),JSON.stringify({checks},null,2));
 }finally{await app.close();}

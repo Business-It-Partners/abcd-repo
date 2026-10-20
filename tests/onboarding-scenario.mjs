@@ -53,7 +53,7 @@ export async function verifyOnboarding(profileArgs,reportName){
    const previousVersionCount=installed.versions.length;
    await fs.writeFile(path.join(profile,'update-fixture.json'),JSON.stringify({version:'1.0.0',gammaVersion:version,offset:version==='1.1.0'?1:2}));
    await detail(shell);
-   await shell.getByRole('button',{name:'Refresh',exact:true}).click();
+   await shell.getByRole('button',{name:'Refresh company apps',exact:true}).click();
    await wait(async()=>await shell.locator('.store-facts').textContent().then(text=>text.includes(version)),'new catalogue version');
    check(`${version} appears in Store as an independent update`,await shell.locator('.store-facts').textContent().then(text=>text.includes(`Installed${previous}`)&&text.includes(`PendingNone`)&&text.includes(`Version${version}`)));
    await shell.getByRole('button',{name:'Download update',exact:true}).click();
@@ -82,7 +82,7 @@ export async function verifyOnboarding(profileArgs,reportName){
   try{
    const saved=await registry(profile),active=saved.apps[appId]?.active,bundle=active?JSON.parse(await fs.readFile(path.join(profile,'packages/apps',appId,active,'bundle.dentalpkg'),'utf8')):undefined;
    const pages=[];for(const page of app.context().pages())if(page.url().startsWith(`dental-fixture://${appId}/`))pages.push({url:page.url(),title:await page.title().catch(()=>''),heading:await page.locator('h1').textContent().catch(()=>null)});
-   failureDetails={error:String(error),activeVersion:bundle?.release?.version,pending:saved.apps[appId]?.pending,knownGood:saved.apps[appId]?.knownGood,windowPhase:await shell.locator(`[data-window-id="${appId}"]`).getAttribute('data-phase').catch(()=>null),runtimePhase:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-phase').catch(()=>null),runtimeReason:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-reason').catch(()=>null),storeStatus:await shell.locator('.staff-footer [role="status"]').allTextContents().catch(()=>[]),updateButtonDisabled:await shell.getByRole('button',{name:'Use update now'}).isDisabled().catch(()=>null),pages};
+   failureDetails={error:String(error),activeVersion:bundle?.release?.version,pending:saved.apps[appId]?.pending,knownGood:saved.apps[appId]?.knownGood,windowPhase:await shell.locator(`[data-window-id="${appId}"]`).getAttribute('data-phase').catch(()=>null),runtimePhase:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-phase').catch(()=>null),runtimeReason:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-reason').catch(()=>null),storeStatus:await shell.locator('.delivery-store-notice').allTextContents().catch(()=>[]),updateButtonDisabled:await shell.getByRole('button',{name:'Use update now'}).isDisabled().catch(()=>null),pages};
   }catch(diagnosticError){failureDetails={error:String(error),diagnosticError:String(diagnosticError)};}
   throw error;
  }finally{

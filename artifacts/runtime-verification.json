@@ -1,5 +1,11 @@
 {
   "checks": [
+    "dock-edge preview matches the current live app content after the OS hides its native surface",
+    "moving away from the dock edge restores the same live app surface",
+    "Finance explorer covers the native app surface instead of appearing beside it",
+    "Finance explorer receives keyboard focus above the native app",
+    "Finance explorer stays in front as the pointer moves near and away from the dock",
+    "Closing Finance explorer restores the foreground native app surface",
     "covered app preview keeps native capture resolution without CSS blur",
     "covered app window keeps its existing shadow",
     "two isolated renderer processes and separate shell",
@@ -19,7 +25,7 @@
     "resize uses shared manager",
     "overview contains both isolated snapshots",
     "overview clones have no runtime identities",
-    "maximized native app begins below the visible title bar with a small dock gap",
+    "maximized native app begins below the visible title bar with a clear dock hover gap",
     "native app bottom edge reveals fullscreen dock",
     "Genie thumbnail contains captured native app",
     "minimize/restore retains isolated draft and process",
@@ -31,15 +37,22 @@
     "cleanup cycle 1: no closed sample webContents",
     "cleanup cycle 2: no closed sample webContents",
     "cleanup cycle 3: no closed sample webContents",
+    "native app surface hides synchronously when window movement starts",
+    "moving window uses its crisp full-resolution app preview",
+    "left-edge native surface keeps the window origin and full content width",
+    "right-edge native surface follows its window without extending its frame",
+    "bottom-edge native content ends at the dock-zone boundary",
+    "returning the window onscreen restores its live native surface",
+    "edge dragging leaves no selected app text",
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 150331,
+    "shell": 354225,
     "apps": [
       {
         "id": 3,
-        "url": "dental-fixture://beta/index.html",
-        "pid": 150496,
+        "url": "dental-fixture://beta/",
+        "pid": 354456,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -48,8 +61,8 @@
       },
       {
         "id": 2,
-        "url": "dental-fixture://alpha/index.html",
-        "pid": 150381,
+        "url": "dental-fixture://alpha/",
+        "pid": 354292,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,

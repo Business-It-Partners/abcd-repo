@@ -18,7 +18,7 @@ Serialize with other package operations; resolve dirty work and pending request 
 
 ## Two update systems
 
-OS/Electron installers have a separate signed update channel and restart flow. App bundles cannot update Electron, host preload or trusted code. Windows and Linux packaging/update mechanisms must be selected and verified explicitly in M13; built-in Electron autoUpdater is not a cross-platform Linux solution. M11 app-only updates never replace platform code.
+OS/Electron installers have a separate signed update channel and restart flow. App bundles cannot update Electron, host preload or trusted code. Windows and Linux packaging/update mechanisms must be selected and verified explicitly in M20; built-in Electron autoUpdater is not a cross-platform Linux solution. M11/M14 app-only updates never replace platform code.
 
 ## Staging delivery boundary
 
@@ -36,4 +36,4 @@ Routine normal-session checks begin after 15 seconds and recur every 15 minutes;
 
 Explicit Update now refuses dirty/modal/not-ready runtime state and pending/unknown broker write outcomes. Save/close/reconcile first; the existing explicit close/discard path remains available. An unknown outcome remains an in-memory app/operation-key marker across app close until original-key reconciliation or session reset. It contains no patient payload. Bounded retention evicts only unleased versions outside active/pending/trial/known-good protection, journalling state before deletion.
 
-Staging rotation adds a second explicitly pinned public company key, while retaining the prior key for permitted old packages. Keys cannot be downloaded from apps/catalogue. A fresh signed policy can revoke a pinned key; it cannot revoke its own signing key. Root trust changes belong in trusted platform source/release, and production key/installer lifecycle belongs to M13. Operator publication validates reviewed paths/hashes/sequence, conditionally creates immutable packages, then independently CAS-publishes policy and catalogue; a partial publication may fail closed and is repaired with a higher sequence.
+Staging rotation adds a second explicitly pinned public company key, while retaining the prior key for permitted old packages. Keys cannot be downloaded from apps/catalogue. A fresh signed policy can revoke a pinned key; it cannot revoke its own signing key. Root trust changes belong in trusted platform source/release, and production key/installer lifecycle belongs to M20. Operator publication validates reviewed paths/hashes/sequence, conditionally creates immutable packages, then independently CAS-publishes policy and catalogue; a partial publication may fail closed and is repaired with a higher sequence.

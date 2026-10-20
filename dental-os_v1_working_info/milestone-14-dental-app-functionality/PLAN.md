@@ -1,0 +1,31 @@
+# M14 Overview — Functional Dental OS apps
+
+**Status:** see [STATUS.md](STATUS.md).
+**Dependencies:** all M13 app-shell submilestones and G13.
+**Exit gate:** G14.
+
+## Purpose
+
+Turn each M13 placeholder package into a working Dental OS app in its own app-level submilestone. Bring over the corresponding Dental SaaS module and submodule behavior as the product reference; implement the app UI and brokered API wiring inside the Dental OS app contract. Release each app's functional package as an app-only update to its M13 version 1.0.0 shell. Use existing Dental OS identity, capability, runtime, package signing, staging Store and update boundaries.
+
+This document is intentionally an overview. Per-app implementation plans, detailed acceptance criteria and verification records will be added after all M13 app shells are complete, as directed by the user. No M14 functionality is claimed yet.
+
+## App submilestone map
+
+| Submilestone | App | Included modules at overview level |
+| --- | --- | --- |
+| M14.1 — Follow-ups | Follow-ups | Follow-ups workflow |
+| M14.2 — Appointments | Appointments | Appointments |
+| M14.3 — Work Entry | Work Entry | Work Entry |
+| M14.4 — Patient Record | Patient Record | Patient Record |
+| M14.5 — Treatment Progress | Treatment Progress | Treatment Progress |
+| M14.6 — Lab Tracker | Lab Tracker | Lab Tracker; Lab supplier record |
+| M14.7 — Finance | Finance | Transaction Record; Patient payments; General expenses; Salary payments; Product list; Purchases; Supplier list; Supplier payments |
+| M14.8 — Patient Payments | Patient Payments | Reception patient payments |
+| M14.9 — Staff | Staff | Staff |
+| M14.10 — Treatment Protocols | Treatment Protocols | Treatment Protocols |
+| M14.11 — Calendar | Calendar | Calendar |
+
+## Shared boundary
+
+Each detailed submilestone will define the actual UI/workflow, permitted API operations, roles/capabilities, app-only version update and staging acceptance. Business authority remains the existing SaaS Worker/API. Dental OS owns the app packages and their lifecycle; no direct database access, local authoritative business data, hidden offline write queue or production changes are introduced.

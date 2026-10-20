@@ -1,0 +1,10 @@
+{
+  "name": "company.dental.patient-record",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Patient Record version 1.0.0 staging preview shell.",
+  "scripts": {
+    "test": "node tests/verify.mjs"
+  }
+}

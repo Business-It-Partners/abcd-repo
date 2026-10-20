@@ -142,7 +142,7 @@ Deterministic visual QA frames are `artifacts/store-paused-lift.png`, `store-pau
 
 An unsigned x64 preview of the current prototype can be built with `npm run dist:windows`. The installer is written to `release/windows/Dental-OS-Setup-0.1.0-x64.exe`; copy that single file to a Windows device and run it to install **Dental OS Preview** for the current user. It includes the runtime and creates desktop/Start menu shortcuts. No automatic launch, publishing or update feed is configured.
 
-See [Windows preview instructions](tools/desktop-release/WINDOWS_PREVIEW.md) for transfer, installation, verification, rebuilding and limitations. `node tools/desktop-release/verify-windows.mjs` creates the SHA-256 checksum and package inspection evidence. `npm run test:windows-package` launches the bundled ASAR on the private Linux display only. Windows install/runtime acceptance is still pending; this packaging experiment does not complete M13 or G14.
+See [Windows preview instructions](tools/desktop-release/WINDOWS_PREVIEW.md) for transfer, installation, verification, rebuilding and limitations. `node tools/desktop-release/verify-windows.mjs` creates the SHA-256 checksum and package inspection evidence. `npm run test:windows-package` launches the bundled ASAR on the private Linux display only. Windows install/runtime acceptance is still pending; this packaging experiment does not complete M20 or G21.
 
 ## Isolated runtime proof (M03)
 

@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "appId": "company.dental.calendar",
+  "title": "Calendar",
+  "description": "Clinic calendar workspace.",
+  "icon": "assets/calendar.png",
+  "anyCapabilities": ["calendar.access"],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "calendar",
+      "label": "Calendar",
+      "tab": "calendar",
+      "capability": "calendar.access"
+    }
+  ]
+}

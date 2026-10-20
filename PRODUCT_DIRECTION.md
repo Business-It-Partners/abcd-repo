@@ -22,4 +22,4 @@ Reuse existing `fewa_demo` Dental SaaS/Super Admin resources and GitHub deployme
 
 ## Dedicated Git repository and Windows evidence
 
-Dental OS uses https://github.com/Business-It-Partners/dental-os with main and started codex/milestone-NN branches. The prior Flutter remote/history remain preserved. During milestones, applicable Windows GitHub Actions gates supplement Linux evidence. Physical Windows-device acceptance is deferred until after M13 and before final product release under G14; see the architecture acceptance policy. No backend deployment is performed by desktop CI.
+Dental OS uses https://github.com/Business-It-Partners/dental-os with main and started codex/milestone-NN branches. The prior Flutter remote/history remain preserved. During milestones, applicable Windows GitHub Actions gates supplement Linux evidence. Physical Windows-device acceptance is deferred until after M20 and before final product release under G21; see the architecture acceptance policy. No backend deployment is performed by desktop CI.

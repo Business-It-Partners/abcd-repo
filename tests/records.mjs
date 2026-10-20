@@ -57,7 +57,7 @@ try {
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
   await page.waitForFunction(() => document.querySelector('main').classList.contains('is-immersive'));
   const expanded = await page.getByTestId('records-window').boundingBox();
-  const chromeBounds=await page.evaluate(()=>({bar:document.querySelector('.desktop-statusbar').getBoundingClientRect().bottom,dock:Number.parseFloat(document.querySelector('.dock-pill').style.top)}));
+  const chromeBounds=await page.evaluate(()=>({bar:document.querySelector('.desktop-statusbar').getBoundingClientRect().bottom,dock:document.querySelector('.window-stage').getBoundingClientRect().bottom}));
   check('Maximized Records preserves the small dock gap', expanded.x===0&&Math.abs(expanded.y-chromeBounds.bar)<1&&expanded.width===viewport.width&&Math.abs(expanded.y+expanded.height-(chromeBounds.dock-12))<1);
   check('Maximized app keeps the status bar visible and reveals dock on demand', await page.locator('.desktop-statusbar').isVisible() && await page.locator('.dock-region').evaluate(e => e.inert));
   await page.waitForTimeout(250);

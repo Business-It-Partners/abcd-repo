@@ -1,10 +1,10 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-20.
-**Active scope:** M01–M11 VERIFIED for their documented scope; M12 is IMPLEMENTING with M12.1/M12.2 verified for tested Linux/private-display scope, M12.4 partially implemented, and M12.3/M12.5/M12.6 planned; M13 Windows/Linux release/operations is PLANNED. No final production/device certification is claimed.
+**Active scope:** M01–M11 VERIFIED for their documented scope; M12 is IMPLEMENTING with M12.1–M12.5 implemented for tested Linux/private-display scope, M12.6 planned and G12 open; M13 is IMPLEMENTING with all eleven 1.0.0 app shells published and user-reported installed/run acceptance, while the current Follow-ups health receipt and Finance/Lab Tracker 1.0.1 update/module review remain unconfirmed; M14 functional apps and M20 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
 **Current implementation authorization:** M11 app-onboarding/update work and staging acceptance were separately requested and are complete for their documented scope. M12 UI work remains user-directed; production remains excluded.
-**Latest milestone:** M11 — flexible first-party app onboarding and independent updates — passed staging acceptance and Windows CI, then was normally merged into `main` at `b6a4045f`. Physical Windows-device testing is G14 after M13 and before final product release.
-**User acceptance:** the user reports completing the staging app update to 1.3.0. Broader final product/device acceptance remains G14 after M13.
+**Latest verified milestone:** M11 — flexible first-party app onboarding and independent updates — passed staging acceptance and Windows CI, then was normally merged into `main` at `b6a4045f`. Physical Windows-device testing is G21 after M20 and before final product release.
+**User acceptance:** the user reports completing the staging app update to 1.3.0. Broader final product/device acceptance remains G21 after M20.
 
 **M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance, private live-feed install/update/restart, the local failure/recovery matrix, user-reported manual 1.3.0 desktop update, and final-source Windows CI pass for their recorded scope. The 16 synthetic app profile peaked at 2.09 GiB aggregate working set across 20 processes and returned to 487 MiB across four processes after closing the apps; it enforces no memory ceiling and does not represent clinical apps or low-memory hardware. M07/M08 original status and evidence remain unchanged. See [final M11 report](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md).
 
@@ -23,8 +23,10 @@
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | VERIFIED — automated Linux/Windows hardening and bounded resource scope | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
 | [M11 — Flexible first-party app onboarding and updates](milestone-11-flexible-first-party-app-updates/STATUS.md) | VERIFIED and integrated — automated/staging scope | [Evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md) |
-| [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | IMPLEMENTING — M12.1/M12.2 verified; M12.4 partial, Linux scope | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
-| [M13 — Windows/Linux release and operations](milestone-13-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-13-windows-linux-release/VERIFICATION_EVIDENCE.md) |
+| [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | IMPLEMENTING — M12.1–M12.5 implemented for recorded Linux scope; package-driven M12.3 extension awaits focused private UI review; M12.6 planned, G12 open | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
+| [M13 — First-party app shells](milestone-13-first-party-app-shells/STATUS.md) | IMPLEMENTING — all eleven shells published; user reports installing/running them; Follow-ups health receipt and Finance/Lab Tracker 1.0.1 update/module review remain unconfirmed | [Evidence](milestone-13-first-party-app-shells/VERIFICATION_EVIDENCE.md) |
+| [M14 — Functional Dental OS apps](milestone-14-dental-app-functionality/STATUS.md) | PLANNED — detailed submilestone plans after M13 | [Overview](milestone-14-dental-app-functionality/PLAN.md) |
+| [M20 — Windows/Linux release and operations](milestone-20-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-20-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
 ## Starting reality
 
@@ -38,8 +40,8 @@ Documentation now requires reuse of `fewa_demo` resources, Cloudflare staging-on
 
 ## Separate Windows preview packaging experiment — 2026-10-15
 
-The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of M13, a production installer decision, or backend deployment authorization. That was the preview-time state. Current milestone/Windows CI progress is recorded in the table above; physical Windows acceptance remains pending under G14.
+The user authorized an unsigned Windows x64 installer for the current prototype so it can be transferred to a Windows device. Work and evidence are tracked in [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) and [preview instructions](../tools/desktop-release/WINDOWS_PREVIEW.md). This is an out-of-sequence packaging experiment, not the start or completion of M20, a production installer decision, or backend deployment authorization. That was the preview-time state. Current milestone/Windows CI progress is recorded in the table above; physical Windows acceptance remains pending under G21.
 
 ## Approved verification revision
 
-Windows GitHub Actions provide automated milestone evidence during M02–M13. Under the 2026-10-19 milestone re-sequencing, physical Windows tests are deferred until after M13 and before final product release. Earlier “after M11” wording is historical and superseded; CI success must not be presented as physical certification.
+Windows GitHub Actions provide automated milestone evidence during M02–M20. Under the 2026-10-20 milestone re-sequencing, physical Windows tests are deferred until after M20 and before final product release. Earlier “after M11” and “after M13” wording is historical and superseded; CI success must not be presented as physical certification.

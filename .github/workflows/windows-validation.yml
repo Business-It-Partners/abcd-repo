@@ -42,6 +42,18 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: First-party app shell package checks
+        shell: pwsh
+        run: |
+          $packages = Get-ChildItem apps/dental-apps -Directory | Sort-Object Name
+          if (-not $packages) { throw 'No first-party app package directories were found.' }
+          foreach ($package in $packages) {
+            if (-not (Test-Path -LiteralPath (Join-Path $package.FullName 'package.json'))) { continue }
+            Write-Host "Testing first-party shell package $($package.Name)"
+            npm --prefix $package.FullName test
+            $code = $LASTEXITCODE
+            if ($code -ne 0) { exit $code }
+          }
       - name: Windows hardening proof
         run: node tests/hardening-ci.mjs
       - name: Windows preserved-state recovery

@@ -1,6 +1,6 @@
 # Dental OS V1 — Master Roadmap
 
-**Purpose:** execution map for the OS platform, not a dental module feature roadmap. Baseline: 2026-10-15; milestone sequence amended 2026-10-19.
+**Purpose:** execution map for the OS platform, not a dental module feature roadmap. Baseline: 2026-10-15; milestone sequence amended 2026-10-19 and 2026-10-20.
 
 ## Authority
 
@@ -31,11 +31,13 @@ Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOV
 | M10 — Security, resilience and usability | Close production risks across trust, privacy, failure recovery, accessibility and resource use. | M09 | G10 | [Plan](milestone-10-security-resilience-and-usability/PLAN.md) |
 | M11 — Flexible first-party app onboarding and updates | Prove a newly approved company app can be installed and updated independently, without an app-specific shell branch or Dental OS rebuild. | M10; builds on M06–M08 | G11 | [Plan](milestone-11-flexible-first-party-app-updates/PLAN.md) |
 | M12 — Dental OS workspace and shell experience | Make the OS-level workspace, navigation and system surfaces coherent and usable around the shared app/window lifecycle. | M11; preserves M03/M10 contracts | G12 | [Plan](milestone-12-os-ui-experience/PLAN.md) |
-| M13 — Windows/Linux release and operations | Certify installable, maintainable Dental OS releases on explicitly named Windows/Linux targets. | M12 | G13 | [Plan](milestone-13-windows-linux-release/PLAN.md) |
+| M13 — First-party app shells | Release a simple installable version 1.0.0 shell for each first-party Dental OS app. | M12/G12 | G13 | [Plan](milestone-13-first-party-app-shells/PLAN.md) |
+| M14 — Functional Dental OS apps | Implement each app's actual modules, UI and brokered workflows as app-only updates. | M13/G13 | G14 | [Overview](milestone-14-dental-app-functionality/PLAN.md) |
+| M20 — Windows/Linux release and operations | Certify installable, maintainable Dental OS platform releases on explicitly named Windows/Linux targets. | M14/G14 | G20 | [Plan](milestone-20-windows-linux-release/PLAN.md) |
 
 ## Integration order and evidence
 
-M03 establishes isolated apps and the shared shell; M06 verifies local packages; M07 distributes them; M08 safely updates them; M09 proves the SaaS-connected loop; M10 hardens the platform. M11 closes the generic first-party app onboarding/update gap beyond the original fixed samples. M12 then improves the OS-level experience without reimplementing app delivery or replacing shared lifecycle behavior. M13 performs host/release operations after those product surfaces are stable. Final device and user acceptance is tracked separately in G14 after M13.
+M03 establishes isolated apps and the shared shell; M06 verifies local packages; M07 distributes them; M08 safely updates them; M09 proves the SaaS-connected loop; M10 hardens the platform. M11 closes the generic first-party app onboarding/update gap beyond the original fixed samples. M12 improves the OS-level experience. M13 releases minimal first-party app shells; M14 adds their actual app workflows; M20 certifies Windows/Linux platform release and operations. Final physical device and user acceptance is tracked separately in G21 after M20.
 
 Use [requirements](../dental-os_v1-documentation/22_V1_REQUIREMENTS_AND_TRACEABILITY.md) and [acceptance gates](../dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md) to close milestones. A source snapshot/test count from Flutter does not transfer as acceptance. The first-party-only boundary is permanent; no roadmap stage opens external publishing.
 
@@ -43,16 +45,20 @@ Use [requirements](../dental-os_v1-documentation/22_V1_REQUIREMENTS_AND_TRACEABI
 
 Reuse `fewa_demo` Dental SaaS/Super Admin infrastructure and existing GitHub environments/workflows. All backend changes, remote catalogue/update work and API/login integration in this roadmap target verified Cloudflare staging only. Record exact branch/environment/resource identity before execution; preserve existing clients through additive changes and regression evidence. Use `/v1/dental-os/...` for new OS services only; existing business APIs keep their routes. [Canonical policy](../dental-os_v1-documentation/09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
 
-M04/M05 record API/identity staging mapping; M07 owns distribution contracts/resources, M08 update metadata, M09 connected regression proof, and M11 the generic first-party onboarding/update extension. M12 is shell/UI work and does not change SaaS authority. M13 release certification does not authorize production promotion/deployment. Complete dental application UI/workflows remain separate from the OS shell unless specifically scoped.
+M04/M05 record API/identity staging mapping; M07 owns distribution contracts/resources, M08 update metadata, M09 connected regression proof, and M11 the generic first-party onboarding/update extension. M12 is shell/UI work. M13/M14 are Dental OS app-package work, using Dental SaaS as the reference for existing app behavior. M20 is platform release certification and does not authorize production promotion/deployment.
 
 ## 2026-10-19 milestone sequence amendment
 
 M11 is now the full flexible first-party app onboarding/update milestone. M12 is reserved for OS-level workspace and shell UI, organized into submilestones in its plan. The former M11 Windows/Linux release-and-operations scope is now M13. This changes only the active/future roadmap assignment: M01–M10 verified history and their evidence remain unchanged. The current M11 implementation branch is `codex/milestone-11`; M12/M13 branches are created only when those milestones start.
 
-Physical Windows-device acceptance remains a mandatory final product gate, scheduled after M13 and before any final release decision. Applicable Windows GitHub Actions evidence remains part of milestones; CI must not be described as physical-device certification. No final release is approved by completing documentation or a milestone alone.
+Physical Windows-device acceptance remains a mandatory final product gate, scheduled after M20 and before any final release decision. Applicable Windows GitHub Actions evidence remains part of milestones; CI must not be described as physical-device certification. No final release is approved by completing documentation or a milestone alone.
 
 ## Verification policy — deferred physical Windows testing
 
-The 2026-10-15 user decision deferred physical Windows interaction/visual acceptance until after the final platform milestone. Following the 2026-10-19 re-sequencing, that means after M13; the former “after M11” wording is superseded. During M02–M13, Windows acceptance uses GitHub Actions automated build/typecheck, filesystem tests and applicable hosted-runner smoke checks. Missing physical evidence does not block starting the next milestone once applicable Linux and Windows CI gates pass, but must not be presented as physical-device certification or final release approval.
+The 2026-10-15 user decision deferred physical Windows interaction/visual acceptance until after the final platform milestone. Following the 2026-10-20 re-sequencing, that means after M20; the 2026-10-19 “after M13” assignment is superseded. During M02–M20, Windows acceptance uses GitHub Actions automated build/typecheck, filesystem tests and applicable hosted-runner smoke checks. Missing physical evidence does not block starting the next milestone once applicable Linux and Windows CI gates pass, but must not be presented as physical-device certification or final release approval.
+
+## 2026-10-20 app-delivery milestone realignment
+
+At the user's direction, M13 contains one app-level submilestone for each current first-party Dental OS package. Each starts as a simple centered-name app shell at version 1.0.0 through the existing staging Store path. M13.1 Follow-ups and M13.2–M13.4 are complete for their requested staging release/install scope; the user reports downloading, installing and successfully opening the latter three. M13.5–M13.7 were published together at sequence 18, M13.8–M13.10 at sequence 19, and M13.11 at sequence 20. Finance and Lab Tracker received version 1.0.1 shared multi-module toolbar updates at sequence 21. All seven packages remain pending user-profile install/update and app-window/module review. M12.6/G12 remains open under the user's direction to continue M13 work. M14 is the functional app milestone, with the same app-level submilestone map; detailed per-app plans are deferred until M13 is complete. M20 takes over the former M13 Windows/Linux host-release and operations scope. G13 gates M13, G14 gates M14, G20 gates M20, and G21 remains the final physical/user acceptance gate after M20. This changes future assignments only; M01–M12 verification history and prior M13/G13/G14 gate history are not rewritten.
 
 Preserve exact checkpoint commits, workflow run URLs and outcomes. `main` carries the integrated snapshot; `codex/milestone-NN` records each started milestone. Never claim a later milestone started because its branch name exists. Only create future milestone branches when work starts. Tags/commit SHAs establish reproducibility; do not force-move acceptance tags or publish an acceptance tag while required CI is failing/pending.

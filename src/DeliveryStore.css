@@ -2,3 +2,7 @@
 .delivery-art-studio { background: linear-gradient(145deg, #fa9b88, #de7467); }
 .delivery-art-records { background: linear-gradient(145deg, #80b4e8, #527fc0); }
 .store-detail .delivery-art { width: 84px; height: 84px; border-radius: 20px; }
+.delivery-store-notice { display: grid; gap: 3px; flex: 0 0 auto; margin-top: 10px; padding: 10px 12px; border: 1px solid #d8e0e9; border-radius: 8px; background: #f6f8fb; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.delivery-store-notice strong { font-weight: 600; }
+.delivery-store-notice span { color: var(--text-muted); font-size: 11px; }
+.delivery-store-notice[data-state="unavailable"] { border-color: #e4d8d1; background: #faf6f3; color: #684a40; }

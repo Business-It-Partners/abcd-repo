@@ -32,6 +32,7 @@
     "test:integration": "node tools/run-ui-test.mjs tests/integration.mjs",
     "test:updates": "node tools/run-ui-test.mjs tests/updates.mjs",
     "test:distribution": "node tools/run-ui-test.mjs tests/distribution.mjs",
+    "test:workspace": "node tools/run-ui-test.mjs tests/workspace-flows.mjs tests/delivery-states.mjs",
     "test:hardening": "node tools/run-ui-test.mjs tests/hardening.mjs tests/resources.mjs tests/recovery.mjs",
     "test:store-arrival": "node tools/run-ui-test.mjs tests/store-arrival-delivery.mjs",
     "test:onboarding": "node tools/run-ui-test.mjs tests/onboarding.mjs",

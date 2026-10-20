@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "appId": "company.dental.patient-payments",
+  "title": "Patient payments",
+  "description": "Patient payments staging preview.",
+  "icon": "assets/finance.png",
+  "anyCapabilities": ["patient_payments.outstanding.read"],
+  "excludedRoles": [],
+  "allowedRoles": ["reception"],
+  "modules": [
+    {
+      "id": "patient-payments",
+      "label": "Patient payments",
+      "tab": "finance/patient-payments",
+      "capability": "patient_payments.outstanding.read"
+    }
+  ]
+}
