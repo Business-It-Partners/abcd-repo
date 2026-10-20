@@ -16,8 +16,8 @@
     "Escape dismisses only the dialog and preserves draft",
     "reduced-motion minimize/restore preserves shared lifecycle",
     "200 percent zoom retains labeled login controls inside scrollable layout",
-    "account reset permits immediate launch from fresh signed public metadata",
     "compact 1024x768 host retains session and Store controls",
+    "account reset permits immediate launch from fresh signed public metadata",
     "failed app clears its mirrored preview while other app remains usable",
     "three failures stop manual restart loops without an automatic relaunch",
     "closing/reopening cannot bypass crash cooldown",
@@ -44,12 +44,12 @@
     },
     {
       "selector": ".store-copy p",
-      "contrast": 5.805660098995211
+      "contrast": 8.18200226664025
     },
     {
       "privacyScan": {
         "files": 62,
-        "bytes": 3236529
+        "bytes": 3349361
       }
     }
   ],

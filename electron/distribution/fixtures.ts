@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { canonical, sha256, type TrustPolicy } from '../packages/format';
+import { canonical, sha256, verifyPackage, type TrustPolicy } from '../packages/format';
 import { operations, type Operation } from '../sdk/contracts';
 import type { Catalogue, Release } from './catalogue';
 
@@ -20,8 +20,10 @@ export function distributionFixtures(folder: string, sequence: number, updateCon
   'company.sample.beta':{publisher:'company',capabilities:operations.filter(op=>op!=='appointments.setStatus')},
  }};
  const objects=new Map<string,Buffer>(), pool=new Map<string,Release[]>();
- function add(id:string,title:string,description:string,capabilities:readonly Operation[],version:string,file:string){
-  const bytes=readFileSync(path.join(folder,file)),envelope=JSON.parse(bytes.toString()),digest=sha256(bytes),objectKey=`releases/${id}/${version}/${digest}.dentalpkg`;
+ function add(id:string,title:string,description:string,version:string,file:string){
+  const bytes=readFileSync(path.join(folder,file)),pkg=verifyPackage(bytes,policy);
+  if(pkg.manifest.appId!==id||pkg.manifest.version!==version)throw Error('Fixture package identity mismatch');
+  const capabilities=pkg.manifest.capabilities,envelope=JSON.parse(bytes.toString()),digest=sha256(bytes),objectKey=`releases/${id}/${version}/${digest}.dentalpkg`;
   objects.set('/'+objectKey,bytes);
   const release:Release={id,title,description,version,notes:version==='1.0.0'?'Signed first-party staging sample.':`Signed first-party ${version} sample update.`,capabilities:[...capabilities],platforms:['linux','win32'],sdkMajor:1,apiMajor:1,objectKey,packageSha256:digest,packageBytes:bytes.length,payloadDigest:envelope.release.digest,status:'approved',minimumVersion:'1.0.0'};
   pool.set(`${id}:${version}`,[...(pool.get(`${id}:${version}`)??[]),release]);
@@ -29,10 +31,9 @@ export function distributionFixtures(folder: string, sequence: number, updateCon
  const sampleVersions=updateControlFile?['1.0.0','1.1.0']:['1.0.0'];
  for(const host of ['alpha','beta'])for(const version of sampleVersions){
   const id=`company.sample.${host}`,file=`${host}${version==='1.0.0'?'':'-update'}.dentalpkg`;
-  add(id,host==='alpha'?'Motion Studio':'Records','Company sample with synthetic in-memory workflows.',policy.apps[id].capabilities,version,file);
+  add(id,host==='alpha'?'Motion Studio':'Records','Company sample with synthetic in-memory workflows.',version,file);
  }
- const previewCaps:readonly Operation[]=[];
- if(includeOnboarding)for(const version of ['1.0.0','1.1.0','1.2.0'])add('company.sample.preview','Dental Workspace Preview','A small first-party app used to verify independent app releases.',previewCaps,version,`preview-${version}.dentalpkg`);
+ if(includeOnboarding)for(const version of ['1.0.0','1.1.0','1.2.0'])add('company.sample.preview','Dental Workspace Preview','A small first-party app used to verify independent app releases.',version,`preview-${version}.dentalpkg`);
  function selected(state:FixtureState){
   const releases:Release[]=[];
   for(const host of ['alpha','beta']){const id=`company.sample.${host}`,release=pool.get(`${id}:${state.version}`)?.[0];if(!release)throw Error('Fixture app version');releases.push(release);}
