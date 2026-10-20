@@ -34,7 +34,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.getByRole('button',{name:'Records',exact:true}).click();
   check('alpha-to-beta switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://beta/')).isFocused()));
   await beta.getByRole('button',{name:'Close dialog'}).click();
-  await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('dialog',{name:'Unsaved sample draft'}).waitFor();
+  await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('dialog',{name:'Unsaved app work'}).waitFor();
   await shell.getByRole('button',{name:'Keep working',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
   const handle=shell.locator('[data-window-id="studio"] [data-resize="se"]'),before=await handle.boundingBox();
