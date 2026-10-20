@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { DOCK, bell, canonicalProgress, dockLayout, meshPositions, Spring, type Rect } from '../src/motion';
+import { DOCK, bell, canonicalProgress, dockHeightForWidth, dockLayout, dockScaleForWidth, meshPositions, Spring, type Rect } from '../src/motion';
 describe('FEWA motion port', () => {
   it('has a symmetric bounded bell with smooth zero shoulders', () => {
     expect(bell(0)).toBe(1); expect(bell(200)).toBe(0); expect(bell(220)).toBe(0);
     expect(bell(-80)).toBe(bell(80)); expect(bell(199.9)).toBeLessThan(.000001);
+  });
+  it('reduces hover magnification gain by exactly 20% and scales dock size to the display', () => {
+    expect((DOCK.peak - 1) / (2.75 - 1)).toBeCloseTo(.8);
+    expect(dockScaleForWidth(1024)).toBeCloseTo(1024 / 1366);
+    expect(dockScaleForWidth(2560)).toBe(1.15);
+    expect(dockHeightForWidth(1024)).toBeLessThan(dockHeightForWidth(1366));
   });
   it('centers the complete live dock and preserves gaps at every pointer position', () => {
     const specs = [{ id: 'a', width: 40, height: 40 }, { id: 'b', width: 40, height: 40 }, { id: 'preview', width: 64, height: 43.2 }];
@@ -21,6 +27,15 @@ describe('FEWA motion port', () => {
       expect(layout.left + layout.width).toBeLessThanOrEqual(width - 26);
       for (let i = 1; i < layout.items.length; i++) expect(layout.items[i].x).toBeGreaterThan(layout.items[i - 1].x + layout.items[i - 1].width);
       expect(layout.items.at(-1)!.x + layout.items.at(-1)!.width).toBeCloseTo(layout.left + layout.width);
+    }
+  });
+  it('keeps responsive dock gaps proportional at laptop and monitor widths', () => {
+    for (const width of [1024, 1366, 2560]) {
+      const scale = dockScaleForWidth(width), specs = Array.from({ length: 12 }, (_, i) => ({ id: String(i), width: DOCK.size * scale, height: DOCK.size * scale }));
+      const layout = dockLayout(specs, width / 2, 700, width / 2, 1, width - 30 * scale, scale);
+      expect(layout.left).toBeGreaterThanOrEqual(0);
+      expect(layout.left + layout.width).toBeLessThanOrEqual(width);
+      for (let i = 1; i < layout.items.length; i++) expect(layout.items[i].x - layout.items[i - 1].x - layout.items[i - 1].width).toBeCloseTo(DOCK.gap * scale);
     }
   });
   it('lands on both exact rectangles and keeps the mesh fold-free along the trip', () => {

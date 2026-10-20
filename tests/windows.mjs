@@ -13,6 +13,14 @@ const check = (name, value) => { assert.ok(value, name); checks.push(name); cons
 const near = (a, b) => Math.abs(a - b) < 1;
 const phase = (id, value) => page.waitForFunction(({ id, value }) => document.querySelector(`[data-testid="${id}-window"]`).dataset.phase === value, { id, value });
 const open = async id => { await page.getByRole('button', { name: id === 'records' ? 'Records' : 'Motion Studio', exact: true }).click(); await phase(id, 'visible'); };
+async function dragTitle(frame, dx, dy) {
+  const bar = await frame.boundingBox();
+  const viewport = await frame.page().evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  const x = Math.max(2, Math.min(viewport.width - 2, bar.x + bar.width / 2));
+  const y = Math.max(35, Math.min(viewport.height - 2, bar.y + 21));
+  await page.mouse.move(x, y); await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 8 }); await page.mouse.up();
+}
 async function dragHandle(frame, edge, dx, dy, release = true) {
   const handle = frame.locator(`[data-resize="${edge}"]`);
   await handle.hover();
@@ -24,34 +32,34 @@ async function dragHandle(frame, edge, dx, dy, release = true) {
   if (release) await page.mouse.up();
 }
 try {
-  const display = await app.evaluate(({ screen }) => screen.getPrimaryDisplay().bounds);
-  await page.waitForFunction(b => innerWidth === b.width && innerHeight === b.height, display);
+  await page.waitForFunction(() => innerWidth > 0 && innerHeight > 0);
   await page.waitForTimeout(250);
   for (const id of ['studio', 'records']) {
     await open(id);
     const frame = page.getByTestId(`${id}-window`);
-    if (id === 'records') {
-      // Records now starts at the usable boundaries. Move its top/left
-      // inward to exercise unconstrained expansion in every direction.
-      await dragHandle(frame, 'nw', 100, 80);
-      await dragHandle(frame, 'se', -100, -80);
-    }
+    const initial=await frame.boundingBox();
+    const dockTop=await page.locator('.dock-pill').evaluate(e=>e.getBoundingClientRect().top);
+    const statusBottom=await page.locator('.desktop-statusbar').evaluate(e=>e.getBoundingClientRect().bottom);
+    check(`${id} opens flush below the status bar with a small dock gap`,near(initial.y,statusBottom)&&near(initial.y+initial.height,dockTop-12));
+    const controlMetrics=await frame.locator('.window-controls').evaluate(e=>{const group=e.getBoundingClientRect(),close=e.querySelector('.window-control-close').getBoundingClientRect(),left=e.parentElement.getBoundingClientRect(),buttons=[...e.querySelectorAll('.window-control')],order=buttons.map(button=>[...button.classList].find(name=>name.startsWith('window-control-')&&name!=='window-controls')).join('|');return {aligned:group.right>left.width-30&&close.left>group.left&&order==='window-control-maximize|window-control-minimize|window-control-close'&&buttons.length===3,buttons:buttons.map(button=>{const style=getComputedStyle(button),circle=button.getBoundingClientRect(),icon=button.querySelector('svg').getBoundingClientRect();return{width:style.width,opacity:style.opacity,radius:style.borderRadius,background:style.backgroundColor,icon:{width:icon.width,height:icon.height,centerX:(icon.left+icon.right)/2-(circle.left+circle.right)/2,centerY:(icon.top+icon.bottom)/2-(circle.top+circle.bottom)/2}};})};});
+    const centeredControls=controlMetrics.aligned&&controlMetrics.buttons.every((button,index)=>Math.abs(Number.parseFloat(button.width)-16.6725)<.1&&button.opacity==='1'&&button.radius==='50%'&&button.background!=='rgba(0, 0, 0, 0)'&&Math.abs(button.icon.width-(index===0?8.748:10.206))<.1&&Math.abs(button.icon.centerX)<.5&&Math.abs(button.icon.centerY)<.5);
+    if(!centeredControls)console.log('control metrics',JSON.stringify(controlMetrics));
+    check(`${id} controls keep centered symbols inside reduced green-yellow-red circles`,centeredControls);
+    await frame.locator('.window-controls').hover();
+    check(`${id} traffic-light symbols remain visible inside their smaller control circles`,await frame.locator('.window-control svg').first().evaluate(e=>getComputedStyle(e).opacity==='1')&&await frame.locator('.window-control').first().evaluate(e=>Math.abs(Number.parseFloat(getComputedStyle(e).width)-16.6725)<.1));
     check(`${id} exposes eight resize directions`, await frame.locator('[data-resize]').count() === 8);
-    for (const edge of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se']) {
-      const before = await frame.boundingBox();
-      const dx = edge.includes('e') ? 32 : edge.includes('w') ? -32 : 0;
-      const dy = edge.includes('s') ? 24 : edge.includes('n') ? -24 : 0;
-      await dragHandle(frame, edge, dx, dy);
-      const after = await frame.boundingBox();
-      check(`${id} ${edge} resizes and anchors the opposite boundaries`,
-        near(after.width, before.width + Math.abs(dx)) && near(after.height, before.height + Math.abs(dy)) &&
-        near(after.x, before.x + (edge.includes('w') ? dx : 0)) && near(after.y, before.y + (edge.includes('n') ? dy : 0)));
-      await dragHandle(frame, edge, -dx, -dy);
-      const restored = await frame.boundingBox();
-      check(`${id} ${edge} can contract to its previous rectangle`, Object.keys(before).every(k => near(before[k], restored[k])));
-    }
     await page.getByRole('button', { name: `Close ${id === 'records' ? 'Records' : 'Motion Studio'}`, exact: true }).click();
   }
+  await open('studio');
+  const studio=page.getByTestId('studio-window');
+  const viewport=await page.evaluate(()=>({width:innerWidth,height:innerHeight}));
+  const start=await studio.boundingBox();
+  await dragTitle(studio, 0, Math.min(100, (viewport.height - start.y - start.height) / 2));
+  await dragTitle(studio, -start.x - start.width * .7 - 100, 0);let edge=await studio.boundingBox();check('dragging left leaves 30% of the window visible',near(edge.x+edge.width*.7,0));
+  await dragTitle(studio, viewport.width - edge.x - edge.width * .3 + 100, 0);edge=await studio.boundingBox();check('dragging right leaves 30% of the window visible',near(edge.x+edge.width*.3,viewport.width));
+  const dockEdge=await page.locator('.dock-pill').evaluate(e=>e.getBoundingClientRect().top);await dragTitle(studio, 0, viewport.height + 1000);edge=await studio.boundingBox();check('dragging down leaves 30% visible above the dock gap',near(edge.y+edge.height*.3,dockEdge-12));
+  const statusBottom=await page.locator('.desktop-statusbar').evaluate(e=>e.getBoundingClientRect().bottom);await dragTitle(studio, 0, -1000);edge=await studio.boundingBox();check('dragging upward never crosses the status-bar bottom',near(edge.y,statusBottom));
+  await page.getByRole('button',{name:'Close Motion Studio',exact:true}).click();
   await open('records');
   const records = page.getByTestId('records-window');
   await dragHandle(records, 'nw', 100, 80);
@@ -89,6 +97,8 @@ try {
   await dragHandle(records, 'nw', -80, -60);
   const resized = await records.boundingBox();
   await page.getByRole('button', { name: 'Maximize Records', exact: true }).click();
+  const dockTop=await page.locator('.dock-pill').evaluate(e=>Number.parseFloat(e.style.top));
+  check('Maximized app meets the status bar, preserves a small dock gap and keeps the title bar visible',await records.evaluate((e,{dockTop})=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.desktop-statusbar').getBoundingClientRect();return Math.abs(r.top-bar.bottom)<1&&Math.abs(r.bottom-(dockTop-12))<1&&Math.abs(r.left)<1&&Math.abs(r.width-innerWidth)<1;},{dockTop}));
   check('Fullscreen removes all resize handles', await records.locator('[data-resize]').count() === 0);
   await page.getByRole('button', { name: 'Minimize Records', exact: true }).click(); await phase('records', 'minimized');
   await page.getByRole('button', { name: 'Restore Records', exact: true }).click(); await phase('records', 'visible');

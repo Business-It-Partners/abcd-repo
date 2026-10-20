@@ -1,0 +1,63 @@
+/* M12.1: compact dark-glass macOS-style menu bar with light readable lettering. */
+.desktop-statusbar{position:fixed;inset:0 0 auto;z-index:80;min-height:31px;display:flex;align-items:center;gap:12px;padding:3px 13px;color:#f7f8ff;background:linear-gradient(180deg,#7187ad99,#3d527f9e);border-bottom:1px solid #ffffff45;box-shadow:0 3px 18px #09142a20,inset 0 1px #ffffff35;backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);font-size:12px;user-select:none;pointer-events:none}
+.statusbar-active,.statusbar-right,.statusbar-network{display:flex;align-items:center}
+.statusbar-active{gap:7px;min-width:0;max-width:34%;font-weight:700;color:#f7f7ff}
+.statusbar-active span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.statusbar-menu{display:flex;align-items:center;gap:2px;min-width:0;pointer-events:auto}
+.statusbar-menu button{padding:4px 8px;border:0;border-radius:6px;background:transparent;color:#e6e8f7;font:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.statusbar-menu button:hover,.statusbar-menu button:focus-visible{background:#ffffff20;color:#fff;outline:none}
+.statusbar-menu button:focus-visible{box-shadow:0 0 0 2px #c6d5ff70}
+.statusbar-right{margin-left:auto;gap:12px;min-width:0;white-space:nowrap;color:#e1e4f3}
+.statusbar-network{gap:4px;font-weight:650}
+.statusbar-network.is-online{color:#d5e7e1}.statusbar-network.is-offline{color:#f1c4bc}
+.statusbar-date,.statusbar-time{font-variant-numeric:tabular-nums}
+.statusbar-time{font-weight:700;color:#fff}
+
+/* M12.2: frosted-glass desktop widgets and a three-card calendar/time stack. */
+.desktop-widget{position:fixed;z-index:5;color:#202c31;background:linear-gradient(145deg,#f2f8f6de,#eaf1f2c9);border:1px solid #ffffffb0;border-radius:19px;box-shadow:0 12px 32px #102f4530,inset 0 1px #ffffffc4;backdrop-filter:blur(28px) saturate(165%);-webkit-backdrop-filter:blur(28px) saturate(165%);pointer-events:none}
+.desktop-clinic-widget{top:59px;left:18px;width:min(310px,calc(50vw - 30px));min-height:88px;display:flex;align-items:center;gap:14px;padding:15px 17px}
+.clinic-widget-mark{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border:1px solid #ffffffc9;border-radius:15px;background:linear-gradient(145deg,#c7e8e2,#8cc3bc);box-shadow:0 5px 13px #1c58602b;color:#164d50;font-size:15px;font-weight:750;letter-spacing:.04em}
+.clinic-widget-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.clinic-widget-copy strong,.clinic-widget-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clinic-widget-copy strong{font-size:14px;font-weight:700}.clinic-widget-copy span{font-size:13px;font-weight:600;color:#29383e}.clinic-widget-copy small{font-size:11px;font-weight:600;color:#3d494e}
+.clinic-widget-menu{position:relative;flex:0 0 auto;margin-left:auto;pointer-events:auto}
+.clinic-widget-menu>summary{width:32px;height:32px;display:grid;place-items:center;list-style:none;border:1px solid #53778a24;border-radius:10px;background:#ffffff72;color:#29383e;cursor:pointer}
+.clinic-widget-menu>summary::-webkit-details-marker{display:none}
+.clinic-widget-menu>summary:hover,.clinic-widget-menu[open]>summary{background:#ffffffd6}
+.clinic-widget-menu>summary:focus-visible{outline:2px solid #317d9b;outline-offset:2px}
+.clinic-widget-menu .identity-menu-actions{position:absolute;z-index:90;top:calc(100% + 8px);right:0;width:188px;display:grid;gap:5px;padding:8px;border:1px solid #ffffffbd;border-radius:13px;background:#f4f8f8f5;box-shadow:0 10px 28px #102f4545;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:auto}
+.identity-menu-actions button{padding:8px 10px;text-align:left;border:1px solid transparent;border-radius:8px;background:transparent;color:#29383e;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.identity-menu-actions button:hover{background:#ffffffc4;border-color:#55788a26}
+.identity-menu-actions button:focus-visible{outline:2px solid #317d9b;outline-offset:1px}
+
+.desktop-widget-collection{position:fixed;z-index:5;top:59px;right:18px;width:min(492px,calc(54vw - 18px));display:grid;grid-template-columns:minmax(0,1.2fr) minmax(150px,.82fr);grid-template-rows:minmax(88px,auto) auto;gap:11px;pointer-events:none}
+.desktop-widget-collection .desktop-widget{position:relative;inset:auto;min-width:0}
+.nepali-calendar-widget{grid-column:1;grid-row:1 / span 2;padding:13px 14px 12px}
+.time-widget{grid-column:2;grid-row:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:center}
+.gregorian-calendar-widget{grid-column:2;grid-row:2;padding:10px 11px 11px}
+.widget-kicker{font-size:9px;line-height:1.3;letter-spacing:1.1px;font-weight:750;color:#344147}
+.calendar-widget-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;padding-top:7px;border-top:1px solid #55768a2e}
+.calendar-widget-heading>span{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700;color:#29383e}
+.calendar-widget-controls{display:flex;gap:3px;flex:0 0 auto}
+.calendar-widget-controls button{width:25px;height:25px;display:grid;place-items:center;padding:0;border:1px solid #53778a24;border-radius:8px;background:#ffffff67;color:#29383e;pointer-events:auto;cursor:pointer}
+.calendar-widget-controls button:hover:not(:disabled){background:#ffffffc7}
+.calendar-widget-controls button:disabled{opacity:.35;cursor:default}
+.calendar-widget-controls button:focus-visible{outline:2px solid #317d9b;outline-offset:1px}
+.calendar-widget-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin-top:5px;text-align:center;font-size:10px;font-variant-numeric:tabular-nums}
+.calendar-widget-grid>span{min-height:22px;display:grid;place-items:center;border-radius:7px;color:#303f45}
+.calendar-widget-grid>span[role=columnheader]{min-height:17px;color:#3b484d;font-size:9px;font-weight:700}
+.calendar-widget-grid>span.is-today{background:#397d91;color:white;font-weight:750;box-shadow:0 2px 6px #24596c3b}
+.clock-widget-time{font-size:clamp(24px,2vw,31px);font-weight:650;line-height:1.05;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:#202c31;white-space:nowrap}
+.time-widget-date{margin-top:4px;color:#3b484d;font-size:10px;font-weight:600}
+.gregorian-calendar-heading{margin:0;padding:0;border:0}
+.gregorian-calendar-heading>span{font-size:11px}
+.gregorian-calendar-grid{gap:1px;margin-top:5px;font-size:10px}
+.gregorian-calendar-grid>span{min-height:19px;border-radius:6px}
+.gregorian-calendar-grid>span[role=columnheader]{min-height:15px;font-size:8px}
+.desktop-statusbar button:focus-visible{outline-offset:2px}
+
+@media(max-width:1050px){.desktop-statusbar{gap:7px;padding-inline:9px}.statusbar-menu button{padding-inline:6px}.statusbar-right{gap:8px}.statusbar-active{max-width:22%}}
+@media(max-width:960px) and (min-width:761px){.desktop-widget-collection{width:calc(54vw - 18px);grid-template-columns:minmax(0,1.12fr) minmax(132px,.88fr);gap:8px}.desktop-clinic-widget{left:12px;width:calc(40vw - 24px)}.nepali-calendar-widget{padding:11px 10px}.time-widget{padding:10px}.gregorian-calendar-widget{padding:9px}.calendar-widget-grid>span{min-height:20px}.gregorian-calendar-grid>span{min-height:17px}}
+@media(max-width:760px){.desktop-statusbar{position:absolute;justify-content:space-between;min-height:59px;align-content:center;row-gap:3px;flex-wrap:wrap}.statusbar-active{max-width:37%}.statusbar-menu{gap:0}.statusbar-menu button{padding:3px 5px;font-size:10px}.statusbar-right{margin-left:auto;width:auto;justify-content:flex-end;gap:7px;font-size:10px}.desktop-clinic-widget{top:72px;left:10px;width:calc(100vw - 20px);min-height:72px;padding:10px 12px}.desktop-widget-collection{top:156px;left:10px;right:10px;width:auto;grid-template-columns:minmax(0,1.16fr) minmax(145px,.84fr);gap:9px}.nepali-calendar-widget{padding:11px 12px}.time-widget{padding:10px 12px}.gregorian-calendar-widget{padding:9px 9px 10px}.calendar-widget-grid>span{min-height:20px}.gregorian-calendar-grid>span{min-height:18px}}
+@media(max-width:430px){.desktop-widget-collection{grid-template-columns:minmax(0,1.08fr) minmax(128px,.92fr);gap:7px}.nepali-calendar-widget{padding:9px 8px}.time-widget{padding:9px}.gregorian-calendar-widget{padding:8px 6px}.calendar-widget-heading>span{font-size:10px}.calendar-widget-controls{gap:1px}.calendar-widget-controls button{width:22px;height:22px}.calendar-widget-grid>span{min-height:18px}.gregorian-calendar-grid>span{min-height:16px}}
+@media(prefers-reduced-transparency:reduce){.desktop-statusbar,.desktop-widget{backdrop-filter:none;-webkit-backdrop-filter:none;background:#202747f5}.desktop-statusbar{color:#f7f8ff}}

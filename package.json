@@ -43,6 +43,7 @@
   "description": "Independent Electron dock and Genie motion prototype",
   "dependencies": {
     "lucide-react": "^1.56.0",
+    "nepali-date-utils": "1.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

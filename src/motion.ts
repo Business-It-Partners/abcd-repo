@@ -3,32 +3,35 @@ export const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v)
 export const GENIE_DURATION = 636;
 export const canonicalProgress = (progress: number, minimizing: boolean) => minimizing ? clamp(progress) : 1 - clamp(progress);
 export const DOCK = {
-  size: 36, peak: 2.75, gap: 9, spread: 180, pad: 14.4,
+  size: 36, peak: 2.4, gap: 9, spread: 180, pad: 14.4,
   previewWidth: 57.6, previewHeight: 38.88, verticalPad: 12.6,
-  bottom: 0, windowGap: 8,
+  bottom: 0,
 };
 export const dockHeight = DOCK.previewHeight + 2 * DOCK.verticalPad;
+export const dockScaleForWidth = (width: number) => clamp(width / 1366, .72, 1.15);
+export const dockHeightForWidth = (width: number) => dockHeight * dockScaleForWidth(width);
 export interface Rect { x: number; y: number; width: number; height: number }
 export interface DockSpec { id: string; width: number; height: number; magnifies?: boolean }
-export function bell(distance: number) {
-  return Math.abs(distance) >= DOCK.spread ? 0 : Math.cos(Math.abs(distance) / DOCK.spread * Math.PI / 2) ** 2;
+export function bell(distance: number, spread = DOCK.spread) {
+  return Math.abs(distance) >= spread ? 0 : Math.cos(Math.abs(distance) / spread * Math.PI / 2) ** 2;
 }
-export function dockLayout(items: DockSpec[], center: number, baseline: number, cursor: number | null, intensity: number, maxWidth = Infinity) {
-  const total = items.reduce((n, i) => n + i.width, 0) + DOCK.gap * (items.length - 1);
+export function dockLayout(items: DockSpec[], center: number, baseline: number, cursor: number | null, intensity: number, maxWidth = Infinity, scale = 1) {
+  const gap = DOCK.gap * scale;
+  const total = items.reduce((n, i) => n + i.width, 0) + gap * (items.length - 1);
   let rest = center - total / 2;
   const measured = items.map(item => {
     const restCenter = rest + item.width / 2;
-    rest += item.width + DOCK.gap;
-    const scale = cursor === null || item.magnifies === false ? 1 : 1 + (DOCK.peak - 1) * bell(restCenter - cursor) * clamp(intensity);
-    return { ...item, scale, restCenter, width: item.width * scale, height: item.height * scale };
+    rest += item.width + gap;
+    const magnification = cursor === null || item.magnifies === false ? 1 : 1 + (DOCK.peak - 1) * bell(restCenter - cursor, DOCK.spread * scale) * clamp(intensity);
+    return { ...item, scale: magnification, restCenter, width: item.width * magnification, height: item.height * magnification };
   });
-  const liveWidth = measured.reduce((n, i) => n + i.width, 0) + DOCK.gap * (items.length - 1);
+  const liveWidth = measured.reduce((n, i) => n + i.width, 0) + gap * (items.length - 1);
   const fit = Math.min(1, Math.max(1, maxWidth) / liveWidth);
   let x = center - liveWidth * fit / 2;
   return { width: liveWidth * fit, left: x, items: measured.map(item => {
     const width = item.width * fit, height = item.height * fit;
     const result = { ...item, width, height, x, y: baseline - height };
-    x += width + DOCK.gap * fit;
+    x += width + gap * fit;
     return result;
   }) };
 }

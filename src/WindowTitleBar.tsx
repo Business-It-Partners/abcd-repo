@@ -10,12 +10,12 @@ export function WindowTitleBar({ title, active, maximized, disabled = false, ine
     onPointerDown={onDrag} onDoubleClick={event => {
       if (!disabled && !(event.target as HTMLElement).closest('button')) onToggleMaximize();
     }}>
-    <div className="traffic-lights" role="group" aria-label={`${title} window controls`}>
-      <button className="traffic-light traffic-close" aria-label={`Close ${title}`} title={`Close ${title}`} disabled={disabled} onClick={onClose}><X size={9} strokeWidth={2.5}/></button>
-      <button className="traffic-light traffic-minimize" aria-label={`Minimize ${title}`} title={`Minimize ${title}`} disabled={disabled} onClick={onMinimize}><Minus size={9} strokeWidth={2.5}/></button>
-      <button className="traffic-light traffic-maximize" aria-label={maximized ? `Restore ${title} size` : `Maximize ${title}`} title={maximized ? 'Restore window size' : 'Maximize window'} disabled={disabled} onClick={onToggleMaximize}>
-        {maximized ? <Minimize2 size={8} strokeWidth={2.4}/> : <Maximize2 size={8} strokeWidth={2.4}/>}
+    <div className="window-controls" role="group" aria-label={`${title} window controls`}>
+      <button className="window-control window-control-maximize" aria-label={maximized ? `Restore ${title} size` : `Maximize ${title}`} title={maximized ? 'Restore window size' : 'Maximize window'} disabled={disabled} onClick={onToggleMaximize}>
+        {maximized ? <Minimize2 size={8.748} strokeWidth={2.2}/> : <Maximize2 size={8.748} strokeWidth={2.2}/>}
       </button>
+      <button className="window-control window-control-minimize" aria-label={`Minimize ${title}`} title={`Minimize ${title}`} disabled={disabled} onClick={onMinimize}><Minus size={10.206} strokeWidth={2.4}/></button>
+      <button className="window-control window-control-close" aria-label={`Close ${title}`} title={`Close ${title}`} disabled={disabled} onClick={onClose}><X size={10.206} strokeWidth={2.4}/></button>
     </div>
     <span className="window-title">{title}</span>
   </header>;

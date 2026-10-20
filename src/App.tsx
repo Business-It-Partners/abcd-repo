@@ -1,6 +1,6 @@
-import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type RefObject } from 'react';
+import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
 import { Check, ChevronRight, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
-import { DOCK, Spring, clamp, dockHeight, dockLayout, type DockSpec } from './motion';
+import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
 import { FinanceApp } from './FinanceApp';
 import { StaffApp } from './StaffApp';
@@ -20,6 +20,8 @@ import { WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './wi
 import { dockArtwork } from './dockArtwork';
 import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
+import { DesktopChrome } from './DesktopChrome';
+import type { SessionView } from '../electron/identity/contracts';
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
 const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
@@ -28,7 +30,7 @@ const fixtures = new URLSearchParams(location.search).get('prototypeFixtures') =
 const makeIcons = (ids: string[], titles: Record<string,string>) => ids.map(id => ({ id, label: titles[id] ?? windowSpec(id).title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
 const previewId = (id: WindowId) => id === 'studio' ? 'preview' : `${id}-preview`;
 const isPrototype = (id: WindowId) => id === 'studio' || id === 'records' || id === 'followups';
-function useDock(size: { width: number; height: number }, frozen: boolean, specs: DockSpec[]) {
+function useDock(size: { width: number; height: number }, frozen: boolean, specs: DockSpec[], scale: number) {
   const [field, setField] = useState({ x: null as number | null, intensity: 0 });
   const motion = useRef({ cursor: new Spring(1200), intensity: new Spring(700), inside: false, raf: 0, previous: 0 });
   const frozenRef = useRef(frozen); frozenRef.current = frozen;
@@ -55,7 +57,7 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   }, []);
   return {
     reset,
-    layout: dockLayout(specs, size.width / 2, size.height - DOCK.bottom - DOCK.verticalPad, field.x, field.intensity, size.width - 24 - 2 * DOCK.pad),
+    layout: dockLayout(specs, size.width / 2, size.height - DOCK.bottom - DOCK.verticalPad * scale, field.x, field.intensity, size.width - 24 * scale - 2 * DOCK.pad * scale, scale),
     move(x: number) {
       if (frozenRef.current) return;
       const m = motion.current;
@@ -67,9 +69,10 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   };
 }
 
-export function App() { return <WindowManagerProvider><Desktop /></WindowManagerProvider>; }
-function Desktop() {
+export function App({ session, sessionControls }: { session?: SessionView; sessionControls?: ReactNode }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls}/></WindowManagerProvider>; }
+function Desktop({ session, sessionControls }: { session?: SessionView; sessionControls?: ReactNode }) {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
+  const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups } = controllers;
@@ -123,9 +126,9 @@ function Desktop() {
   // Reserve a thumbnail destination synchronously when capture starts, before
   // measuring Genie geometry. In normal use, previews appear only for minimized apps.
   const hasPreview = (id: WindowId) => {const win=state.windows[id];return !!win&&(fixtures && isPrototype(id) || win.busy || ['minimizing', 'minimized', 'restoring'].includes(win.phase));};
-  const specs: DockSpec[] = [{ id: 'host-minimize', width: DOCK.size, height: DOCK.size }, { id: 'host-shutdown', width: DOCK.size, height: DOCK.size }, { id: 'control-divider', width: .9, height: 28.8, magnifies: false }, ...icons.map(i => ({ id: i.id, width: DOCK.size*(i.id===arrivalId?reservation:i.id===pendingArrivalId?0:1), height: DOCK.size })),
-    ...(icons.some(icon => hasPreview(icon.id)) ? [{ id: 'divider', width: .9, height: 28.8, magnifies: false }] : []),
-    ...icons.map(icon => icon.id).filter(hasPreview).map(id => ({ id: previewId(id), width: DOCK.previewWidth, height: DOCK.previewHeight }))];
+  const specs: DockSpec[] = [{ id: 'host-minimize', width: DOCK.size * dockScale, height: DOCK.size * dockScale }, { id: 'host-shutdown', width: DOCK.size * dockScale, height: DOCK.size * dockScale }, { id: 'control-divider', width: .9 * dockScale, height: 28.8 * dockScale, magnifies: false }, ...icons.map(i => ({ id: i.id, width: DOCK.size * dockScale * (i.id===arrivalId?reservation:i.id===pendingArrivalId?0:1), height: DOCK.size * dockScale })),
+    ...(icons.some(icon => hasPreview(icon.id)) ? [{ id: 'divider', width: .9 * dockScale, height: 28.8 * dockScale, magnifies: false }] : []),
+    ...icons.map(icon => icon.id).filter(hasPreview).map(id => ({ id: previewId(id), width: DOCK.previewWidth * dockScale, height: DOCK.previewHeight * dockScale }))];
   const anyMotion = Object.values(state.windows).some(win => win.busy);
   const [count, setCount] = useState(0);
   const [note, setNote] = useState('A little space to make something great.');
@@ -134,6 +137,7 @@ function Desktop() {
   const hostActionLock = useRef(false);
   const [hostTransitioning, setHostTransitioning] = useState(false);
   const frontApp = activeWindow(state);
+  const activeAppTitle = frontApp ? state.windows[frontApp]?.title : undefined;
   const immersive = !!frontApp && state.windows[frontApp].presentation === 'fullscreen';
   const showDock = !state.overview && (!immersive || dockRevealed || anyMotion || !!arrivalId);
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
@@ -145,14 +149,14 @@ function Desktop() {
     // Observe the hover field without a transparent surface over app windows.
     const overWindow = !!target.closest('[data-window-id]');
     const overDock = !!target.closest('.dock-region');
-    if (showDock && Math.abs(px - size.width / 2) < dock.layout.width / 2 + DOCK.pad + 30 && py >= size.height - 154.8 && (!overWindow || overDock)) dock.move(px);
+    if (showDock && Math.abs(px - size.width / 2) < dock.layout.width / 2 + (DOCK.pad + 30) * dockScale && py >= size.height - (dockHeight + 90.72 * dockScale) && (!overWindow || overDock)) dock.move(px);
     else dock.leave();
     if (!immersive) return;
-    const centered = Math.abs(px - size.width / 2) < dock.layout.width / 2 + DOCK.pad + 50;
-    setDockRevealed(previous => centered && py >= size.height - (previous ? 180 : 6));
+    const centered = Math.abs(px - size.width / 2) < dock.layout.width / 2 + (DOCK.pad + 50) * dockScale;
+    setDockRevealed(previous => centered && py >= size.height - (previous ? 180 : 6) * dockScale);
   }
   const arrivalViewport=useRef({...size});
-  const dock = useDock(size, anyMotion || hostTransitioning || state.overview || !!arrivalId, specs);
+  const dock = useDock(size, anyMotion || hostTransitioning || state.overview || !!arrivalId, specs, dockScale);
   useLayoutEffect(() => {
     const resized=arrivalViewport.current.width!==size.width || arrivalViewport.current.height!==size.height;
     arrivalViewport.current={...size};
@@ -206,6 +210,10 @@ function Desktop() {
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
+    {!state.overview && <DesktopChrome activeApp={activeAppTitle} session={session} sessionControls={sessionControls}
+      onOpenApps={() => openStoreApp('store')}
+      onShowWindows={() => dispatch({ type: 'overview', open: true })}
+      onSupport={() => { void window.desktop?.support(); }} />}
     {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
@@ -227,9 +235,9 @@ function Desktop() {
         setStoreMessage(`${windowSpec(id).title} uninstalled. Demo records retained for this session.`);
       }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
-    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} inert={!showDock} aria-label="Application dock">
-      <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * 2, height: DOCK.bottom + dockHeight }}/>
-      <div className="dock-pill" style={{ left: dock.layout.left - DOCK.pad, width: dock.layout.width + 2 * DOCK.pad, top: size.height - DOCK.bottom - dockHeight, height: dockHeight }}/>
+    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock} aria-label="Application dock">
+      <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * dockScale * 2, height: DOCK.bottom * dockScale + dockHeight }}/>
+      <div className="dock-pill" style={{ left: dock.layout.left - DOCK.pad * dockScale, width: dock.layout.width + 2 * DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, height: dockHeight }}/>
       {dock.layout.items.map(item => {
         const style = { left: item.x, top: item.y, width: item.width, height: item.height };
         if (item.id === 'host-minimize' || item.id === 'host-shutdown') {
@@ -253,9 +261,8 @@ function Desktop() {
         </button>;
       })}
     </nav>
-    {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
+    {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
     {immersive && !state.overview && <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)}/>}
     {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
-    <div className="desktop-footnote"><span className="experiment-dot"/> ELECTRON / TYPESCRIPT<span className="footnote-line"/>DOCK + GENIE</div>
   </main>;
 }

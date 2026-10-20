@@ -74,6 +74,7 @@ lib/generated_plugin_registrant.dart
 !**/.env.example
 **/*.pem
 **/*.key
+/.dev-login.local.json
 
 .playwright-mcp/
 

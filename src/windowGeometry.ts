@@ -1,7 +1,11 @@
-import { clamp, DOCK, dockHeight, type Rect } from './motion';
+import { clamp, DOCK, dockHeightForWidth, type Rect } from './motion';
 
 export type Size = { width: number; height: number };
 export type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
+const hiddenEdgeFraction = .7;
+export const dockWindowGap = 12;
+// Keep in sync with DesktopChrome.css responsive status-bar min-heights.
+export const statusBarHeightForWidth = (width: number) => width <= 760 ? 59 : 31;
 const comingSoon = (title: string) => ({ title, preferred: { width: 760, height: 480 }, minimum: { width: 480, height: 300 } });
 export const WINDOW_SPECS = {
   store: { title: 'App Store', preferred: { width: 1060, height: 660 }, minimum: { width: 560, height: 400 } },
@@ -28,9 +32,15 @@ export function windowSpec(id: WindowId): WindowSpec {
 }
 
 export function workArea(size: Size): Rect {
-  const x = Math.min(12, size.width * .05), y = Math.min(4, size.height * .1);
-  const bottom = Math.min(DOCK.bottom + dockHeight + DOCK.windowGap, size.height * .2);
-  return { x, y, width: Math.max(1, size.width - 2 * x), height: Math.max(1, size.height - y - bottom) };
+  const x = Math.min(12, size.width * .05), y = statusBarHeightForWidth(size.width);
+  const dockTop = size.height - DOCK.bottom - dockHeightForWidth(size.width);
+  return { x, y, width: Math.max(1, size.width - 2 * x), height: Math.max(1, dockTop - y - dockWindowGap) };
+}
+
+/** Maximize within the desktop chrome while using the full horizontal span. */
+export function maximizedBounds(size: Size): Rect {
+  const area = workArea(size);
+  return { x: 0, y: area.y, width: size.width, height: area.height };
 }
 
 export function fitBounds(bounds: Rect, size: Size, minimum: Size): Rect {
@@ -40,11 +50,21 @@ export function fitBounds(bounds: Rect, size: Size, minimum: Size): Rect {
   return { x: clamp(bounds.x, area.x, area.x + area.width - width), y: clamp(bounds.y, area.y, area.y + area.height - height), width, height };
 }
 
+/** Let a dragged window tuck behind the bottom/side edges while leaving a 30% grab area. */
+export function moveBounds(bounds: Rect, size: Size): Rect {
+  const area = workArea(size), visibleWidth = bounds.width * (1 - hiddenEdgeFraction), visibleHeight = bounds.height * (1 - hiddenEdgeFraction);
+  return {
+    ...bounds,
+    x: clamp(bounds.x, -bounds.width + visibleWidth, size.width - visibleWidth),
+    y: clamp(bounds.y, area.y, area.y + area.height - visibleHeight),
+  };
+}
+
 export function initialBounds(id: WindowId, size: Size): Rect {
   const spec = windowSpec(id), area = workArea(size);
   if (id === 'records' || id === 'followups') return { ...area };
-  const width = Math.min(spec.preferred.width, area.width), height = Math.min(spec.preferred.height, area.height);
-  return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y + (area.height - height) / 2, width, height }, size, spec.minimum);
+  const width = Math.min(spec.preferred.width, area.width);
+  return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y, width, height: area.height }, size, spec.minimum);
 }
 
 export function resizeBounds(start: Rect, edge: ResizeEdge, dx: number, dy: number, size: Size, minimum: Size): Rect {

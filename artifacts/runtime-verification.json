@@ -1,9 +1,12 @@
 {
   "checks": [
+    "covered app preview keeps native capture resolution without CSS blur",
+    "covered app window keeps its existing shadow",
     "two isolated renderer processes and separate shell",
     "sandbox/context isolation and no Node",
     "apps have no Node or shell bridge",
     "storage is separated by app",
+    "switching from an isolated app to a shell window hides its native surface before paint",
     "forged report rejected",
     "network and cross-origin fetch denied",
     "popup denied",
@@ -16,6 +19,7 @@
     "resize uses shared manager",
     "overview contains both isolated snapshots",
     "overview clones have no runtime identities",
+    "maximized native app begins below the visible title bar with a small dock gap",
     "native app bottom edge reveals fullscreen dock",
     "Genie thumbnail contains captured native app",
     "minimize/restore retains isolated draft and process",
@@ -30,12 +34,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 15729,
+    "shell": 150331,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/index.html",
-        "pid": 15799,
+        "pid": 150496,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -45,7 +49,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/index.html",
-        "pid": 15771,
+        "pid": 150381,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,

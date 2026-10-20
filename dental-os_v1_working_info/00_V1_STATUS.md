@@ -1,7 +1,7 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-20.
-**Active scope:** M01–M11 VERIFIED for their documented scope; M12 OS workspace/shell UI and M13 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
+**Active scope:** M01–M11 VERIFIED for their documented scope; M12 is IMPLEMENTING with M12.1/M12.2 verified for tested Linux/private-display scope, M12.4 partially implemented, and M12.3/M12.5/M12.6 planned; M13 Windows/Linux release/operations is PLANNED. No final production/device certification is claimed.
 **Current implementation authorization:** M11 app-onboarding/update work and staging acceptance were separately requested and are complete for their documented scope. M12 UI work remains user-directed; production remains excluded.
 **Latest milestone:** M11 — flexible first-party app onboarding and independent updates — passed staging acceptance and Windows CI, then was normally merged into `main` at `b6a4045f`. Physical Windows-device testing is G14 after M13 and before final product release.
 **User acceptance:** the user reports completing the staging app update to 1.3.0. Broader final product/device acceptance remains G14 after M13.
@@ -23,7 +23,7 @@
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | VERIFIED — automated Linux/Windows hardening and bounded resource scope | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
 | [M11 — Flexible first-party app onboarding and updates](milestone-11-flexible-first-party-app-updates/STATUS.md) | VERIFIED and integrated — automated/staging scope | [Evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md) |
-| [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | PLANNED | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
+| [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | IMPLEMENTING — M12.1/M12.2 verified; M12.4 partial, Linux scope | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
 | [M13 — Windows/Linux release and operations](milestone-13-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-13-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
 ## Starting reality

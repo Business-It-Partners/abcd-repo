@@ -15,10 +15,13 @@ contextBridge.exposeInMainWorld('desktop', {
   identity: {
     view: () => ipcRenderer.invoke('identity:view'),
     action: (kind: 'login' | 'lock' | 'logout', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
+    devCredentialsAvailable: () => ipcRenderer.invoke('identity:dev-credentials-available'),
+    devCredentials: () => ipcRenderer.invoke('identity:dev-credentials'),
     subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('identity:state', listener); return () => ipcRenderer.removeListener('identity:state', listener); },
   },
   runtime: {
     sync: (value: unknown, generation?: number) => ipcRenderer.invoke('runtime:sync', value, generation),
+    hideAll: (generation?: number) => ipcRenderer.sendSync('runtime:hide-all', generation) === true,
     restart: (id: string, generation?: number) => ipcRenderer.invoke('runtime:restart', id, generation),
     subscribe: (callback: (kind: string, value: unknown) => void) => {
       const state = (_event: unknown, value: unknown) => callback('state', value);

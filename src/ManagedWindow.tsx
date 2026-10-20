@@ -2,7 +2,7 @@ import { useSessionGeneration } from './SessionBoundary';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
-import { fitBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
+import { fitBounds, maximizedBounds, moveBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
 import { activeWindow, useWindowManager } from './windowManager';
 import { WindowTitleBar } from './WindowTitleBar';
 import type { Rect } from './motion';
@@ -23,7 +23,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
   const generation = useRef(0), animation = useRef<ReturnType<typeof prepareGenie> | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const anyBusy = Object.values(state.windows).some(w => w.busy);
-  const bounds = win.presentation === 'fullscreen' ? { x: 0, y: 0, ...state.size } : win.normalBounds;
+  const bounds = win.presentation === 'fullscreen' ? maximizedBounds(state.size) : win.normalBounds;
   const patch = (value: Parameters<typeof dispatch>[0] & { type: 'patch' }) => dispatch(value);
   const focus = () => dispatch({ type: 'focus', id });
   const setModal = (modal: boolean) => dispatch({ type: 'patch', id, patch: { modal } });
@@ -87,7 +87,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     // queued pointer-up delta from the old screen over those new bounds.
     if (size.width !== g.size.width || size.height !== g.size.height) { endGesture(); return; }
     const next = g.edge ? resizeBounds(g.bounds, g.edge, dx, dy, size, windowSpec(id).minimum)
-      : fitBounds({ ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy }, size, windowSpec(id).minimum);
+      : moveBounds({ ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy }, size);
     patch({ type: 'patch', id, patch: { normalBounds: next } });
   }
 

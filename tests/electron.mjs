@@ -32,17 +32,19 @@ try {
   check('Environment bar is removed and system controls live in the dock', await page.locator('.system-bar,.host-controls,.bar-reveal-edge').count() === 0 && await page.getByRole('button', { name: 'Minimize Electron OS', exact: true }).count() === 1);
   evidence.environment = await application.evaluate(({ app, screen }) => ({ electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, app: app.getVersion(), display: screen.getPrimaryDisplay() }));
   await page.mouse.move(30, 70);
-  await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36) < .1);
+  await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36 * Math.max(.72,Math.min(1.15,innerWidth/1366))) < .1);
   check('Dock surface touches the bottom screen edge', await page.locator('.dock-pill').evaluate(e => Math.abs(e.getBoundingClientRect().bottom - innerHeight) < 1));
   await page.screenshot({ path: path.join(root, 'artifacts/desktop.png') });
+  const dockBase = await page.evaluate(() => 36 * Math.max(.72,Math.min(1.15,innerWidth/1366)));
   const icon = page.getByRole('button', { name: 'Motion Studio', exact: true });
   await icon.hover();
-  await page.waitForFunction(() => document.querySelector('.dock-icon.coral').getBoundingClientRect().width > 36 * 1.8);
-  const enlarged = await icon.boundingBox(); check('Bell-curve hover magnifies the dock', enlarged.width > 36 * 1.8);
+  await page.waitForFunction(() => document.querySelector('.dock-icon.coral').getBoundingClientRect().width > 36 * Math.max(.72,Math.min(1.15,innerWidth/1366)) * 2.2);
+  const enlarged = await icon.boundingBox(); check('Bell-curve hover magnifies the dock', enlarged.width > dockBase * 2.2);
   await page.screenshot({ path: path.join(root, 'artifacts/dock-hover.png') });
   await page.mouse.move(30, 70);
-  await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36) < .1);
-  check('Dock returns to baseline', Math.abs((await icon.boundingBox()).width - 36) < .1);
+  await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36 * Math.max(.72,Math.min(1.15,innerWidth/1366))) < .1);
+  await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon.coral').getBoundingClientRect().width - 36 * Math.max(.72,Math.min(1.15,innerWidth/1366))) < .1);
+  check('Dock returns to baseline', Math.abs((await icon.boundingBox()).width - dockBase) < .1);
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   for (let x = viewport.width / 2 - 250; x <= viewport.width / 2 + 250; x += 40) await page.mouse.move(x, viewport.height - 50);
   await page.mouse.move(30, 70); await page.waitForTimeout(350);
@@ -62,11 +64,12 @@ try {
   await restore();
   check('Counter and note survive minimize/restore', await page.getByTestId('counter').textContent() === '2' && await page.locator('#note').inputValue() === 'Preserved through the Genie journey');
   evidence.performance.push(await page.evaluate(() => window.motionStats));
+  const baselineCanvases = await page.locator('canvas').count();
   for (let i = 0; i < 5; i++) {
     await minimize(); evidence.performance.push({ ...await page.evaluate(() => window.motionStats), measurement: 'No screenshots during animation' });
     await restore(); evidence.performance.push({ ...await page.evaluate(() => window.motionStats), measurement: 'No screenshots during animation' });
   }
-  check('Five repeated cycles preserve state without accumulating overlays', await page.locator('canvas').count() === 12 && await page.getByTestId('counter').textContent() === '2');
+  check('Five repeated cycles preserve state without accumulating overlays', await page.locator('canvas').count() === baselineCanvases && await page.getByTestId('counter').textContent() === '2');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await minimize(); await restore(); check('Reduced motion uses direct transitions');
   await page.emulateMedia({ reducedMotion: 'no-preference' });

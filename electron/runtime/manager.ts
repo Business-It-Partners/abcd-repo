@@ -44,6 +44,10 @@ export class FixtureRuntime {
     const visible = !!wanted?.visible && e.state.phase === 'ready';
     e.view.setVisible(visible);
   }
+  /** Hide native child surfaces immediately before the renderer changes its front window. */
+  hideAll() {
+    for (const e of this.entries.values()) e.view.setVisible(false);
+  }
   private async refresh(e: Entry, fresh = false) {
     // An explicit shell capture must not return an older frame just because a
     // debounced mirror capture is still running. Serialize, then refresh again.
@@ -52,7 +56,14 @@ export class FixtureRuntime {
     e.capturePromise = (async () => {
       try {
         const image = await e.view.webContents.capturePage();
-        if (this.entries.get(e.state.id) === e && e.state.phase==='ready' && !image.isEmpty()) { e.image = image; e.state.snapshot=image.resize({width:Math.min(640,image.getSize().width)}).toDataURL(); this.emit(); }
+        if (this.entries.get(e.state.id) === e && e.state.phase==='ready' && !image.isEmpty()) {
+          e.image = image;
+          // Inactive app windows show this image at the full native surface size.
+          // A 640px overview thumbnail stretched across that window made its text
+          // look blurred whenever another app or shell window took focus.
+          e.state.snapshot = image.toDataURL();
+          this.emit();
+        }
       } catch { /* Failed renderer is handled by lifecycle supervision. */ }
       finally { e.capturePromise = undefined; }
     })();

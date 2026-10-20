@@ -24,7 +24,7 @@ try{
   await page.getByRole('button',{name,exact:true}).click();await phase(id,'visible');const frame=page.getByTestId(`${id}-window`);
   check(`${name} opens its app content and eight resize handles`,await frame.getByRole('heading',{name:id==='finance'?'Transaction Record':name,exact:true}).isVisible()&&(id==='staff'?await frame.getByRole('table',{name:'Staff list'}).isVisible():id==='lab'?await frame.getByRole('table',{name:'Lab orders',exact:true}).isVisible():await frame.getByText('Coming soon',{exact:true}).isVisible())&&await frame.locator('[data-resize]').count()===8);
   const before=await frame.boundingBox();await page.getByRole('button',{name:`Maximize ${name}`,exact:true}).click();
-  check(`${name} expands fullscreen`,await frame.evaluate(e=>{const r=e.getBoundingClientRect();return r.x===0&&r.y===0&&r.width===innerWidth&&r.height===innerHeight;}));
+  check(`${name} maximizes below the status bar with a small dock gap`,await frame.evaluate(e=>{const r=e.getBoundingClientRect(),bar=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dock=Number.parseFloat(document.querySelector('.dock-pill').style.top);return r.x===0&&r.y===bar.bottom&&r.width===innerWidth&&Math.abs(r.bottom-(dock-12))<1;}));
   await page.getByRole('button',{name:`Restore ${name} size`,exact:true}).click();assert.deepEqual(await frame.boundingBox(),before);
   await page.getByRole('button',{name:`Minimize ${name}`,exact:true}).click();await phase(id,'minimized');
   check(`${name} minimizes to a real captured window thumbnail`,await page.getByAltText(`${name} snapshot`,{exact:true}).isVisible());

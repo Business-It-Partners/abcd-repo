@@ -2,9 +2,11 @@ import { mkdirSync, lstatSync, readFileSync, writeFileSync, openSync, closeSync,
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { storageHost, type StorageHost } from '../host/platform';
-export type Preferences = { overviewShortcutEnabled: boolean };
-type State = { version: 1; preferences: Preferences };
+export type Preferences = { overviewShortcutEnabled: boolean; favoriteAppIds?: string[] };
+type State = { version: 1 | 2; preferences: Preferences };
 const LIMIT = 16384;
+const validFavoriteIds = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 32 &&
+  value.every(id => typeof id === 'string' && /^[a-z0-9][a-z0-9._-]{0,127}$/.test(id)) && new Set(value).size === value.length;
 const hash = (s: string | null) => s === null ? null : createHash('sha256').update(s).digest('hex');
 export class StateRecoveryError extends Error { constructor() { super('OS_STATE_RECOVERY_REQUIRED'); } }
 export class OsStateStore {
@@ -30,8 +32,12 @@ export class OsStateStore {
   }
   private parse(raw: string): State {
     const s = JSON.parse(raw);
-    if (!s || Object.keys(s).sort().join() !== 'preferences,version' || s.version !== 1 || !s.preferences ||
-      Object.keys(s.preferences).join() !== 'overviewShortcutEnabled' || typeof s.preferences.overviewShortcutEnabled !== 'boolean') throw new StateRecoveryError();
+    if (!s || Object.keys(s).sort().join() !== 'preferences,version' || !s.preferences || typeof s.preferences !== 'object' || Array.isArray(s.preferences) ||
+      typeof s.preferences.overviewShortcutEnabled !== 'boolean') throw new StateRecoveryError();
+    const preferenceKeys = Object.keys(s.preferences).sort().join();
+    const versionOne = s.version === 1 && preferenceKeys === 'overviewShortcutEnabled';
+    const versionTwo = s.version === 2 && preferenceKeys === 'favoriteAppIds,overviewShortcutEnabled' && validFavoriteIds(s.preferences.favoriteAppIds);
+    if (!versionOne && !versionTwo) throw new StateRecoveryError();
     return s;
   }
   private atomic(p: string, text: string) {
@@ -74,7 +80,11 @@ export class OsStateStore {
     } catch { throw new StateRecoveryError(); }
   }
   update(input: unknown): Preferences {
-    const state = this.parse(JSON.stringify({ version: 1, preferences: input }));
-    this.load(); this.commit(state); return { ...state.preferences };
+    const requested = this.parse(JSON.stringify({ version: 1, preferences: input }));
+    const current = this.load();
+    const state = Array.isArray(current.favoriteAppIds)
+      ? this.parse(JSON.stringify({ version: 2, preferences: { ...current, ...requested.preferences } }))
+      : requested;
+    this.commit(state); return { ...state.preferences };
   }
 }

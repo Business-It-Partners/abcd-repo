@@ -57,8 +57,9 @@ try {
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
   await page.waitForFunction(() => document.querySelector('main').classList.contains('is-immersive'));
   const expanded = await page.getByTestId('records-window').boundingBox();
-  check('Maximized Records fills the whole renderer', expanded.x === 0 && expanded.y === 0 && expanded.width === viewport.width && expanded.height === viewport.height);
-  check('Maximized app hides dock and has no OS bar', await page.locator('.system-bar').count() === 0 && await page.locator('.dock-region').evaluate(e => e.inert));
+  const chromeBounds=await page.evaluate(()=>({bar:document.querySelector('.desktop-statusbar').getBoundingClientRect().bottom,dock:Number.parseFloat(document.querySelector('.dock-pill').style.top)}));
+  check('Maximized Records preserves the small dock gap', expanded.x===0&&Math.abs(expanded.y-chromeBounds.bar)<1&&expanded.width===viewport.width&&Math.abs(expanded.y+expanded.height-(chromeBounds.dock-12))<1);
+  check('Maximized app keeps the status bar visible and reveals dock on demand', await page.locator('.desktop-statusbar').isVisible() && await page.locator('.dock-region').evaluate(e => e.inert));
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(root, 'artifacts/records-fullscreen.png') });
   await page.mouse.move(viewport.width / 2, viewport.height - 2);
@@ -79,7 +80,7 @@ try {
   check('Dock hides again after leaving its direct controls', await page.locator('.dock-region').evaluate(e => e.inert));
   await page.getByRole('button', { name: 'Restore Records size', exact: true }).click();
   await page.waitForFunction(() => !document.querySelector('main').classList.contains('is-immersive'));
-  check('Restoring app size returns persistent dock without an OS bar', await page.locator('.dock-region').evaluate(e => !e.inert) && await page.locator('.system-bar').count() === 0);
+  check('Restoring app size returns the desktop dock and status bar', await page.locator('.dock-region').evaluate(e => !e.inert) && await page.locator('.desktop-statusbar').isVisible());
   await page.getByRole('button', { name: 'Close Records', exact: true }).click(); await phase('closed');
   await page.getByRole('button', { name: 'Records', exact: true }).click(); await phase('visible');
   check('Session data survives closing and reopening Records', await table.locator('tbody tr').count() === 7);

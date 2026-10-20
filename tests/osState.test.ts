@@ -26,6 +26,22 @@ describe('OS-only durable state', () => {
   expect(new OsStateStore(p,host).load().overviewShortcutEnabled).toBe(false);
   expect(JSON.parse(readFileSync(path.join(p,'preferences.json'),'utf8')).version).toBe(1);
  });
+ it('opens version 2 workspace preferences and preserves favorites when legacy settings change', () => {
+  const p = root(), favorites = ['company.sample.alpha', 'company.sample.beta'];
+  writeFileSync(path.join(p,'preferences.json'), JSON.stringify({ version: 2, preferences: { overviewShortcutEnabled: true, favoriteAppIds: favorites } }));
+  const store = new OsStateStore(p, host);
+  expect(store.load()).toEqual({ overviewShortcutEnabled: true, favoriteAppIds: favorites });
+  store.update({ overviewShortcutEnabled: false });
+  expect(JSON.parse(readFileSync(path.join(p,'preferences.json'),'utf8'))).toEqual({ version: 2, preferences: { overviewShortcutEnabled: false, favoriteAppIds: favorites } });
+  expect(new OsStateStore(p, host).load()).toEqual({ overviewShortcutEnabled: false, favoriteAppIds: favorites });
+ });
+ it('preserves invalid version 2 preferences for recovery without guessing', () => {
+  const p = root(), file = path.join(p, 'preferences.json');
+  const raw = JSON.stringify({ version: 2, preferences: { overviewShortcutEnabled: true, favoriteAppIds: ['not a valid app id'] } });
+  writeFileSync(file, raw);
+  expect(() => new OsStateStore(p, host).load()).toThrow('OS_STATE_RECOVERY_REQUIRED');
+  expect(readFileSync(file, 'utf8')).toBe(raw);
+ });
  for (const raw of ['{broken', '{"version":99}', 'x'.repeat(17000)]) it('preserves unsafe state for recovery', () => {
   const p=root(); const f=path.join(p,'preferences.json');writeFileSync(f,raw);
   expect(()=>new OsStateStore(p,host).load()).toThrow('OS_STATE_RECOVERY_REQUIRED');expect(readFileSync(f,'utf8')).toBe(raw);

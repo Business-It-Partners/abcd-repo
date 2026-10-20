@@ -8,6 +8,7 @@ import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
 import { CredentialStore } from './identity/storage';
 import { systemSecretProvider } from './identity/provider';
+import { loadDevelopmentCredentials } from './identity/devCredentials';
 import { identityFixtures } from './identity/fixtures';
 import { fixtureRegistry } from './packages/fixtures';
 import { PackageRegistry } from './packages/registry';
@@ -31,6 +32,7 @@ const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && pr
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
+const devCredentialFixtures = trustedTest && app.commandLine.hasSwitch('dev-credentials-fixtures');
 const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSwitch('identity-staging');
 let identity: SessionManager | undefined;
 const canUseWorkspace = () => identityBypass || identity?.view().phase === 'ready';
@@ -116,6 +118,18 @@ function createWindow() {
 const supportCaller=(event:Electron.IpcMainInvokeEvent)=>isShell(event)||!!recoveryWindow&&event.sender===recoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame;
 let supportBusy=false;
 const supportView=()=>({appVersion:app.getVersion(),electron:process.versions.electron,platform:process.platform,arch:process.arch,...diagnostics?.preview()});
+const supportReviewText=(report:ReturnType<typeof supportView>)=>{
+ const events=report.events??[];
+ const recent=events.slice(-5);
+ return [
+  `Dental OS ${report.appVersion} · Electron ${report.electron}`,
+  `${report.platform} ${report.arch} · Diagnostics storage: ${report.persistence}`,
+  `Recent events (${recent.length} shown of ${events.length}):`,
+  ...(recent.length?recent.map(entry=>`• ${new Date(entry.time).toLocaleString()}  ${entry.code} (${entry.target})`):['• No events recorded']),
+  '',
+  report.policy,
+ ].join('\n');
+};
 ipcMain.handle('support:action',async(event,kind:unknown)=>{
  if(!supportCaller(event))throw Error('Invalid caller');
  const owner=BrowserWindow.fromWebContents(event.sender);if(!owner)throw Error('Unavailable');
@@ -125,7 +139,7 @@ ipcMain.handle('support:action',async(event,kind:unknown)=>{
  try{
   if(kind==='show-files'){if(owner!==recoveryWindow)return {ok:false};await shell.openPath(app.getPath('userData'));return {ok:true};}
   if(kind==='preview'){
-   const review=await dialog.showMessageBox(owner,{type:'info',title:'Safe support diagnostics',message:'Review safe support diagnostics',detail:JSON.stringify(supportView(),null,2),buttons:['Close','Save diagnostics file'],defaultId:0,cancelId:0});
+   const review=await dialog.showMessageBox(owner,{type:'info',title:'Safe support diagnostics',message:'Review safe support diagnostics',detail:supportReviewText(supportView()),buttons:['Close','Save diagnostics file'],defaultId:0,cancelId:0});
    if(review.response!==1)return {ok:false,cancelled:true};
   }
   const result=await dialog.showSaveDialog(owner,{title:'Save safe Dental OS diagnostics',defaultPath:'dental-os-support.json',filters:[{name:'JSON',extensions:['json']}]});
@@ -175,9 +189,22 @@ ipcMain.handle('os:status', event => {
   return { phase: bootPhase };
 });
 ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.sync(value); });
+ipcMain.on('runtime:hide-all', (event, generation: unknown) => {
+  const trustedShell = !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
+  if (!trustedShell || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) { event.returnValue = false; return; }
+  runtime.hideAll();
+  event.returnValue = true;
+});
 ipcMain.handle('runtime:restart', (event, id: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.restart(id); });
 for (const kind of ['connect', 'request', 'cancel'] as const) ipcMain.handle(`sdk:${kind}`, (event, input: unknown) => runtime ? runtime.sdk(kind, event, input) : { ok: false, error: { code: 'UNAVAILABLE', message: 'No application runtime.', outcome: 'not_sent' } });
 ipcMain.handle('identity:view', event => { if (!isShell(event)) throw new Error('Invalid caller'); return identityView(); });
+const developmentCredentials = () => {
+  if (app.isPackaged) return undefined;
+  if (devCredentialFixtures) return { email: 'dev-login@fixture.invalid', password: 'synthetic-dev-fill-only' };
+  return loadDevelopmentCredentials(path.join(app.getAppPath(), '.dev-login.local.json'));
+};
+ipcMain.handle('identity:dev-credentials-available', event => isShell(event) && !!developmentCredentials());
+ipcMain.handle('identity:dev-credentials', event => isShell(event) ? developmentCredentials() : undefined);
 ipcMain.handle('identity:action', (event, kind: unknown, input: unknown) => {
   if (!isShell(event) || !identity) return { ok: false, code: 'UNAVAILABLE' };
   if (kind === 'login') return identity.login(input);

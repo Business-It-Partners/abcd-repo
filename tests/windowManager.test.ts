@@ -1,10 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { resizeBounds, fitBounds, initialBounds, workArea, type ResizeEdge } from '../src/windowGeometry';
+import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, statusBarHeightForWidth, dockWindowGap, type ResizeEdge } from '../src/windowGeometry';
 import { activeWindow, createDesktop, desktopReducer } from '../src/windowManager';
 
 const screen = { width: 1440, height: 1000 }, minimum = { width: 540, height: 340 };
 const start = { x: 300, y: 200, width: 760, height: 480 };
 describe('Constrained window resizing', () => {
+  it('opens app windows flush below the status bar with a small dock gap', () => {
+    const area = workArea(screen);
+    expect(area.y).toBe(statusBarHeightForWidth(screen.width));
+    expect(area.y + area.height).toBe(screen.height - (38.88 + 2 * 12.6) * Math.max(.72, Math.min(1.15, screen.width / 1366)) - dockWindowGap);
+    expect(initialBounds('store', screen)).toMatchObject({ y: area.y, height: area.height });
+    expect(initialBounds('records', screen)).toEqual(area);
+    expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: 59, height: workArea({ width: 580, height: 800 }).height });
+  });
+  it('maximizes below the status bar and above the dock while using full width', () => {
+    const area = workArea(screen);
+    expect(maximizedBounds(screen)).toEqual({ x: 0, y: area.y, width: screen.width, height: area.height });
+  });
+  it('clamps drag hiding to 70 percent on bottom and both sides but never above the status bar', () => {
+    const box = { x: 300, y: 200, width: 600, height: 500 };
+    const left = moveBounds({ ...box, x: -10000 }, screen);
+    const right = moveBounds({ ...box, x: 10000 }, screen);
+    const bottom = moveBounds({ ...box, y: 10000 }, screen);
+    const top = moveBounds({ ...box, y: -10000 }, screen);
+    expect(left.x).toBe(-420); expect(left.x + left.width).toBe(180);
+    expect(right.x).toBe(1260); expect(right.x + right.width).toBe(1860);
+    expect(bottom.y).toBe(workArea(screen).y+workArea(screen).height-150); expect(bottom.y + bottom.height).toBe(bottom.y+500);
+    expect(top.y).toBe(workArea(screen).y);
+  });
   for (const edge of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'] as ResizeEdge[]) {
     it(`${edge} keeps the opposite boundaries fixed`, () => {
       const next = resizeBounds(start, edge, 40, 30, screen, minimum);

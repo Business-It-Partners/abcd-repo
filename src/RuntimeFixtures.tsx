@@ -19,6 +19,7 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
   const [peek,setPeek]=useState(false), [error,setError]=useState('');
   const surfaces=useRef(new Map<RuntimeId,HTMLDivElement>()), liveControllers=useRef(controllers);
   const registered=useRef(new Map<string,string>());
+  const lastNativeTarget=useRef<RuntimeId | undefined>(undefined);
   liveControllers.current=controllers;
   const front=activeWindow(state);
   const dynamicApps:DynamicApp[]=apps.filter(app=>!!app.installedVersion&&!['company.sample.alpha','company.sample.beta'].includes(app.id)).flatMap(app=>{const id=runtimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{...app,id,target}]:[];});
@@ -46,6 +47,13 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       const element=surfaces.current.get(id),r=element?.getBoundingClientRect();
       return {id,open:state.windows[id].phase!=='closed',visible:front===id&&state.windows[id].phase==='visible'&&!blocked&&!peek&&!confirm,rect:{x:Math.max(0,r?.x??0),y:Math.max(0,r?.y??43),width:Math.max(1,r?.width??1),height:Math.max(1,r?.height??1)}};
     });
+    const nextNativeTarget=layouts.find(layout=>layout.visible)?.id;
+    if(lastNativeTarget.current!==nextNativeTarget){
+      // WebContentsView children paint above the shell renderer. Hide the old
+      // native child before a different React window/overview gets painted.
+      window.desktop?.runtime.hideAll(generation);
+      lastNativeTarget.current=nextNativeTarget;
+    }
     void window.desktop?.runtime.sync(layouts, generation).catch(()=>setError('Runtime layout unavailable. Close and reopen the app.'));
   },[controllers,state,front,blocked,peek,confirm,generation]);
   return <>
