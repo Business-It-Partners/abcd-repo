@@ -7,6 +7,14 @@
 
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
 
+## First-party app onboarding and independent-update follow-up
+
+The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). M11 is VERIFIED for its documented staging/automated scope: the signed feed/package/update path, authenticated Store install/update service, private live-feed Linux install/update/restart, local safety matrix, user-confirmed manual 1.3.0 Store update, final-source Windows CI, and 16-app resource characterization pass. Its profile measured 2.09 GiB aggregate working set with 16 minimal synthetic apps open and 487 MiB after closing them; it does not enforce a memory ceiling or certify clinical/low-memory-device behavior. M11 is ready for normal main integration; M07/M08 retain their original verified scope.
+
+## Milestone sequence realignment — 2026-10-19
+
+At the user's direction, M11 is flexible first-party app onboarding and independent updates; M12 is Dental OS workspace/shell UI; M13 is Windows/Linux release and operations. The user wants to direct M12 UI work one item at a time. G14 is final physical Windows-device and user/product acceptance after M13. M01–M10 histories and verification remain unchanged. M11 is verified on `codex/milestone-11` and is being integrated into `main`; no next M12 item is started in this closeout. The [master roadmap](dental-os_v1_working_info/00_V1_MASTER_ROADMAP.md), [global status](dental-os_v1_working_info/00_V1_STATUS.md), M11–M13 plans and [acceptance gates](dental-os_v1-documentation/18_V1_ACCEPTANCE_GATES.md) are the coordinated source of truth.
+
 ## Dental OS canonical repository structure — documented, 2026-10-15
 
 Expanded [00_REPOSITORY_STRUCTURE.md](dental-os_v1_working_info/00_REPOSITORY_STRUCTURE.md) as the sole target folder/ownership/import-boundary guide. It covers desktop main/preload/renderer, shared packages, future first-party apps, fixtures, tests/tools/config, separate fewa_demo backend repositories, installed OS state and incremental migration. Root instructions/development/README and architecture link to it rather than copying the tree. Current src/electron source remains in place; no new implementation packages, source migration, backend change or deployment. Lightweight documentation checks only; no builds/runtime tests or live-session changes. See M01 amendment evidence.
@@ -124,7 +132,7 @@ Validation: build/typecheck and 25 unit tests pass. All nine UI suites pass on t
 
 ## Windows preview installer — 2026-10-15, built; Windows acceptance pending
 
-User-authorized out-of-sequence prototype packaging experiment related to M11. Package only the current shell/demo as an unsigned Windows x64 installer; do not advance M02–M11 or select a production installer/update channel. No backend, publishing, signing identity or production acceptance is included.
+User-authorized out-of-sequence prototype packaging experiment originally recorded alongside M11 and now retained as historical input for M13. Package only the current shell/demo as an unsigned Windows x64 installer; do not claim M13 acceptance or select a production installer/update channel. No backend, publishing, signing identity or production acceptance is included.
 
 - [x] Add a reproducible, allowlisted Windows preview installer configuration and icon.
 - [x] Build the current renderer/host, run unit checks and a relevant private host suite sequentially with bounded resources.
@@ -577,3 +585,9 @@ Started from verified M09 main bd0cea01 on codex/milestone-10. Detailed plan fre
 M10 local closeout: bounded diagnostics/support/recovery, exact signed-byte canonicality, crash/capture/lease/host-exit safety and public-metadata account continuity implemented. Local full 254 plus final affected 11 unit cases, build, 22 hardening, 23 integrated, 28 runtime, 21 identity, five bounded-resource and two recovery checks pass; eight affected package checks pass after replacing an obsolete raw-error-text assertion with exact reason metadata. Windows first run passed new hardening/recovery/resource/integration and units/build, then failed that old assertion; retained. Final source e2027a57 awaits complete Windows rerun before VERIFIED/tag/normal merge. No M10 backend or production changes.
 
 M10 VERIFIED closeout: final e2027a57 / Windows 38925883945 passes all 255 unit cases (253 pass/two POSIX skips), build and every applicable desktop/process-exit gate. Local proof retained, final package refusal assertion repaired without weakening exact reason verification. Linux resource peak ~1.15 GiB / Windows ~0.78 GiB, six processes, 60-second two-app samples finish below warm baseline. Normal main integration/checkpoint preserve source; stop after authorized M10. M11 signed release/operations, physical/assistive/long-duration host acceptance and full dental application UI/workflow delivery remain separate. No M10 production/backend operation or lingering local test jobs.
+
+## Post-M10 visual repair — verified Store install arrival, 2026-10-17
+
+User requests restoring the existing artwork lift/flight/soft dock landing in the real Store. Scope: trigger only after a successful first install in the current session; retain existing timing/effects and shared dock field; support current vector artwork; append new app icons; settle safely on Open/resize/overview/host transitions, missing source and reduced motion. Startup, refresh, failed/cancelled installs and staged updates must not celebrate. Preserve the running desktop and use sequential bounded build/unit/private UI checks. No backend/cloud changes, M11 start, checkpoint rewrite or live app restart. Implementation/verification pending.
+
+Store-arrival repair complete locally: real verified first installs now reuse the original vector/image flight and right-end dock landing, with safe Open/reduced-motion/overview/resize fallback. Build, 255 units, 20 new arrival checks and 10 Store/eight update/23 integrated/28 runtime regressions pass. [Implementation/evidence](docs/STORE_INSTALL_ARRIVAL.md). No backend, cloud, live-session restart or milestone/checkpoint changes. New build loads at the next full launch; follow-up Windows CI has not been run.

@@ -1,8 +1,8 @@
 # Dental OS — Acceptance Gates
 
-**Baseline:** V1, 2026-10-15. Target architecture; implementation status is tracked separately.
+**Baseline:** V1, 2026-10-15; milestone owners amended 2026-10-19. Target architecture; implementation status is tracked separately.
 
-Final product release requires all applicable gates on the explicitly supported Windows/Linux matrix, including the physical Windows gate deferred until after M11 below. Documentation completion is not production acceptance.
+Final product release requires applicable G01–G14 evidence for the explicitly supported Windows/Linux matrix. G14 is a separate post-M13 physical-device and user/product acceptance gate. Documentation completion is not production acceptance.
 
 | Gate | Invariants | Minimum evidence | Owner |
 | --- | --- | --- | --- |
@@ -13,10 +13,13 @@ Final product release requires all applicable gates on the explicitly supported 
 | G05 Identity/privacy | INV-03,08,11 | actual login/refresh/logout/switch/revocation, secret-provider failure, stale-response rejection | M05 |
 | G06 Verified packages | INV-02,04,06,12 | altered manifest/assets, traversal, archive limits, restart/uninstall failures | M06 |
 | G07 Distribution | INV-02,06,10,12 | actual approved catalogue/R2 fixture, unauthorized/replayed/expired release refusal | M07 |
-| G08 Updates | INV-04,06,09,12 | pinned running version, interruption matrix, dirty state, revocation, compatible rollback | M08 |
-| G09 Integrated OS | INV-03..11 | two real delivered sample apps, shared session, representative existing SaaS read/write, uncertain outcome | M09 |
+| G08 Safe updates | INV-04,06,09,12 | pinned running version, interruption matrix, dirty state, revocation, compatible rollback | M08 |
+| G09 Integrated OS | INV-03..11 | delivered sample apps, shared session, representative existing SaaS read/write, uncertain outcome | M09 |
 | G10 Hardening | INV-07..14 | security negatives, disk/cache privacy, keyboard/contrast, crash/resource soak | M10 |
-| G11 Release/operations | INV-01,04,12..14 | signed installers, clean install/upgrade/uninstall, platform update/recovery, named-host evidence | M11 |
+| G11 Flexible first-party app onboarding/updates | INV-02,04,06,09,12 | generic new-company-app install, signed app-only version sequence, no platform rebuild, safety/resource evidence | M11 |
+| G12 OS workspace and shell experience | INV-01,05,09,11,14 | startup-to-work flows, app discovery/switching, shared windows, Store/system states, keyboard/fit/usability evidence | M12 |
+| G13 Windows/Linux release and operations | INV-01,04,12..14 | named support matrix, signed installers, clean install/upgrade/uninstall, platform update/recovery, host CI/evidence and runbooks | M13 |
+| G14 Final device/user acceptance | INV-01,05,09,13,14 | physical Windows-device interaction/visual checks, supported-device review, user acceptance, remaining-risk decision after M13 | Final release decision, post-M13 |
 
 Evidence records source/tree identity, dependency versions, platform/display/profile, exact commands, outcomes, logs and limitations. Use synthetic/staging data and protect credentials. Preserve failed/interrupted runs with superseding successful runs, not rewritten history.
 
@@ -24,12 +27,12 @@ User visual acceptance and technical verification are separate fields. A test co
 
 ## Staging-only evidence requirement
 
-For G04/G05/G07/G08/G09 and any other remote-dependent gate, record the verified `fewa_demo` branch, GitHub environment/workflow and Cloudflare/Firebase resource mapping without secrets. Prove the test/build targets staging, with no production fallback or mutation. For backend/shared configuration changes, retain regression evidence for the existing Dental SaaS and Super Admin staging clients.
+For G04/G05/G07/G08/G09/G11 and any other remote-dependent gate, record the verified `fewa_demo` branch, GitHub environment/workflow and Cloudflare/Firebase resource mapping without secrets. Prove the test/build targets staging, with no production fallback or mutation. For backend/shared configuration changes, retain regression evidence for existing Dental SaaS and Super Admin staging clients.
 
-G07 requires `/v1/dental-os/...` for new OS services and unchanged existing business routes. G08 requires staging-only release/channel/revocation metadata. G11 platform certification must explicitly distinguish tested artifacts/staging feeds from separately authorized production publication. A successful staging test never proves a production deployment occurred or authorizes one. [Canonical policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
+G07 requires `/v1/dental-os/...` for new OS services and unchanged existing business routes. G08 requires staging-only release/channel/revocation metadata. G11 proves generic first-party app authorization/update and does not reopen M07/M08's original sample gates. G13 platform certification and G14 final acceptance must distinguish local/staging evidence from separately authorized production publication. Successful staging never proves production deployment or authorizes one. [Canonical policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
 
-## Verification policy revision — deferred physical Windows testing
+## Verification policy — deferred physical Windows testing
 
-User decision, 2026-10-15: during M02–M11, Windows acceptance uses GitHub Actions automated build/typecheck, filesystem tests and applicable hosted-runner smoke checks. Physical Windows-device interaction/visual acceptance is deferred until after M11 and remains a mandatory final product release gate. Missing physical evidence does not block starting the next milestone once its applicable Linux and Windows CI gates pass, but must not be described as physical-device certification or final release approval. If a CI check cannot cover a required behavior, record the remaining risk explicitly. M11 implementation/CI completion is distinct from final product release acceptance.
+The 2026-10-15 user decision deferred physical Windows interaction/visual acceptance until after the then-final M11 milestone. On 2026-10-19, the sequence was revised: M11 is app onboarding/update, M12 is OS shell UI and M13 is release/operations. The physical-device deadline therefore moves to **after M13**, remaining mandatory under G14 before a final product release decision. During M02–M13, applicable Windows GitHub Actions provide automated build/typecheck, filesystem and hosted-runner smoke evidence; CI must not be called physical-device certification. This amendment changes future milestone ownership, not prior milestone outcomes or test records.
 
-Preserve exact checkpoint commits, workflow run URLs and outcomes. main carries the integrated snapshot; codex/milestone-NN records each started milestone. Never claim a later milestone started because its branch name exists. Only create future milestone branches when work starts. Tags/commit SHAs establish reproducibility; do not force-move acceptance tags or publish an acceptance tag while required CI is failing/pending.
+Preserve exact checkpoint commits, workflow run URLs and outcomes. `main` carries the integrated snapshot; `codex/milestone-NN` records each started milestone. Never claim a later milestone started because its branch name exists. Create future branches only when work starts. Tags/commit SHAs establish reproducibility; do not force-move acceptance tags or publish an acceptance tag while required CI is failing/pending.

@@ -2,7 +2,7 @@
 import { mkdirSync, lstatSync, openSync, closeSync, readFileSync, writeFileSync, fsyncSync, renameSync, unlinkSync, readdirSync, rmdirSync, statfsSync, readSync, fstatSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { canonical, limits, sha256, verifyPackage, type TrustPolicy, type VerifiedPackage } from './format';
+import { canonical, limits, sha256, verifyPackage, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from './format';
 type Installed = { active: string; versions: string[]; pending: string | null; knownGood: string | null; trial: string | null; failed: string[] };
 type State = { format: 2; apps: Record<string, Installed> };
 type Journal = { format: 1; kind: 'install' | 'uninstall' | 'evict'; appId: string; digest: string; stage: string };
@@ -17,6 +17,15 @@ export class PackageRegistry {
   private rollbackGuard: (from: VerifiedPackage, to: VerifiedPackage) => boolean = () => false;
   setUpdateGuards(guard: (value: VerifiedPackage) => void, rollback: (from: VerifiedPackage, to: VerifiedPackage) => boolean) { this.guard = guard; this.rollbackGuard = rollback; }
   assertAllowed(value: VerifiedPackage) { this.guard(value); }
+  hasActiveLease(id: string) { return (this.leases.get(id) ?? 0) > 0; }
+  pendingActivationVersion(id: string) {
+    return this.locked(() => {
+      const installed=this.state().apps[id];if(!installed?.pending)return null;
+      let activeAllowed=true;try{this.guard(this.verified(id,installed.active));}catch{activeAllowed=false;}
+      if(!installed.knownGood&&activeAllowed)return null;
+      return this.verified(id,installed.pending).manifest.version;
+    });
+  }
   private verified(id: string, digest: string) {
     const value = this.validateDirectory(this.version(id, digest));
     if (value.manifest.appId !== id || value.release.digest !== digest) throw new Error('Registry identity mismatch');
@@ -63,7 +72,7 @@ export class PackageRegistry {
     try { fd = openSync(temp, 'wx', 0o600); writeFileSync(fd, data); fsyncSync(fd); closeSync(fd); fd = undefined; renameSync(temp, p); this.syncDirectory(path.dirname(p)); }
     finally { if (fd !== undefined) closeSync(fd); try { unlinkSync(temp); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; } }
   }
-  private app(id: string) { if (!Object.hasOwn(this.policy.apps, id) || !/^company\.[a-z][a-z0-9.-]{1,70}$/.test(id)) throw new Error('Unknown company app'); return path.join(this.root, 'apps', id); }
+  private app(id: string) { if (!isCompanyAppId(id) || !appTrust(this.policy,id)) throw new Error('Unknown company app'); return path.join(this.root, 'apps', id); }
   private version(id: string, digest: string) { if (!digestPattern.test(digest)) throw new Error('Invalid version pointer'); return path.join(this.app(id), digest); }
   private state(): State {
     const raw = this.optional(path.join(this.root, 'registry.json'), 65536); if (!raw) return { format: 2, apps: {} };

@@ -264,7 +264,7 @@ The target tree, ownership, dependency rules, backend separation, runtime-data p
 
 ## Git and CI ownership
 
-The dedicated remote is https://github.com/Business-It-Partners/dental-os. Preserve the former Flutter remote as flutter-reference and retain its history; never push this project to it. main is the integrated Dental OS snapshot. Started milestone branches use codex/milestone-NN; future branches are created on start. .github/workflows/windows-validation.yml owns bounded sequential hosted Windows checks, not backend deployment. Physical Windows tests are deferred until after M11 and before final product release under the architecture acceptance policy. Reconstructed historical checkpoints must be labeled as reconstructed, never as original verified commits.
+The dedicated remote is https://github.com/Business-It-Partners/dental-os. Preserve the former Flutter remote as flutter-reference and retain its history; never push this project to it. main is the integrated Dental OS snapshot. Started milestone branches use codex/milestone-NN; future branches are created on start. .github/workflows/windows-validation.yml owns bounded sequential hosted Windows checks, not backend deployment. Physical Windows tests are deferred until after M13 under G14 and before final product release under the architecture acceptance policy. Reconstructed historical checkpoints must be labeled as reconstructed, never as original verified commits.
 
 ## M03 transitional source mapping
 

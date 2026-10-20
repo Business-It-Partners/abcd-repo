@@ -1,0 +1,16 @@
+
+> electron-desktop-prototype@0.1.0 test
+> vitest run --maxWorkers=1
+
+
+ RUN  v5.0.4 /home/master-x/Desktop/fewa_business_os
+
+
+ Test Files  12 passed (12)
+      Tests  255 passed (255)
+   Start at  18:26:36
+   Duration  7.74s (tests 94%, import 4%, transform 1%, worker 1%)
+
+    Isolate  12 workers spawned · ~99ms startup each (spawn + environment, per file)
+             at least ~1.09s faster with isolate: false — reuses workers across files instead of one per file
+

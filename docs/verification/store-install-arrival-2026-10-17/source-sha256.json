@@ -1,0 +1,7 @@
+{
+  "src/App.tsx": "630fe710813919ede1f3fdf8270365bd1d07a43226ceae77533b9d267d2b1b23",
+  "src/DeliveryStore.tsx": "69252d9b0abe174d88c634bf2a0abdbbefa202b72b61e4bce28cce71fca6da36",
+  "src/storeArrival.ts": "4030bf8e2d6695965874d278bed17aa6945058e3b92444d824cf22b6c972ef4a",
+  "tests/store-arrival-delivery.mjs": "4747423e939a9d49cbf4b8a79b78c6170f1780afda9e85ccce733fd4a0ea009f",
+  "package.json": "d6c6dc80a85e2a3d39c0fbd7b4872470e1cdabd36c16a60c3669f4a014372bb7"
+}

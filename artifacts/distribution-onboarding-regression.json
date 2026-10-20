@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "real Store displays only signed company catalogue",
+    "sample artwork uses the existing vector icon language",
+    "uninstalled apps are absent from dock",
+    "Ready follows real registry activation",
+    "dock derives installed state",
+    "downloaded signed package launches in isolated runtime",
+    "app has no Store or installation bridge",
+    "uninstall updates registry and dock",
+    "installed state survives complete app relaunch",
+    "retained verified app launches after restart"
+  ],
+  "platform": "linux",
+  "sha": null,
+  "sourceHead": "7f6e65bf2b8990ba656ed66261670e4f842439dc",
+  "sourceBranch": "codex/milestone-11",
+  "command": "npm run test:distribution",
+  "status": "passed",
+  "display": "private isolated headless GNOME"
+}

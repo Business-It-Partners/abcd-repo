@@ -1,5 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
-import { parseCanonical, canonical, limits, sha256, type TrustPolicy } from '../packages/format';
+import { parseCanonical, canonical, limits, sha256, appTrust, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { operations, type Operation } from '../sdk/contracts';
 export type Release = { id: string; title: string; description: string; version: string; notes: string; capabilities: Operation[]; platforms: ('linux' | 'win32')[]; sdkMajor: 1; apiMajor: 1; objectKey: string; packageSha256: string; packageBytes: number; payloadDigest: string; status: 'approved' | 'withdrawn'; minimumVersion: string };
 export type Catalogue = { format: 1; environment: 'cloudfare-staging'; channel: 'staging'; sequence: number; issuedAt: number; expiresAt: number; releases: Release[] };
@@ -25,7 +25,7 @@ export function verifyCatalogue(bytes: Buffer, policy: TrustPolicy, watermark: W
   const seen = new Set<string>();
   for (const r of c.releases) {
     shape(r, ['id', 'title', 'description', 'version', 'notes', 'capabilities', 'platforms', 'sdkMajor', 'apiMajor', 'objectKey', 'packageSha256', 'packageBytes', 'payloadDigest', 'status', 'minimumVersion']);
-    const app = typeof r.id === 'string' && Object.hasOwn(policy.apps, r.id) ? policy.apps[r.id] : undefined;
+    const app = typeof r.id === 'string' && isCompanyAppId(r.id) ? appTrust(policy, r.id) : undefined;
     if (!app || app.publisher !== key.publisher || seen.has(r.id) || !text(r.title, 80) || !text(r.description, 300) || !text(r.notes, 500) || !version(r.version) || !version(r.minimumVersion) || compareVersion(r.version, r.minimumVersion) < 0 || !hash(r.packageSha256) || !hash(r.payloadDigest) || !Number.isSafeInteger(r.packageBytes) || r.packageBytes < 1 || r.packageBytes > limits.wire || r.objectKey !== `releases/${r.id}/${r.version}/${r.packageSha256}.dentalpkg` || !['approved', 'withdrawn'].includes(r.status)) throw new Error('Invalid company release');
     if (!Array.isArray(r.capabilities) || r.capabilities.length > operations.length || new Set(r.capabilities).size !== r.capabilities.length || r.capabilities.some((op: Operation) => !operations.includes(op) || !app.capabilities.includes(op))) throw new Error('Release grants');
     if (!Array.isArray(r.platforms) || !r.platforms.length || r.platforms.length > 2 || new Set(r.platforms).size !== r.platforms.length || r.platforms.some((p: string) => !['win32', 'linux'].includes(p)) || r.sdkMajor !== 1 || r.apiMajor !== 1) throw new Error('Incompatible release');

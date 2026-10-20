@@ -6,7 +6,7 @@ import { PackageRegistry, type Lease } from '../packages/registry';
 import { RestartBudget } from './restartBudget';
 import type { EventCode, Target } from '../diagnostics/store';
 import { randomUUID } from 'node:crypto';
-import { compositePixels, parseLayout, runtimeIds, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+import { compositePixels, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
 type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
 export class FixtureRuntime {
   private services = fixtureServices();
@@ -31,7 +31,7 @@ export class FixtureRuntime {
   private fail(e: Entry, reason: string) {
     if (this.entries.get(e.state.id)!==e || e.state.phase === 'failed') return;
     const wasVisible = e.view.getVisible();
-    this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id);
+    this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id==='studio'||e.state.id==='records'?e.state.id:'company-app');
     e.image=undefined;e.state.snapshot=undefined;clearTimeout(e.captureTimer);
     clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
     this.broker.unregister(e.view.webContents);
@@ -61,7 +61,7 @@ export class FixtureRuntime {
   private asset(id: RuntimeId, url: string) {
     const lease = this.entries.get(id)?.lease; if (!lease) return;
     try {
-      const u = new URL(url), host = id === 'studio' ? 'alpha' : 'beta';
+      const u = new URL(url), host = runtimeHost(id);
       if (u.protocol !== 'dental-fixture:' || u.host !== host || u.username || u.password || u.search || u.hash || u.pathname.includes('%')) return;
       const name = u.pathname.slice(1), bytes = lease.files.get(name); if (!bytes) return;
       const ext = name.split('.').pop() ?? '';
@@ -70,7 +70,7 @@ export class FixtureRuntime {
     } catch { return; }
   }
   private create(id: RuntimeId, rect: RuntimeRect) {
-    const host = id === 'studio' ? 'alpha' : 'beta';
+    const host = runtimeHost(id);
     let ses = this.sessions.get(id);
     if (!ses) {
     ses = session.fromPartition(`fixture-${host}-${this.instance}`);
@@ -92,7 +92,7 @@ export class FixtureRuntime {
     view.setBounds(rect);
     const wc = view.webContents;
     if(this.restartBudget.remaining(id)){e.state.phase='failed';e.state.reason='restart-limit';this.emit();return e;}
-    try { e.lease = this.packages.launch(`company.sample.${host}`); } catch { this.fail(e, 'package-verification-failed'); return e; }
+    try { e.lease = this.packages.launch(packageIdForRuntime(id)); } catch { this.fail(e, 'package-verification-failed'); return e; }
     e.healthTimer=setTimeout(()=>this.fail(e,'launch-health-timeout'),8000);
     const lease = e.lease, entryURL = `dental-fixture://${host}/${lease.manifest.entry}`;
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -126,6 +126,12 @@ export class FixtureRuntime {
     }
     const hadNativeInput = [...this.entries.values()].some(e => e.view.getVisible());
     this.desired = next;
+    const retained = new Set(next.map(layout => layout.id));
+    for (const id of [...this.entries.keys()]) if (!retained.has(id)) {
+      const e = this.entries.get(id)!;
+      if (this.broker.hasUnsafeWrites(e.lease?.manifest.appId ?? '')) { e.view.setVisible(false); this.win.webContents.send('runtime:close-blocked', { id }); }
+      else this.close(id);
+    }
     for (const layout of this.desired) {
       let e = this.entries.get(layout.id);
       if (!layout.open) { if (e) {if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??'')){e.view.setVisible(false);this.win.webContents.send('runtime:close-blocked',{id:layout.id});}else this.close(layout.id);} continue; }
@@ -142,12 +148,12 @@ export class FixtureRuntime {
     this.emit();
   }
   restart(id: unknown) {
-    if (!runtimeIds.includes(id as RuntimeId)) throw new Error('Invalid runtime');
-    const e = this.entries.get(id as RuntimeId);
+    if (!isRuntimeId(id)) throw new Error('Invalid runtime');
+    const e = this.entries.get(id);
     if (!e || e.state.phase !== 'failed') throw new Error('Runtime not failed');
     if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''))throw Error('Resolve the server change before restarting');
-    if(this.restartBudget.remaining(id as string)){e.state.reason='restart-limit';this.emit();throw Error('Restart limit reached. Wait one minute, then try again.');}
-    this.diagnostic('app-restarted',id as RuntimeId);const rect = e.rect; this.close(id as RuntimeId); this.create(id as RuntimeId, rect);
+    if(this.restartBudget.remaining(id)){e.state.reason='restart-limit';this.emit();throw Error('Restart limit reached. Wait one minute, then try again.');}
+    this.diagnostic('app-restarted',id==='studio'||id==='records'?id:'company-app');const rect = e.rect; this.close(id); this.create(id, rect);
   }
   report(event: IpcMainEvent, input: unknown) {
     const e = [...this.entries.values()].find(e => e.view.webContents === event.sender);
@@ -203,10 +209,20 @@ export class FixtureRuntime {
     e.image = undefined;
   }
   updateNow(appId:string) {
-    const id=appId==='company.sample.alpha'?'studio':appId==='company.sample.beta'?'records':undefined;if(!id)throw Error('Unknown update app');
+    const id=runtimeIdForPackage(appId);if(!isRuntimeId(id))throw Error('Unknown update app');
     const e=this.entries.get(id);if(this.broker.hasUnsafeWrites(appId))throw Error('Resolve pending or unknown write before updating');
     if(e&&(e.state.dirty||e.state.modal||e.state.phase!=='ready'))throw Error('Save work and close dialogs before updating');
-    if(e){const rect=e.rect;this.close(id);this.create(id,rect);}this.changed();
+    const layout=this.desired.find(item=>item.id===id);
+    const rect=e?.rect??(layout?.open?layout.rect:undefined);
+    if(!rect)throw Error('Open the app before applying its update');
+    const expected=this.packages.describe(appId).pendingVersion;
+    if(!expected)throw Error('No verified app update is staged');
+    if(this.packages.pendingActivationVersion(appId)!==expected)throw Error('The current app release has not passed its launch health check');
+    if(e)this.close(id);
+    if(this.packages.hasActiveLease(appId))throw Error('Another runtime instance still holds the app package');
+    const next=this.create(id,rect);
+    if(!next.lease||next.state.phase==='failed'||next.lease.manifest.version!==expected){this.close(id);throw Error('The staged app version did not start');}
+    this.applyVisibility(next);this.emit();this.changed();
   }
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {

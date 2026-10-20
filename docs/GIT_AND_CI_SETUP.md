@@ -5,7 +5,7 @@
 The user gives standing authorization to commit and push milestone work for verification, then merge each completed milestone into `main` after its required checks pass. No separate merge confirmation is needed. `main` is the latest integrated verified milestone; `codex/milestone-NN` branches retain milestone work and checkpoint tags identify tested source. Current completion is recorded in the global milestone status; latest verified checkpoints are recorded below.
 
 1. Start one milestone branch from current main. Inspect, plan, implement and perform controlled relevant verification; retain exact source/evidence and any approved scope deferrals.
-2. Close the required milestone gates and update status/evidence. Keep physical Windows testing deferred only under the existing after-M11/before-release policy; do not treat that as physical certification.
+2. Close the required milestone gates and update status/evidence. Under the 2026-10-19 re-sequencing, keep physical Windows testing deferred until after M13 under G14 and before release; do not treat hosted CI as physical certification.
 3. Fetch main, integrate with a normal non-squash merge, and resolve conflicts without losing either side's work. Verify the merged runtime matches tested source. If conflict resolution or intervening changes alter code, rerun affected checks before completing integration. When code is identical and changes are documentation only, validate docs and source hashes without repeating passing heavy suites.
 4. Commit and push the merge to main. Preserve milestone branches and checkpoint tags; do not delete, force-move, squash away or reuse completed checkpoints. Record merge/source/evidence and report integration status.
 
@@ -15,9 +15,9 @@ User-authorized repository: https://github.com/Business-It-Partners/dental-os (p
 
 The existing Flutter root history and former remote are retained. Local caches/builds/installers remain excluded and are not deleted. Existing source, documentation, synthetic prototype artifacts and tracked archive source are preserved. A local pre-setup branch and index backup preserve the initial reference point.
 
-Branches: main for the integrated snapshot; codex/milestone-01 for a reconstructed pre-M02 comparison checkpoint; codex/milestone-02 for current M02 work. M01 was not committed when originally authored: its checkpoint is reconstructed by removing M02 runtime changes, not asserted to reproduce an originally verified historical tree. Future M03–M11 branches are created when implementation starts, not prematurely marked implemented.
+Branches: main for the integrated snapshot; codex/milestone-01 for a reconstructed pre-M02 comparison checkpoint; codex/milestone-02 for current M02 work. M01 was not committed when originally authored: its checkpoint is reconstructed by removing M02 runtime changes, not asserted to reproduce an originally verified historical tree. Future branches are created when implementation starts, not prematurely marked implemented. The 2026-10-19 re-sequencing assigns M11 flexible app onboarding/updates, M12 OS UI, and M13 Windows/Linux release operations.
 
-Windows CI runs sequential unit/filesystem, build and hosted-runner boot/state/recovery checks. No cloud deploy or secrets required. Physical Windows checks (real desktop activation/minimize/restore, ACL/runtime interactions, visual review and supported-device behavior) remain deferred until after M11 and before final product release. Exact CI run and snapshot IDs will be recorded after publication. No acceptance tag is issued for a pending gate.
+Windows CI runs sequential unit/filesystem, build and hosted-runner boot/state/recovery checks. No cloud deploy or secrets required. Physical Windows checks (real desktop activation/minimize/restore, ACL/runtime interactions, visual review and supported-device behavior) remain deferred until after M13 under G14 and before final product release. Exact CI run and snapshot IDs will be recorded after publication. No acceptance tag is issued for a pending gate.
 
 ## Published initial checkpoints
 

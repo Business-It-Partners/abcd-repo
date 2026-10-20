@@ -1,13 +1,18 @@
 export const runtimeIds = ['studio', 'records'] as const;
-export type RuntimeId = typeof runtimeIds[number];
+/** Historical display aliases for the two original sample packages. New first-party apps use package IDs. */
+export type RuntimeId = string;
+export function isRuntimeId(value: unknown): value is RuntimeId { return value === 'studio' || value === 'records' || typeof value === 'string' && /^company\.[a-z][a-z0-9.-]{1,70}$/.test(value); }
+export function packageIdForRuntime(id: RuntimeId) { return id === 'studio' ? 'company.sample.alpha' : id === 'records' ? 'company.sample.beta' : id; }
+export function runtimeIdForPackage(id: string) { return id === 'company.sample.alpha' ? 'studio' : id === 'company.sample.beta' ? 'records' : id; }
+export function runtimeHost(id: RuntimeId) { return id === 'studio' ? 'alpha' : id === 'records' ? 'beta' : packageIdForRuntime(id); }
 export type RuntimeRect = { x: number; y: number; width: number; height: number };
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
 export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; reason?: string; snapshot?: string };
 export function parseLayout(input: unknown): RuntimeLayout[] {
-  if (!Array.isArray(input) || input.length !== 2) throw new Error('Invalid runtime layout');
+  if (!Array.isArray(input) || input.length > 16) throw new Error('Invalid runtime layout');
   const seen = new Set();
   for (const v of input) {
-    if (!v || Object.keys(v).sort().join() !== 'id,open,rect,visible' || !runtimeIds.includes(v.id) || seen.has(v.id) || typeof v.open !== 'boolean' || typeof v.visible !== 'boolean' || !v.rect || Object.keys(v.rect).sort().join() !== 'height,width,x,y') throw new Error('Invalid runtime layout');
+    if (!v || Object.keys(v).sort().join() !== 'id,open,rect,visible' || !isRuntimeId(v.id) || seen.has(v.id) || typeof v.open !== 'boolean' || typeof v.visible !== 'boolean' || !v.rect || Object.keys(v.rect).sort().join() !== 'height,width,x,y') throw new Error('Invalid runtime layout');
     seen.add(v.id);
     if (!Object.values(v.rect).every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 8192) || v.rect.width < 1 || v.rect.height < 1 || v.rect.width * v.rect.height > 16_000_000) throw new Error('Invalid runtime bounds');
   }

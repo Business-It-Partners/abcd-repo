@@ -2,7 +2,7 @@ import { useSessionGeneration } from './SessionBoundary';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
-import { fitBounds, resizeBounds, WINDOW_SPECS, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
+import { fitBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
 import { activeWindow, useWindowManager } from './windowManager';
 import { WindowTitleBar } from './WindowTitleBar';
 import type { Rect } from './motion';
@@ -34,7 +34,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     gesture.current = null;
     document.body.style.cursor = g.cursor; document.body.style.userSelect = g.selection;
     if (g.element.hasPointerCapture(g.pointerId)) g.element.releasePointerCapture(g.pointerId);
-    dispatch({ type: 'patch', id, patch: { interaction: 'idle', ...(cancel ? { normalBounds: fitBounds(g.bounds, getState().size, WINDOW_SPECS[id].minimum) } : {}) } });
+    dispatch({ type: 'patch', id, patch: { interaction: 'idle', ...(cancel ? { normalBounds: fitBounds(g.bounds, getState().size, windowSpec(id).minimum) } : {}) } });
   }
   useEffect(() => {
     const cancel = () => endGesture(true);
@@ -86,8 +86,8 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     // The reducer already refits bounds on viewport changes. Never apply a
     // queued pointer-up delta from the old screen over those new bounds.
     if (size.width !== g.size.width || size.height !== g.size.height) { endGesture(); return; }
-    const next = g.edge ? resizeBounds(g.bounds, g.edge, dx, dy, size, WINDOW_SPECS[id].minimum)
-      : fitBounds({ ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy }, size, WINDOW_SPECS[id].minimum);
+    const next = g.edge ? resizeBounds(g.bounds, g.edge, dx, dy, size, windowSpec(id).minimum)
+      : fitBounds({ ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy }, size, windowSpec(id).minimum);
     patch({ type: 'patch', id, patch: { normalBounds: next } });
   }
 
@@ -151,7 +151,7 @@ export function ManagedWindowFrame({ controller: c, children }: { controller: Wi
       data-window-id={c.id} data-phase={c.win.phase} data-presentation={c.win.presentation} data-interaction={c.win.interaction} data-active={c.active}
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
-      <WindowTitleBar title={WINDOW_SPECS[c.id].title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
+      <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
         onDrag={event => c.startGesture(event)} onClose={c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen}/>
       {children}
       {!fullscreen && !c.anyBusy && !c.win.modal && edges.map(edge => <div key={edge} className={`window-resize-handle resize-${edge}`} data-resize={edge}

@@ -34,7 +34,7 @@ Deliver independent app improvements without replacing running code or losing un
 
 ## Scope exclusions
 
-App updates only; trusted Electron platform updates are M11. No silent reload of active work or compatibility-blind downgrade.
+App updates only; trusted Electron platform updates belong to M13 under the 2026-10-19 roadmap re-sequencing. No silent reload of active work or compatibility-blind downgrade.
 
 ## Baseline to reconcile
 
@@ -72,4 +72,4 @@ M07 is verified/normal-merged at main f2361db6; M08 branch codex/milestone-08. U
 6. Prove pinned old app during download, next launch selection, health failure/restart rollback, interrupted persistence/activation, retention/disk exhaustion, duplicate/concurrent operations, dirty/modal/unknown writes, incompatible/minimum/revoked rollback and key rotation. Use unit/process-exit fixtures and focused private update UI; run build/full units once at final source plus applicable Windows CI.
 7. Publish synthetic staging successor and policy using conditional writes; prove fresh control and rollback/revocation behavior with isolated profiles, preserve M07 feed and existing SaaS clients. Retain exact signed byte/deployment/check/source identities; mark VERIFIED/checkpoint/normal merge only after G08 passes. Physical Windows remains deferred; then proceed M09 without pause.
 
-No Electron/platform installer update (M11), production key/feed, third-party publishing, patient cache or full dental app delivery. Checks are sequential with preflight and owned-process cleanup. A launch health check proves renderer/SDK responsiveness, never clinical correctness.
+No Electron/platform installer update (now M13), production key/feed, third-party publishing, patient cache or full dental app delivery. Checks are sequential with preflight and owned-process cleanup. A launch health check proves renderer/SDK responsiveness, never clinical correctness.

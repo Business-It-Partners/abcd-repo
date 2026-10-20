@@ -66,4 +66,14 @@ describe('Shared lifecycle and focus', () => {
     expect(state.windows.records.presentation).toBe('fullscreen');
     expect(state.windows.records.normalBounds).toEqual(workArea(state.size));
   });
+  it('registers and releases a Store app window without a static ID edit', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'register', id: 'company.sample.preview', title: 'Dental Workspace Preview' });
+    expect(state.windows['company.sample.preview'].title).toBe('Dental Workspace Preview');
+    state = desktopReducer(state, { type: 'phase', id: 'company.sample.preview', phase: 'visible' });
+    expect(activeWindow(state)).toBe('company.sample.preview');
+    state = desktopReducer(state, { type: 'phase', id: 'company.sample.preview', phase: 'closed' });
+    state = desktopReducer(state, { type: 'unregister', id: 'company.sample.preview' });
+    expect(state.windows['company.sample.preview']).toBeUndefined();
+  });
 });

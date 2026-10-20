@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { parseLayout, fixtureAsset, compositePixels } from '../electron/runtime/contracts';
 const layouts=()=>['studio','records'].map(id=>({id,open:true,visible:id==='studio',rect:{x:0,y:43,width:640,height:400}}));
 describe('isolated runtime boundary',()=>{
- it('accepts the fixed two-sample layout only',()=>{expect(parseLayout(layouts())).toHaveLength(2);for(const value of [[],[layouts()[0],layouts()[0]],layouts().map(v=>({...v,identity:'forged'})),layouts().map(v=>({...v,visible:true})),layouts().map(v=>({...v,rect:{...v.rect,width:NaN}}))])expect(()=>parseLayout(value)).toThrow();});
+ it('accepts bounded first-party runtime IDs without a fixed two-app layout',()=>{
+  expect(parseLayout(layouts())).toHaveLength(2);
+  expect(parseLayout([])).toEqual([]);
+  const dynamic=['company.sample.preview','company.dental.calendar'].map(id=>({id,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}));
+  expect(parseLayout(dynamic).map(v=>v.id)).toEqual(['company.sample.preview','company.dental.calendar']);
+  const atLimit=Array.from({length:16},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}));
+  expect(parseLayout(atLimit)).toHaveLength(16);
+  const tooMany=Array.from({length:17},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:false,visible:false,rect:{x:0,y:43,width:640,height:400}}));
+  for(const value of [[layouts()[0],layouts()[0]],layouts().map(v=>({...v,identity:'forged'})),layouts().map(v=>({...v,visible:true})),layouts().map(v=>({...v,rect:{...v.rect,width:NaN}})),[{...dynamic[0],id:'company.1bad'}],tooMany])expect(()=>parseLayout(value)).toThrow();
+ });
  it('resolves only exact assets belonging to the registered origin',()=>{
   expect(fixtureAsset('dental-fixture://alpha/app.js','alpha')).toBe('app.js');
   for(const url of ['file:///etc/passwd','https://alpha/app.js','dental-fixture://beta/app.js','dental-fixture://alpha/secret.json','dental-fixture://alpha/app.js?other=1','dental-fixture://alpha/../secret'])expect(fixtureAsset(url,'alpha')).toBeUndefined();

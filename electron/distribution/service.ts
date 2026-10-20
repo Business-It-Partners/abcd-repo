@@ -1,6 +1,6 @@
 import type { Identity } from '../sdk/broker';
 import { PackageRegistry } from '../packages/registry';
-import { sha256, verifyPackage, type TrustPolicy } from '../packages/format';
+import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
 import { verifyUpdatePolicy, allowUpdatedPackage, type UpdatePolicy } from './updatePolicy';
 import type { StoreResult, StoreView } from './contracts';
@@ -24,7 +24,7 @@ export class DistributionService {
  view(): StoreView {
   const releases = this.catalogue?.releases ?? [];
   const apps = releases.map(r => ({ id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, pendingVersion: this.pendingVersions.get(r.id) ?? null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' }));
-  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id)) apps.push({ id, title: id.endsWith('alpha') ? 'Motion Studio' : 'Records', description: 'Installed company sample app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
+  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id)) apps.push({ id, title: id, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
   return { phase: this.phase, apps, canInstall: this.canInstall, job: this.job ? { ...this.job } : null, message: this.message };
  }
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }
@@ -37,15 +37,26 @@ export class DistributionService {
  async checkUpdates(){if(!this.config.updates||this.checking||!this.identity.snapshot().active)return;this.checking=true;try{if(!(await this.refresh()).ok||!this.canInstall)return;for(const r of this.catalogue?.releases??[]){const current=this.installed.get(r.id);if(current&&this.compatible(r)&&!this.pendingVersions.has(r.id)&&compareVersion(r.version,current)>0)await this.install(r.id);}}finally{this.checking=false;}}
  private catalogueTrust():TrustPolicy {return {...this.config.policy,keys:Object.fromEntries(Object.entries(this.config.policy.keys).filter(([id])=>!this.updatePolicy?.revokedKeys.includes(id)))};}
  async updateNow(id:unknown,apply:(id:string)=>void):Promise<StoreResult> {
-  if(typeof id!=='string'||!Object.hasOwn(this.config.policy.apps,id))return{ok:false,code:'INVALID'};
-  let blocked=false;
+  if(!isCompanyAppId(id))return{ok:false,code:'INVALID'};
+  let blocked=false,blockedMessage:string|undefined;
   const result=await this.run(async(signal,generation)=>{
    await this.loadCatalogue(signal,generation);await this.authorize(signal,generation);this.fence(signal,generation);
    if(!this.pendingVersions.has(id))throw Error('No pending update');
-   try{apply(id);}catch{blocked=true;throw Error('Runtime update blocked');}
+   const expected=this.pendingVersions.get(id)!;
+   try{apply(id);}catch(error){blocked=true;const reason=error instanceof Error?error.message:'';blockedMessage=({
+    'Resolve pending or unknown write before updating':'Reconcile the server change in the app before updating.',
+    'Save work and close dialogs before updating':'Save app work and close its dialogs before updating.',
+    'Open the app before applying its update':'Open the app from the dock before applying its update.',
+    'No verified app update is staged':'Refresh the Store to confirm the current app update, then try again.',
+    'Another runtime instance still holds the app package':'Another app window is still using these files. Close the app windows and retry.',
+    'The staged app version did not start':'The new app version could not start; the installed version is still available.',
+    'The current app release has not passed its launch health check':'Leave the current app open until its startup check finishes, then retry the update.',
+   } as Record<string,string>)[reason];throw Error('Runtime update blocked');}
+   const active=this.registry.describe(id);
+   if(active.version!==expected||active.pendingVersion)throw Error('Runtime did not activate the staged app version');
    this.reloadInstalled();this.message='Verified update ready. Your previous version remains available for safe recovery.';
   });
-  if(blocked){this.message='Save unfinished work, close dialogs, and reconcile pending or unknown writes before updating. Then try again.';this.emit();}
+  if(blocked){this.message=blockedMessage??'Save unfinished work, close dialogs, and reconcile pending or unknown writes before updating. Then try again.';this.emit();}
   return result;
  }
 
@@ -95,7 +106,7 @@ export class DistributionService {
  }
  refresh() { return this.run(async (signal, generation) => { this.phase = 'refreshing'; this.emit(); if (!this.config.publicBase) throw new Error('Distribution not configured'); await this.loadCatalogue(signal, generation); await this.authorize(signal, generation); this.phase = 'ready'; this.emit(); }); }
  install(id: unknown): Promise<StoreResult> {
-  if (typeof id !== 'string' || !Object.hasOwn(this.config.policy.apps, id)) return Promise.resolve({ ok: false, code: 'INVALID' });
+  if (!isCompanyAppId(id)) return Promise.resolve({ ok: false, code: 'INVALID' });
   return this.run(async (signal, generation) => {
    if (!this.config.publicBase) throw new Error('Distribution not configured'); this.job = { appId: id, phase: 'authorizing', received: 0, total: 0 }; this.emit();
    await this.loadCatalogue(signal, generation); if (!await this.authorize(signal, generation)) throw new Error('Install denied');
@@ -107,6 +118,7 @@ export class DistributionService {
    this.job = { appId: id, phase: 'verifying', received: bytes.length, total: bytes.length }; this.emit();
    const verified = verifyPackage(bytes, this.config.policy);
    if (verified.manifest.appId !== id || verified.manifest.version !== release.version || verified.release.digest !== release.payloadDigest || canonicalCaps(verified.capabilities) !== canonicalCaps(release.capabilities)) throw new Error('Release identity');
+   if (this.config.updates) allowUpdatedPackage(verified, this.updatePolicy, this.catalogue, this.now());
    // Fresh metadata + current Worker authority immediately before the atomic registry commit.
    await this.loadCatalogue(signal, generation); if (!await this.authorize(signal, generation)) throw new Error('Install denied');
    const current = this.catalogue!.releases.find(r => r.id === id); if (!current || !this.compatible(current) || current.packageSha256 !== release.packageSha256 || current.version !== verified.manifest.version || current.payloadDigest !== verified.release.digest || canonicalCaps(current.capabilities) !== canonicalCaps(verified.capabilities)) throw new Error('Release changed');
@@ -115,7 +127,7 @@ export class DistributionService {
   });
  }
  uninstall(id: unknown): Promise<StoreResult> {
-  if (typeof id !== 'string' || !Object.hasOwn(this.config.policy.apps, id)) return Promise.resolve({ ok: false, code: 'INVALID' });
+  if (!isCompanyAppId(id)) return Promise.resolve({ ok: false, code: 'INVALID' });
   return this.run(async (signal, generation) => { if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied'); this.fence(signal, generation); this.registry.uninstall(id); this.installed.delete(id); this.pendingVersions.delete(id); this.message = 'App uninstalled. Clinic records remain on the server.'; });
  }
  cancel() { this.action?.abort(); return { ok: true } as const; }

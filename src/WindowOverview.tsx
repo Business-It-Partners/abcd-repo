@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { X } from 'lucide-react';
 import type { WindowController } from './ManagedWindow';
 import { useWindowManager } from './windowManager';
-import { WINDOW_SPECS, type WindowId } from './windowGeometry';
+import type { WindowId } from './windowGeometry';
 import { dockArtwork } from './dockArtwork';
 import { overviewLayout } from './overviewLayout';
 
@@ -90,11 +90,11 @@ export function WindowOverview({ controllers, onClose }: { controllers: Record<W
   return <section className="window-overview" role="dialog" aria-modal="true" aria-labelledby="overview-title" onKeyDown={keys}>
     <header className="overview-heading"><div><h2 id="overview-title">Open windows</h2><p>Select a window to return to your work. Press ` or Escape to exit.</p></div><button ref={close} onClick={onClose} aria-label="Close window overview"><X size={22}/></button></header>
     <div className="overview-scroll" ref={stage}><div className="overview-grid" ref={grid} style={{ width: area.width, height: contentHeight }}>
-      {ids.map((id, index) => <button className="overview-card" key={id} style={{ left: layout[index].x, top: layout[index].y, width: layout[index].width, height: layout[index].height + 66 }} aria-label={`Switch to ${WINDOW_SPECS[id].title}`} onClick={() => select(id)}>
+      {ids.map((id, index) => <button className="overview-card" key={id} style={{ left: layout[index].x, top: layout[index].y, width: layout[index].width, height: layout[index].height + 66 }} aria-label={`Switch to ${state.windows[id].title}`} onClick={() => select(id)}>
         <div className="overview-window" style={{ height: layout[index].height }}>
         {state.windows[id].phase === 'minimized' ? <div className="overview-preview"><img className={controllers[id].snapshot ? 'overview-snapshot' : 'overview-fallback'} src={controllers[id].snapshot ?? dockArtwork(id)} alt=""/></div> : <WindowPreview controller={controllers[id]}/>}
         </div>
-        <span className="overview-caption"><img src={dockArtwork(id)} alt=""/><span>{WINDOW_SPECS[id].title}</span>{state.windows[id].phase === 'minimized' && <small>Minimized</small>}</span>
+        <span className="overview-caption"><img src={dockArtwork(id)} alt=""/><span>{state.windows[id].title}</span>{state.windows[id].phase === 'minimized' && <small>Minimized</small>}</span>
       </button>)}
       {!ids.length && <div className="overview-empty"><h3>No open windows</h3><p>Close this overview and open an app from the dock.</p></div>}
     </div></div>

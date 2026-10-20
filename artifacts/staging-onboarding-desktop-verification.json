@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "date": "2026-10-19T16:55:11.669Z",
+  "platform": "linux",
+  "sourceHead": "7f6e65bf2b8990ba656ed66261670e4f842439dc",
+  "environment": "cloudfare-staging",
+  "appId": "company.sample.preview",
+  "phase": "authenticated-update-open",
+  "checks": [
+    "private desktop resolves the real staging clinic session",
+    "live signed catalogue lists the not-yet-installed first-party app",
+    "authenticated live Store install starts the Store-to-dock thumbnail flight",
+    "new dock icon remains hidden until the live package arrival lands",
+    "live installed app lands with matching artwork in the dock",
+    "live signed 1.2.0 first install opens and passes its runtime health check",
+    "previous 1.0.0 package matches its signed public R2 digest",
+    "private desktop resolves the real staging clinic session",
+    "live Store offers 1.2.0 Update for the installed 1.0.0 app",
+    "live authenticated Store stages 1.2.0 over the verified 1.0.0 installation",
+    "an app-only update does not replay the first-install arrival animation",
+    "live Store Update opens 1.2.0 and acknowledges its health before promotion",
+    "private desktop resolves the real staging clinic session",
+    "actual staging-signed 1.2.0 survives a full Dental OS process restart"
+  ],
+  "scope": "Private isolated Linux desktop; real staging clinic login, authenticated Store install/update calls, signed public R2 package bytes, temporary profiles only. No clinic/business records were read or changed. This is not physical Windows or production acceptance."
+}
