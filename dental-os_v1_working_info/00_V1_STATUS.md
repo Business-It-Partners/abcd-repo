@@ -1,12 +1,12 @@
 # Dental OS V1 — Global Status
 
 **Updated:** 2026-10-20.
-**Active scope:** M01–M10 VERIFIED for their documented scope; M11 flexible first-party app onboarding/updates is IMPLEMENTING; M12 OS workspace/shell UI and M13 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
-**Current implementation authorization:** M07–M10 staging work was previously authorized and is closed for its recorded scope. M11 app-onboarding/update work and staging acceptance were separately requested; this roadmap realignment is documentation-only. Production remains excluded.
-**Active milestone:** M11 — flexible first-party app onboarding and independent updates on `codex/milestone-11`. M12 and M13 have no active branches yet. Physical Windows-device testing is G14 after M13 and before final product release.
-**User review/acceptance:** pending.
+**Active scope:** M01–M11 VERIFIED for their documented scope; M12 OS workspace/shell UI and M13 Windows/Linux release/operations are PLANNED. No final production/device certification is claimed.
+**Current implementation authorization:** M11 app-onboarding/update work and staging acceptance were separately requested and are complete for their documented scope. M12 UI work remains user-directed; production remains excluded.
+**Latest milestone:** M11 — flexible first-party app onboarding and independent updates — passed staging acceptance and Windows CI on `codex/milestone-11`; its normal merge into `main` is the remaining repository integration step. Physical Windows-device testing is G14 after M13 and before final product release.
+**User acceptance:** the user reports completing the staging app update to 1.3.0. Broader final product/device acceptance remains G14 after M13.
 
-**M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance, private live-feed install/update/restart, the local failure/recovery matrix, and the user-reported manual 1.3.0 desktop update pass for their recorded scope. The 16-app resource/process measurement and final-source Windows CI remain open. M07/M08 original status and evidence remain unchanged.
+**M11 scope:** [Flexible first-party app onboarding and independent updates](APP_ONBOARDING_AND_UPDATE_CHECKLIST.md) proves that a new company app can install and update without per-app shell registration or a Dental OS rebuild. Generic Linux runtime/Store tests, staging sequences 12–15, authenticated Store install/update service acceptance, private live-feed install/update/restart, the local failure/recovery matrix, user-reported manual 1.3.0 desktop update, and final-source Windows CI pass for their recorded scope. The 16 synthetic app profile peaked at 2.09 GiB aggregate working set across 20 processes and returned to 487 MiB across four processes after closing the apps; it enforces no memory ceiling and does not represent clinical apps or low-memory hardware. M07/M08 original status and evidence remain unchanged. See [final M11 report](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md).
 
 ## Milestones
 
@@ -22,7 +22,7 @@
 | [M08 — Safe independent application updates](milestone-08-safe-app-updates/STATUS.md) | VERIFIED — Linux/Windows and actual staging updates | [Evidence](milestone-08-safe-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M09 — Integrated OS and SaaS contract proof](milestone-09-integrated-os-and-saas/STATUS.md) | VERIFIED — Linux/Windows and actual staging integration | [Evidence](milestone-09-integrated-os-and-saas/VERIFICATION_EVIDENCE.md) |
 | [M10 — Security, resilience and usability](milestone-10-security-resilience-and-usability/STATUS.md) | VERIFIED — automated Linux/Windows hardening and bounded resource scope | [Evidence](milestone-10-security-resilience-and-usability/VERIFICATION_EVIDENCE.md) |
-| [M11 — Flexible first-party app onboarding and updates](milestone-11-flexible-first-party-app-updates/STATUS.md) | IMPLEMENTING | [Evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md) |
+| [M11 — Flexible first-party app onboarding and updates](milestone-11-flexible-first-party-app-updates/STATUS.md) | VERIFIED — automated/staging scope; normal main integration pending | [Evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md) |
 | [M12 — Dental OS workspace and shell experience](milestone-12-os-ui-experience/STATUS.md) | PLANNED | [Evidence](milestone-12-os-ui-experience/VERIFICATION_EVIDENCE.md) |
 | [M13 — Windows/Linux release and operations](milestone-13-windows-linux-release/STATUS.md) | PLANNED | [Evidence](milestone-13-windows-linux-release/VERIFICATION_EVIDENCE.md) |
 
