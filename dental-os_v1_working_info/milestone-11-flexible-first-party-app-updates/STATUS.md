@@ -6,7 +6,7 @@
 
 ## Current position
 
-M11 is complete on `codex/milestone-11` and is ready for its authorized normal merge into `main`. Final-source Windows Actions passed on `e14cd125` in run 39363492330. The 1.3.0 user-reported desktop update, local safety matrix, and 16-app Windows profile are recorded in the checklist and evidence below.
+M11 is complete on `codex/milestone-11` and normally merged into `main` at `b6a4045f` (parents `7378fc83` and `4084474f`). Final-source Windows Actions passed on tested source `e14cd125` in run 39363492330. The merged Electron/runtime/test/workflow source is byte-identical to that tested source; the later commits contain evidence and status documentation. The 1.3.0 user-reported desktop update, local safety matrix, and 16-app Windows profile are recorded in the checklist and evidence below.
 
 Generic first-party onboarding, signed staging releases `company.sample.preview` 1.0.0 → 1.1.0 → 1.2.0, authenticated Store install/update service acceptance, the private live-feed Linux install/update/restart flow, and local safety tests have passed for their recorded scope. The 1.3.0 staging release adds an app-update status panel; the user reports completing its Store update and now sees version 1.3.0 with only **Open**. M07/M08 retain their original verified scope.
 
