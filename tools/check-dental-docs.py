@@ -32,7 +32,7 @@ def check():
     # Check the scoped documents and root authority files; old prototype/history
     # links outside this task are deliberately not reinterpreted as new failures.
     for path in files:
-        body = path.read_text()
+        body = path.read_text(encoding='utf-8')
         if len(body.strip()) < 80:
             errors.append(f'Empty/placeholder document: {path.relative_to(ROOT)}')
         for raw in re.findall(r'(?<!!)\[[^\]]*\]\(([^)]+)\)', body):
