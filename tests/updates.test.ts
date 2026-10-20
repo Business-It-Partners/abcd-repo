@@ -56,8 +56,8 @@ describe('real distribution update coordinator with signed metadata cache',()=>{
     if(kind==='invalid package signature')h.setInvalidSignature();
     if(kind==='malformed metadata')h.mutateCatalogue(value=>{(value as any).unexpected=true;});
     if(kind==='stale sequence')h.mutateCatalogue(value=>{value.sequence=1;});
-    if(kind==='incompatible SDK')h.mutateCatalogue(value=>{value.releases[0].sdkMajor=2;});
-    if(kind==='incompatible API')h.mutateCatalogue(value=>{value.releases[0].apiMajor=2;});
+    if(kind==='incompatible SDK')h.mutateCatalogue(value=>{(value.releases[0] as any).sdkMajor=2;});
+    if(kind==='incompatible API')h.mutateCatalogue(value=>{(value.releases[0] as any).apiMajor=2;});
     if(kind==='withdrawn release')h.mutateCatalogue(value=>{value.releases[0].status='withdrawn';});
     if(kind==='revoked digest')h.control(value=>{value.apps[0].revokedDigests=[h.releaseDigest()];});
     if(kind==='revoked signing key')h.control(value=>{value.revokedKeys=['old'];});
