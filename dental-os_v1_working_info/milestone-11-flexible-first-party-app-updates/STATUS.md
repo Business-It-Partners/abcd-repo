@@ -17,7 +17,7 @@ Generic first-party onboarding, signed staging releases `company.sample.preview`
 | M11.1 — Generic first-party identity | IMPLEMENTED for the tested sample | Generic `company.*` path and capability ceiling covered by unit/private UI tests; broader negative package cases remain under G11. |
 | M11.2 — Safe app-only release | IMPLEMENTING | Live authenticated 1.0.0 → 1.2.0 install/update and health acknowledgement pass; full interruption/dirty-write/revocation/rollback matrix remains open. |
 | M11.3 — Staging proof | IMPLEMENTING | Sequences 12–15 published and verified; manual 1.3.0 desktop update click-through pending. |
-| M11.4 — Safety and scale | PLANNED | 16-app resource/process measurement, full failure matrix and applicable Windows CI remain open. |
+| M11.4 — Safety and scale | IMPLEMENTING | Hosted Windows CI passed; 16-app resource/process measurement and full failure matrix remain open. |
 
 ## Verification already recorded
 
@@ -27,7 +27,7 @@ Linux `npm run build`; serial unit suite (13 files / 259 tests); private onboard
 
 - Finish the unchecked safety cases in the [single acceptance checklist](../APP_ONBOARDING_AND_UPDATE_CHECKLIST.md), including interruption, uncertain writes, dirty work, failed health, revocation and cleanup.
 - Measure memory/process behavior at the supported app limit and record resource thresholds.
-- Run M11 applicable Windows CI and preserve the actual run/source identity.
+- Complete the 16-app resource/process measurement and full update failure matrix.
 - Complete the user's manual Store refresh/update check for 1.3.0, or retain it explicitly as pending.
 - Close G11 and R02/R03/R05/R08/R09/R12/R15 only when all named evidence passes.
 

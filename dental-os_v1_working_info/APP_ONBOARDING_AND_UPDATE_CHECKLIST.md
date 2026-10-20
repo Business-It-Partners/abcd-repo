@@ -1,6 +1,6 @@
 # First-Party App Onboarding and Independent Update — Working Checklist
 
-**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; the 1.3.0 manual click-through, safety matrix, 16-app resource measurement and applicable M11 Windows CI remain open.
+**Status:** IMPLEMENTING — generic onboarding, authenticated staging Store install/update, and live-feed private desktop install/update/restart pass on Linux; applicable hosted Windows CI passed on 2026-10-20. The 1.3.0 manual click-through, safety matrix and 16-app resource measurement remain open.
 **Milestone assignment:** M11 — flexible first-party app onboarding and independent updates.
 **Purpose:** The sole detailed implementation and acceptance checklist for proving that a newly approved first-party app can be installed from the Store and then updated independently of the Dental OS platform.
 
@@ -27,7 +27,7 @@ The app is a synthetic acceptance fixture, not a dental workflow. It must use no
 - The platform pins company signing roots and a capability ceiling. A fresh company-signed catalogue plus matching signed update policy authorizes new `company.*` IDs and exact per-app grants; packages cannot add roots or exceed the ceiling. See [ADR-023](../dental-os_v1-documentation/20_V1_ADR_REGISTER.md#adr-023--signed-first-party-app-onboarding-within-the-shipped-company-trust-ceiling).
 - Synthetic `company.sample.preview` releases `1.0.0`, `1.1.0`, and `1.2.0` are published to Cloudflare staging at catalogue/policy sequences 12, 13, and 14. The live feed retains alpha/beta.
 - The signed metadata and immutable packages were fetched from the pinned public origin and verified through the current verifier/Store service/registry. A real staging clinic session completed Store refresh, first install of 1.2.0, and an authenticated 1.0.0 → 1.2.0 update in disposable local profiles; evidence is [staging-onboarding-auth-verification.json](../artifacts/staging-onboarding-auth-verification.json). No clinic records were accessed or changed.
-- The private Linux onboarding UI verifies the new company app thumbnail flies from its Store detail page into the rightmost dock slot, stays hidden until landing, and then reveals with matching artwork. An authenticated private desktop run against the live staging Store also installed 1.2.0, verified the flight, updated a separate 1.0.0 install to 1.2.0, acknowledged app health, and relaunched the actual signed package after a full Dental OS process restart. See [live staging desktop evidence](../artifacts/staging-onboarding-desktop-verification.json). Windows CI, resource/process acceptance, and the remaining M11 gates remain open.
+- The private Linux onboarding UI verifies the new company app thumbnail flies from its Store detail page into the rightmost dock slot, stays hidden until landing, and then reveals with matching artwork. An authenticated private desktop run against the live staging Store also installed 1.2.0, verified the flight, updated a separate 1.0.0 install to 1.2.0, acknowledged app health, and relaunched the actual signed package after a full Dental OS process restart. See [live staging desktop evidence](../artifacts/staging-onboarding-desktop-verification.json). Hosted Windows CI now passes; the 16-app resource/process acceptance and remaining M11 gates remain open.
 
 The first-party boundary remains company-controlled. This enables new company app IDs without a per-app shell branch; it does not create third-party publishing, arbitrary sideloading, or a public extension API.
 
@@ -118,11 +118,11 @@ The first-party boundary remains company-controlled. This enables new company ap
 - [x] Add and pass a private Linux onboarding UI scenario covering third-app install/arrival flight, v1.1/v1.2 Update actions, safe health, bounded history, and v1.2 relaunch.
 - [x] Run read-only authenticated staging acceptance with the real clinic session: fresh Store install of 1.2.0 and update from a verified 1.0.0 install to live 1.2.0; old lease pinning and health acknowledgement pass. See [authenticated staging evidence](../artifacts/staging-onboarding-auth-verification.json).
 - [x] Linux `npm run build`, the full serial unit suite (13 files / 259 tests), and the private onboarding/distribution/update UI suites pass.
-- [ ] Applicable Windows CI has not run for this M11 branch; physical Windows acceptance is G14 after M13.
+- [x] Applicable Windows CI passed for source `2a943385c28fe80a3d8cc217a4404463297c0d16`; see [M11 Windows CI evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md). Physical Windows acceptance remains G14 after M13.
 - [ ] The installed/open-app limit is bounded, but memory/process measurements at that limit have not been run.
 - [x] Run the operator publisher validator plus conditional-publisher/transport tests (13 passed); no shared Worker/API/config/binding changed, so existing-client deployment regressions were not applicable.
 - [x] Retain exact app hashes, sequence/policy/catalogue digests, named staging bucket/origin, test commands/results, and private UI screenshots without secrets or clinical data. Resource/process counts remain open.
-- [x] Update this checklist, M11 status/evidence, requirement traceability, architecture ADR, tooling guide, and root work index; keep Windows CI, resource/process and remaining safety gates open.
+- [x] Update this checklist, M11 status/evidence, requirement traceability, architecture ADR, tooling guide, and root work index; retain the remaining resource/process and safety gates as open.
 
 ## Acceptance gate
 
@@ -134,7 +134,7 @@ This work is complete only when all of the following are true:
 - [x] The Dental OS/Electron platform build stays unchanged during the app-only v1.0.0 → v1.2.0 Store update; the signed catalogue keeps the existing apps coherent.
 - [x] New app onboarding and app updates use a generic trusted path rather than adding another per-app runtime branch. The new `company.sample.preview` ID is authorized by the signed staging policy and handled through the shared runtime/Store path.
 - [ ] Dirty work, ambiguous writes, invalid or interrupted packages, revocation, and failed health checks preserve the safe recovery behavior described in M08.
-- [ ] Linux verification, applicable Windows CI, staging evidence, resource/process regression, and required client regressions pass for the assigned scope.
+- [ ] Linux verification, staging evidence, 16-app resource/process regression, and required client regressions pass for the assigned scope. Applicable hosted Windows CI passed on 2026-10-20; see [M11 Windows CI evidence](milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md).
 - [ ] The assigned milestone and global status identify exactly what passed, what remains unverified, and whether user acceptance or physical-device testing is still pending.
 
 ## Explicit exclusions

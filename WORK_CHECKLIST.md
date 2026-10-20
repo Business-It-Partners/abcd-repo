@@ -9,7 +9,7 @@ This file is the single source of truth for this prototype's scope, implementati
 
 ## First-party app onboarding and independent-update follow-up
 
-The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). This is now M11: flexible first-party app onboarding and independent updates. The signed feed/package/update path, authenticated Store install/update service and private live-feed Linux install/update/restart pass for their recorded scope. The 1.3.0 manual click-through, full safety matrix, 16-app resource measurement and applicable M11 Windows CI remain pending there. M07/M08 retain their original verified scope.
+The single detailed checklist for installing a new company app from the Cloudflare staging Store and updating it app-only through v1.0.0 → v1.1.0 → v1.2.0 is [APP_ONBOARDING_AND_UPDATE_CHECKLIST.md](dental-os_v1_working_info/APP_ONBOARDING_AND_UPDATE_CHECKLIST.md). This is now M11: flexible first-party app onboarding and independent updates. The signed feed/package/update path, authenticated Store install/update service and private live-feed Linux install/update/restart pass for their recorded scope. Applicable Windows CI passed on 2026-10-20; the 1.3.0 manual click-through, full safety matrix and 16-app resource measurement remain pending there. M07/M08 retain their original verified scope.
 
 ## Milestone sequence realignment — 2026-10-19
 

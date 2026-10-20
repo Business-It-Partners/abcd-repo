@@ -7,7 +7,8 @@
 - Generic approved company-app identity, signed authorization and bounded capability checks without per-app runtime branches.
 - New third-app install from the real staging catalogue, plus same-ID app-only releases `1.0.0` → `1.1.0` → `1.2.0` with no Dental OS platform update.
 - Dirty-work, uncertain-write, interruption, revocation, failed-health, rollback, retention and session-boundary safety.
-- Resource/process behavior at the app limit and applicable Windows CI.
+- Resource/process behavior at the app limit.
+- Applicable hosted Windows CI for the exact M11 source.
 - Complete G11/R02/R03/R05/R08/R09/R12/R15 evidence review. Host installers and release operations belong to M13.
 
 ## Evidence record format
@@ -25,17 +26,24 @@ For every run retain: date; source commit plus uncommitted tree identity where a
 - The current verifier/Store service read the real signed public catalogue, update policy, and immutable R2 packages. The three-sequence run installed v1 and staged/activated v1.1 and v1.2 through protected trial/health transitions while preserving the old active lease. That run simulated install authorization. A separate read-only run using the supplied staging clinic credential then proved real Firebase sign-in and `/v1/me`, authenticated Store metadata/install-policy requests, a fresh Store install of live 1.2.0, and a Store update from a verified 1.0.0 package to live 1.2.0. The old lease remained pinned during download, and 1.2.0 became known-good after health acknowledgement. Details are in [staging-onboarding-auth-verification.json](../../artifacts/staging-onboarding-auth-verification.json); no credential or clinic identity is retained.
 - Private Linux onboarding UI verifies the generic first-party app thumbnail flies from its Store detail page to the rightmost dock slot, stays hidden during flight, lands with matching Store/dock artwork, and becomes visible after arrival. App-window and v1.2 relaunch behavior also pass in the private UI fixture.
 - Authenticated private desktop acceptance against the real staging session/feed passed first install of signed 1.2.0, Store-to-dock flight, update from signed 1.0.0 to 1.2.0, app health acknowledgement, and a full Dental OS process restart with the actual staging-signed app. Redacted results are in [staging-onboarding-desktop-verification.json](../../artifacts/staging-onboarding-desktop-verification.json).
-- No patient/business records, production resources, or local authoritative business database were touched. The app declares zero capabilities. Memory/process measurements at the 16-app limit, Windows CI for this M11 branch, the full safety matrix, and the remainder of G11 remain open. Do not mark M11 verified from this slice.
+- No patient/business records, production resources, or local authoritative business database were touched. The app declares zero capabilities. Memory/process measurements at the 16-app limit, the full safety matrix, manual 1.3.0 click-through, and the remainder of G11 remain open. Do not mark M11 verified from this slice.
 
 ## Platform and user acceptance
 
-Windows CI: not verified for this M11 source. Linux: scoped app onboarding/runtime and Store UI checks passed. User acceptance: pending. Physical Windows acceptance is a final product gate after M13. M11 makes no installer or host-release certification claim.
+Windows CI: passed on source `2a943385c28fe80a3d8cc217a4404463297c0d16` in [run 39361016871](https://github.com/Business-It-Partners/dental-os/actions/runs/39361016871), 2026-10-20. It ran on `windows-2022`; 36 unit suites passed (257 passed, 2 pending), documentation validation and build/typecheck passed, and all hardening, recovery, bounded-resource, integration, update, Store, package, host, runtime, SDK and identity jobs passed. The retained Windows resource profile covers two configured sample runtimes for 60 seconds (six app-owned processes; 939,088 KiB peak aggregate working set and 661,644 KiB final), so it does not close the separate 16-app scale gate. See [CI artifact summary](../../artifacts/windows-m11-ci-verification.json). Linux: scoped app onboarding/runtime and Store UI checks passed. User acceptance: pending. Physical Windows acceptance is a final product gate after M13. M11 makes no installer or host-release certification claim.
 
 ## Additional staging-policy acceptance evidence
 
 - Record that certification uses local/staging artifacts and feeds; production backend promotion or public production publishing remains a separately authorized task.
 
-Staging-only operator publication executed against the existing bucket/origin and pinned M08 signer. No Worker API source/configuration/binding changed, so shared-client deployment regression checks were not applicable. The separate operator publisher's local validator/conditional transport suite passed. The original three-release current-Store-service run used live signed metadata/R2 packages with simulated install-policy; follow-up authenticated service and private desktop acceptance verified real Worker authorization, current 1.2.0 installation, a 1.0.0 → 1.2.0 update, and native desktop restart. Windows CI, 16-app resource/process acceptance, and the full M11 safety matrix remain open.
+Staging-only operator publication executed against the existing bucket/origin and pinned M08 signer. No Worker API source/configuration/binding changed, so shared-client deployment regression checks were not applicable. The separate operator publisher's local validator/conditional transport suite passed. The original three-release current-Store-service run used live signed metadata/R2 packages with simulated install-policy; follow-up authenticated service and private desktop acceptance verified real Worker authorization, current 1.2.0 installation, a 1.0.0 → 1.2.0 update, and native desktop restart. Hosted Windows CI passed in run 39361016871; the 16-app resource/process acceptance, manual 1.3.0 click-through and full M11 safety matrix remain open.
+
+### Hosted Windows CI — 2026-10-20
+
+- Source: `codex/milestone-11` at `2a943385c28fe80a3d8cc217a4404463297c0d16`.
+- [GitHub Actions run 39361016871](https://github.com/Business-It-Partners/dental-os/actions/runs/39361016871) completed successfully on `windows-2022` in 4m29s. Documentation validation, 36 unit suites (257 passed, 2 pending), build/typecheck, hardening, preserved-state recovery, bounded resources, integrated OS/API, update crash recovery and update safety, Store/distribution, package recovery/runtime, hosted startup/recovery, isolated runtime, SDK/broker and identity/session checks all passed.
+- The retained two-app Windows resource sample ran for 60.5 seconds with six app-owned processes and two views; aggregate working set peaked at 939,088 KiB and ended at 661,644 KiB. This is the existing two-app CI profile, not the M11 16-app resource acceptance.
+- Earlier attempts on the same branch exposed the Windows default-code-page issue in the docs checker and outdated hardening/integration assertions; the fixes are included in the passing source. Physical Windows acceptance remains deferred to G14 after M13.
 
 ## Follow-up manual Store update release — 2026-10-19
 

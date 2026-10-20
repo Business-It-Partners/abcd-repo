@@ -28,7 +28,7 @@ This table describes current repository ownership, not a requirement to keep all
 
 ## Current implementation/evidence record
 
-The app onboarding/update implementation and evidence were locally committed as `fbcd156f` on `codex/milestone-11`. Build, full serial unit and focused private Linux UI checks passed on the source worktree before the commit; live staging/authenticated evidence is in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). The 1.3.0 manual Store click-through, full negative/interruption matrix, 16-app resource gate and applicable Windows CI remain open.
+The app onboarding/update implementation and evidence were locally committed as `fbcd156f` on `codex/milestone-11`. Build, full serial unit and focused private Linux UI checks passed on the source worktree before the commit; live staging/authenticated evidence is in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). Hosted Windows CI passed at `2a943385`; the 1.3.0 manual Store click-through, full negative/interruption matrix and 16-app resource gate remain open.
 
 ## Change log / deviations
 
