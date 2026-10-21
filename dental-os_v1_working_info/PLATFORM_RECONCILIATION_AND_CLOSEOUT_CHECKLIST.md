@@ -32,14 +32,25 @@ Dependencies below order the work. P03 adopts responsibility/scope, not a specif
 | P01 | Establish source baseline | VERIFIED (source audit only) | Platform track | None | Source/branch/local-change inventory and proposed disposition |
 | P02 | Reconcile milestones and capabilities | VERIFIED (audit only) | Platform track | P01 | Responsibility-to-source/evidence map and verified gap list |
 | P03 | Define platform closeout scope | VERIFIED (planning/documentation only) | Platform track; Abhishek reviews scope | P02 | Reviewed scope, acceptance criteria and aligned roadmap/status/gates |
-| P04 | Resolve independent API-permission evolution | PLANNED | Platform track; app track supplies requirements | P03 | Approved design and positive/negative app-only evolution proof |
-| P05 | Align staged app updates with ADR-025 | PLANNED | Platform track | P03 | Running-version, next-launch, trial/recovery and interruption/race proof |
-| P06 | Close integrated shell usability | PLANNED | Platform track; user visual review where required | P03 | Recorded M12/G12 journeys and shell/runtime/session recovery results |
-| P07 | Validate representative platform workloads | PLANNED | Platform track | P04–P06 for final acceptance | Representative test-app matrix and failure/resource results |
-| P08 | Reconcile release and operations requirements | PLANNED | Platform track; Abhishek reviews release scope | P03; P07 informs constraints | Explicit ready-for-apps versus release scope, owners and gates |
-| P09 | Integrate and verify platform baseline | PLANNED | Platform track | P04–P08 | Final source identity, required passing checks and residual gate register |
+| P04 | Resolve independent API-permission evolution | IMPLEMENTING — contract proposal | Sidebar chat “M15 P04 API Authority Contract”; lead approves design and owns integration | M15.1; M14 dependency register | Approved authority/version contract; positive/negative unchanged-desktop proof; compatible API-only extension |
+| P05 | Align staged app updates with ADR-025 | IMPLEMENTING | Sidebar chat “M15 P05 ADR-025 Update Lifecycle”; lead owns integration and serial checks | M15.1; canonical ADR-025 contract | Running-version preservation, next-full-app-launch trial, truthful versions, fallback/health/interruption/race proof |
+| P06 | Close integrated shell usability | IMPLEMENTING — resumed for P04/P05/P06 batch | Sidebar chat “M15 P06 Shell Usability and G12”; lead owns integration; Abhishek owns required visual acceptance | M15.1; M12.6/G12 obligations; parallel with P04/P05 under disjoint file scopes | Source-bound accessibility, fit, complete journeys, private recovery checks; user/profile/device evidence stays explicit |
+| P07 | Validate representative platform workloads | PLANNED | Lead; assign a separate worker after P04–P06 integration | P04–P06 accepted source and contracts | Synthetic read/write/media/large-asset/multiwindow/failure matrix with measured limits and resource evidence |
+| P08 | Reconcile release and operations requirements | PLANNED | Lead; Abhishek reviews release scope and named operational ownership | P03; P07 informs workload constraints | Explicit app-ready vs M20 release scope, metadata-renewal owner/drill, support/recovery procedure and gates |
+| P09 | Integrate and verify platform baseline | PLANNED | Lead owns integration and final verification | P04–P08 | Exact final source identity, required passing checks, M14 handoff and residual gate register |
 
 P01–P09 are checklist identifiers, not renamed historical milestones or M14 dependency IDs.
+
+## Active work assignments and file boundaries
+
+The P04/P05/P06 batch starts clean from `a97ef1554d85b2c4cf79d6a705b743f2b0779e5c`; all three sidebar chats use GPT-6 Luna Extra High and have distinct worktrees. P06 was briefly held while the lead clarified the requested batch size, then resumed at the user's direction. The lead integrates and runs one heavy local check at a time.
+
+| Item / owner | Branch and worktree | Bounded files | Dependencies and required evidence |
+| --- | --- | --- | --- |
+| P04 — “M15 P04 API Authority Contract” | `codex/m15-p04-api-authority`, `/home/master-x/.codex/worktrees/5fdc/fewa_business_os` | Proposal only: `milestone-15-platform-closeout-and-integration/proposals/P04_API_AUTHORITY_PROPOSAL.md`; no runtime edits until lead accepts the contract | Depends on M15.1 and M14's pinned dependency register. Deliver authority options/recommendation, approval/version/compatibility rules, host boundary, explicit denials, and positive/negative proof plan for a new signed app and compatible API-only extension. |
+| P05 — “M15 P05 ADR-025 Update Lifecycle” | `codex/m15-p05-adr025-updates`, `/home/master-x/.codex/worktrees/92c1/fewa_business_os` | `electron/distribution/**`, `electron/packages/registry.ts`, `electron/runtime/manager.ts`, `src/DeliveryStore.tsx`, `src/DeliveryStore.css`, directly related `tests/` update/store files | Depends on M15.1 and canonical ADR-025. Deliver source and regression cases for staged bytes, running-version pinning, next full app launch, trial/health/recovery, truthful state, interruption and operation races. Worker does not run heavy checks; lead schedules them. |
+| P06 — “M15 P06 Shell Usability and G12” | `codex/m15-p06-shell-usability`, `/home/master-x/.codex/worktrees/ae11/fewa_business_os` | `src/DesktopChrome.tsx`, `src/DesktopChrome.css`, `src/ManagedWindow.tsx`, `src/WindowOverview.tsx`, `src/AppExplorer.tsx`, `src/windowManager.tsx`, `src/useAppWindows.ts`, `src/style.css`; `tests/clarity.mjs`, `tests/scaling.mjs`, `tests/workspace-flows.mjs`, `tests/windows.mjs`, `tests/overview.mjs`, `tests/shell-chrome-preview.mjs` (or one new focused M12 UI test); M12 `PLAN.md` and `VERIFICATION_EVIDENCE.md` | Depends on M15.1 and original M12.6/G12 criteria. Deliver evidence-backed shell fixes/tests, journey and recovery matrix, and an explicit list of user/profile/device evidence still required. Must not claim G12/user visual acceptance without its owner evidence. |
+| P07–P09 — lead | Lead M15 worktree `/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os` | P07 workload fixtures/evidence; P08 release/operations disposition and metadata-renewal procedure; P09 final integration, central/M15 records and source manifest | P07 follows P04–P06 integration; P08 uses P07 measurements; P09 follows P04–P08 and owns combined checks. No M14 app feature edits. |
 
 ## P01 — Establish source baseline
 
@@ -168,6 +179,7 @@ P01–P09 are checklist identifiers, not renamed historical milestones or M14 de
 | Date | Change | Verification / limits |
 | --- | --- | --- |
 | 2026-10-21 | Completed user-authorized P03: M15/G15 formalized; separate sidebar worker outputs reviewed/integrated. | Documentation checker PASS (16 milestones/64 records/17 gates), lightweight review and output cleanup inspection; no runtime tests or gate closure. |
+| 2026-10-21 | Started the P04/P05/P06 batch on distinct GPT-6 Luna Extra High sidebar chats/worktrees. P06 briefly paused then resumed after the user clarified the batch stop point. | All worktrees start from M15.1/records checkpoint `a97ef155`; no builds/tests run by workers. Lead integration and serial checks remain required. |
 | 2026-10-21 | Completed P01/P02 audits and prepared the proposed M15 closeout structure. | Read-only source/evidence audit; no implementation, milestone reassignment, merge or gate closure. |
 | 2026-10-21 | Started P01/P02 under lead/worker coordination; switched embedded workers to the explicitly requested sidebar chats. | Source inventory complete, worker reports under review; no implementation/gate closure. |
 | 2026-10-21 | Created the user-requested nine-area tracker and navigation links. | `python3 tools/check-dental-docs.py` and `git diff --check` PASS. No source audit, implementation, roadmap reassignment or gate closure claimed. |
