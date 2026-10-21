@@ -39,7 +39,13 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
     else if(kind==='close-blocked'){const id=(value as {id:RuntimeId}).id;const controller=liveControllers.current[id];if(controller){controller.open();setConfirm(id);}}
     else if(kind==='edge') {
       const point=value as {x:number;y:number};
-      if(point.y>=innerHeight-170){setPeek(true);window.dispatchEvent(new Event('runtime:dock-edge'));}
+      if(point.y>=innerHeight-170){
+        // A native WebContentsView paints above the shell. Hide it in the same
+        // IPC turn as dock reveal so Windows cannot leave it covering the dock
+        // while React schedules the peek-state layout update.
+        window.desktop?.runtime.hideAll(generation);
+        setPeek(true);window.dispatchEvent(new Event('runtime:dock-edge'));
+      }
     }
   }),[]);
   useEffect(()=>{const move=(e:PointerEvent)=>{if(e.clientY<innerHeight-170)setPeek(false);};window.addEventListener('pointermove',move,true);return()=>window.removeEventListener('pointermove',move,true);},[]);
