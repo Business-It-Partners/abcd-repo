@@ -26,6 +26,7 @@
     "dist:windows": "node tools/desktop-release/build-windows.mjs",
     "test:windows-package": "node tools/run-ui-test.mjs tests/windows-package.mjs",
     "test:runtime": "node tools/run-ui-test.mjs tests/runtime.mjs tests/runtime-dpr.mjs",
+    "test:app-launch-feedback": "node tools/run-ui-test.mjs tests/app-launch-feedback.mjs",
     "test:sdk": "node tools/run-ui-test.mjs tests/sdk.mjs",
     "test:identity": "node tools/run-ui-test.mjs tests/identity.mjs",
     "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs",

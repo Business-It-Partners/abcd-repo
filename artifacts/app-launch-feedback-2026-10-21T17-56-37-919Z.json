@@ -1,0 +1,59 @@
+{
+  "checks": [
+    "all eleven current apps and a differently named future managed app are installed in the private fixture dock",
+    "Follow-ups: OS-owned launch feedback appears inside its managed window"
+  ],
+  "errors": [],
+  "apps": [
+    {
+      "id": "company.dental.followups",
+      "title": "Follow-ups"
+    },
+    {
+      "id": "company.dental.appointments",
+      "title": "Appointments"
+    },
+    {
+      "id": "company.dental.work-entry",
+      "title": "Work Entry"
+    },
+    {
+      "id": "company.dental.patient-record",
+      "title": "Patient Record"
+    },
+    {
+      "id": "company.dental.treatment-progress",
+      "title": "Treatment Progress"
+    },
+    {
+      "id": "company.dental.lab-tracker",
+      "title": "Lab Tracker"
+    },
+    {
+      "id": "company.dental.finance",
+      "title": "Finance"
+    },
+    {
+      "id": "company.dental.patient-payments",
+      "title": "Patient payments"
+    },
+    {
+      "id": "company.dental.staff",
+      "title": "Staff"
+    },
+    {
+      "id": "company.dental.treatment-protocols",
+      "title": "Treatment Protocols"
+    },
+    {
+      "id": "company.dental.calendar",
+      "title": "Calendar"
+    },
+    {
+      "id": "company.future.billing",
+      "title": "Future Billing"
+    }
+  ],
+  "platform": "linux",
+  "artifacts": []
+}

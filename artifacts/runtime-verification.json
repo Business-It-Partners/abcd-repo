@@ -1,6 +1,7 @@
 {
   "checks": [
-    "dock-edge preview matches the current live app content after the OS hides its native surface",
+    "dock-edge handoff keeps the last app frame visible until its replacement is captured",
+    "dock-edge app frame refreshes to current content after the OS hides its native surface",
     "moving away from the dock edge restores the same live app surface",
     "Finance explorer covers the native app surface instead of appearing beside it",
     "Finance explorer receives keyboard focus above the native app",
@@ -47,12 +48,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 354225,
+    "shell": 112088,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/",
-        "pid": 354456,
+        "pid": 112315,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -62,7 +63,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/",
-        "pid": 354292,
+        "pid": 112153,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,

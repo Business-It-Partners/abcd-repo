@@ -34,11 +34,15 @@ export async function verifyRuntime(profileArgs, reportName) {
   if(process.platform==='win32')check('dock-edge input stays inside both guest and shell hover bands',edgeY>=alphaSize.height-160&&edgeY>=shellSize.height-170&&edgeY<alphaSize.height);
   await alpha.evaluate(()=>{window.__runtimeEdgeTrace=[];window.addEventListener('pointermove',event=>{if(event.clientY>=innerHeight-200)window.__runtimeEdgeTrace.push({x:event.clientX,y:event.clientY,height:innerHeight,trusted:event.isTrusted});});});
   await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.__runtimeShellPointerTrace=[];window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);window.addEventListener('pointermove',event=>{window.__runtimeShellPointerTrace.push({x:event.clientX,y:event.clientY,trusted:event.isTrusted});if(window.__runtimeShellPointerTrace.length>20)window.__runtimeShellPointerTrace.shift();},true);});
+  await shell.waitForTimeout(180);
+  await app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)throw new Error('Native app view missing');const webContents=view.webContents,original=webContents.capturePage.bind(webContents);webContents.capturePage=async(...args)=>{webContents.capturePage=original;await new Promise(resolve=>setTimeout(resolve,400));return original(...args);};},'alpha');
   await alpha.mouse.move(alphaSize.width/2,edgeY);
   try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents,pointerMoves:window.__runtimeShellPointerTrace})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
-  await shell.waitForTimeout(160);
+  await shell.waitForTimeout(60);
+  check('dock-edge handoff keeps the last app frame visible until its replacement is captured',await state('studio').locator('.isolated-mirror').count()===1&&await state('studio').locator('.runtime-message').count()===0);
+  await shell.waitForTimeout(520);
   const edgePreviewPixel=await mirrorCenterPixel('studio');
-  check('dock-edge preview matches the current live app content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
+  check('dock-edge app frame refreshes to current content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
   await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
   check('moving away from the dock edge restores the same live app surface',await alpha.evaluate(()=>!!document.querySelector('#module-preview-probe')));
   await alpha.evaluate(()=>document.querySelector('#module-preview-probe')?.remove());

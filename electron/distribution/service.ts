@@ -4,6 +4,7 @@ import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../pack
 import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
 import { verifyUpdatePolicy, allowUpdatedPackage, type UpdatePolicy } from './updatePolicy';
 import { appOperation } from '../sdk/appPolicy';
+import { parseDentalAppMetadata } from '../packages/appMetadata';
 import type { StoreResult, StoreView } from './contracts';
 export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean };
 export interface FreshnessStore { load(): Watermark; save(value: Watermark): void; loadUpdate?(): Watermark; saveUpdate?(value: Watermark): void; loadMetadata?(): {catalogue:string;policy:string} | undefined; saveMetadata?(value:{catalogue:string;policy:string}): void }
@@ -28,7 +29,10 @@ export class DistributionService {
    return !family.length || family.some(capability => this.identity.allowed?.(capability) !== false);
   });
   const apps = releases.map(r => ({ id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, pendingVersion: this.pendingVersions.get(r.id) ?? null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' }));
-  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id) && (!appOperation(id) || this.identity.allowed?.(appOperation(id)!) !== false)) apps.push({ id, title: id, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
+  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id) && (!appOperation(id) || this.identity.allowed?.(appOperation(id)!) !== false)) {
+   let title=id;try{title=parseDentalAppMetadata(this.registry.inspectPackage(id))?.title??id;}catch{/* Keep the safe ID fallback if verified metadata is unavailable. */}
+   apps.push({ id, title, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
+  }
   return { phase: this.phase, apps, canInstall: this.canInstall, job: this.job ? { ...this.job } : null, message: this.message };
  }
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }

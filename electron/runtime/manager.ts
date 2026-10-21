@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { compositePixels, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
 const moduleSelectionAckTimeoutMs=10_000;
 const appLaunchHealthTimeoutMs=20_000;
-type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout> };
+type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
 export class FixtureRuntime {
   private services = fixtureServices();
   private broker: ApiBroker;
@@ -23,10 +23,12 @@ export class FixtureRuntime {
   private instance = randomUUID();
   private lastEmission = '';
   private restartBudget=new RestartBudget();
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
+  private launchFeedbackFixture = false;
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
     this.diagnostic=options.diagnostic??(()=>{});
+    this.launchFeedbackFixture=!!options.launchFeedbackFixture;
     const baseIdentity=identity??this.services.identity;
-    this.identity=options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
+    this.identity=options.launchFeedbackFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['followups.access','appointments.access','work_entry.access','patient_record.access','treatment_progress.access','lab_tracker.access','finance.manage','patient_payments.outstanding.read','staff.manage','treatment_protocols.manage','calendar.access','future_billing.access']}}})}:options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
     const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
     const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
     this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}});
@@ -67,21 +69,36 @@ export class FixtureRuntime {
   private applyVisibility(e: Entry) {
     const wanted = this.desired.find(v => v.id === e.state.id);
     const visible = !!wanted?.visible && e.state.phase === 'ready';
-    if (visible) e.view.setVisible(true);
-    else this.hideForPreview(e);
+    if (visible) {
+      e.view.setVisible(true);
+      if(e.launchFadePrepared&&!e.launchFadeStarted){
+        e.launchFadeStarted=true;
+        void e.view.webContents.executeJavaScript('window.__dentalOSLaunchAnimation?.play()').catch(()=>{});
+      }
+    }
+    else this.hideForMirror(e);
   }
-  private hideForPreview(e:Entry) {
+  private async prepareLaunchFade(e:Entry):Promise<boolean>{
+    if(packageIdForRuntime(e.state.id)!==e.state.id||e.view.webContents.isDestroyed())return false;
+    try{return await e.view.webContents.executeJavaScript(`(()=>{
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches||typeof document.documentElement.animate!=='function')return false;
+      const animation=document.documentElement.animate([{opacity:0},{opacity:1}],{duration:260,easing:'ease-out',fill:'both'});
+      animation.pause();animation.currentTime=0;
+      Object.defineProperty(window,'__dentalOSLaunchAnimation',{value:animation,configurable:true});
+      return true;
+    })()`);}catch{return false;}
+  }
+  private hideForMirror(e:Entry) {
     if (!e.view.getVisible()) return;
-    // The shell hides native children synchronously before changing its front
-    // window or revealing the dock. Invalidate the old mirror first and capture
-    // the last live frame while hiding the child in the same event turn.
-    e.image=undefined;e.state.snapshot=undefined;this.emit();
+    // Keep the last stable app frame in the shell while the replacement is
+    // captured. Clearing it first flashes the renderer's empty/loading surface
+    // during ordinary handoffs such as revealing the dock.
     void this.refresh(e,true);
     e.view.setVisible(false);
   }
   /** Hide native child surfaces immediately before the renderer changes its front window. */
   hideAll() {
-    for (const e of this.entries.values()) this.hideForPreview(e);
+    for (const e of this.entries.values()) this.hideForMirror(e);
   }
   private async refresh(e: Entry, fresh = false) {
     // An explicit shell capture must not return an older frame just because a
@@ -241,6 +258,14 @@ export class FixtureRuntime {
         if(!stable){this.fail(e,'module-selection-unavailable');return;}
         if(this.entries.get(id)!==e)return;
       }
+      if(this.launchFeedbackFixture&&id==='company.dental.patient-record'){
+        // Keep one private first-party fixture loading long enough to verify
+        // that shell feedback waits for readiness as well as the minimum.
+        await new Promise(resolve=>setTimeout(resolve,1200));
+        if(this.entries.get(id)!==e||wc.isDestroyed())return;
+      }
+      e.launchFadePrepared=await this.prepareLaunchFade(e);
+      if(this.entries.get(id)!==e||wc.isDestroyed())return;
       this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, report: value => this.reportState(e, value) });
       e.connected=this.broker.connect({sender:wc,frame:wc.mainFrame,url:entryURL},{major:1,minor:0}).ok;
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();

@@ -30,6 +30,8 @@ const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privat
 const runtimeFixtureAppCount = runtimeFixtures && app.commandLine.hasSwitch('runtime-app-count') ? Number(app.commandLine.getSwitchValue('runtime-app-count')) : 2;
 const modulePreviewFixtures = runtimeFixtures && app.commandLine.hasSwitch('module-preview-fixtures');
 const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch('slow-module-ack-fixtures');
+const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
+const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture);
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
@@ -63,7 +65,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
   win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
@@ -114,7 +116,7 @@ function createWindow() {
       if (win.isMinimized()) win.restore();
     } else { win.show(); win.focus(); }
   };
-  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: storeFixtures ? {} : process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1', ...(runtimeFixtureAppCount > 2 ? { resourceFixtures: '1' } : {}) } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1', ...(runtimeFixtureAppCount > 2 ? { resourceFixtures: '1' } : {}) } : {} });
+  void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: storeFixtures ? {} : process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1', ...(runtimeResourceFixtures ? { resourceFixtures: '1' } : {}) } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1', ...(runtimeResourceFixtures ? { resourceFixtures: '1' } : {}) } : {} });
 }
 
 const supportCaller=(event:Electron.IpcMainInvokeEvent)=>isShell(event)||!!recoveryWindow&&event.sender===recoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame;
@@ -246,7 +248,7 @@ if (primary) void app.whenReady().then(async () => {
     const packageRoot = path.join(app.getPath('userData'), 'packages');
     const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
     const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined, onboardingFixtures, { unavailableControlFile: app.commandLine.hasSwitch('distribution-unavailable-fixtures') ? path.join(app.getPath('userData'),'distribution-unavailable.fixture') : undefined, packageDelayMs: app.commandLine.hasSwitch('distribution-progress-fixtures') ? 900 : 0 }) : undefined;
-    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
+    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
