@@ -33,7 +33,7 @@ export async function verifyPackages(profileArgs, reportName) {
   check('tampered installed bytes refuse execution on next launch', await shell.locator('[data-runtime="studio"]').getAttribute('data-runtime-reason')==='package-verification-failed');
   check('failure leaves other app and host usable', await beta.getByLabel('Your draft').inputValue() === '' && (await shell.evaluate(() => window.desktop.status())).phase === 'ready');
   await fs.writeFile(path.join(dir, 'app.js'), original);
-  await shell.getByRole('button', { name: 'Restart sample', exact: true }).click();
+  await shell.getByRole('button', { name: 'Restart app', exact: true }).click();
   await shell.waitForFunction(() => document.querySelector('[data-runtime="studio"]')?.dataset.runtimePhase === 'ready');
   check('restored signed bytes pass explicit retry', true);
  } finally {

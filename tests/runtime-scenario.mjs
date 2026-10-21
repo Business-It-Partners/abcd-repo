@@ -119,12 +119,12 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor();
   check('crash is contained to alpha',await betaNew.getByLabel('Your draft').inputValue()===''&&(await shell.evaluate(()=>window.desktop.status())).phase==='ready');
   await shot('runtime-crash.png');
-  await shell.getByRole('button',{name:'Restart sample',exact:true}).click();await ready('studio');alpha=await guest('alpha');
+  await shell.getByRole('button',{name:'Restart app',exact:true}).click();await ready('studio');alpha=await guest('alpha');
   await app.evaluate(({webContents})=>{void webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).executeJavaScript('while(true){}').catch(()=>{});});
   await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor({timeout:10000});
-  check('watchdog terminates hung renderer without stopping beta',await shell.locator('[data-runtime="studio"] [role="alert"]').innerText().then(t=>t.includes('unresponsive'))&&await betaNew.getByLabel('Your draft').inputValue()==='');
+  check('watchdog terminates hung renderer without stopping beta',await shell.locator('[data-runtime="studio"]').getAttribute('data-runtime-phase')==='unresponsive'&&await betaNew.getByLabel('Your draft').inputValue()==='');
   for(let i=0;i<3;i++){
-   await shell.getByRole('button',{name:i===0?'Restart sample':'Motion Studio',exact:true}).click();await ready('studio');
+   await shell.getByRole('button',{name:i===0?'Restart app':'Motion Studio',exact:true}).click();await ready('studio');
    await shell.getByRole('button',{name:'Close Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='closed');
    check(`cleanup cycle ${i+1}: no closed sample webContents`,(await native()).apps.length===1);
   }
