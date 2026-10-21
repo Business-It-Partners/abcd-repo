@@ -17,9 +17,9 @@ The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_C
 | Phase | Status | Remaining evidence |
 | --- | --- | --- |
 | M15.1 — Source and record reconciliation | IMPLEMENTED — accepted source checkpoint | Reviewed local inputs and side branches; integrated only the accepted launch-feedback/frame-handoff slice; retained unaccepted inputs; corrected dated M12/M13/M15 records. |
-| M15.2 — Versioned app authority and required host contracts | IN PROGRESS — P04 proposal | Approve authority/compatibility and host boundary; evidence M14-bounded API/media/payload needs; evaluate cross-app navigation under a separate contract/ADR without changing R13. |
-| M15.3 — ADR-025 app-update alignment | IN PROGRESS — P05 implementation | Implement and verify staged preparation, next-full-launch trial, truthful versions, failure/recovery and race safety. |
-| M15.4 — Integrated shell and G12/G13 residuals | IN PROGRESS — P06 shell review | Close M12.6/G12 and outstanding M13/G13 items in their owning records; G15 cannot waive them. |
+| M15.2 — Versioned app authority and required host contracts | REVIEW REQUIRED — P04 proposal delivered | Lead decision on approval source/role and contract semantics; then implement and prove unchanged-desktop API evolution plus M14-bounded host contracts. |
+| M15.3 — ADR-025 app-update alignment | REVIEW REQUIRED — P05 candidate delivered | Lead source review, integration and serial build/unit/private checks for staged preparation, next-full-launch trial, truthful versions, failure/recovery and race safety. |
+| M15.4 — Integrated shell and G12/G13 residuals | REVIEW REQUIRED — P06 candidate delivered | Lead source review/integration and private checks; user visual/profile evidence and M13/G13 owner items remain separately open. |
 | M15.5 — Representative workload and operational continuity | PLANNED | Run synthetic API/media/navigation/window/session/failure/resource workloads; identify observed test environments; rehearse metadata renewal and expiry recovery. |
 | M15.6 — Integrated platform baseline | PLANNED | Verify final combined source; publish evidence identity and M14 handoff; retain M20/G20 and G21 residuals. |
 
