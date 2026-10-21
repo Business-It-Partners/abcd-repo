@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { canonical, sha256, verifyPackage, type TrustPolicy } from '../packages/format';
-import { operations, type Operation } from '../sdk/contracts';
+import { apiOperations, operations, type Operation } from '../sdk/contracts';
 import type { Catalogue, Release } from './catalogue';
 
 type FixtureState={version:'1.0.0'|'1.1.0';gammaVersion?:'1.0.0'|'1.1.0'|'1.2.0';offset:number};
@@ -52,7 +52,7 @@ export function distributionFixtures(folder: string, sequence: number, updateCon
   const name=JSON.stringify(state);let cached=bodies.get(name);if(cached)return cached;
   const releases=selected(state),issuedAt=now,sequenceNumber=sequence+state.offset;
   const c:Catalogue={...catalogue,sequence:sequenceNumber,issuedAt,releases};
-  const p={format:1 as const,environment:'cloudfare-staging' as const,channel:'staging' as const,sequence:sequenceNumber,issuedAt,expiresAt:now+86400000,revokedKeys:[],apps:releases.map(release=>({id:release.id,capabilities:[...release.capabilities],minimumVersion:'1.0.0',revokedDigests:[],rollback:null}))};
+  const p={format:2 as const,environment:'cloudfare-staging' as const,channel:'staging' as const,sequence:sequenceNumber,issuedAt,expiresAt:now+86400000,revokedKeys:[],apps:releases.map(release=>{const retained=[...pool.values()].flat().filter(candidate=>candidate.id===release.id);return{id:release.id,capabilities:[...new Set(retained.flatMap(candidate=>candidate.capabilities))],minimumVersion:'1.0.0',revokedDigests:[],rollback:null,releases:retained.map(candidate=>({version:candidate.version,packageSha256:candidate.packageSha256,payloadDigest:candidate.payloadDigest,apiOperations:apiOperations.filter(operation=>candidate.capabilities.includes(operation))}))};})};
   cached={catalogue:signValue('dental-os-catalogue','catalogue',c),policy:signValue('dental-os-update-policy','policy',p)};bodies.set(name,cached);return cached;
  }
  const transport:typeof fetch=async(input,init)=>{

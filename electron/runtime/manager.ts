@@ -231,7 +231,7 @@ export class FixtureRuntime {
     view.setBounds(rect);
     const wc = view.webContents;
     if(this.restartBudget.remaining(id)){e.state.phase='failed';e.state.reason='restart-limit';this.emit();return e;}
-    try { e.lease = this.packages.launch(packageIdForRuntime(id)); e.appMetadata=parseDentalAppMetadata(e.lease); } catch { this.fail(e, 'package-verification-failed'); return e; }
+    try { e.lease = this.packages.launch(packageIdForRuntime(id)); e.appMetadata=parseDentalAppMetadata(e.lease); if(this.packages.describe(e.lease.manifest.appId).trial)this.changed(); } catch { this.fail(e, 'package-verification-failed'); return e; }
     const selected=this.selectedModules.get(id),info=this.visibleAppInfo(e);
     if(selected&&info?.modules.some(module=>module.id===selected))e.moduleId=selected;
     else if(selected)this.selectedModules.delete(id);
@@ -266,7 +266,7 @@ export class FixtureRuntime {
       }
       e.launchFadePrepared=await this.prepareLaunchFade(e);
       if(this.entries.get(id)!==e||wc.isDestroyed())return;
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, report: value => this.reportState(e, value) });
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}}, report: value => this.reportState(e, value) });
       e.connected=this.broker.connect({sender:wc,frame:wc.mainFrame,url:entryURL},{major:1,minor:0}).ok;
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
@@ -375,21 +375,10 @@ export class FixtureRuntime {
     if (!e.view.webContents.isDestroyed()) e.view.webContents.close();
     e.image = undefined;
   }
-  updateNow(appId:string) {
-    const id=runtimeIdForPackage(appId);if(!isRuntimeId(id))throw Error('Unknown update app');
-    const e=this.entries.get(id);if(this.broker.hasUnsafeWrites(appId))throw Error('Resolve pending or unknown write before updating');
-    if(e&&(e.state.dirty||e.state.modal||e.state.phase!=='ready'))throw Error('Save work and close dialogs before updating');
-    const layout=this.desired.find(item=>item.id===id);
-    const rect=e?.rect??(layout?.open?layout.rect:undefined);
-    if(!rect)throw Error('Open the app before applying its update');
-    const expected=this.packages.describe(appId).pendingVersion;
-    if(!expected)throw Error('No verified app update is staged');
-    if(this.packages.pendingActivationVersion(appId)!==expected)throw Error('The current app release has not passed its launch health check');
-    if(e)this.close(id);
-    if(this.packages.hasActiveLease(appId))throw Error('Another runtime instance still holds the app package');
-    const next=this.create(id,rect);
-    if(!next.lease||next.state.phase==='failed'||next.lease.manifest.version!==expected){this.close(id);throw Error('The staged app version did not start');}
-    this.applyVisibility(next);this.emit();this.changed();
+  /** Retained only for legacy IPC compatibility; updates trial on the next full app launch. */
+  updateNow(appId:string):never {
+    if(!isRuntimeId(runtimeIdForPackage(appId)))throw Error('Unknown update app');
+    throw Error('App updates activate only on the next full app launch');
   }
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {

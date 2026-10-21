@@ -1,5 +1,5 @@
 import { randomUUID, createHash } from 'node:crypto';
-import { apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
+import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
 import { allowedClinicApiPath, appOperation, containsPresignedHandle } from './appPolicy';
 
@@ -10,7 +10,8 @@ export type Identity = {
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
-type Registration = { authorize?(): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
+type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
+const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
 type Pending = { controller: AbortController; write: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 const messages: Record<ErrorCode, string> = {
@@ -62,7 +63,11 @@ export class ApiBroker {
     if(r.authorize?.()===false)return failure('ACCESS_DENIED');
     // Repeated compatible handshakes reuse identity instead of disrupting in-flight calls.
     r.connection ??= randomUUID(); r.generation = s.generation;
-    return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => this.identity.allowed?.(op) ?? true) });
+    return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => {
+      if (this.identity.allowed?.(op) === false) return false;
+      if (!apiEntryPoints.includes(op)) return true;
+      return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true;
+    }) });
   }
   private connected(r: Registration, v: Cancel) {
     const s = this.current();
@@ -96,6 +101,8 @@ export class ApiBroker {
     const v = parseRequest(input); if (!v) return failure('INVALID_REQUEST');
     if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
     if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
+    if (apiEntryPoints.includes(v.operation) && (!apiOperations.includes(v.operation as ApiOperationId)
+      || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true)) return failure('FORBIDDEN', 'not_sent', v);
     if (!r.capabilities.includes(v.operation) || this.identity.allowed?.(v.operation) === false) return failure('FORBIDDEN', 'not_sent', v);
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
@@ -121,6 +128,8 @@ export class ApiBroker {
         const token = await abortable(this.credential(v.generation), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
         if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
+        if (apiEntryPoints.includes(v.operation) && (!apiOperations.includes(v.operation as ApiOperationId)
+          || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true)) return failure('FORBIDDEN', 'not_sent', v);
         if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
         const path = v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read'
           ? v.input.path as string

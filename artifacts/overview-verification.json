@@ -11,7 +11,7 @@
     "Escape restores the active draft field and keeps its value",
     "Toggling overview preserves window geometry and lifecycle",
     "Minimized apps appear with their real saved thumbnail",
-    "Choosing a minimized app restores its saved submodule",
+    "Choosing a minimized app restores its saved module",
     "Keyboard navigation selects the final preview",
     "Selecting a fullscreen app preserves fullscreen",
     "Overview previews fit a narrow screen and can scroll",

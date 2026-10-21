@@ -9,6 +9,9 @@ export const operations = [
   'session.context', 'platform.status', 'preferences.read', 'preferences.update', 'lifecycle.report', 'notifications.show', 'native.intent',
 ] as const;
 export type Operation = typeof operations[number];
+/** Closed host API contracts that update-policy v2 may grant to an exact app release. */
+export const apiOperations = ['appointments.list', 'appointments.setStatus'] as const;
+export type ApiOperationId = typeof apiOperations[number];
 export type ErrorCode = 'INVALID_REQUEST' | 'UNKNOWN_CALLER' | 'INCOMPATIBLE_SDK' | 'STALE_SESSION' | 'FORBIDDEN' | 'BUSY' | 'AUTH_REQUIRED' | 'ACCESS_DENIED' | 'CONFLICT' | 'VALIDATION' | 'OFFLINE' | 'MAINTENANCE' | 'TIMEOUT' | 'CANCELLED' | 'UNKNOWN_OUTCOME' | 'INVALID_RESPONSE' | 'REDIRECT_DENIED' | 'UNAVAILABLE';
 export type Outcome = 'not_sent' | 'rejected' | 'unknown';
 export type Result<T = unknown> = { ok: true; value: T } | { ok: false; error: { code: ErrorCode; message: string; outcome: Outcome; requestId?: string; operationId?: string } };

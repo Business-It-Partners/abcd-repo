@@ -10,7 +10,7 @@ function harness(transport: Transport = async () => Response.json({ appointments
  const sender={},frame={},caller:Caller={sender,frame,url:'dental-fixture://alpha/index.html'};
  const reports:unknown[]=[];
  const broker=new ApiBroker(staging,identity,transport,options,activity);
- const register=(s=sender,f=frame,capabilities=[...operations])=>broker.register({sender:s,frame:f,origin:caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities,report:v=>reports.push(v)});
+ const register=(s=sender,f=frame,capabilities=[...operations])=>broker.register({sender:s,frame:f,origin:caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities,authorizeApiOperation:()=>true,report:v=>reports.push(v)});
  register();
  const connect=(who=caller)=>{const result=broker.connect(who,{major:1,minor:0});if(!result.ok)throw new Error(result.error.code);return result.value;};
  const connection=connect(); let sequence=0;
@@ -38,6 +38,13 @@ describe('SDK registration and request boundary',()=>{
   const h=harness();expect(code(await h.broker.request(h.caller,{...h.request(),connection:'00000000-0000-4000-8000-000000000000'}))).toBe('STALE_SESSION');
   expect(code(await h.broker.request(h.caller,{...h.request(),generation:2}))).toBe('STALE_SESSION');
   h.register(h.caller.sender,h.caller.frame!,['appointments.list']);const c=h.connect();expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,c)))).toBe('FORBIDDEN');h.broker.dispose();
+ });
+ it('fails closed without a release API authorizer before credential or transport access',async()=>{
+  const h=harness();h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{}});const c=h.connect();
+  expect(c.capabilities).not.toContain('appointments.list');expect(c.capabilities).not.toContain('clinic.api.request');
+  const before=h.credentialCalls();expect(code(await h.broker.request(h.caller,h.request('appointments.list',{date:'2026-10-16'},c)))).toBe('FORBIDDEN');
+  expect(code(await h.broker.request(h.caller,h.request('clinic.api.request',{path:'/v1/appointments',method:'GET',body:null,idempotencyKey:null},c)))).toBe('FORBIDDEN');
+  expect(h.credentialCalls()).toBe(before);h.broker.dispose();
  });
  it('provides scoped lifecycle, memory preferences, display context and explicit unsupported intent',async()=>{
   const h=harness();expect(await h.broker.request(h.caller,h.request('lifecycle.report',{dirty:true,modal:false}))).toEqual({ok:true,value:{accepted:true}});expect(h.reports).toEqual([{dirty:true,modal:false}]);
@@ -118,8 +125,8 @@ describe('safe-update broker coordination',()=>{
  });
  it('session reset clears uncertain state and new revocation guard refuses dispatch',async()=>{
   let calls=0;const h=harness(async()=>{calls++;throw Error('lost');});await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(true);h.change();expect(h.broker.hasUnsafeWrites('company.sample.alpha')).toBe(false);
-  let allowed=true;h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{},authorize:()=>allowed});const connection=h.connect();allowed=false;expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,connection)))).toBe('ACCESS_DENIED');expect(calls).toBe(1);h.broker.dispose();
+  let allowed=true;h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{},authorize:()=>allowed,authorizeApiOperation:()=>true});const connection=h.connect();allowed=false;expect(code(await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,connection)))).toBe('ACCESS_DENIED');expect(calls).toBe(1);h.broker.dispose();
  });
 });
 
-describe('trusted write-state projection',()=>{it('reports pending then unknown independently of app reports, and clears only after same-key outcome',async()=>{const states:string[]=[];let lost=true;const h=harness(async()=>{if(lost)throw Error('lost');return Response.json({appointment:sampleAppointment});},limits,id=>states.push(h.broker.writeState(id)));await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(states).toEqual(['pending','unknown']);h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],report:()=>{}});expect(h.broker.writeState('company.sample.alpha')).toBe('unknown');const c=h.connect();lost=false;await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,c));expect(states.slice(-2)).toEqual(['pending','none']);h.broker.dispose();});});
+describe('trusted write-state projection',()=>{it('reports pending then unknown independently of app reports, and clears only after same-key outcome',async()=>{const states:string[]=[];let lost=true;const h=harness(async()=>{if(lost)throw Error('lost');return Response.json({appointment:sampleAppointment});},limits,id=>states.push(h.broker.writeState(id)));await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput));expect(states).toEqual(['pending','unknown']);h.broker.register({sender:h.caller.sender,frame:h.caller.frame!,origin:h.caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:[...operations],authorizeApiOperation:()=>true,report:()=>{}});expect(h.broker.writeState('company.sample.alpha')).toBe('unknown');const c=h.connect();lost=false;await h.broker.request(h.caller,h.request('appointments.setStatus',writeInput,c));expect(states.slice(-2)).toEqual(['pending','none']);h.broker.dispose();});});

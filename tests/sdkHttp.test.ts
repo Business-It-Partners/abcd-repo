@@ -32,7 +32,7 @@ function client(){
   const response=await fetch(origin+u.pathname+u.search,init);
   return new Response(response.body,{status:response.status,headers:response.headers});
  },{timeoutMs:300,responseBytes:4096,perApp:2,total:2,operationKeys:8});
- broker.register({sender,frame,origin:caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:['appointments.list','appointments.setStatus'],report:()=>{}});
+ broker.register({sender,frame,origin:caller.url,appId:'company.sample.alpha',appVersion:'1.0.0',capabilities:['appointments.list','appointments.setStatus'],authorizeApiOperation:()=>true,report:()=>{}});
  const c=broker.connect(caller,{major:1,minor:0});if(!c.ok)throw new Error(c.error.code);const connection:Connection=c.value;let n=0;
  return {broker,caller,request:(operation='appointments.list',input:Record<string,unknown>={date:'2026-10-16'})=>({version:1,connection:connection.connection,generation:1,requestId:`http_test_${++n}`,operation,input})};
 }

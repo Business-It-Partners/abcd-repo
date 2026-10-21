@@ -2,24 +2,30 @@ import type { Identity } from '../sdk/broker';
 import { PackageRegistry } from '../packages/registry';
 import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
-import { verifyUpdatePolicy, allowUpdatedPackage, type UpdatePolicy } from './updatePolicy';
+import { verifyUpdatePolicy, allowUpdatedPackage, apiReleaseGrantForPackage, apiOperationsForPackage, apiReleaseGrantMatchesCatalogue, type UpdatePolicy } from './updatePolicy';
 import { appOperation } from '../sdk/appPolicy';
+import { apiOperations as apiOperationIds, type Operation } from '../sdk/contracts';
 import { parseDentalAppMetadata } from '../packages/appMetadata';
 import type { StoreResult, StoreView } from './contracts';
 export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean };
 export interface FreshnessStore { load(): Watermark; save(value: Watermark): void; loadUpdate?(): Watermark; saveUpdate?(value: Watermark): void; loadMetadata?(): {catalogue:string;policy:string} | undefined; saveMetadata?(value:{catalogue:string;policy:string}): void }
 export class DistributionService {
  private updatePolicy?:UpdatePolicy; private policyBytes?:Buffer; private catalogueBytes?:Buffer; private updateTimer?:ReturnType<typeof setInterval>; private initialTimer?:ReturnType<typeof setTimeout>; private checking=false;
- private pendingVersions=new Map<string,string>(); private quarantined=new Set<string>();
+ private pendingVersions=new Map<string,string>(); private trialVersions=new Map<string,string>(); private knownGoodVersions=new Map<string,string>(); private pendingReady=new Set<string>(); private quarantined=new Set<string>();
  private catalogue?: Catalogue; private canInstall = false; private phase: StoreView['phase'] = 'idle'; private message = ''; private job: StoreView['job'] = null;
  private action?: AbortController; private installed = new Map<string, string>(); private listeners = new Set<(v: StoreView) => void>(); private lastProgress = 0;
  constructor(private config: DistributionConfig, private registry: PackageRegistry, private identity: Identity, private freshness: FreshnessStore, private transport: typeof fetch = fetch, private now = Date.now, private platform = process.platform, private timeout = 45000) {
-  this.reloadInstalled();
   if(config.updates){
    if(!freshness.loadUpdate||!freshness.saveUpdate||!freshness.loadMetadata||!freshness.saveMetadata)throw Error('Update metadata store required');
    registry.setUpdateGuards(value=>allowUpdatedPackage(value,this.updatePolicy,this.catalogue,this.now()),(from,to)=>{try{allowUpdatedPackage(to,this.updatePolicy,this.catalogue,this.now());const rule=this.updatePolicy?.apps.find(a=>a.id===to.manifest.appId)?.rollback;return rule?.from===from.release.digest&&rule?.to===to.release.digest;}catch{return false;}});
-   try {const cache=freshness.loadMetadata();if(cache){this.policyBytes=Buffer.from(cache.policy,'base64');this.updatePolicy=verifyUpdatePolicy(this.policyBytes,config.policy,freshness.loadUpdate(),this.now()).policy;this.catalogueBytes=Buffer.from(cache.catalogue,'base64');this.catalogue=verifyCatalogue(this.catalogueBytes,this.catalogueTrust(),freshness.load(),this.now()).catalogue;}}catch{this.updatePolicy=undefined;this.catalogue=undefined;this.message='Refresh current update metadata before opening apps.';}
+   try {const cache=freshness.loadMetadata();if(cache){this.policyBytes=Buffer.from(cache.policy,'base64');this.updatePolicy=verifyUpdatePolicy(this.policyBytes,config.policy,freshness.loadUpdate(),this.now()).policy;this.catalogueBytes=Buffer.from(cache.catalogue,'base64');this.catalogue=verifyCatalogue(this.catalogueBytes,this.catalogueTrust(),freshness.load(),this.now()).catalogue;this.retainedApiGrantsPresent(this.updatePolicy,this.catalogue);}}catch{this.updatePolicy=undefined;this.catalogue=undefined;this.message='Refresh current update metadata before opening apps.';}
   }
+  if(config.updates)registry.setApiGrantResolver(value=>{
+   const grants=apiOperationsForPackage(value,this.updatePolicy,this.now());
+   const release=apiReleaseGrantForPackage(value,this.updatePolicy,this.now());
+   return release&&apiReleaseGrantMatchesCatalogue(value.manifest.appId,release,this.catalogue)?grants:[];
+  });
+  this.reloadInstalled();
   if (config.publicBase) { const u = new URL(config.publicBase); if (u.protocol !== 'https:' || u.username || u.password || u.port || u.search || u.hash || u.pathname !== '/') throw new Error('Invalid release origin'); }
  }
  subscribe(fn: (v: StoreView) => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
@@ -28,10 +34,14 @@ export class DistributionService {
    const family = r.capabilities.filter(capability => capability.startsWith('clinic.app.'));
    return !family.length || family.some(capability => this.identity.allowed?.(capability) !== false);
   });
-  const apps = releases.map(r => ({ id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, pendingVersion: this.pendingVersions.get(r.id) ?? null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' }));
+  const apps = releases.map(r => {
+   const pendingVersion=this.pendingVersions.get(r.id)??null;
+   return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
+  });
   for (const [id, version] of this.installed) if (!apps.some(a => a.id === id) && (!appOperation(id) || this.identity.allowed?.(appOperation(id)!) !== false)) {
    let title=id;try{title=parseDentalAppMetadata(this.registry.inspectPackage(id))?.title??id;}catch{/* Keep the safe ID fallback if verified metadata is unavailable. */}
-   apps.push({ id, title, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, pendingVersion: this.pendingVersions.get(id) ?? null, available: false, reason: 'Refresh the catalogue to manage this app.' });
+   const pendingVersion=this.pendingVersions.get(id)??null;
+   apps.push({ id, title, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, activeVersion: version, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(id), trialVersion: this.trialVersions.get(id)??null, knownGoodVersion: this.knownGoodVersions.get(id)??null, available: false, reason: 'Refresh the catalogue to manage this app.' });
   }
   return { phase: this.phase, apps, canInstall: this.canInstall, job: this.job ? { ...this.job } : null, message: this.message };
  }
@@ -39,32 +49,37 @@ export class DistributionService {
  private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32') && r.capabilities.every(capability => this.identity.allowed?.(capability) !== false); }
  invalidate() { this.action?.abort(); this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
  dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); }
- private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.version);if(v.pendingVersion)pending.set(id,v.pendingVersion);}this.installed=installed;this.pendingVersions=pending;this.quarantined=quarantined;}
+ private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),trials=new Map<string,string>(),knownGood=new Map<string,string>(),pendingReady=new Set<string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.activeVersion);if(v.pendingVersion){pending.set(id,v.pendingVersion);try{if(this.registry.pendingActivationVersion(id)===v.pendingVersion)pendingReady.add(id);}catch{/* Keep showing the staged identity without claiming it can trial. */}}if(v.trialVersion)trials.set(id,v.trialVersion);if(v.knownGoodVersion)knownGood.set(id,v.knownGoodVersion);}this.installed=installed;this.pendingVersions=pending;this.trialVersions=trials;this.knownGoodVersions=knownGood;this.pendingReady=pendingReady;this.quarantined=quarantined;}
  changed(){this.reloadInstalled();this.emit();}
  startUpdates(){if(!this.config.updates||this.updateTimer)return;this.initialTimer=setTimeout(()=>void this.checkUpdates(),15000);this.updateTimer=setInterval(()=>void this.checkUpdates(),15*60*1000);this.updateTimer.unref?.();this.initialTimer.unref?.();}
  async checkUpdates(){if(!this.config.updates||this.checking||!this.identity.snapshot().active)return;this.checking=true;try{if(!(await this.refresh()).ok||!this.canInstall)return;for(const r of this.catalogue?.releases??[]){const current=this.installed.get(r.id);if(current&&this.compatible(r)&&!this.pendingVersions.has(r.id)&&compareVersion(r.version,current)>0)await this.install(r.id);}}finally{this.checking=false;}}
- private catalogueTrust():TrustPolicy {return {...this.config.policy,keys:Object.fromEntries(Object.entries(this.config.policy.keys).filter(([id])=>!this.updatePolicy?.revokedKeys.includes(id)))};}
- async updateNow(id:unknown,apply:(id:string)=>void):Promise<StoreResult> {
+ private catalogueTrust(policy:UpdatePolicy|undefined=this.updatePolicy):TrustPolicy {return {...this.config.policy,keys:Object.fromEntries(Object.entries(this.config.policy.keys).filter(([id])=>!policy?.revokedKeys.includes(id)))};}
+ private retainedApiGrantsPresent(policy:UpdatePolicy|undefined,catalogue:Catalogue|undefined){
+  if(policy?.format!==2)return;
+  for(const value of this.registry.retainedPackages()){
+   if(!value.capabilities.some(operation=>(apiOperationIds as readonly Operation[]).includes(operation)))continue;
+   try{allowUpdatedPackage(value,policy,catalogue,this.now());}catch{continue;}
+   const grant=apiReleaseGrantForPackage(value,policy,this.now());
+   if(!grant||!apiReleaseGrantMatchesCatalogue(value.manifest.appId,grant,catalogue))throw Error('Missing exact API grant for an eligible retained release');
+  }
+ }
+ private candidateApiGrantMatchesCatalogue(value:ReturnType<typeof verifyPackage>){
+  if(this.updatePolicy?.format!==2||!value.capabilities.some(operation=>(apiOperationIds as readonly Operation[]).includes(operation)))return true;
+  const grant=apiReleaseGrantForPackage(value,this.updatePolicy,this.now());
+  return !!grant&&apiReleaseGrantMatchesCatalogue(value.manifest.appId,grant,this.catalogue);
+ }
+ /** Legacy IPC compatibility: confirm a staged update, but never close or relaunch an app. */
+ async updateNow(id:unknown,_apply?:(id:string)=>void):Promise<StoreResult> {
   if(!isCompanyAppId(id))return{ok:false,code:'INVALID'};
-  let blocked=false,blockedMessage:string|undefined;
   const result=await this.run(async(signal,generation)=>{
-   await this.loadCatalogue(signal,generation);await this.authorize(signal,generation);this.fence(signal,generation);
+   await this.loadCatalogue(signal,generation);if(!await this.authorize(signal,generation))throw Error('Install denied');this.fence(signal,generation);
    if(!this.pendingVersions.has(id))throw Error('No pending update');
-   const expected=this.pendingVersions.get(id)!;
-   try{apply(id);}catch(error){blocked=true;const reason=error instanceof Error?error.message:'';blockedMessage=({
-    'Resolve pending or unknown write before updating':'Reconcile the server change in the app before updating.',
-    'Save work and close dialogs before updating':'Save app work and close its dialogs before updating.',
-    'Open the app before applying its update':'Open the app from the dock before applying its update.',
-    'No verified app update is staged':'Refresh the Store to confirm the current app update, then try again.',
-    'Another runtime instance still holds the app package':'Another app window is still using these files. Close the app windows and retry.',
-    'The staged app version did not start':'The new app version could not start; the installed version is still available.',
-    'The current app release has not passed its launch health check':'Leave the current app open until its startup check finishes, then retry the update.',
-   } as Record<string,string>)[reason];throw Error('Runtime update blocked');}
-   const active=this.registry.describe(id);
-   if(active.version!==expected||active.pendingVersion)throw Error('Runtime did not activate the staged app version');
-   this.reloadInstalled();this.message='Verified update ready. Your previous version remains available for safe recovery.';
+   const expected=this.registry.describe(id).pendingVersion;
+   if(!expected)throw Error('No pending update');
+   if(this.registry.pendingActivationVersion(id)!==expected)throw Error('The current app release has not passed its launch health check');
+   this.reloadInstalled();
+   this.message=`Update ${expected} is ready. It will be tried the next time you open this app.`;
   });
-  if(blocked){this.message=blockedMessage??'Save unfinished work, close dialogs, and reconcile pending or unknown writes before updating. Then try again.';this.emit();}
   return result;
  }
 
@@ -94,8 +109,24 @@ export class DistributionService {
   const r = await this.response(`${this.config.apiBase}/v1/dental-os/catalogue`, signal, generation, true), bytes = await this.bytes(r, signal, generation, 65536);
   const time = r.headers.get('x-dental-os-time'), serverNow = Number(time);
   if (!time || !/^[0-9]{13}$/.test(time) || !Number.isSafeInteger(serverNow) || Math.abs(serverNow - this.now()) > 300000) throw new Error('Clock mismatch');
-  if(this.config.updates){const response=await this.response(`${this.config.apiBase}/v1/dental-os/update-policy`,signal,generation,true);const clock=response.headers.get('x-dental-os-time');if(!clock||!/^[0-9]{13}$/.test(clock)||Math.abs(Number(clock)-this.now())>300000)throw Error('Clock mismatch');const body=await this.bytes(response,signal,generation,65536);const control=verifyUpdatePolicy(body,this.config.policy,this.freshness.loadUpdate!(),Math.max(Number(clock),this.now()));this.fence(signal,generation);this.freshness.saveUpdate!(control.watermark);this.updatePolicy=control.policy;this.policyBytes=body;}
-  const verified = verifyCatalogue(bytes, this.catalogueTrust(), this.freshness.load(), Math.max(serverNow, this.now())); this.fence(signal, generation); this.freshness.save(verified.watermark); this.catalogue = verified.catalogue; this.catalogueBytes=bytes;if(this.config.updates)this.freshness.saveMetadata!({catalogue:bytes.toString('base64'),policy:this.policyBytes!.toString('base64')});
+  let nextPolicy=this.updatePolicy,nextPolicyBytes=this.policyBytes,nextPolicyWatermark:Watermark|undefined;
+  if(this.config.updates){
+   const response=await this.response(`${this.config.apiBase}/v1/dental-os/update-policy`,signal,generation,true),clock=response.headers.get('x-dental-os-time');
+   if(!clock||!/^[0-9]{13}$/.test(clock)||Math.abs(Number(clock)-this.now())>300000)throw Error('Clock mismatch');
+   const body=await this.bytes(response,signal,generation,65536),control=verifyUpdatePolicy(body,this.config.policy,this.freshness.loadUpdate!(),Math.max(Number(clock),this.now()));
+   nextPolicy=control.policy;nextPolicyBytes=body;nextPolicyWatermark=control.watermark;
+  }
+  const verified=verifyCatalogue(bytes,this.catalogueTrust(nextPolicy),this.freshness.load(),Math.max(serverNow,this.now()));
+  this.retainedApiGrantsPresent(nextPolicy,verified.catalogue);
+  this.fence(signal,generation);
+  if(this.config.updates){
+   if(!nextPolicyBytes||!nextPolicyWatermark)throw Error('Update policy unavailable');
+   this.freshness.saveUpdate!(nextPolicyWatermark);
+   this.freshness.saveMetadata!({catalogue:bytes.toString('base64'),policy:nextPolicyBytes.toString('base64')});
+   this.updatePolicy=nextPolicy;this.policyBytes=nextPolicyBytes;
+  }
+  this.freshness.save(verified.watermark);this.catalogue=verified.catalogue;this.catalogueBytes=bytes;
+  this.reloadInstalled();
  }
  private async run(work: (signal: AbortSignal, generation: number) => Promise<void>): Promise<StoreResult> {
   if (this.action) return { ok: false, code: 'BUSY' };
@@ -127,16 +158,17 @@ export class DistributionService {
    const verified = verifyPackage(bytes, this.config.policy);
    if (verified.manifest.appId !== id || verified.manifest.version !== release.version || verified.release.digest !== release.payloadDigest || canonicalCaps(verified.capabilities) !== canonicalCaps(release.capabilities)) throw new Error('Release identity');
    if (this.config.updates) allowUpdatedPackage(verified, this.updatePolicy, this.catalogue, this.now());
+   if(!this.candidateApiGrantMatchesCatalogue(verified))throw Error('Current release has no exact API grant');
    // Fresh metadata + current Worker authority immediately before the atomic registry commit.
    await this.loadCatalogue(signal, generation); if (!await this.authorize(signal, generation)) throw new Error('Install denied');
-   const current = this.catalogue!.releases.find(r => r.id === id); if (!current || !this.compatible(current) || current.packageSha256 !== release.packageSha256 || current.version !== verified.manifest.version || current.payloadDigest !== verified.release.digest || canonicalCaps(current.capabilities) !== canonicalCaps(verified.capabilities)) throw new Error('Release changed');
+   const current = this.catalogue!.releases.find(r => r.id === id); if (!current || !this.compatible(current) || current.packageSha256 !== release.packageSha256 || current.version !== verified.manifest.version || current.payloadDigest !== verified.release.digest || canonicalCaps(current.capabilities) !== canonicalCaps(verified.capabilities) || !this.candidateApiGrantMatchesCatalogue(verified)) throw Error('Release changed');
    this.fence(signal, generation); this.job = { appId: id, phase: 'installing', received: bytes.length, total: bytes.length }; this.emit();
-   this.fence(signal, generation); this.registry.install(bytes,!!this.config.updates&&this.installed.has(id)); this.reloadInstalled(); this.phase = 'ready'; this.message = this.pendingVersions.has(id) ? 'Verified update ready for the next safe launch. Running work is unchanged.' : 'Verified app installed. Ready to open.';
+   this.fence(signal, generation); this.registry.install(bytes,!!this.config.updates&&this.installed.has(id)); this.reloadInstalled(); this.phase = 'ready'; this.message = this.pendingVersions.has(id) ? `Update ${this.pendingVersions.get(id)} is staged. The active version remains in place until the next full app launch.` : 'Verified app installed. Ready to open.';
   });
  }
  uninstall(id: unknown): Promise<StoreResult> {
   if (!isCompanyAppId(id)) return Promise.resolve({ ok: false, code: 'INVALID' });
-  return this.run(async (signal, generation) => { if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied'); this.fence(signal, generation); this.registry.uninstall(id); this.installed.delete(id); this.pendingVersions.delete(id); this.message = 'App uninstalled. Clinic records remain on the server.'; });
+  return this.run(async (signal, generation) => { if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied'); this.fence(signal, generation); this.registry.uninstall(id); this.reloadInstalled(); this.message = 'App uninstalled. Clinic records remain on the server.'; });
  }
  cancel() { this.action?.abort(); return { ok: true } as const; }
 }

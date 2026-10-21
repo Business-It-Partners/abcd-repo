@@ -55,8 +55,7 @@ export function WindowOverview({ controllers, onClose }: { controllers: Record<W
     return () => observer.disconnect();
   }, [ids.length]);
   const positions = overviewLayout(ids.map(id => {
-    const window = state.windows[id];
-    return window.presentation === 'fullscreen' ? state.size : window.normalBounds;
+    return controllers[id].bounds;
   }), area);
   // Center within a fitting screen, but start scrollable collections at the top.
   const offset = positions.length && area.height > area.viewportHeight ? Math.min(...positions.map(p => p.y)) : 0;

@@ -1,11 +1,11 @@
 import { installDemoApps } from './storeSetup.mjs';
-import { profileArgs } from './profile.mjs';
+import { fixtureArgs } from './profile.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-const app=await electron.launch({args:[root,...profileArgs],env}),page=await app.firstWindow();
+const app=await electron.launch({args:[root,...fixtureArgs],env}),page=await app.firstWindow();
 const checks=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const overview=page.getByRole('dialog',{name:'Open windows',exact:true});
@@ -45,7 +45,10 @@ try{
   });
   check(`${count} windows form a centered multi-row collection`,arrangement.cards.length===count&&new Set(arrangement.cards.map(c=>Math.round(c.y))).size>1&&Math.abs(Math.min(...arrangement.cards.map(c=>c.x))+Math.max(...arrangement.cards.map(c=>c.x+c.width))-arrangement.width)<2&&Math.abs(Math.min(...arrangement.cards.map(c=>c.y))+Math.max(...arrangement.cards.map(c=>c.y+c.height))-arrangement.height)<2);
   check(`${count} previews have no overlapping windows or captions`,arrangement.cards.every((p,i)=>arrangement.cards.slice(i+1).every(q=>p.x+p.width<=q.x+1||q.x+q.width<=p.x+1||p.y+p.height<=q.y+1||q.y+q.height<=p.y+1)));
-  check(`${count} previews preserve each actual window's proportions`,await overview.locator('.overview-card').evaluateAll(cards=>cards.every(c=>{const clone=c.querySelector('.studio-window'),preview=c.querySelector('.overview-window').getBoundingClientRect();return !clone||Math.abs(preview.width/preview.height-parseFloat(clone.style.width)/parseFloat(clone.style.height))<.01;})));
+  const proportions=await overview.locator('.overview-card').evaluateAll(cards=>cards.map(c=>{const clone=c.querySelector('.studio-window'),preview=c.querySelector('.overview-window').getBoundingClientRect();return {window:c.getAttribute('aria-label'),preview:preview.width/preview.height,source:clone?parseFloat(clone.style.width)/parseFloat(clone.style.height):null};}));
+  const proportionsMatch=proportions.every(value=>value.source===null||Math.abs(value.preview-value.source)<.01);
+  if(!proportionsMatch)console.log('PREVIEW RATIOS',JSON.stringify(proportions));
+  check(`${count} previews preserve each actual window's proportions`,proportionsMatch);
   await page.screenshot({path:path.join(root,`artifacts/window-overview-${count}.png`)});
   if(count===4){await page.keyboard.press('ArrowDown');check('Down arrow moves to the next visual row',await overview.locator('.overview-card').evaluateAll(cards=>{const first=cards[0].getBoundingClientRect(),active=document.activeElement.getBoundingClientRect();return active.top>first.bottom;}));}
   await page.keyboard.press('Escape');

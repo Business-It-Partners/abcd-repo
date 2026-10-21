@@ -11,7 +11,14 @@ export type TrustPolicy = Readonly<{
   apps: Readonly<Record<string, AppTrust>>;
   companyApps?: AppTrust;
 }>;
-export type VerifiedPackage = Readonly<{ manifest: Manifest; release: Release; files: ReadonlyMap<string, Buffer>; capabilities: readonly Operation[] }>;
+export type VerifiedPackage = Readonly<{
+  manifest: Manifest;
+  release: Release;
+  /** SHA-256 of the complete dentalpkg wire bytes, distinct from release.digest over the payload. */
+  packageSha256: string;
+  files: ReadonlyMap<string, Buffer>;
+  capabilities: readonly Operation[];
+}>;
 const hashPattern = /^[a-f0-9]{64}$/;
 export function isCompanyAppId(value: unknown): value is string { return typeof value === 'string' && /^company\.[a-z][a-z0-9.-]{1,70}$/.test(value); }
 export function appTrust(policy: TrustPolicy, id: string): AppTrust | undefined {
@@ -90,7 +97,7 @@ export function verifyPackage(bytes: Buffer, policy: TrustPolicy): VerifiedPacka
     files.set(a.path, data);
   }
   if (m.capabilities.some(op => !app.capabilities.includes(op))) throw new Error('Capability exceeds platform policy');
-  return { manifest: m, release: release as Release, files, capabilities: [...m.capabilities] };
+  return { manifest: m, release: release as Release, packageSha256: sha256(bytes), files, capabilities: [...m.capabilities] };
 }
 export function buildPackage(input: Omit<Manifest, 'format' | 'assets'>, files: ReadonlyMap<string, Buffer>, keyId: string, privateKey: KeyObject): Buffer {
   if (privateKey.asymmetricKeyType !== 'ed25519') throw new Error('Ed25519 required');

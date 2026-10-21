@@ -6,3 +6,5 @@
 .delivery-store-notice strong { font-weight: 600; }
 .delivery-store-notice span { color: var(--text-muted); font-size: 11px; }
 .delivery-store-notice[data-state="unavailable"] { border-color: #e4d8d1; background: #faf6f3; color: #684a40; }
+.delivery-update-state { max-width: 190px; text-align: center; line-height: 1.4; color: var(--text-secondary) !important; }
+.store-detail .delivery-update-state { max-width: 220px; }

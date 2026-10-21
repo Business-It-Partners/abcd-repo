@@ -18,7 +18,12 @@
     "overview interruption settles presentation without uninstalling app",
     "all temporary effects/source fading clear after settlement",
     "viewport resize settles flight using the shared dock layout",
-    "staged update does not trigger first-install arrival",
+    "staged update preserves the active version and running renderer",
+    "staged update does not trigger first-install arrival or show immediate apply",
+    "Open during staging keeps the existing app instance",
+    "normal app close leaves the candidate pending",
+    "next full app launch trials the staged successor without a Dental OS restart",
+    "successor is confirmed only after bounded startup health",
     "restored installed apps do not fly again on startup"
   ],
   "platform": "linux"

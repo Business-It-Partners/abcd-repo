@@ -55,15 +55,21 @@ export async function verifyOnboarding(profileArgs,reportName){
    await detail(shell);
    await shell.getByRole('button',{name:'Refresh company apps',exact:true}).click();
    await wait(async()=>await shell.locator('.store-facts').textContent().then(text=>text.includes(version)),'new catalogue version');
-   check(`${version} appears in Store as an independent update`,await shell.locator('.store-facts').textContent().then(text=>text.includes(`Installed${previous}`)&&text.includes(`PendingNone`)&&text.includes(`Version${version}`)));
+   check(`${version} appears in Store as an independent update`,await shell.locator('.store-facts').textContent().then(text=>text.includes(`Active${previous}`)&&text.includes(`PendingNone`)&&text.includes(`Store version${version}`)));
    await shell.getByRole('button',{name:'Download update',exact:true}).click();
-   await shell.getByRole('button',{name:'Use update now',exact:true}).waitFor();
+   await shell.locator('.delivery-update-state').filter({hasText:`Update ready · ${version}`}).waitFor();
    saved=await registry(profile);installed=saved.apps[appId];
-   check(`${version} downloads as a separate verified package while ${previous} stays active`,installed.active===priorDigest&&!!installed.pending&&installed.versions.length===previousVersionCount+1);
-   await shell.getByRole('button',{name:'Use update now',exact:true}).click();
+   check(`${version} stages separately while ${previous} remains active and running`,installed.active===priorDigest&&!!installed.pending&&installed.versions.length===previousVersionCount+1&&!guest.isClosed()&&await guest.getByRole('heading',{name:expected.get(previous),exact:true}).isVisible());
+   check('staging offers no immediate update action',await shell.getByRole('button',{name:'Use update now',exact:true}).count()===0);
+   await shell.getByRole('button',{name:'Dental Workspace Preview',exact:true}).click();await shell.getByRole('button',{name:'Close Dental Workspace Preview',exact:true}).click();
+   await shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='closed',appId);
+   saved=await registry(profile);installed=saved.apps[appId];
+   check(`${version} remains pending after normal app close`,installed.active===priorDigest&&installed.pending!==null);
+   await shell.getByRole('button',{name:'Open',exact:true}).click();
+   await wait(async()=>{const state=(await registry(profile)).apps[appId];return state.active!==priorDigest&&state.trial===state.active;},`${version} next-full-launch trial`);
    guest=await verifyPage(version);
    saved=await registry(profile);installed=saved.apps[appId];
-   check(`${version} activates in a protected runtime trial without an OS package update`,installed.active!==priorDigest&&!installed.pending&&installed.trial===installed.active);
+   check(`${version} trials on the app's next full launch without an OS package update`,installed.active!==priorDigest&&!installed.pending&&installed.trial===installed.active&&installed.knownGood===priorDigest);
    await wait(async()=>{const state=(await registry(profile)).apps[appId];return state.knownGood===state.active&&!state.trial;},`${version} launch health acknowledgement`);
    installed=(await registry(profile)).apps[appId];
    check(`${version} becomes known-good only after its runtime health check`,installed.knownGood===installed.active&&!installed.trial);
@@ -82,7 +88,7 @@ export async function verifyOnboarding(profileArgs,reportName){
   try{
    const saved=await registry(profile),active=saved.apps[appId]?.active,bundle=active?JSON.parse(await fs.readFile(path.join(profile,'packages/apps',appId,active,'bundle.dentalpkg'),'utf8')):undefined;
    const pages=[];for(const page of app.context().pages())if(page.url().startsWith(`dental-fixture://${appId}/`))pages.push({url:page.url(),title:await page.title().catch(()=>''),heading:await page.locator('h1').textContent().catch(()=>null)});
-   failureDetails={error:String(error),activeVersion:bundle?.release?.version,pending:saved.apps[appId]?.pending,knownGood:saved.apps[appId]?.knownGood,windowPhase:await shell.locator(`[data-window-id="${appId}"]`).getAttribute('data-phase').catch(()=>null),runtimePhase:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-phase').catch(()=>null),runtimeReason:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-reason').catch(()=>null),storeStatus:await shell.locator('.delivery-store-notice').allTextContents().catch(()=>[]),updateButtonDisabled:await shell.getByRole('button',{name:'Use update now'}).isDisabled().catch(()=>null),pages};
+   failureDetails={error:String(error),activeVersion:bundle?.release?.version,pending:saved.apps[appId]?.pending,knownGood:saved.apps[appId]?.knownGood,windowPhase:await shell.locator(`[data-window-id="${appId}"]`).getAttribute('data-phase').catch(()=>null),runtimePhase:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-phase').catch(()=>null),runtimeReason:await shell.locator(`[data-runtime="${appId}"]`).getAttribute('data-runtime-reason').catch(()=>null),storeStatus:await shell.locator('.delivery-store-notice').allTextContents().catch(()=>[]),immediateUpdateButtonPresent:await shell.getByRole('button',{name:'Use update now'}).count().catch(()=>null)>0,pages};
   }catch(diagnosticError){failureDetails={error:String(error),diagnosticError:String(diagnosticError)};}
   throw error;
  }finally{

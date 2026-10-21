@@ -3,6 +3,7 @@ import { mkdirSync, lstatSync, openSync, closeSync, readFileSync, writeFileSync,
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { canonical, limits, sha256, verifyPackage, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from './format';
+import { apiOperations, type ApiOperationId } from '../sdk/contracts';
 type Installed = { active: string; versions: string[]; pending: string | null; knownGood: string | null; trial: string | null; failed: string[] };
 type State = { format: 2; apps: Record<string, Installed> };
 type Journal = { format: 1; kind: 'install' | 'uninstall' | 'evict'; appId: string; digest: string; stage: string };
@@ -15,15 +16,28 @@ export class PackageRegistry {
   private digestLeases = new Map<string, number>();
   private guard: (value: VerifiedPackage) => void = () => {};
   private rollbackGuard: (from: VerifiedPackage, to: VerifiedPackage) => boolean = () => false;
+  private apiGrantResolver: (value: VerifiedPackage) => readonly ApiOperationId[] = () => [];
   setUpdateGuards(guard: (value: VerifiedPackage) => void, rollback: (from: VerifiedPackage, to: VerifiedPackage) => boolean) { this.guard = guard; this.rollbackGuard = rollback; }
+  setApiGrantResolver(resolver: (value: VerifiedPackage) => readonly ApiOperationId[]) { this.apiGrantResolver = resolver; }
   assertAllowed(value: VerifiedPackage) { this.guard(value); }
+  apiOperations(value: VerifiedPackage): ApiOperationId[] {
+    const ceiling = appTrust(this.policy, value.manifest.appId)?.capabilities ?? [];
+    return this.apiGrantResolver(value).filter(operation => apiOperations.includes(operation)
+      && value.capabilities.includes(operation)
+      && ceiling.includes(operation));
+  }
+  authorizeApiOperation(value: VerifiedPackage, operation: ApiOperationId) {
+    this.guard(value);
+    return this.apiOperations(value).includes(operation);
+  }
   hasActiveLease(id: string) { return (this.leases.get(id) ?? 0) > 0; }
   pendingActivationVersion(id: string) {
     return this.locked(() => {
       const installed=this.state().apps[id];if(!installed?.pending)return null;
+      const pending=this.verified(id,installed.pending);this.guard(pending);
       let activeAllowed=true;try{this.guard(this.verified(id,installed.active));}catch{activeAllowed=false;}
       if(!installed.knownGood&&activeAllowed)return null;
-      return this.verified(id,installed.pending).manifest.version;
+      return pending.manifest.version;
     });
   }
   private verified(id: string, digest: string) {
@@ -31,7 +45,17 @@ export class PackageRegistry {
     if (value.manifest.appId !== id || value.release.digest !== digest) throw new Error('Registry identity mismatch');
     return value;
   }
-  describe(id: string) { return this.locked(() => { const v = this.state().apps[id]; if (!v) throw new Error('App not installed'); return { version: this.verified(id,v.active).manifest.version, pendingVersion: v.pending ? this.verified(id,v.pending).manifest.version : null, trial: !!v.trial }; }); }
+  describe(id: string) {
+    return this.locked(() => {
+      const v = this.state().apps[id];
+      if (!v) throw new Error('App not installed');
+      const activeVersion = this.verified(id, v.active).manifest.version;
+      const pendingVersion = v.pending ? this.verified(id, v.pending).manifest.version : null;
+      const trialVersion = v.trial ? this.verified(id, v.trial).manifest.version : null;
+      const knownGoodVersion = v.knownGood ? this.verified(id, v.knownGood).manifest.version : null;
+      return { version: activeVersion, activeVersion, pendingVersion, trialVersion, knownGoodVersion, trial: !!v.trial };
+    });
+  }
 
   /** Read verified installed metadata without opening a runtime or activating a staged update. */
   inspectPackage(id: string) {
@@ -39,6 +63,20 @@ export class PackageRegistry {
       const installed = this.state().apps[id];
       if (!installed) throw new Error('App not installed');
       return this.verified(id, installed.active);
+    });
+  }
+
+  /** Verified retained releases used to check that refreshed metadata preserves eligible API grants. */
+  retainedPackages() {
+    return this.locked(() => {
+      const state = this.state(), retained: VerifiedPackage[] = [];
+      for (const [id, installed] of Object.entries(state.apps)) {
+        for (const digest of installed.versions) {
+          if (installed.failed.includes(digest)) continue;
+          retained.push(this.verified(id, digest));
+        }
+      }
+      return retained;
     });
   }
 

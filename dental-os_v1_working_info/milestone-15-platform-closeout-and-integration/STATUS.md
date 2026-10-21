@@ -1,7 +1,7 @@
 # M15 Status — Platform Closeout and Integration
 
-**Status:** IMPLEMENTING — P03 planning and M15.1 source/record reconciliation complete; M15.2–M15.6 and G15 acceptance pending.
-**Updated:** 2026-10-21.
+**Status:** IMPLEMENTING — P03/M15.1 complete. P04–P06 implementation candidates and focused checks are integrated; P07 is under execution; P08 has a scope disposition but the staging renewal operator/reviewer and drill remain unresolved; P09 and G15 are open.
+**Updated:** 2026-10-22.
 **User scope review:** the user accepted the proposed M15.1–M15.6 scope and directed that it be formalized. This records scope authorization, not runtime acceptance.
 **Integration branch:** `codex/milestone-15` in the lead `platform-closeout` worktree; milestone-record worker branch `codex/m15-plan-records`, created from committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`.
 **Gate:** G15 — closeout and integrated-baseline proof. The lead integrated the distinct G15 row, requirement mappings and checker changes; this planning checkpoint does not close G15.
@@ -17,11 +17,11 @@ The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_C
 | Phase | Status | Remaining evidence |
 | --- | --- | --- |
 | M15.1 — Source and record reconciliation | IMPLEMENTED — accepted source checkpoint | Reviewed local inputs and side branches; integrated only the accepted launch-feedback/frame-handoff slice; retained unaccepted inputs; corrected dated M12/M13/M15 records. |
-| M15.2 — Versioned app authority and required host contracts | REVIEW REQUIRED — P04 proposal delivered | Lead decision on approval source/role and contract semantics; then implement and prove unchanged-desktop API evolution plus M14-bounded host contracts. |
-| M15.3 — ADR-025 app-update alignment | REVIEW REQUIRED — P05 candidate delivered | Lead source review, integration and serial build/unit/private checks for staged preparation, next-full-launch trial, truthful versions, failure/recovery and race safety. |
-| M15.4 — Integrated shell and G12/G13 residuals | REVIEW REQUIRED — P06 candidate delivered | Lead source review/integration and private checks; user visual/profile evidence and M13/G13 owner items remain separately open. |
-| M15.5 — Representative workload and operational continuity | PLANNED | Run synthetic API/media/navigation/window/session/failure/resource workloads; identify observed test environments; rehearse metadata renewal and expiry recovery. |
-| M15.6 — Integrated platform baseline | PLANNED | Verify final combined source; publish evidence identity and M14 handoff; retain M20/G20 and G21 residuals. |
+| M15.2 — Versioned app authority and required host contracts | IMPLEMENTED CANDIDATE — user selected existing signed company catalogue/update-policy authority; exact format-2 API grants, broker enforcement and synthetic new-app/API-only extension tests are integrated. M14 route/role inventory and required media/navigation/payload contracts remain | Final synthetic checks; M14 compatibility handoff; settle only evidence-backed host contracts under their documented ADR gates. |
+| M15.3 — ADR-025 app-update alignment | IMPLEMENTED CANDIDATE — source and focused unit/private UI suites pass; metadata-only renewal regression has been added and final rerun remains | Final combined build/unit/private Store/update/interruption/race checks against exact source. |
+| M15.4 — Integrated shell and G12/G13 residuals | IMPLEMENTED CANDIDATE — overview, scaling and usability private checks pass; G12/G13 and owner evidence remain open | Finish integrated shell evidence; retain user visual, live-profile and device obligations with their owners. |
+| M15.5 — Representative workload and operational continuity | PARTIAL — supported signed-fixture workload and local metadata renewal/expiry regressions pass; unresolved M14 service/media contracts and P08 human/tool/drill requirements remain | Record the exact supported workload evidence; obtain M14 route/role/media/payload contracts; name independent staging renewal people, approve a no-package-write preparation path, and perform the bounded staging drill before claiming operational continuity. |
+| M15.6 — Integrated platform baseline | IN PROGRESS — lead candidate build, full serial unit suite, focused private UI and integrated regressions pass; final source identity and independent review remain | Commit exact integrated source/evidence, run final source-bound checks, publish M14 handoff and residual gate register, and prepare independent GPT-6.1 Sol Medium review. G12/G13/G15 remain open. |
 
 ## Dependency and gate position
 
@@ -34,7 +34,7 @@ The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_C
 
 ## Not claimed
 
-The limited accepted launch-feedback/frame-handoff source does not close any full milestone gate. No API-policy design, route-manifest format, inter-app contract, media adapter, ADR-025 implementation, M12/G12 or M13/G13 closure, M14/G14 app acceptance, M20/G20 release acceptance, or G21 device/user acceptance is claimed. No live-profile inspection, cloud mutation, main merge, deployment or application restart occurred. P03's documentation-only scope and M15.1's source-bound checks are separately recorded in VERIFICATION_EVIDENCE.md.
+The accepted launch-feedback/frame-handoff source and current P04–P06 candidate checks do not close any full milestone gate. ADR-026's signed company update-policy authority and format-2 exact grant path are implemented and synthetically tested; they do not resolve M14's full per-app route/role inventory, bounded media contract, cross-app navigation design gate or app-side compatibility. No media adapter, live Worker workload acceptance, M12/G12 or M13/G13 closure, M14/G14 app acceptance, M20/G20 release acceptance, or G21 device/user acceptance is claimed. P08's human operator/reviewer assignment and staging renewal/expiry drill remain open. No production mutation, main merge, deployment or live application restart occurred. P03 and M15.1 historical evidence remains separately scoped in VERIFICATION_EVIDENCE.md.
 
 
 ## P03 integrated documentation verification

@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "phase": "read",
+  "checks": [
+    "one platform sign-in reaches current authenticated catalogue",
+    "two downloaded isolated apps share one mediated session, with distinct connections",
+    "shell and app runtimes disable automatic dictionary downloads",
+    "credentials and raw transport are absent from app bridges",
+    "closed profile contains no password or private app storage/draft canary"
+  ],
+  "platform": "linux",
+  "source": null,
+  "scope": "Private synthetic identity/transport/packages only; no cloud API calls."
+}

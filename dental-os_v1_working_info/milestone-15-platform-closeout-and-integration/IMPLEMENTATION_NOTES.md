@@ -1,6 +1,6 @@
 # M15 Implementation Notes — Source Reconciliation and Execution Record
 
-**Phase:** M15.1 source and record reconciliation complete; P04–P09 remain open.
+**Phase:** M15.1 complete. P04–P06 implementation candidates integrated with focused evidence; P07 execution underway; P08 operational ownership/drill open; P09 final verification in progress.
 **Source checkpoints:** committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`; accepted M15.1 source checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5`; last integrated milestone baseline is M11 `main` at `8c8211c00614b095c529d9d14964ca2ce912db73`.
 **Integration branch:** `codex/milestone-15`; milestone-record worker branch `codex/m15-plan-records`.
 
@@ -8,7 +8,7 @@
 
 On 2026-10-21, the user accepted the proposed M15 closeout scope and directed its formalization in a separate worker worktree. This directory records six phases: source reconciliation; versioned app authority and required host contracts; ADR-025 update alignment; M12/G12 and M13/G13 residuals; representative workloads and operational continuity; and final combined-source verification. The matching roadmap/global-status/checklist changes and G15/traceability/checker edits were prepared in separate scopes and combined by the lead in `codex/milestone-15`.
 
-M15 is IMPLEMENTING. P03 established the plan; M15.1 reviewed source layers and accepted a limited launch-feedback/frame-handoff slice. M15.2–M15.6 implementation and final acceptance remain pending. M14 feature work remains separate. The integrated G14 path depends on a verified M15 platform baseline. M20/G20 and G21 remain later release and device gates.
+M15 is IMPLEMENTING. P03 established the plan; M15.1 reviewed source layers and accepted a limited launch-feedback/frame-handoff slice. On 2026-10-22, the user chose the existing signed company catalogue/update-policy authority for first-party release-scoped API grants. P04–P06 candidates and focused checks are integrated; P07–P09 and G15 acceptance remain open. M14 feature work remains separate. The integrated G14 path depends on a verified M15 platform baseline. M20/G20 and G21 remain later release and device gates.
 
 ## Baseline facts carried into the plan
 
@@ -32,9 +32,9 @@ The lead verified the required worktree at `codex/milestone-15`, initially clean
 
 Side-branch review: `main` at M11 `8c8211c0` remains historical. The M13 candidate already contains the `codex/milestone-12-shell`, `codex/module-navigation` and `codex/store-install-arrival` ancestry, so those were not merged again. The older `codex/milestone-12` v2 state-recovery work is already represented in M13; its older support-review variant is superseded by the current safer support flow. `codex/os-minimize-glitch` is at the M12 shell ancestor. `refrence/` legacy branches remain local-only. The separate M14 source/worktree is not touched. No side branch was merged or deleted.
 
-## M15.2 contract guardrails — design remains open
+## M15.2 initial contract guardrails — P03 record, updated by the 2026-10-22 P04 decision
 
-The current host clinic API policy is compiled in `electron/sdk/appPolicy.ts`. Generic M11 package onboarding does not prove a newly signed package can acquire a new clinic API grant on an unchanged desktop. M15 must define approval, compatibility and host enforcement with the existing Worker as business authority, then prove approved and denied behavior. No route-manifest format, remotely supplied policy model, or permission evolution mechanism is selected by P03.
+The current host clinic API policy was compiled in `electron/sdk/appPolicy.ts`. Generic M11 package onboarding did not prove a newly signed package could acquire a new clinic API grant on an unchanged desktop. P03 selected no route-manifest, remotely supplied policy model or permission mechanism; the user later selected an existing signed company catalogue/update-policy authority in P04. ADR-026 records the accepted format-2 exact-release grant and host-enforcement rules below. M14 app-specific route/role inventory and service-backed compatibility remain open.
 
 M14's cross-app patient/case links are not authorization for a general app-to-app system. Architecture requirement R13 and the permanent exclusions in `19_V1_NON_GOALS.md` remain unchanged. M15 may assess a bounded OS-owned navigation/selection contract under a separate explicit contract/ADR, including source dirty/modal preservation, independent destination authorization, missing/denied destinations and identifiers kept out of sensitive URLs. No arbitrary messages, app-selected targets with authority, or app-to-app intents are designed or implemented here.
 
@@ -63,4 +63,16 @@ Historical runs identify a local Ubuntu 22.04.5 x86_64 private GNOME/Wayland env
 
 ## Lead integration review — P03
 
-The lead combined these four records with the other sidebar worker's gates/build-phases/traceability/checker changes and the lead's roadmap/status/checklist amendments. The review corrected an ambiguous worker phrase: activation occurs on the next full **app** launch, not a required Dental OS restart. The accepted install/update contract remains authoritative. Requirement mapping is resolved in the combined matrix; runtime authority/media/navigation designs remain pending. Earlier worker validation statements describe the partial worker stage; integrated P03 checks are recorded in VERIFICATION_EVIDENCE.md.
+The lead combined these four records with the other sidebar worker's gates/build-phases/traceability/checker changes and the lead's roadmap/status/checklist amendments. The review corrected an ambiguous worker phrase: activation occurs on the next full **app** launch, not a required Dental OS restart. The accepted install/update contract remains authoritative. Earlier worker validation statements describe the partial worker stage; integrated P03 checks are recorded in VERIFICATION_EVIDENCE.md.
+
+## P04–P08 lead review and execution — 2026-10-22
+
+| Item | Integrated work and accepted disposition | Remaining evidence / owner |
+| --- | --- | --- |
+| P04 API authority | User selected the existing signed company catalogue/update-policy authority. ADR-026 and `electron/distribution/updatePolicy.ts` bind exact `packageSha256`, payload digest and typed `apiOperations` to the existing company trust ceiling. Format-1 policy receives no API authority; absent/mismatched/expired/revoked grants fail closed. Broker rejects undeclared, generic and blob calls before credentials. Synthetic test covers a new app absent from `appPolicy`, a versioned API-only extension while v1 remains pinned, trial failure and v1-only fallback. | Final combined rerun; M14 P01 route/method/role inventory and real Worker session/authorization compatibility. Media and navigation are not authorized by this API decision. Lead owns. |
+| P05 ADR-025 | Integrated the update worker's staged-candidate, version truth, next-full-app-launch trial/health/fallback, removed update-now relaunch behavior and race/interruption regressions. | Final combined build/unit/private UI run and any applicable Windows CI. Lead owns. |
+| P06 shell | Integrated focus trap/restore and scaling/reduced-motion work, plus overview geometry based on actual managed-window bounds. Corrected overview fixture setup; private overview, scaling and usability suites are recorded in evidence. | Full final-source affected UI rerun. G12 and user visual acceptance remain M12/user-owned; G13 profile/module checks remain M13-owned. |
+| P07 workloads | Integrated the worker's 15-case matrix with a lead-owned execution addendum. Existing synthetic tests cover representative SDK reads/writes, cancellation/unknown outcomes, package bounds, Store failures and multiple-window shell/runtime behavior. | Execute P07 checks on the final source and inventory exact environments/resources. Media upload has no host adapter; media read checksum expectation and M14 route/role requirements remain unspecified. These rows are pending, not passes. Lead owns. |
+| P08 operations | Integrated the app-ready versus M20/G20/G21 release disposition and redacted support/recovery procedure. | No named staging operator or independent reviewer is recorded; no metadata-only preparation tool or staging renewal/expiry drill is evidenced. Lead owns local synthetic test and records; a named authorized operator/reviewer must own the real staging drill. Abhishek is only recorded as scope/G21 reviewer. |
+
+The original dirty M13 checkout remains unchanged. The staging preparation helper was not executed. No production mutation, main merge, deploy, worktree deletion or live app restart occurred. The P04–P08 proposal and evidence files are inputs to lead integration; they do not close G12, G13, G15, G14, G20 or G21.

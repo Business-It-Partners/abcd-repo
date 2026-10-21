@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { generateKeyPairSync } from 'node:crypto';
-import { operations } from '../sdk/contracts';
+import { apiOperations, operations } from '../sdk/contracts';
 import { PackageRegistry } from './registry';
 import { buildPackage, type Manifest, type TrustPolicy } from './format';
 export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2, modulePreviewFixture = false, slowModuleAckFixture = false, launchFeedbackFixture = false) {
@@ -14,6 +14,8 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
     'company.sample.beta': { publisher: 'company', capabilities: operations.filter(op => op !== 'appointments.setStatus') },
   }, ...(appCount > 2 || launchFeedbackFixture ? { companyApps: { publisher: 'company', capabilities: [] } } : {}) };
   const registry = new PackageRegistry(root, policy); registry.initialize();
+  // This registry is created only by the guarded private UI/CI fixture path.
+  registry.setApiGrantResolver(value => apiOperations.filter(operation => value.capabilities.includes(operation)));
   for (const host of ['alpha', 'beta']) registry.install(readFileSync(path.join(fixtureRoot, `${host}.dentalpkg`)));
   if (launchFeedbackFixture) {
     const pair = generateKeyPairSync('ed25519'), keyId = 'test-launch-feedback';

@@ -73,7 +73,9 @@ describe('generic first-party app onboarding and isolated app releases',()=>{
       expect(service.view().apps[0].pendingVersion).toBe(next);
       let running='';
       expect((await service.updateNow(id,appId=>{const lease=registry.launch(appId);running=lease.manifest.version;registry.markHealthy(appId,lease.release.digest);lease.releaseLease();})).ok).toBe(true);
-      expect(running).toBe(next);
+      expect(running).toBe('');
+      expect(registry.describe(id)).toMatchObject({activeVersion:version==='1.1.0'?'1.0.0':'1.1.0',pendingVersion:next,trialVersion:null});
+      const trial=registry.launch(id);expect(trial.manifest.version).toBe(next);registry.markHealthy(id,trial.release.digest);trial.releaseLease();
       expect(registry.describe(id).version).toBe(next);
       const current=registry.launch(id);expect(current.manifest.version).toBe(next);current.releaseLease();
     }

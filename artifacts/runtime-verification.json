@@ -48,12 +48,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 112088,
+    "shell": 20808,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/",
-        "pid": 112315,
+        "pid": 21019,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -63,7 +63,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/",
-        "pid": 112153,
+        "pid": 20852,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,

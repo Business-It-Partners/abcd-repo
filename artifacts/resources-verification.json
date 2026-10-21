@@ -9,38 +9,38 @@
   ],
   "samples": [
     {
-      "time": 1792164494444,
+      "time": 1792626540078,
       "processes": 6,
-      "workingSetKiB": 1186176,
+      "workingSetKiB": 1113456,
       "cpuPercent": 0,
       "views": 2
     },
     {
-      "time": 1792164509540,
+      "time": 1792626555252,
       "processes": 6,
-      "workingSetKiB": 1206808,
-      "cpuPercent": 0.6623778145507385,
+      "workingSetKiB": 1195792,
+      "cpuPercent": 0.7826102660948073,
       "views": 2
     },
     {
-      "time": 1792164524675,
+      "time": 1792626570397,
       "processes": 6,
-      "workingSetKiB": 964500,
-      "cpuPercent": 0.834130886043886,
+      "workingSetKiB": 974128,
+      "cpuPercent": 0.9656039004784408,
       "views": 2
     },
     {
-      "time": 1792164539783,
+      "time": 1792626585508,
       "processes": 6,
-      "workingSetKiB": 988232,
-      "cpuPercent": 0.5129774673153251,
+      "workingSetKiB": 1057260,
+      "cpuPercent": 0.6452383423275672,
       "views": 2
     },
     {
-      "time": 1792164554888,
+      "time": 1792626600634,
       "processes": 6,
-      "workingSetKiB": 955508,
-      "cpuPercent": 0.6454892549140316,
+      "workingSetKiB": 1010508,
+      "cpuPercent": 0.8594187470991632,
       "views": 2
     }
   ],

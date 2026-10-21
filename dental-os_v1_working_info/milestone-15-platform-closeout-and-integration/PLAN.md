@@ -1,7 +1,7 @@
 # M15 Plan — Platform Closeout and Integration
 
-**Status:** IMPLEMENTING — P03 planning and the M15.1 accepted source reconciliation checkpoint are complete; M15.2–M15.6 and final acceptance remain open.
-**Updated:** 2026-10-21.
+**Status:** IMPLEMENTING — P03/M15.1 are complete. P04–P06 implementation candidates have focused evidence; P07 execution is underway; P08 scope is dispositioned with the named renewal operation/drill unresolved; P09 and G15 remain open.
+**Updated:** 2026-10-22.
 **Dependencies:** Preserve M01–M11 verified scope; reconcile M12/G12 and M13/G13 residuals. M14 app implementation continues in parallel. Integrated G14 acceptance depends on a verified M15 baseline. M20/G20 and G21 remain later release/device gates.
 **Requirements:** R01–R13 and R15, limited to the app-ready portions mapped to G15 in the architecture traceability matrix. R14 production platform release/update/support proof remains M20/G20/G21.
 **Exit gate:** G15 — Platform closeout and integration proof. It does not waive G12 or G13.
@@ -9,7 +9,7 @@
 
 ## Outcome
 
-Reconcile the committed M13 platform candidate and reviewed local inputs, close the remaining shared-platform contracts and shell gates, then verify one exact integrated baseline that M14 can use for app acceptance. M15 establishes app-integration readiness for the declared scope; it does not certify production release, supported customer hosts, or final device acceptance.
+Reconcile the committed M13 platform candidate and reviewed local inputs, close the remaining shared-platform contracts and shell gates, then verify one exact integrated baseline that M14 can use for app acceptance. The user selected the existing signed company catalogue/update-policy authority for release-scoped first-party API grants; ADR-026 and format-2 exact grants record that decision. M15 establishes app-integration readiness for the declared scope; it does not certify production release, supported customer hosts, or final device acceptance.
 
 ## Source layers to preserve
 
