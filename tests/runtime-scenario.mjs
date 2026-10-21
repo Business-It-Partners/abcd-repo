@@ -29,8 +29,9 @@ export async function verifyRuntime(profileArgs, reportName) {
   const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight}));
   // Stay inside the 160px hover band without depending on Windows' last client pixels.
   await alpha.evaluate(()=>{window.__runtimeEdgeTrace=[];window.addEventListener('pointermove',event=>{if(event.clientY>=innerHeight-200)window.__runtimeEdgeTrace.push({x:event.clientX,y:event.clientY,height:innerHeight,trusted:event.isTrusted});});});
+  await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);});
   await alpha.mouse.move(alphaSize.width/2,alphaSize.height-80);
-  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockInert:document.querySelector('.dock-region')?.inert})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
+  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
   await shell.waitForTimeout(160);
   const edgePreviewPixel=await mirrorCenterPixel('studio');
   check('dock-edge preview matches the current live app content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
