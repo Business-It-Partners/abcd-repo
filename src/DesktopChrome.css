@@ -1,5 +1,5 @@
 /* M12.1: compact dark-glass macOS-style menu bar with light readable lettering. */
-.desktop-statusbar{position:fixed;inset:0 0 auto;z-index:80;min-height:31px;display:flex;align-items:center;gap:12px;padding:3px 13px;color:#f7f8ff;background:linear-gradient(180deg,#7187ad99,#3d527f9e);border-bottom:1px solid #ffffff45;box-shadow:0 3px 18px #09142a20,inset 0 1px #ffffff35;backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);font-size:12px;user-select:none;pointer-events:none}
+.desktop-statusbar{position:fixed;inset:0 0 auto;z-index:80;box-sizing:border-box;min-height:31px;display:flex;align-items:center;gap:12px;padding:3px 13px;color:#f7f8ff;background:linear-gradient(180deg,#7187ad99,#3d527f9e);border-bottom:1px solid #ffffff45;box-shadow:0 3px 18px #09142a20,inset 0 1px #ffffff35;backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);font-size:12px;user-select:none;pointer-events:none}
 .statusbar-active,.statusbar-right,.statusbar-network{display:flex;align-items:center}
 .statusbar-active{gap:7px;min-width:0;max-width:34%;font-weight:700;color:#f7f7ff}
 .statusbar-active span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -22,6 +22,7 @@
 .clinic-widget-copy strong{font-size:14px;font-weight:700}.clinic-widget-copy span{font-size:13px;font-weight:600;color:#29383e}.clinic-widget-copy small{font-size:11px;font-weight:600;color:#3d494e}
 .clinic-widget-menu{position:relative;flex:0 0 auto;margin-left:auto;pointer-events:auto}
 .clinic-widget-menu>summary{width:32px;height:32px;display:grid;place-items:center;list-style:none;border:1px solid #53778a24;border-radius:10px;background:#ffffff72;color:#29383e;cursor:pointer}
+.desktop-statusbar .clinic-widget-menu>summary{width:24px;height:24px;border-radius:7px}
 .clinic-widget-menu>summary::-webkit-details-marker{display:none}
 .clinic-widget-menu>summary:hover,.clinic-widget-menu[open]>summary{background:#ffffffd6}
 .clinic-widget-menu>summary:focus-visible{outline:2px solid #317d9b;outline-offset:2px}
