@@ -22,6 +22,7 @@ export async function verifyRuntime(profileArgs, reportName) {
  try {
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await ready('studio');let alpha=await guest('alpha');
   await waitExpectedNative('alpha');
+  const initialNative=await nativeView('alpha');assert.ok(initialNative?.visible);await alpha.waitForFunction(({width,height,tolerance})=>Math.abs(innerWidth-width)<=tolerance&&Math.abs(innerHeight-height)<=tolerance,{...initialNative.bounds,tolerance:geometryTolerance});
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
   await alpha.evaluate(()=>{const marker=document.createElement('div');marker.id='module-preview-probe';Object.assign(marker.style,{position:'fixed',inset:'0',zIndex:'2147483647',pointerEvents:'none',background:'rgb(20,220,80)'});document.body.append(marker);});
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
