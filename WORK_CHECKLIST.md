@@ -1,11 +1,21 @@
 # Electron Desktop Prototype — Work Checklist
 
+**Platform reconciliation and closeout:** [Central work tracker](dental-os_v1_working_info/PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) owns the nine-area task list, reconciliation map and closeout scope decisions. Started on 2026-10-21; P01/P02 audits are complete; the user authorized P03 to adopt M15/G15 and align its milestone records, roadmap and gates. Separate sidebar workers completed disjoint documentation scopes; P03 validation passes and runtime implementation remains pending. This root file retains the active work contract/history; architecture and milestone gates remain with their existing authorities.
+
 **Status:** Implemented; Linux technical checks pass. User visual acceptance pending.  
 **Created:** 2026-10-13  
 **Project directory:** `/home/master-x/Desktop/fewa_business_os`  
 **Product name:** Not yet chosen; the directory name is a working label.
 
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
+
+## Staged app-update contract — 2026-10-21
+
+The user authorized documentation of the settled Store update model. [Install, Update and Uninstall](dental-os_v1-documentation/10_V1_INSTALL_UPDATE_AND_UNINSTALL.md) is now the single lifecycle authority: prepare/verify separately while running work remains pinned; trial on next full launch after normal close; eligible known-good recovery on startup failure. ADR-025 supersedes ADR-024's close-first model. Product vision, global status and M13 follow-up records link to this contract. Store/runtime alignment and focused verification remain pending; existing M08/M11 evidence is preserved. No runtime change, publication, deployment, milestone closure or new permission format is implied. Documentation/link checker and Git whitespace validation are the only checks for this prose change.
+
+## Product-contract consolidation — 2026-10-21
+
+The user authorized one canonical product explanation with detailed technical contracts kept separate. [Product Vision and V1 Contract](dental-os_v1-documentation/01_WHY_DENTAL_OS.md) now combines the motivation and product definition; the old definition path remains a compatibility pointer. Architecture navigation and the root direction link to it. At this consolidation checkpoint ADR-024 recorded a close-first target; the later staged-update decision below explicitly supersedes it. Current Store/runtime still use download/apply and immediate successor launch; implementation/verification remain pending. No route-list manifest or remote API permission mechanism was approved by this consolidation. No runtime change, milestone closeout, app publication or production acceptance is claimed. Validation: documentation checker and Git whitespace check; no heavy/runtime tests required.
 
 ## First-party app onboarding and independent-update follow-up
 
@@ -28,6 +38,29 @@ M13 is first-party app shells at version 1.0.0, with one app submilestone for ea
 The user reports installing and running all eleven M13 version 1.0.0 shells in Dental OS. This records user-reported app-window use for M13.1–M13.11. Runtime health acknowledgement is automatic: after the managed app page and platform bridge are ready, the runtime records the active package as known-good. There is no user-facing acknowledgement button. The earlier Follow-ups artifact predates this launch and still records `runtimeLaunchAndHealthAcknowledgement: false`; the current registry receipt has not been re-read. Installation of Finance and Lab Tracker 1.0.1 and module switching were not explicitly confirmed. See the current [M13 status](dental-os_v1_working_info/milestone-13-first-party-app-shells/STATUS.md) and [verification evidence](dental-os_v1_working_info/milestone-13-first-party-app-shells/VERIFICATION_EVIDENCE.md).
 
 M14 is the functional Dental OS app milestone, with a corresponding submilestone name for each M13 app. The M14 document is intentionally an overview only; write detailed per-app plans after M13 is complete. M20 receives the former Windows/Linux platform release-and-operations scope from M13. G13 gates M13, G14 gates M14, G20 gates M20, and final physical/device acceptance remains G21 after M20. See the [master roadmap](dental-os_v1_working_info/00_V1_MASTER_ROADMAP.md), [M13 plan/status](dental-os_v1_working_info/milestone-13-first-party-app-shells/PLAN.md), [M14 overview](dental-os_v1_working_info/milestone-14-dental-app-functionality/PLAN.md), and [M20 plan](dental-os_v1_working_info/milestone-20-windows-linux-release/PLAN.md).
+
+### M13 managed app handoff frame — verified follow-up (2026-10-21)
+
+The M13 app content runs in the shared isolated managed runtime. When the dock edge or another OS window temporarily hides its native surface, the shell displays a captured frame of that same live app until it becomes visible again. The previous handoff cleared the last frame before asynchronous capture completed, briefly replacing the app with the misleading “Refreshing the app preview” text. The runtime now keeps the last stable frame until a fresh capture atomically replaces it, and the UI no longer calls the app a preview. `npm run build` passes; `npm run test:runtime` passes 46 private runtime checks plus DPR 2 capture, including a deliberately delayed-capture regression. `npm test -- --maxWorkers=1` passed 296/297; one unrelated package-recovery case exceeded its default 5-second timeout and passed when run alone with a 15-second timeout. No package was republished, no M13 acceptance gate was closed, and the live app was not restarted.
+
+### M13.12 Patient Record launch/loading pilot — two-second hold and fade-in verified (2026-10-21)
+
+- [x] Render the Patient Record loading surface in its existing OS-managed window while the isolated package loads.
+- [x] Keep the real package hidden until its page and platform bridge are ready, then hold the OS launch screen for at least two visible foreground seconds.
+- [x] Fade the actual Patient Record document in over 260 ms after the hold; respect reduced-motion settings and preserve current recovery behavior.
+- [x] Verify accessible status, artwork/title, minimum duration, app fade, live-window handoff, and no renderer errors on a private display.
+
+The Patient Record 1.0.0 package remains unchanged. The OS shell displays its artwork, name, and an indeterminate accessible loading indicator. The 2-second clock advances while the managed Patient Record window is foreground and pauses if the user switches away; the native app also waits for the dock overlay to close. Once ready, the OS reveals the actual app with a 260 ms ease-out fade. Reduced-motion settings skip that fade and stop spinner rotation. The pilot initially covered Patient Record only; the user authorized fanout on 2026-10-21, tracked as M13.13.
+
+### M13.13 OS-managed app launch feedback — privately verified (2026-10-21)
+
+- [x] Apply the same OS-managed launch surface to every installed managed app package, without checking a Dental OS app-ID prefix.
+- [x] Keep the app hidden until runtime readiness and at least two visible foreground seconds; wait for the app explorer/dock overlay to close before revealing it.
+- [x] Fade the actual isolated app document over 260 ms and respect reduced-motion settings.
+- [x] Verify the eleven current M13 packages plus a differently named future package, module selection, and a repeated Patient Record launch on a private display.
+- [ ] Review the fanout in the user's installed Dental OS after a full user-controlled relaunch.
+
+The shared shell/runtime selects all installed managed packages from the verified Store inventory; launch feedback is not keyed to current M13 IDs. A `company.future.billing` fixture with no Dental OS app prefix verifies that a later company package inherits the same readiness wait, foreground hold, and content fade. Current known apps retain their titles and artwork; an unrecognized app ID uses the OS icon fallback. `npm run build` passes; `npm test -- --maxWorkers=1 --testTimeout=15000` passes 297/297; and `npm run test:app-launch-feedback` passes 132 checks across the eleven current apps plus the future package on private headless GNOME/Wayland. Finance/Lab Tracker module selection and repeated Patient Record launch are covered. The user-installed app packages and Store catalogue were not changed or republished. The running Dental OS was not focused or restarted; it will load the shell change after a later full user-controlled relaunch. Evidence is in `artifacts/app-launch-feedback-2026-10-21T07-18-57-969Z.png`, its matching JSON report, and `artifacts/app-launch-feedback-handoff-2026-10-21T07-18-57-969Z.png`.
 
 ### M12.1 desktop status bar and M12.2 wallpaper widgets/dock — implemented for tested Linux scope (2026-10-20)
 
@@ -660,3 +693,21 @@ The user reported left-edge spill, a right-edge overlay glitch, bottom-edge spil
 ## M12 kickoff — user-directed shell chrome cleanup, 2026-10-20
 
 Started M12 on `codex/milestone-12-shell` from M11-integrated `main`. The older pre-M11 `codex/milestone-12` ref remains preserved rather than rewritten. Initial requested cleanup removes the lower-left Electron/Dock+Genie prototype label and the white backplate behind top-right session controls; session actions stay available. The Linux build and all 280 unit tests pass; the focused private identity UI test confirms both strips are gone, the session actions remain, and no page errors occur. Screenshot evidence: `artifacts/m12-chrome-cleanup.png`. All five M12 phases remain PLANNED pending user scope; no phase or G12 acceptance is claimed.
+
+## Published M14 parallel app handoff — 2026-10-21
+
+The user authorized a separate web-chat app track while this checkout continues platform reconciliation. Dental OS `codex/milestone-14` is published at `3ace826ef4800abbcd7ff2c5bc37601de248e63a`; SaaS `codex/den-0003-dental-os-module-bundles` at `12ac3aed66979e7c924b416f5a70aa2733e366a8`. [Start here](https://github.com/Business-It-Partners/dental-os/blob/codex/milestone-14/dental-os_v1_working_info/milestone-14-dental-app-functionality/WEB_CHAT_START_HERE.md) owns the app handoff, source pins, eleven-app matrix and app/platform dependency boundary. M14 is IMPLEMENTING for planning/handoff; no functional app acceptance is claimed. M12/G12, M13/G13 and final G14 dependencies remain open. The app branch excludes this checkout's uncommitted runtime changes. Frontend SaaS typecheck/lint/56 existing unit tests and OS handoff documentation checks passed; static OS package build, live API/Store and private runtime app acceptance remain pending. No environment/main merge, deployment, signed publication or live-app restart occurred.
+
+### M14 Windows/Linux handoff readiness — 2026-10-21
+
+M14 app-development CI now passes on both hosts at source `41c88796be558806cc0664a09972cd3539afa57f`: [run 39634626211](https://github.com/Business-It-Partners/dental-os/actions/runs/39634626211). Shared SaaS typecheck/lint/56 tests pass; ten available M13 source shells pass package validation and synthetic startup on each host. Per the user's clarification, functional dental apps will be implemented afresh in the web-chat track: Follow-ups is explicitly planned/NOT RUN and no functional export is enabled yet. Each implemented app must enable its real build/tests; shell results do not establish M14 acceptance. SaaS source remains identical to the original handoff after the tentative config fix was reverted; current CI pin is `a3b116c64df826cbb5b66bc09305f81bf06cd463`. The existing Windows platform workflow also passes at the final baseline; an earlier intermittent dock-edge failure is retained for platform reliability review.
+
+[M14 start guide](https://github.com/Business-It-Partners/dental-os/blob/codex/milestone-14/dental-os_v1_working_info/milestone-14-dental-app-functionality/WEB_CHAT_START_HERE.md) and its CI contract contain the ready handoff. Evidence-only closeout is published separately with unchanged tested inputs. No main/environment merge, platform runtime changes, deployment, app release, or live desktop restart occurred. Original checkout changes remain preserved; the parallel app track may start.
+
+## M15 P03 — formal platform closeout planning, 2026-10-21
+
+The user authorized adopting the reconciled scope as M15 Platform Closeout and Integration. Its PLAN, STATUS, IMPLEMENTATION_NOTES and VERIFICATION_EVIDENCE records define six slices and G15. Roadmap, global status, requirements/gates and M12/M13/M14/M20 coordination are aligned. Historical M01–M11 evidence is preserved; M12/G12 and M13/G13 residuals remain open until actually proven. M14 app implementation continues independently; final G14 requires verified G15. M20 keeps platform release/installer/updater/signing/host certification and G21 remains mandatory after M20.
+
+Work pattern: this lead coordinates the separate sidebar chats/worktrees; no embedded workers are used for P03. The combined planning checkpoint is on `codex/milestone-15` in the `platform-closeout` worktree. Existing original-checkout runtime changes are retained for M15.1 review and are not part of this documentation checkpoint. Documentation validation is required; no heavy build or runtime/UI suite is appropriate for this scope. Remove unnecessary task-generated build outputs when each worktree task finishes, preserving source/evidence and live/unrelated builds.
+
+P03 closeout: combined documentation checks PASS with 24 architecture documents, 16 milestone folders/64 required records, 15 requirements and 17 gates. Reviewed the worker outputs, corrected the app-launch wording and included affected final-source privacy in G15 mapping. No runtime build/unit/UI test was run. Five task worktrees were inspected for generated build-output roots; none existed, so none required deletion. Source/reports/evidence and the original live build remain intact. G15 and other runtime/release gates stay open.

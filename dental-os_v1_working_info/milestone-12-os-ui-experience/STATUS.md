@@ -28,3 +28,8 @@ The current evidence is Linux/private-display automation with synthetic identiti
 ## Status rules
 
 Track each phase against its plan and retain failed runs. Mark G12 VERIFIED only when all phase criteria pass with exact source/build/host evidence. User visual acceptance remains separate; no final product release is inferred from M12 completion.
+
+## M15 coordination amendment — 2026-10-21
+
+The user adopted [M15 Platform Closeout and Integration](../milestone-15-platform-closeout-and-integration/PLAN.md) during P03. The [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) tracks remaining platform work; this amendment changes coordination/dependencies, not historical evidence or acceptance.
+Remaining requirements under this milestone's original gate stay open until their evidence is complete; M15.4 coordinates their closeout. Previously implemented/verified scope is reused. M15 planning does not declare those residuals accepted.

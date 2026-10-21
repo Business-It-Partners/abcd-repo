@@ -1,0 +1,317 @@
+{
+  "capturedUtc": "2026-10-21T17:02:14.639495+00:00",
+  "scope": "Read-only Git/source inventory after Dental OS origin fetch; local edits are not a commit or new acceptance proof. Secret/ignored profile files excluded.",
+  "checkout": "/home/master-x/Desktop/fewa_business_os",
+  "branch": "codex/milestone-13",
+  "head": "963633620d9fa620979bd33fc292949ab1a6c2e6",
+  "references": [
+    {
+      "ref": "main",
+      "sha": "8c8211c00614b095c529d9d14964ca2ce912db73",
+      "headOnlyCommits": 20,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "origin/main",
+      "sha": "8c8211c00614b095c529d9d14964ca2ce912db73",
+      "headOnlyCommits": 20,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "codex/milestone-12",
+      "sha": "65bd3b1d2ba54a736711a6213cf2bebca117376a",
+      "headOnlyCommits": 31,
+      "refOnlyCommits": 1,
+      "ancestorOfCurrentHead": false
+    },
+    {
+      "ref": "codex/milestone-12-shell",
+      "sha": "1badd285ca77a77a8a297b5b9f1292916d722c4c",
+      "headOnlyCommits": 18,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "origin/codex/milestone-12-shell",
+      "sha": "158f12a776cd3da905c8d0b80bae2bc3aff21d5d",
+      "headOnlyCommits": 19,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "codex/module-navigation",
+      "sha": "cfe5f0632473867d0f4767690844697f249e3442",
+      "headOnlyCommits": 4,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "codex/store-install-arrival",
+      "sha": "7f6e65bf2b8990ba656ed66261670e4f842439dc",
+      "headOnlyCommits": 34,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "codex/milestone-13",
+      "sha": "963633620d9fa620979bd33fc292949ab1a6c2e6",
+      "headOnlyCommits": 0,
+      "refOnlyCommits": 0,
+      "ancestorOfCurrentHead": true
+    },
+    {
+      "ref": "codex/milestone-14",
+      "sha": "6fd362ec51b3f4c256750202a10c16d4ece05518",
+      "headOnlyCommits": 0,
+      "refOnlyCommits": 7,
+      "ancestorOfCurrentHead": false
+    },
+    {
+      "ref": "origin/codex/milestone-14",
+      "sha": "48c18401cada192bfa0bea02a4afdd0cb10e45ca",
+      "headOnlyCommits": 0,
+      "refOnlyCommits": 8,
+      "ancestorOfCurrentHead": false
+    }
+  ],
+  "localInputs": [
+    {
+      "status": " M",
+      "path": "PRODUCT_DIRECTION.md",
+      "bytes": 4187,
+      "sha256": "951896d628ee18790e3ee17ef994dceb6cd36d7aefa513b087f55d714e9ad691"
+    },
+    {
+      "status": " M",
+      "path": "WORK_CHECKLIST.md",
+      "bytes": 112519,
+      "sha256": "df98e64ddf68a0d24a5dfd7445acd4fbfe3b769737e06f5a4c3625d41aac3776"
+    },
+    {
+      "status": " M",
+      "path": "artifacts/runtime-verification.json",
+      "bytes": 3218,
+      "sha256": "4ff3cea04219823d8e36377caa5c25ac0ee625186192d536845213686e3e18e8"
+    },
+    {
+      "status": " M",
+      "path": "artifacts/windows-package-linux-smoke.png",
+      "bytes": 380091,
+      "sha256": "873813ddc6a474b6db3136ceb2ddae90a5d6e32e11af57bdb52da3e2073a7c8b"
+    },
+    {
+      "status": " M",
+      "path": "artifacts/windows-preview-verification.json",
+      "bytes": 10273,
+      "sha256": "3f6424f55d4d3a5864c1398f7caccdcbf3aeff1b6ad07af4d3ff424afeb50c16"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1-documentation/00_V1_README.md",
+      "bytes": 4069,
+      "sha256": "0427dd58a1dcd1ade83d4550d3a006e853f83fb60da9506ca8294617a4af7b85"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1-documentation/01_WHY_DENTAL_OS.md",
+      "bytes": 8914,
+      "sha256": "a48ae5767ea90540543e005f0077ed68c0aa98ec6894d87a0eea779f1e22eee1"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1-documentation/02_V1_PRODUCT_DEFINITION.md",
+      "bytes": 917,
+      "sha256": "d7752c47a230496406210259c202666cf0c47ddc172991d7dc241b5a53a240f3"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1-documentation/10_V1_INSTALL_UPDATE_AND_UNINSTALL.md",
+      "bytes": 19827,
+      "sha256": "95cb0bc21c3edd0c54fd9c0a190a4a48f79bb82a2bd74ff0c62cfcf5a7b032b2"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1-documentation/20_V1_ADR_REGISTER.md",
+      "bytes": 12169,
+      "sha256": "d6c7502fca37e9feb57f4c1b8a1ae9ecd0a701e8e2e882132f491eeec9921936"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/00_V1_MASTER_ROADMAP.md",
+      "bytes": 12031,
+      "sha256": "361e8f3143a19ba7dad930d44420638a3eb4469b216f6087e9d37b4e05ce5478"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/00_V1_STATUS.md",
+      "bytes": 10840,
+      "sha256": "fb8102aa8861beb8fb34654b4834fe9fe325421689e721d7d46f3b6e30e7ce97"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/milestone-13-first-party-app-shells/IMPLEMENTATION_NOTES.md",
+      "bytes": 12435,
+      "sha256": "ea0a6a138d2210b920be8ee29b11ecf1cab319c76ad203c0f675147c1eb96d39"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/milestone-13-first-party-app-shells/PLAN.md",
+      "bytes": 12290,
+      "sha256": "74343b9456c507b8972037bf75464b3246b33f5d110031311787dc38e9440d91"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/milestone-13-first-party-app-shells/STATUS.md",
+      "bytes": 7705,
+      "sha256": "759e23898a020edf46732b9225a1e2b91caed79b353279fd2bb710c8f9be7623"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/milestone-13-first-party-app-shells/VERIFICATION_EVIDENCE.md",
+      "bytes": 17367,
+      "sha256": "b328e002abd0c805aaadd2d15a6eb62f1b83535953fbc796ac43cde1d8d18662"
+    },
+    {
+      "status": " M",
+      "path": "dental-os_v1_working_info/milestone-14-dental-app-functionality/STATUS.md",
+      "bytes": 2024,
+      "sha256": "9ccdb896e9a43b22b6d4e418003ff636d6cd7ce14e0043fc6f6840f344e65105"
+    },
+    {
+      "status": " M",
+      "path": "electron/distribution/service.ts",
+      "bytes": 18497,
+      "sha256": "4e5cc120fea7205a0519cb9ee0521dfdfa101c47798d3659bc3a268f8bf7060d"
+    },
+    {
+      "status": " M",
+      "path": "electron/main.ts",
+      "bytes": 21503,
+      "sha256": "eb0c40f4a38d09950d46c44534932b4cda30c49f0faf642c7f874c681293a331"
+    },
+    {
+      "status": " M",
+      "path": "electron/packages/fixtures.ts",
+      "bytes": 6848,
+      "sha256": "290e6bc1f355c84bc6188cee463f4774f036bfe6630b30edf82eb4c0ead05271"
+    },
+    {
+      "status": " M",
+      "path": "electron/runtime/manager.ts",
+      "bytes": 29210,
+      "sha256": "989c23d751833f6f34c9dea7076e7fa4cf018bab4214bcff016ae900358d7087"
+    },
+    {
+      "status": " M",
+      "path": "package.json",
+      "bytes": 3516,
+      "sha256": "f5cb508c9805107869726ea3371448670fa2aea3f58d64d1f2d6e7d55d615e23"
+    },
+    {
+      "status": " M",
+      "path": "src/RuntimeFixtures.tsx",
+      "bytes": 15828,
+      "sha256": "59f78a63f0b77857b577eda03d62860e4826a049c916aae8bf7b4f002c6037c1"
+    },
+    {
+      "status": " M",
+      "path": "src/style.css",
+      "bytes": 62495,
+      "sha256": "d7e02ff565ff9f0e61707f4e1dafc12cc145f1be858359eb00ec68842e97e77f"
+    },
+    {
+      "status": " M",
+      "path": "tests/runtime-scenario.mjs",
+      "bytes": 24793,
+      "sha256": "49249c58d1cac7f12c3529233f48913c05d0af36c5182fc93d3662c2fb37bcb4"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-2026-10-21T06-51-04-238Z.json",
+      "bytes": 10913,
+      "sha256": "b7e269e85e3c28d060aae983b4e4c5b8ac6c6811a97994d665dc37e82ea5609f"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-2026-10-21T06-51-04-238Z.png",
+      "bytes": 790720,
+      "sha256": "f60b9ac35f556c39bb3343a93b91d9a1a89099063b376c9cab169e7adaf0e419"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-2026-10-21T07-18-57-969Z.json",
+      "bytes": 12129,
+      "sha256": "7c94468d689835741ef2f901b3b6b581840994c7a0ab51318682c4ee737d14ef"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-2026-10-21T07-18-57-969Z.png",
+      "bytes": 789635,
+      "sha256": "95ab54469288f30f8922ec8c4b52e549849e5f84a774dc1828cf718fc6db430b"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-handoff-2026-10-21T06-51-04-238Z.png",
+      "bytes": 9397,
+      "sha256": "5c325d5d41e942d7e1a272f1b0f96caa19d830de3d0582d6dd62de0402753786"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/app-launch-feedback-handoff-2026-10-21T07-18-57-969Z.png",
+      "bytes": 11076,
+      "sha256": "5074fe18fdf3a93351ee04460a8a653d23baa2474b67395295badfb769b3b833"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/patient-record-launch-handoff-2026-10-21T06-30-22-057Z.png",
+      "bytes": 11462,
+      "sha256": "97eb7067abfee92d0d26904abc2b329f2cab5daffae1fa18f596fdbc8a6a52d3"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/patient-record-launch-pilot-2026-10-21T06-09-13-804Z.json",
+      "bytes": 600,
+      "sha256": "04efa19f51b36eeef33c6d01ad4f3e98f13947e77dcc2e178cdece7029cd472d"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/patient-record-launch-pilot-2026-10-21T06-09-13-804Z.png",
+      "bytes": 777004,
+      "sha256": "ffb3367459a77699c016b381660a717ffbd7e786a40a8e33efdd4c9eb57c640f"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/patient-record-launch-pilot-2026-10-21T06-30-22-057Z.json",
+      "bytes": 1146,
+      "sha256": "2fc9ba219e794069b301ec85472f27c69642a7fcfa5544c4e2179af288f43e9b"
+    },
+    {
+      "status": "??",
+      "path": "artifacts/patient-record-launch-pilot-2026-10-21T06-30-22-057Z.png",
+      "bytes": 784636,
+      "sha256": "9dcd0f2c742380fedbbd864f6a00be957f8edc874594bda768f51504547a4c6b"
+    },
+    {
+      "status": "??",
+      "path": "dental-os_v1_working_info/PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md",
+      "bytes": 14007,
+      "sha256": "a552a87089d18e30a3e6e860610175068709f41eeebd32d21bfbb5705fd6071d"
+    },
+    {
+      "status": "??",
+      "path": "tests/app-launch-feedback.mjs",
+      "bytes": 8551,
+      "sha256": "afed9d198b2b28574f3bc02d4578b2b7ad5d1ffe3b73f01ec6cee1eb73cba5ac"
+    },
+    {
+      "status": "??",
+      "path": "tools/app-packages/prepare-dental-saas-staging.mjs",
+      "bytes": 13491,
+      "sha256": "c7f75cd31138c00a30c2b2ec531ae067d2caab02b20537a47976e416c7978b92"
+    }
+  ],
+  "workerBase": "963633620d9fa620979bd33fc292949ab1a6c2e6",
+  "remoteM14IsSeparateAndAdvanced": true
+}

@@ -25,6 +25,8 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-017 | Reuse fewa_demo infrastructure; staging-only backend execution | Accepted execution constraint | verify repository/branch/GitHub environment/resource mapping; production changes/promotion separately authorized; 09 |
 | ADR-018 | New OS APIs under /v1/dental-os; existing business routes unchanged | Accepted route boundary | additive services with explicit authorization; prefix is not deployment isolation; 09/11 |
 | ADR-023 | Company-signed catalogue registers first-party app IDs within a platform capability ceiling | Accepted for V1 company apps | new IDs do not require per-app shell branches; platform still pins company roots and a capability ceiling; 09/10/14/23 |
+| ADR-024 | Explicit app update closes the app and leaves it closed after activation | Superseded by ADR-025 before implementation acceptance | historical decision retained below |
+| ADR-025 | Stage verified updates; activate on next full launch without disturbing running work | Accepted target; alignment/verification pending | lifecycle authority: 10; product motivation: 01 |
 
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 
@@ -51,3 +53,21 @@ M08 selects an additive signed update-policy document over changing the M07 cata
 **Tradeoff:** An approved company signing key can onboard new first-party IDs without an Electron release, while compromise of that key could authorize an app within the shipped company capability ceiling. Revocation, expiry, sequence freshness, minimum versions, and digest/key revocation remain signed controls. Adding a capability outside the ceiling still requires a trusted platform policy/release change. This does not create third-party publishing, arbitrary sideloading, or a public extension API.
 
 **Evidence and limits:** Linux tests cover the generic runtime and Store path; Cloudflare staging sequences 12–14 demonstrate `company.sample.preview` `1.0.0` → `1.1.0` → `1.2.0`, with sequence 15 publishing 1.3.0. Authenticated clinic Store install/update service acceptance and a private live-feed desktop install/update/restart pass are recorded in [M11 evidence](../dental-os_v1_working_info/milestone-11-flexible-first-party-app-updates/VERIFICATION_EVIDENCE.md). The user reports completing the manual 1.3.0 desktop update. Local failure/recovery tests and final-source Windows CI pass. The 16 minimal synthetic apps measured 2.09 GiB peak aggregate working set across 20 processes; closing all app views returned the shell to 487 MiB across four processes. This is a working-set sum with no enforced budget, not PSS or proof for clinical workloads/low-memory devices. M11 closes G11 for its recorded scope; this does not certify Windows release operations (M20/G20) or final device acceptance (G21).
+
+## ADR-024 — Simple explicit app update; next open runs the successor (superseded)
+
+**Status:** superseded by ADR-025 on 2026-10-21. The following records the earlier decision, not the current target.
+
+**Decision (2026-10-21):** at the user's direction, use Update → safe close → verified atomic activation → Updated/Open, leaving the app closed. Download/verification may precede close. Next user launch starts the new version. This supersedes immediate relaunch as the explicit update-now UX; it does not supersede signed controls, immutable package bytes, health/trial recovery or compatibility-aware rollback in ADR-011/022.
+
+**Tradeoff and safety:** removes the need for a user-facing download/apply split or automatic relaunch, at the cost of interrupting that app at the safe activation boundary. Resolve drafts and pending/unknown writes before close; do not routinely kill active work. Other apps remain running. Preserve the old recoverable version if preparation or activation fails.
+
+**Scope/evidence:** M13 platform follow-up; Store/runtime implementation and focused tests remain pending. Current update-now closes and immediately starts the successor. This is an accepted product decision only, not a new milestone completion or release claim. The [update contract](10_V1_INSTALL_UPDATE_AND_UNINSTALL.md) owns behavior; the [product vision](01_WHY_DENTAL_OS.md) owns its motivation. No runtime edits or additional remote authority follow from this documentation consolidation.
+
+## ADR-025 — Staged app updates with next-full-launch activation
+
+**Decision (2026-10-21):** at the user's direction, the Store Update action prepares a verified immutable candidate on disk while the running app remains pinned and usable. The next full launch after normal close selects a persisted trial; startup health acknowledges success or selects an eligible known-good fallback. No forced app close, live code replacement or automatic relaunch is required. This explicitly supersedes ADR-024; preserve its history, not its behavior as a current requirement.
+
+**Tradeoff:** users may keep the old version open until their next natural close, avoiding interrupted clinic work. Store state must distinguish pending from active versions. Signed security withdrawal, compatibility and freshness rules remain enforced separately. Package rollback never undoes server-side business operations.
+
+**Scope/evidence:** retain ADR-011/022's immutable package, lease, trial and recovery foundations and M08/M11 evidence. Store/runtime alignment and focused acceptance remain pending M13 platform follow-up, with no new milestone number/gate closure or remote operation. The [install/update contract](10_V1_INSTALL_UPDATE_AND_UNINSTALL.md) alone owns detailed lifecycle rules and required verification; this register records the decision and supersession. Documentation does not approve a new API-permission format or claim revised runtime behavior implemented.

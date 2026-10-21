@@ -1,5 +1,7 @@
 # Dental OS — Active Electron Product Direction
 
+**Start here:** [Product Vision and V1 Contract](dental-os_v1-documentation/01_WHY_DENTAL_OS.md) is the canonical product explanation, including feedback-driven independent app delivery, platform/app/backend ownership and V1 boundaries. The dated context below remains historical; current implementation is recorded in global status and milestone evidence.
+
 As approved on 2026-10-15, `/home/master-x/Desktop/fewa_business_os` is the canonical home for Electron OS. The active implementation is Electron + React + TypeScript: `electron/` provides the sandboxed native host and narrow preload IPC, while `src/` provides desktop windows, dock, overview, motion, and clinic app demonstrations.
 
 The complete former Flutter/Rust project is archived in `refrence/`. Its pharmacy V1 architecture and sprint documents remain historical references, not active requirements for this Electron implementation. Use proven dock, window, and Genie ideas from that archive without treating Flutter/Rust as runtime dependencies.

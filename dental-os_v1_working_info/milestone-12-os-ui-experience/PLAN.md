@@ -39,3 +39,8 @@ Phases are tracked under parent gate G12 in one STATUS.md and one evidence recor
 Keep the single active signed-in clinic session and online Dental SaaS authority. No local authoritative business DB, hidden offline write queue, third-party app surface or new backend is introduced. Do not redesign dock/Genie geometry without reading both required engine references and preserving the shared field/fallback. Automated UI tests use the private display runner only; never focus/restart the user's live app.
 
 M11 owns generic app identity, signing and update decisions; M12 owns their presentation and overall shell navigation. M13 releases minimal app shells; M14 owns functional app workflows; M20 owns installer/host release operations. Physical Windows-device acceptance remains final gate G21 after M20.
+
+## M15 coordination amendment — 2026-10-21
+
+The user adopted [M15 Platform Closeout and Integration](../milestone-15-platform-closeout-and-integration/PLAN.md) during P03. The [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) tracks remaining platform work; this amendment changes coordination/dependencies, not historical evidence or acceptance.
+Remaining requirements under this milestone's original gate stay open until their evidence is complete; M15.4 coordinates their closeout. Previously implemented/verified scope is reused. M15 planning does not declare those residuals accepted.

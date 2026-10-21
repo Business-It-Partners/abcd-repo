@@ -49,3 +49,8 @@ This inventory is the observed first-party app set at the scope date; future cha
 ## Sequencing
 
 M12.6/G12 remains open. M13.1 records the Follow-ups staging publication/install; the user now reports running all eleven app shells in Dental OS. M13.2–M13.4 proceeded in three separate worktree chats while G12 remained open; their version 1.0.0 packages were published at sequence 17 and the user reports installing and successfully opening all three. M13.5–M13.7 were implemented in the next three worktree chats and published together at sequence 18. M13.8–M13.10 were implemented in three worktree chats and published at sequence 19, and M13.11 was implemented in its own worktree and published at sequence 20. These releases preserve prior catalogue and policy entries. Finance and Lab Tracker 1.0.1 Store updates and module-switch review remain unconfirmed; the Follow-ups automatic launch-health receipt has not been independently re-read. M14 starts only after the full M13 shell set is complete.
+
+## M15 coordination amendment — 2026-10-21
+
+The user adopted [M15 Platform Closeout and Integration](../milestone-15-platform-closeout-and-integration/PLAN.md) during P03. The [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) tracks remaining platform work; this amendment changes coordination/dependencies, not historical evidence or acceptance.
+Remaining requirements under this milestone's original gate stay open until their evidence is complete; M15.4 coordinates their closeout. Previously implemented/verified scope is reused. M15 planning does not declare those residuals accepted.

@@ -6,7 +6,7 @@
 
 This directory defines **what Dental OS is**. [The master roadmap](../dental-os_v1_working_info/00_V1_MASTER_ROADMAP.md) defines execution order; [global status](../dental-os_v1_working_info/00_V1_STATUS.md) records current progress. Source code is implementation reality; retained verification evidence is proof. [WORK_CHECKLIST.md](../WORK_CHECKLIST.md) remains the active working contract and detailed prototype history; it must stay consistent with this architecture and milestone status.
 
-Read product definition, invariants, architecture and current baseline first. Then use the topic index below. Only company-approved first-party apps are supported, permanently. Windows and Linux are the target hosts; existing Dental SaaS remains business authority.
+Start with [Product Vision and V1 Contract](01_WHY_DENTAL_OS.md) for the complete product explanation. Then read invariants, architecture and current baseline; focused technical documents define enforcement rather than repeating the product story. Then use the topic index below. Only company-approved first-party apps are supported, permanently. Windows and Linux are the target hosts; existing Dental SaaS remains business authority.
 
 ## Repository organization
 
@@ -14,8 +14,8 @@ The [canonical repository structure](../dental-os_v1_working_info/00_REPOSITORY_
 
 ## Documents
 
-- [Why Dental OS](01_WHY_DENTAL_OS.md)
-- [V1 Product Definition](02_V1_PRODUCT_DEFINITION.md)
+- [Product Vision and V1 Contract — start here](01_WHY_DENTAL_OS.md)
+- [V1 Product Definition — compatibility pointer](02_V1_PRODUCT_DEFINITION.md)
 - [Principles and Invariants](03_V1_PRINCIPLES_AND_INVARIANTS.md)
 - [System Architecture](04_V1_SYSTEM_ARCHITECTURE.md)
 - [Boot and Workspace Lifecycle](05_V1_BOOT_AND_WORKSPACE_LIFECYCLE.md)

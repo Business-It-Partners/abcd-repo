@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-21",
+  "scope": "Task-owned generated build outputs only; original live checkout excluded. P03 creates no builds/dependency installs.",
+  "worktrees": [
+    {
+      "worktree": "/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os",
+      "checked": [
+        "dist",
+        "dist-electron",
+        "build",
+        "release",
+        "__pycache__"
+      ],
+      "removed": [],
+      "preserved": []
+    },
+    {
+      "worktree": "/home/master-x/.codex/worktrees/d585/fewa_business_os",
+      "checked": [
+        "dist",
+        "dist-electron",
+        "build",
+        "release",
+        "__pycache__"
+      ],
+      "removed": [],
+      "preserved": []
+    },
+    {
+      "worktree": "/home/master-x/.codex/worktrees/0b37/fewa_business_os",
+      "checked": [
+        "dist",
+        "dist-electron",
+        "build",
+        "release",
+        "__pycache__"
+      ],
+      "removed": [],
+      "preserved": []
+    },
+    {
+      "worktree": "/home/master-x/.codex/worktrees/platform-evidence-audit/fewa_business_os",
+      "checked": [
+        "dist",
+        "dist-electron",
+        "build",
+        "release",
+        "__pycache__"
+      ],
+      "removed": [],
+      "preserved": []
+    },
+    {
+      "worktree": "/home/master-x/.codex/worktrees/platform-shell-release-audit/fewa_business_os",
+      "checked": [
+        "dist",
+        "dist-electron",
+        "build",
+        "release",
+        "__pycache__"
+      ],
+      "removed": [],
+      "preserved": []
+    }
+  ]
+}

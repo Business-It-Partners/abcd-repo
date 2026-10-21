@@ -15,7 +15,7 @@ def check():
     errors = []
     files = sorted(ARCH.glob('*.md')) + sorted(WORK.glob('*.md'))
     milestones = sorted(WORK.glob('milestone-*'))
-    expected_milestone_ids = list(range(1, 15)) + [20]
+    expected_milestone_ids = list(range(1, 16)) + [20]
     if len(list(ARCH.glob('*.md'))) != 24:
         errors.append('Expected 24 numbered architecture documents')
     if len(milestones) != len(expected_milestone_ids):
@@ -51,10 +51,15 @@ def check():
         req = f'R{n:02d}'
         if not re.search(rf'\b{req}\b', plans) or not re.search(rf'\b{req}\b', trace):
             errors.append(f'Unmapped requirement {req}')
-    for n in list(range(1, 15)) + [20, 21]:
+    for n in list(range(1, 16)) + [20, 21]:
         gate = f'G{n:02d}'
         if not re.search(rf'\b{gate}\b', plans) or not re.search(rf'\b{gate}\b', gate_doc):
             errors.append(f'Unmapped gate {gate}')
+    if not re.search(r'(?m)^\| G15\b', gate_doc):
+        errors.append('Missing distinct G15 acceptance-gate row')
+    r14_row = re.search(r'(?m)^\| R14\b[^\n]*$', trace)
+    if not r14_row or not all(marker in r14_row.group(0) for marker in ('G20', 'G21', 'M20')) or 'G15' in r14_row.group(0):
+        errors.append('R14 platform release proof must remain mapped to G20/G21 and M20')
     for n in range(1, 15):
         if f'INV-{n:02d}' not in inv:
             errors.append(f'Missing invariant INV-{n:02d}')
@@ -77,7 +82,7 @@ def check():
         'milestones': len(milestones),
         'required_milestone_files': len(milestones) * len(REQUIRED),
         'requirements': 15,
-        'acceptance_gates': 16,
+        'acceptance_gates': 17,
         'invariants': 14,
         'contract_sha256': digest.hexdigest(),
         'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
