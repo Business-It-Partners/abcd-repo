@@ -1,5 +1,5 @@
 // Run with tools/run-ui-test.mjs. Linux ASAR smoke proof, not Windows certification.
-import { profileArgs } from './profile.mjs';
+import { fixtureArgs } from './profile.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -7,7 +7,7 @@ import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const asar=path.join(root,'release/windows/win-unpacked/resources/app.asar');
 const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-const app=await electron.launch({args:[asar,...profileArgs],env});
+const app=await electron.launch({args:[asar,...fixtureArgs],env});
 const page=await app.firstWindow(),checks=[],errors=[];
 page.on('pageerror',error=>errors.push(error.message));
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};

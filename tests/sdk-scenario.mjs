@@ -25,7 +25,7 @@ export async function verifySdk(profileArgs,reportName){
   check('oversized request rejected before IPC',(await invoke(beta,b.value,'notifications.show',{message:'x'.repeat(20000)})).error.code==='INVALID_REQUEST');
   check('unconfigured native adapter fails explicitly',(await invoke(beta,b.value,'native.intent',{kind:'export'})).error.code==='UNAVAILABLE');
   const context=await invoke(beta,b.value,'session.context',{});check('only synthetic display context returned',context.ok&&context.value.clinicLabel==='Synthetic clinic'&&!JSON.stringify(context).includes('credential'));
-  check('no privileged bridge, token getter or raw transport exposed',await beta.evaluate(()=>typeof require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,report,request'));
+  check('no privileged bridge, token getter or raw transport exposed',await beta.evaluate(()=>typeof require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request'));
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await shell.getByRole('button',{name:'Close Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='closed');
   const fresh=await open('Motion Studio','studio','alpha');const c=await fresh.evaluate(()=>window.dentalApp.connect({major:1,minor:0}));check('close/reopen revokes old connection',c.ok&&c.value.connection!==a.value.connection&&(await invoke(fresh,a.value,'platform.status',{})).error.code==='STALE_SESSION');
   check('no shell page errors',errors.length===0);
