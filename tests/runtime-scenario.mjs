@@ -26,12 +26,16 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
   await alpha.evaluate(()=>{const marker=document.createElement('div');marker.id='module-preview-probe';Object.assign(marker.style,{position:'fixed',inset:'0',zIndex:'2147483647',pointerEvents:'none',background:'rgb(20,220,80)'});document.body.append(marker);});
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight}));
-  // Stay inside the 160px hover band without depending on Windows' last client pixels.
+  const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight})),shellSize=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));
+  // Windows can route the first post-hide move in shell coordinates, so keep
+  // that injected point inside the shell reveal band too. Linux retains the
+  // guest's translated offset and uses its original safe inset.
+  const edgeY=process.platform==='win32'?Math.min(alphaSize.height-24,shellSize.height-150):alphaSize.height-80;
+  if(process.platform==='win32')check('dock-edge input stays inside both guest and shell hover bands',edgeY>=alphaSize.height-160&&edgeY>=shellSize.height-170&&edgeY<alphaSize.height);
   await alpha.evaluate(()=>{window.__runtimeEdgeTrace=[];window.addEventListener('pointermove',event=>{if(event.clientY>=innerHeight-200)window.__runtimeEdgeTrace.push({x:event.clientX,y:event.clientY,height:innerHeight,trusted:event.isTrusted});});});
-  await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);});
-  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-80);
-  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
+  await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.__runtimeShellPointerTrace=[];window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);window.addEventListener('pointermove',event=>{window.__runtimeShellPointerTrace.push({x:event.clientX,y:event.clientY,trusted:event.isTrusted});if(window.__runtimeShellPointerTrace.length>20)window.__runtimeShellPointerTrace.shift();},true);});
+  await alpha.mouse.move(alphaSize.width/2,edgeY);
+  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents,pointerMoves:window.__runtimeShellPointerTrace})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
   await shell.waitForTimeout(160);
   const edgePreviewPixel=await mirrorCenterPixel('studio');
   check('dock-edge preview matches the current live app content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
@@ -39,7 +43,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('moving away from the dock edge restores the same live app surface',await alpha.evaluate(()=>!!document.querySelector('#module-preview-probe')));
   await alpha.evaluate(()=>document.querySelector('#module-preview-probe')?.remove());
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-80);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
+  await alpha.mouse.move(alphaSize.width/2,edgeY);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
   await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
   await shell.getByRole('button',{name:'Finance',exact:true}).click();
   const financeExplorer=shell.getByTestId('finance-explorer');await financeExplorer.waitFor();
