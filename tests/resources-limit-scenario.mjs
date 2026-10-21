@@ -45,19 +45,25 @@ export async function verifyRuntimeLimitResources(args, report) {
       await page.waitForFunction(id => document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase === 'ready', item.id);
     }
     check('the configured limit opens and health-checks all 16 isolated app views', await page.locator('[data-runtime-phase="ready"]').count() === 16);
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    const sampleDuration = Number(process.env.DENTAL_RESOURCE_SAMPLE_MS ?? 60000);
+    await new Promise(resolve => setTimeout(resolve, Math.min(3000, Math.floor(sampleDuration / 20))));
     for (let index = 0; index < 5; index++) {
-      if (index) await new Promise(resolve => setTimeout(resolve, 15000));
+      if (index) await new Promise(resolve => setTimeout(resolve, Math.floor(sampleDuration / 4)));
       const item = apps[index % apps.length];
       await page.locator(`[data-dock-app="${item.id}"]`).click({ force: true });
       samples.push(await snapshot());
     }
-    check('16 app views stay live for the full 60-second sample', samples.every(sample => sample.appViews === 16 && sample.processCount >= 16) && samples.at(-1).time - samples[0].time >= 60000);
+    check(`16 app views stay live for the full ${sampleDuration / 1000}-second sample`, samples.every(sample => sample.appViews === 16 && sample.processCount >= 16) && samples.at(-1).time - samples[0].time >= sampleDuration);
     check('all app views remain health-checked through the sample', await page.locator('[data-runtime-phase="ready"]').count() === 16);
 
-    for (const item of apps) {
-      await page.locator(`[data-dock-app="${item.id}"]`).click({ force: true });
-      await page.getByRole('button', { name: `Close ${item.title}`, exact: true }).click();
+    while (await page.locator('[data-window-id][data-phase="visible"]').count()) {
+      const topmost = await page.evaluate(() => [...document.querySelectorAll('[data-window-id][data-phase="visible"]')]
+        .sort((a, b) => Number.parseInt(getComputedStyle(b).zIndex, 10) - Number.parseInt(getComputedStyle(a).zIndex, 10))[0]?.getAttribute('data-window-id'));
+      assert.ok(topmost, 'a visible managed window should have a window id');
+      const title = apps.find(item => item.id === topmost)?.title ?? topmost;
+      console.log('Closing topmost managed window', topmost);
+      await page.locator(`[data-window-id="${topmost}"]`).getByRole('button', { name: `Close ${title}`, exact: true }).click();
+      await page.waitForFunction(id => document.querySelector(`[data-window-id="${id}"]`)?.dataset.phase === 'closed', topmost);
     }
     await page.waitForFunction(() => document.querySelectorAll('[data-window-id][data-phase="closed"]').length >= 16);
     const closed = await app.evaluate(({ webContents }) => webContents.getAllWebContents().filter(contents => contents.getURL().startsWith('dental-fixture:')).length);
@@ -65,6 +71,13 @@ export async function verifyRuntimeLimitResources(args, report) {
     passed = true;
   } catch (error) {
     console.error(error.message);
+    const windows = await app?.firstWindow().then(page => page.evaluate(() => [...document.querySelectorAll('[data-window-id]')].map(frame => ({
+      id: frame.getAttribute('data-window-id'), phase: frame.getAttribute('data-phase'), active: frame.getAttribute('data-active'),
+      zIndex: getComputedStyle(frame).zIndex, inert: frame.hasAttribute('inert'), ariaHidden: frame.getAttribute('aria-hidden'),
+      closeDisabled: frame.querySelector('.window-control-close')?.matches(':disabled'),
+      closeReceiver: (() => { const button = frame.querySelector('.window-control-close'), rect = button?.getBoundingClientRect(); return rect && document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.outerHTML.slice(0, 180); })(),
+    })))).catch(() => undefined);
+    if (windows) console.error('managed window state', JSON.stringify(windows));
     process.exitCode = 1;
   } finally {
     if (app) {
