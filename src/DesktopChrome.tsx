@@ -69,6 +69,10 @@ export function DesktopChrome({ activeApp, session, sessionControls, onOpenApps,
         </span>
         <time className="statusbar-date" dateTime={now.toISOString()}>{formatDate}</time>
         <time className="statusbar-time" dateTime={now.toISOString()}>{formatTime}</time>
+        {session?.phase === 'ready' && sessionControls && <details className="clinic-widget-menu">
+          <summary aria-label="Session options" title="Session options"><MoreHorizontal size={18} aria-hidden="true"/></summary>
+          {sessionControls}
+        </details>}
       </div>
     </header>
 
@@ -79,10 +83,6 @@ export function DesktopChrome({ activeApp, session, sessionControls, onOpenApps,
         <span>{session.userLabel || 'Signed-in user'}</span>
         {session.role && <small>{roleLabel(session.role)}</small>}
       </div>
-      {sessionControls && <details className="clinic-widget-menu">
-        <summary aria-label="Session options" title="Session options"><MoreHorizontal size={18} aria-hidden="true"/></summary>
-        {sessionControls}
-      </details>}
     </section>}
 
     <section className="desktop-widget-collection" aria-label="Calendar and time widgets">

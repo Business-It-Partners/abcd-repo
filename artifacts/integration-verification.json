@@ -19,6 +19,7 @@
     "independent read confirms server truth after lost response and conflict",
     "reconciled clean app safely activates verified successor",
     "other running app remains pinned to its original code/session",
+    "session lock control stays above other open app windows",
     "lock destroys both app views and prior previews",
     "new session never reuses previous in-memory app storage/draft",
     "old app connection/generation cannot read the new session",
