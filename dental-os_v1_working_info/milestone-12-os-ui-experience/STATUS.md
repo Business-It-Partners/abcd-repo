@@ -33,3 +33,7 @@ Track each phase against its plan and retain failed runs. Mark G12 VERIFIED only
 
 The user adopted [M15 Platform Closeout and Integration](../milestone-15-platform-closeout-and-integration/PLAN.md) during P03. The [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) tracks remaining platform work; this amendment changes coordination/dependencies, not historical evidence or acceptance.
 Remaining requirements under this milestone's original gate stay open until their evidence is complete; M15.4 coordinates their closeout. Previously implemented/verified scope is reused. M15 planning does not declare those residuals accepted.
+
+## M15.1 source reconciliation update — 2026-10-21
+
+The accepted M15.1 checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5` includes the OS-owned managed-app launch surface, native-frame handoff preservation and associated focused regressions. Build, unit and private runtime/app-launch checks passed for that checkpoint; details and exact report files are in [M15 verification evidence](../milestone-15-platform-closeout-and-integration/VERIFICATION_EVIDENCE.md). This slice reuses the shared window/dock/Genie lifecycle and does not establish completion of M12.6, G12, full workspace journeys, user visual acceptance or physical-device acceptance. Those original obligations remain open.

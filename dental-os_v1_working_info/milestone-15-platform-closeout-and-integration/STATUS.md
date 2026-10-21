@@ -1,6 +1,6 @@
 # M15 Status — Platform Closeout and Integration
 
-**Status:** IMPLEMENTING — P03 planning/documentation complete; M15.1–M15.6 implementation/acceptance pending.
+**Status:** IMPLEMENTING — P03 planning and M15.1 source/record reconciliation complete; M15.2–M15.6 and G15 acceptance pending.
 **Updated:** 2026-10-21.
 **User scope review:** the user accepted the proposed M15.1–M15.6 scope and directed that it be formalized. This records scope authorization, not runtime acceptance.
 **Integration branch:** `codex/milestone-15` in the lead `platform-closeout` worktree; milestone-record worker branch `codex/m15-plan-records`, created from committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`.
@@ -8,7 +8,7 @@
 
 ## Current position
 
-This branch records P03 and no M15 runtime behavior. The M11-integrated `main` remains the last integrated verified milestone. The committed M13 candidate is the planning baseline; the original checkout's local deltas remain unintegrated review inputs and are not claimed as accepted or tested together. M01–M11 retain their exact recorded scope. No historical result has been repeated or relabeled.
+The M11-integrated `main` remains the last integrated verified milestone. M15.1 reviewed the committed M13 candidate, original-checkout local deltas, side-branch ancestry and preserved P03 worker worktrees. Only the managed-app launch-feedback/native-frame handoff slice was accepted; its source and evidence checkpoint is `ad3fa6a10437bf58606631325d93f6b3cc0369b5`. Other original inputs remain preserved or deferred, as itemized in IMPLEMENTATION_NOTES.md. M01–M11 retain their exact recorded scope; prior results are not relabeled as final combined-source proof.
 
 The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) records P01/P02 audits and the accepted M15 proposal. The [milestone evidence audit](../audit-reports/MILESTONE_EVIDENCE_AUDIT.md), [shell/release audit](../audit-reports/SHELL_RELEASE_AUDIT.md), [API/update audit](../audit-reports/API_UPDATE_GAPS.md), and [source baseline](../audit-reports/SOURCE_BASELINE.md) are supporting read-only inputs. The lead integration includes the checklist and audit reports; runtime source layers remain separately identified.
 
@@ -16,7 +16,7 @@ The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_C
 
 | Phase | Status | Remaining evidence |
 | --- | --- | --- |
-| M15.1 — Source and record reconciliation | PLANNED | Review candidate and local inputs; preserve M01–M11 scope; date stale-record corrections; bind accepted combined source. |
+| M15.1 — Source and record reconciliation | IMPLEMENTED — accepted source checkpoint | Reviewed local inputs and side branches; integrated only the accepted launch-feedback/frame-handoff slice; retained unaccepted inputs; corrected dated M12/M13/M15 records. |
 | M15.2 — Versioned app authority and required host contracts | PLANNED | Approve authority/compatibility and host boundary; evidence M14-bounded API/media/payload needs; evaluate cross-app navigation under a separate contract/ADR without changing R13. |
 | M15.3 — ADR-025 app-update alignment | PLANNED | Implement and verify staged preparation, next-full-launch trial, truthful versions, failure/recovery and race safety. |
 | M15.4 — Integrated shell and G12/G13 residuals | PLANNED | Close M12.6/G12 and outstanding M13/G13 items in their owning records; G15 cannot waive them. |
@@ -34,7 +34,7 @@ The central [platform reconciliation checklist](../PLATFORM_RECONCILIATION_AND_C
 
 ## Not claimed
 
-No M15 runtime implementation, API-policy design, route-manifest format, inter-app contract, media adapter, ADR-025 implementation, M12/G12 or M13/G13 closure, M14/G14 app acceptance, M20/G20 release acceptance, or G21 device/user acceptance is claimed. P03 has no build, runtime/unit/UI test, live-profile inspection, cloud mutation, main merge, deployment or application restart. Documentation validation and branch-checkpoint publication are recorded separately; neither is runtime acceptance.
+The limited accepted launch-feedback/frame-handoff source does not close any full milestone gate. No API-policy design, route-manifest format, inter-app contract, media adapter, ADR-025 implementation, M12/G12 or M13/G13 closure, M14/G14 app acceptance, M20/G20 release acceptance, or G21 device/user acceptance is claimed. No live-profile inspection, cloud mutation, main merge, deployment or application restart occurred. P03's documentation-only scope and M15.1's source-bound checks are separately recorded in VERIFICATION_EVIDENCE.md.
 
 
 ## P03 integrated documentation verification

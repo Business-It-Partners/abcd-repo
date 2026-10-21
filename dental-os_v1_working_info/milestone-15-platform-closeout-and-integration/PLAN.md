@@ -1,6 +1,6 @@
 # M15 Plan — Platform Closeout and Integration
 
-**Status:** IMPLEMENTING — planning/P03 only. No M15 runtime work or acceptance is complete.
+**Status:** IMPLEMENTING — P03 planning and the M15.1 accepted source reconciliation checkpoint are complete; M15.2–M15.6 and final acceptance remain open.
 **Updated:** 2026-10-21.
 **Dependencies:** Preserve M01–M11 verified scope; reconcile M12/G12 and M13/G13 residuals. M14 app implementation continues in parallel. Integrated G14 acceptance depends on a verified M15 baseline. M20/G20 and G21 remain later release/device gates.
 **Requirements:** R01–R13 and R15, limited to the app-ready portions mapped to G15 in the architecture traceability matrix. R14 production platform release/update/support proof remains M20/G20/G21.
@@ -15,7 +15,7 @@ Reconcile the committed M13 platform candidate and reviewed local inputs, close 
 
 - Last integrated verified milestone: `main` at M11 merge `8c8211c00614b095c529d9d14964ca2ce912db73`.
 - Committed closeout candidate: M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`.
-- The authoritative original checkout also contains unintegrated product/runtime/test/evidence inputs. They are review candidates only; this plan does not treat their source changes or test reports as accepted or bind them to the M13 commit.
+- The authoritative original checkout remains dirty on `codex/milestone-13` and contains unintegrated inputs. M15.1 reviewed and accepted only the managed-app launch-feedback/native-frame handoff source/test slice, checkpointed at `ad3fa6a10437bf58606631325d93f6b3cc0369b5`; each other disposition is recorded in IMPLEMENTATION_NOTES.md. The original checkout itself remains unchanged.
 - Preserve M01–M11 records and the existing M12/G12, M13/G13, M14/G14, M20/G20 and G21 ownership. Do not repeat completed milestone work or merge older history wholesale.
 
 ## Work phases
@@ -31,7 +31,7 @@ Reconcile the committed M13 platform candidate and reviewed local inputs, close 
 
 ## Acceptance criteria
 
-- [ ] M15.1 records a reviewed disposition for every in-scope source layer and retains M01–M11 historical evidence without relabeling it as final combined-source proof.
+- [x] M15.1 records a reviewed disposition for every in-scope source layer and retains M01–M11 historical evidence without relabeling it as final combined-source proof.
 - [ ] M15.2 documents the approved API authority, required media/payload limits and any cross-app navigation contract with explicit negative cases and a host-enforcement boundary.
 - [ ] R13 remains unchanged: no general app-to-app messaging, arbitrary intent bus, direct app invocation or shared app store is introduced. Any cross-app need is assessed as bounded OS-owned navigation/selection under an explicit later contract/ADR; P03 approves no design.
 - [ ] M15.3 aligns normal update behavior with ADR-025 and proves staging, next-full-launch trial and eligible recovery without losing running work or retrying revoked/incompatible packages.

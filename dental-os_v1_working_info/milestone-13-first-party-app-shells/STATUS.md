@@ -30,3 +30,7 @@ M12.6 and G12 remain open. The user authorized the remaining M13 work to proceed
 
 The user adopted [M15 Platform Closeout and Integration](../milestone-15-platform-closeout-and-integration/PLAN.md) during P03. The [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) tracks remaining platform work; this amendment changes coordination/dependencies, not historical evidence or acceptance.
 Remaining requirements under this milestone's original gate stay open until their evidence is complete; M15.4 coordinates their closeout. Previously implemented/verified scope is reused. M15 planning does not declare those residuals accepted.
+
+## M15.1 source reconciliation update — 2026-10-21
+
+The managed-app launch-feedback/frame-handoff slice from the original dirty checkout was reviewed and accepted into M15 checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5`. The preserved original M13 checkout itself was not modified. The new private fixture covers the eleven current shells plus a differently named future managed app; its successful report and failed diagnostic attempts are retained in M15 evidence. It proves shell launch behavior only. The live-profile Follow-ups health receipt and Finance/Lab Tracker 1.0.1 installation/module review remain unverified, so G13 stays open; M15 does not close M13.

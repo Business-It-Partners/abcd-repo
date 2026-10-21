@@ -1,7 +1,7 @@
 # Dental OS — Platform Reconciliation and Closeout Checklist
 
 **Created / updated:** 2026-10-21.
-**Status:** IMPLEMENTING — P01/P02 audits and P03 scope formalization complete. M15/G15 records and dependencies are established; P04–P09 implementation/acceptance remains pending.
+**Status:** IMPLEMENTING — P01/P02 audits, P03 scope formalization and M15.1 source reconciliation/checkpoint complete. P04–P09 implementation/acceptance remains pending; G15 is open.
 **Owner:** Local OS platform track, with product decisions reviewed by Abhishek.
 **Milestone assignment:** [M15 — Platform Closeout and Integration](milestone-15-platform-closeout-and-integration/PLAN.md), gate G15, adopted by the user on 2026-10-21. P01–P09 remain task identifiers; M15.1–M15.6 are the milestone slices.
 
@@ -182,6 +182,10 @@ P01–P09 are checklist identifiers, not renamed historical milestones or M14 de
 
 The two sidebar workers use GPT-6 Luna Extra High. Earlier embedded workers stopped after the user clarified the intended UI arrangement; their partial reports/worktrees are retained and handed over. Both sidebar audits are complete; the same two sidebar chats/worktrees completed P03 milestone records and gates/traceability in disjoint scopes. The lead reviewed and copied the reports into `audit-reports/` here, preserving worker provenance and adding a clearly labeled local-preview correction. Workers do not edit this checklist, platform runtime or app branch. No heavy job is needed for P03.
 
-### P03 completion and next execution boundary
+### P03 completion and M15.1 reconciliation
 
-The user approved the reviewed scope and P03 is complete for documentation. M15 itself remains IMPLEMENTING with G15 open. Before P04 implementation, M15.1 must review/checkpoint the explicitly inventoried original-checkout deltas; P01/P02's audit completion is not approval of every candidate source change. Follow the adopted M15 plan for shared-contract decisions and subsequent disjoint worker assignments. No additional app/grant/navigation design was chosen during P03.
+The user approved the reviewed scope and P03 is complete for documentation. M15.1 has now reviewed the explicitly inventoried original-checkout source/artifact deltas and side-branch ancestry. Only the managed-app launch-feedback/native-frame handoff group was accepted, after the named checks in [M15 evidence](milestone-15-platform-closeout-and-integration/VERIFICATION_EVIDENCE.md), and checkpointed at `ad3fa6a10437bf58606631325d93f6b3cc0369b5`. The staging package helper and Windows preview/report outputs are deferred to M20 review; older side branches were preserved and not merged. P01/P02 audit completion did not approve every candidate change. M15 remains IMPLEMENTING with G15 open; P04–P09 continue under the adopted plan and separate worker scopes. No app/API/navigation authority design is inferred from M15.1.
+
+### M15.1 completion and next execution boundary
+
+M15.1's accepted source checkpoint is source-bound to build, unit, private runtime and managed-app launch feedback evidence; its dated M12/M13 coordination addenda preserve the remaining G12/G13 obligations. The original dirty M13 checkout, P03 worker worktrees and unaccepted files remain intact. The user-provided staging preparation helper was not executed. Proceed to the P04–P06 independent implementation scopes only after the lead freezes API/update/shell boundaries; run one heavy local job at a time. P07/P08 depend on their results, and P09 is lead-owned integration/final verification.

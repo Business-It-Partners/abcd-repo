@@ -1,14 +1,14 @@
-# M15 Implementation Notes — Planning Record
+# M15 Implementation Notes — Source Reconciliation and Execution Record
 
-**Phase:** P03 scope formalization only.
-**Source baseline:** committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`; the last integrated milestone baseline is M11 `main` at `8c8211c00614b095c529d9d14964ca2ce912db73`.
+**Phase:** M15.1 source and record reconciliation complete; P04–P09 remain open.
+**Source checkpoints:** committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`; accepted M15.1 source checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5`; last integrated milestone baseline is M11 `main` at `8c8211c00614b095c529d9d14964ca2ce912db73`.
 **Integration branch:** `codex/milestone-15`; milestone-record worker branch `codex/m15-plan-records`.
 
 ## Accepted planning scope
 
 On 2026-10-21, the user accepted the proposed M15 closeout scope and directed its formalization in a separate worker worktree. This directory records six phases: source reconciliation; versioned app authority and required host contracts; ADR-025 update alignment; M12/G12 and M13/G13 residuals; representative workloads and operational continuity; and final combined-source verification. The matching roadmap/global-status/checklist changes and G15/traceability/checker edits were prepared in separate scopes and combined by the lead in `codex/milestone-15`.
 
-M15 is IMPLEMENTING only as a planning/P03 record. M15.1–M15.6 runtime implementation and evidence remain pending. M14 feature work remains a separate parallel owner. The integrated G14 path depends on a verified M15 platform baseline. M20/G20 and G21 remain later release and device gates.
+M15 is IMPLEMENTING. P03 established the plan; M15.1 reviewed source layers and accepted a limited launch-feedback/frame-handoff slice. M15.2–M15.6 implementation and final acceptance remain pending. M14 feature work remains separate. The integrated G14 path depends on a verified M15 platform baseline. M20/G20 and G21 remain later release and device gates.
 
 ## Baseline facts carried into the plan
 
@@ -17,6 +17,20 @@ M15 is IMPLEMENTING only as a planning/P03 record. M15.1–M15.6 runtime impleme
 - M12.1–M12.5 have scoped Linux/private-display results. M12.6/G12 remains open. M13 shell packages are placeholders, not functional apps; G13 retains the Follow-ups health receipt and Finance/Lab Tracker 1.0.1/profile module-review items.
 - M14's external dependency register at revision `48c18401cada192bfa0bea02a4afdd0cb10e45ca` supplies concrete integration requests. M15 scopes platform work to these documented needs and their evidence, without taking app UI/workflow ownership.
 - Existing staging catalogue/update metadata enforces a 24-hour freshness bound. The audit found no scheduled metadata renewal service and calls for a named operator plus a metadata-only higher-sequence renewal and expired-feed recovery drill. This is an operational continuity prerequisite, not evidence that renewal already occurred.
+
+## M15.1 source and side-branch disposition — 2026-10-21
+
+The lead verified the required worktree at `codex/milestone-15`, initially clean at P03 `125fa25bcc27d6ff198148259695d76cf895b0eb`. The original checkout remains untouched on dirty `codex/milestone-13` at `963633620d9fa620979bd33fc292949ab1a6c2e6`. P03 worker worktrees and older detached/source worktrees were inspected for provenance and uncommitted work; they were preserved and not reused or deleted.
+
+| Input | Disposition | Reason / checkpoint |
+| --- | --- | --- |
+| `electron/distribution/service.ts`, `electron/main.ts`, `electron/packages/fixtures.ts`, `electron/runtime/manager.ts`, `package.json`, `src/RuntimeFixtures.tsx`, `src/style.css`, `tests/runtime-scenario.mjs`, `tests/app-launch-feedback.mjs` | ACCEPTED in M15.1 | Reviewed the app launch feedback lifecycle, signed fixture coverage and frame-handoff preservation. Added a verified installed-metadata title fallback for the catalogue-unavailable view after the focused test exposed the safe-ID fallback. Checkpointed with the related passing evidence in `ad3fa6a10437bf58606631325d93f6b3cc0369b5`. |
+| Refreshed private runtime screenshots/report and launch-feedback JSON/screenshots under `artifacts/` | RETAINED as source-bound evidence | Includes the successful 46-check runtime report, successful 132-check launch report and two earlier diagnostic attempts. Failed attempts are preserved and explained in VERIFICATION_EVIDENCE.md. |
+| `tools/app-packages/prepare-dental-saas-staging.mjs` from the original dirty checkout | DEFERRED to M20 review | Staging preparation helper has external operational impact; it was not run and is not part of the app-ready runtime checkpoint. Review its purpose/owner and safe procedure under release/operations scope. |
+| Modified Windows preview/report artifacts from the original checkout | DEFERRED to M20 review | These do not establish Windows product certification; retain for the named host/release matrix review. They were not copied into the M15 checkpoint. |
+| Other original dirty-checkout inputs not named above | PRESERVED, not accepted | P01 inventory is not blanket source approval. No wholesale copy, commit, staging operation or rewrite of the original checkout occurred. |
+
+Side-branch review: `main` at M11 `8c8211c0` remains historical. The M13 candidate already contains the `codex/milestone-12-shell`, `codex/module-navigation` and `codex/store-install-arrival` ancestry, so those were not merged again. The older `codex/milestone-12` v2 state-recovery work is already represented in M13; its older support-review variant is superseded by the current safer support flow. `codex/os-minimize-glitch` is at the M12 shell ancestor. `refrence/` legacy branches remain local-only. The separate M14 source/worktree is not touched. No side branch was merged or deleted.
 
 ## M15.2 contract guardrails — design remains open
 
@@ -44,6 +58,7 @@ Historical runs identify a local Ubuntu 22.04.5 x86_64 private GNOME/Wayland env
 ## Change log
 
 - 2026-10-21 — Created the M15 planning record in response to user acceptance of P03 scope. No runtime, app, architecture-authority, roadmap, global-status, central-checklist, or external checkout file was changed in this worktree.
+- 2026-10-21 — Completed M15.1 review and checkpointed only the accepted launch-feedback/frame-handoff source/test slice at `ad3fa6a10437bf58606631325d93f6b3cc0369b5`. Classified deferred and preserved inputs above; updated root/global/roadmap/central and M12/M13 owner records. G12, G13 and G15 remain open.
 
 
 ## Lead integration review — P03
