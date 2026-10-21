@@ -27,7 +27,8 @@ export async function verifyRuntime(profileArgs, reportName) {
   await alpha.evaluate(()=>{const marker=document.createElement('div');marker.id='module-preview-probe';Object.assign(marker.style,{position:'fixed',inset:'0',zIndex:'2147483647',pointerEvents:'none',background:'rgb(20,220,80)'});document.body.append(marker);});
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight}));
-  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-2);
+  // Stay inside the 160px hover band without depending on Windows' last client pixels.
+  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-80);
   await waitNativeView('alpha',view=>view&&!view.visible);
   await shell.waitForTimeout(160);
   const edgePreviewPixel=await mirrorCenterPixel('studio');
@@ -36,7 +37,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('moving away from the dock edge restores the same live app surface',await alpha.evaluate(()=>!!document.querySelector('#module-preview-probe')));
   await alpha.evaluate(()=>document.querySelector('#module-preview-probe')?.remove());
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-2);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
+  await alpha.mouse.move(alphaSize.width/2,alphaSize.height-80);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
   await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
   await shell.getByRole('button',{name:'Finance',exact:true}).click();
   const financeExplorer=shell.getByTestId('finance-explorer');await financeExplorer.waitFor();
@@ -103,7 +104,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   // React presentation changes before native layout/guest resize acknowledgement.
   await beta.waitForFunction(({w,h})=>innerWidth===w&&innerHeight===h,{w:Math.round(expected.width),h:Math.round(expected.height)});
   const size=await beta.evaluate(()=>({w:innerWidth,h:innerHeight}));
-  await beta.mouse.move(size.w/2,size.h/2);await beta.mouse.move(size.w/2,size.h-2);
+  await beta.mouse.move(size.w/2,size.h/2);await beta.mouse.move(size.w/2,size.h-80);
   await shell.waitForFunction(()=>!document.querySelector('.dock-region').inert);check('native app bottom edge reveals fullscreen dock');
   await shell.getByRole('button',{name:'Restore Records size',exact:true}).click();
   await shell.mouse.move(10,10);
