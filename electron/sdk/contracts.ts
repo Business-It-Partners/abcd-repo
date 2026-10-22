@@ -1,5 +1,5 @@
 /** Renderer-safe wire contract. No Electron, credential, filesystem or transport imports. */
-export const SDK = { major: 1, minor: 1 } as const;
+export const SDK = { major: 1, minor: 2 } as const;
 export const MAX_REQUEST_BYTES = 16_384;
 export const operations = [
   'appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.api.blob.read',
@@ -10,7 +10,7 @@ export const operations = [
 ] as const;
 export type Operation = typeof operations[number];
 /** Closed host API contracts that update-policy v2 may grant to an exact app release. */
-export const apiOperations = ['appointments.list', 'appointments.setStatus'] as const;
+export const apiOperations = ['appointments.list', 'appointments.setStatus', 'clinic.api.request'] as const;
 export type ApiOperationId = typeof apiOperations[number];
 export type ErrorCode = 'INVALID_REQUEST' | 'UNKNOWN_CALLER' | 'INCOMPATIBLE_SDK' | 'STALE_SESSION' | 'FORBIDDEN' | 'BUSY' | 'AUTH_REQUIRED' | 'ACCESS_DENIED' | 'CONFLICT' | 'VALIDATION' | 'OFFLINE' | 'MAINTENANCE' | 'TIMEOUT' | 'CANCELLED' | 'UNKNOWN_OUTCOME' | 'INVALID_RESPONSE' | 'REDIRECT_DENIED' | 'UNAVAILABLE';
 export type Outcome = 'not_sent' | 'rejected' | 'unknown';

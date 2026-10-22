@@ -70,3 +70,10 @@ The only synthetic typed host API operations currently enabled and tested by thi
 ## Subsequent operations tooling and P08 closure — 2026-10-22
 
 Operational tooling source checkpoint `d5504845` adds `electron/distribution/renewal.ts`, metadata-only preparation/publication scripts and a disposable public-feed/core-registry drill. Normal shell/runtime UI source is unchanged from `11cb1bc8`. Build passes; the new full serial unit suite passes 324/324 in 21 files (13 new focused renewal/publication regressions). The actual signed staging controls advanced 21→22; all 14 immutable package identities and disposable registry pointers stayed unchanged. Anonymous/replay checks, temporary Worker removal and existing staging client reachability passed. [Source-bound report](P08_METADATA_RENEWAL_2026-10-22.json). This supersedes the earlier P08 people/tool/drill open item for this technical scope; authenticated Store/native UI/clinical integration remains P07. The user directs remaining work and source review in the lead chat and manual acceptance afterward; the separate sidebar review automation is paused. G15 remains open while the other technical dependencies are unfinished.
+
+
+## Subsequent API candidate and build correction — 2026-10-22
+
+ADR-027/SDK 1.2 adds the signed `clinic.api.request` contract with explicit app/method/path/query and trusted-session capability checks before credentials and at dispatch. The clinic-route suite passes 43 cases and build passes; full unit/private checks are pending at this source checkpoint. The earlier statement that only two host API operations exist describes `11cb1bc8`, not this candidate. No signed staging API grant was published by the sequence-22 renewal.
+
+The earlier P08 build label applied to a preliminary build before the last test import. A subsequent exact build found TS7016 for that JavaScript test-module import; the new `.d.mts` declaration fixes it and the full build passes. The operation report retains the qualification. No staging behavior changed or repeated publication occurred.

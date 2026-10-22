@@ -3,7 +3,7 @@ import type { Identity } from '../sdk/broker';
 import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client';
 import { loginInput, type ActionResult, type Phase, type SessionView } from './contracts';
 import type { CredentialStore } from './storage';
-import { appAllowed, clinicApps } from '../sdk/appPolicy';
+import { appAllowed, clinicRequestAllowed, clinicApps } from '../sdk/appPolicy';
 /** One platform-owned clinic session. Only view() crosses shell IPC. */
 export class SessionManager implements Identity {
   private phase:Phase='restoring'; private generation=1; private tokens?:Tokens; private clinic?:Clinic;
@@ -104,6 +104,10 @@ export class SessionManager implements Identity {
       return !!appId&&appAllowed(appId,this.clinic.role,this.clinic.capabilities);
     }
     return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
+  }
+  allowedClinicRequest(appId: string, path: string, method: string) {
+    return this.phase === 'ready' && !!this.clinic
+      && clinicRequestAllowed(appId, this.clinic.role, this.clinic.capabilities, path, method);
   }
   flush(){return this.storageChain;}
   dispose(){this.generation++;this.phase='signed-out';clearTimeout(this.timer);this.action?.abort();this.tokens=undefined;this.clinic=undefined;this.listeners.clear();}

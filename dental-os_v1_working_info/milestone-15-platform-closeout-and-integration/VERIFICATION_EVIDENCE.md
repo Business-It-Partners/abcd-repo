@@ -101,3 +101,12 @@ Executed from source `d5504845e93f6db2bcda8abd62989ee01380ec5b` using the existi
 The disposable registry was seeded as known-good under the verified archived baseline clock, then tested under actual time: expired controls blocked launch without state mutation. After actual publication, renewed signed controls verified against original watermarks and authorized the same sample digest. All 14 package objects were fetched and checked again; byte counts, wire hashes, payload digests, signatures and active/pending/trial/known-good pointers were identical. No package object or clinical data was written.
 
 [Retained report](evidence/P08_METADATA_RENEWAL_2026-10-22.json) binds baseline/review/publication/recovery/cleanup evidence to source. `npm run build` and the full serial unit suite pass (324/324, including 13 focused preparation/publication tests). The public-feed/core-registry drill is not authenticated Store entitlement, a native-window run, clinical API proof or production acceptance. Those separate P07/G15/M20 checks are not inferred.
+
+
+## Exact-build qualification and clinic JSON contract candidate — 2026-10-22
+
+The earlier P08 build PASS label was too broad: its preliminary build preceded the final publisher test import. The later full source check reported TS7016 for the missing `metadata-renewal-worker.mjs` declaration. Added `metadata-renewal-worker.d.mts`; the complete build now passes. The P08 operation report retains this correction. Publisher behavior and actual staging evidence are unchanged; no remote publication was repeated.
+
+ADR-027/SDK 1.2 implements a host-owned JSON contract for the eleven known first-party app identities, replacing broad prefixes with exact paths/methods/query validation. The exact signed release grant, package/app family and trusted session capabilities are checked before credentials and again after mediation. Sensitive Finance/Staff and lab references require their independent Worker capability. Limits remain unchanged; legacy blob/upload/navigation remain outside this contract. Review inputs: M14 `a8caea6e`, SaaS `a3b116c64df826cbb5b66bc09305f81bf06cd463`.
+
+`tests/clinicRoutes.test.ts` passes 43 cases, including all app families, malformed/duplicate/tenant/role/method negatives, exact signed package identity, credential-time permission changes and original-key unknown-write reconciliation. The complete build passes. Final full unit and focused private SDK/identity checks for this candidate are next; live Worker/media/M14 functional acceptance is not inferred.

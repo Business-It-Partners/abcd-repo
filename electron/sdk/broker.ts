@@ -6,6 +6,7 @@ import { allowedClinicApiPath, appOperation, containsPresignedHandle } from './a
 export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
   allowed?(operation: Operation): boolean;
+  allowedClinicRequest?(appId: string, path: string, method: string): boolean;
   rejected?(status: 401 | 403): void;
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
@@ -66,8 +67,19 @@ export class ApiBroker {
     return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => {
       if (this.identity.allowed?.(op) === false) return false;
       if (!apiEntryPoints.includes(op)) return true;
-      return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true;
+      return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true
+        && (op !== 'clinic.api.request' || !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!)
+          && this.identity.allowed?.(appOperation(r.appId)!) !== false && !!this.identity.allowedClinicRequest);
     }) });
+  }
+  private apiAllowed(r: Registration, v: Request): boolean {
+    if (!apiEntryPoints.includes(v.operation)) return true;
+    if (!apiOperations.includes(v.operation as ApiOperationId) || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true) return false;
+    if (v.operation !== 'clinic.api.request') return true;
+    const family = appOperation(r.appId);
+    return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false
+      && allowedClinicApiPath(r.appId, v.input.path as string, v.input.method as string)
+      && this.identity.allowedClinicRequest?.(r.appId, v.input.path as string, v.input.method as string) === true;
   }
   private connected(r: Registration, v: Cancel) {
     const s = this.current();
@@ -101,8 +113,7 @@ export class ApiBroker {
     const v = parseRequest(input); if (!v) return failure('INVALID_REQUEST');
     if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
     if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
-    if (apiEntryPoints.includes(v.operation) && (!apiOperations.includes(v.operation as ApiOperationId)
-      || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true)) return failure('FORBIDDEN', 'not_sent', v);
+    if (!this.apiAllowed(r, v)) return failure('FORBIDDEN', 'not_sent', v);
     if (!r.capabilities.includes(v.operation) || this.identity.allowed?.(v.operation) === false) return failure('FORBIDDEN', 'not_sent', v);
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
@@ -128,8 +139,7 @@ export class ApiBroker {
         const token = await abortable(this.credential(v.generation), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
         if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
-        if (apiEntryPoints.includes(v.operation) && (!apiOperations.includes(v.operation as ApiOperationId)
-          || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true)) return failure('FORBIDDEN', 'not_sent', v);
+        if (!this.apiAllowed(r, v)) return failure('FORBIDDEN', 'not_sent', v);
         if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
         const path = v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read'
           ? v.input.path as string
