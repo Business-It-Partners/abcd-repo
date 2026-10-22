@@ -59,7 +59,7 @@ let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
 let fileTransfer: FileTransferCoordinator | undefined;
 let shellTransferActivation=0;
-let viewerSession: {id:string;generation:number;sender:object;frame:object;items:Array<{id:string;name:string}>;index:number}|undefined;
+let viewerSession: {id:string;generation:number;sender:Electron.WebContents;frame:Electron.WebFrameMain;items:Array<{id:string;name:string}>;index:number}|undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -249,6 +249,10 @@ ipcMain.handle('files:thumbnail',(event,fileId:unknown,generation:unknown)=>{
 ipcMain.handle('files:viewer-open',(event,input:unknown)=>{
   const request=parseViewerOpen(input);
   if(!request)throw new Error('INVALID_REQUEST');
+  // Keep the exact main-frame identity in the session. `isShell` below also
+  // enforces this boundary, but Electron types senderFrame as nullable.
+  const frame=event.senderFrame;
+  if(!frame||frame!==event.sender.mainFrame)throw new Error('FORBIDDEN');
   const files=requireFilesShell(event,request.generation);
   const items=files.viewerListing(request.directoryId,request.fileIds);
   const index=items.findIndex(item=>item.id===request.selectedId);
@@ -256,7 +260,7 @@ ipcMain.handle('files:viewer-open',(event,input:unknown)=>{
   const preview=files.previewBytes(items[index].id);
   if(!preview)throw new Error('NOT_FOUND');
   const id=randomUUID();
-  viewerSession={id,generation:request.generation,sender:event.sender,frame:event.senderFrame,items,index};
+  viewerSession={id,generation:request.generation,sender:event.sender,frame,items,index};
   return {sessionId:id,generation:request.generation,name:items[index].name,index,count:items.length,...preview};
 });
 ipcMain.handle('files:viewer-step',(event,input:unknown)=>{

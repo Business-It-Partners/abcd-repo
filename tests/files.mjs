@@ -51,7 +51,27 @@ try {
     return !!image && image.complete && image.naturalWidth > 0;
   }, null, { timeout: 8000 });
   check('Bounded local PNG thumbnail renders in Files without a file path',
-    await frame.locator('.files-card-preview img').evaluate(image => image.complete && image.naturalWidth === 8));
+    await frame.locator('.files-card-preview img').first().evaluate(image => image.complete && image.naturalWidth === 8));
+  const viewer = page.getByTestId('image-viewer-window');
+  await frame.getByText('m16-synthetic-xray.png', { exact: true }).dblclick();
+  await viewer.waitFor({ state: 'visible', timeout: 10000 });
+  await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).waitFor({ timeout: 10000 });
+  check('Double-click opens a managed Image Viewer above the still-open Files window',
+    await frame.isVisible() && await viewer.getAttribute('data-phase') === 'visible');
+  await viewer.getByRole('button', { name: 'Zoom in' }).click();
+  check('Image Viewer zoom control updates its displayed scale',
+    await viewer.getByLabel('Current zoom').innerText() === '125%');
+  await viewer.getByRole('button', { name: 'Rotate picture right' }).click();
+  check('Image Viewer rotates the displayed picture',
+    (await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).getAttribute('style'))?.includes('rotate(90deg)'));
+  const viewerCaptureDenied = await page.evaluate(async generation => {
+    try { await window.desktop.capture({ x: 0, y: 40, width: 160, height: 160 }, generation); return false; }
+    catch { return true; }
+  }, (await page.evaluate(async () => (await window.desktop.identity.view()).generation)));
+  check('Private Image Viewer blocks shell screenshot capture while its picture is visible', viewerCaptureDenied);
+  await viewer.getByRole('button', { name: 'Close Image Viewer' }).click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="image-viewer-window"]')?.getAttribute('data-phase') === 'closed');
+  check('Closing Image Viewer releases its session while Files stays open', await frame.isVisible());
   await frame.getByRole('button', { name: 'Back', exact: true }).click();
   await frame.getByText('notes-synthetic.pdf', { exact: true }).waitFor();
   await frame.getByRole('button', { name: 'Forward', exact: true }).click();
@@ -60,7 +80,7 @@ try {
   await frame.getByRole('listbox').focus();
   await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   check('Keyboard file selection does not execute or upload files',
-    await frame.getByText(/Selected: m16-synthetic-xray.png/).isVisible());
+    await frame.getByText(/Selected: m16-synthetic-xray(?:-alt)?\.png/).isVisible());
   await page.keyboard.press('Backquote');
   const overview = page.getByRole('dialog', { name: 'Open windows' });
   await overview.waitFor();
