@@ -37,6 +37,7 @@ const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
 const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture);
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const filePickerAppFixture = runtimeFixtures && trustedTest && app.commandLine.hasSwitch('files-picker-app-fixtures') && app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-picker-verify');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
@@ -72,7 +73,7 @@ function createWindow() {
   });
   hostWindow = win;
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,filePickerFixture:filePickerAppFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
   if(filePicker)runtime?.setFilePicker(filePicker);
   // M16 UI acceptance harness: unavailable on normal desktops, staging sessions
   // and any runner without the three explicit CI-only guards.
@@ -301,7 +302,7 @@ if (primary) void app.whenReady().then(async () => {
     const packageRoot = path.join(app.getPath('userData'), 'packages');
     const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
     const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined, onboardingFixtures, { unavailableControlFile: app.commandLine.hasSwitch('distribution-unavailable-fixtures') ? path.join(app.getPath('userData'),'distribution-unavailable.fixture') : undefined, packageDelayMs: app.commandLine.hasSwitch('distribution-progress-fixtures') ? 900 : 0 }) : undefined;
-    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
+    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture,filePickerAppFixture) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;

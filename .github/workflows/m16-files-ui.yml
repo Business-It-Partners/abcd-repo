@@ -25,7 +25,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Focused Files and picker security tests
-        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
+        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
       - name: Build and typecheck
         run: npm run build
       - name: Private synthetic Windows Files and picker UI
@@ -39,4 +39,61 @@ jobs:
           path: |
             artifacts/m16-windows-files-ui.json
             artifacts/m16-windows-files-ui.png
+          retention-days: 7
+  linux-files-ui:
+    # Isolated Wayland, synthetic data, quota-bounded run.
+    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install private Wayland compositor
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends weston
+      - name: Build Linux Electron shell
+        run: npm run build
+      - name: Run Files and signed-app picker on isolated headless Wayland
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DISPLAY
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          export WAYLAND_DISPLAY=m16-private-wayland
+          export ELECTRON_OS_TEST_DISPLAY="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+          export XDG_SESSION_TYPE=wayland
+          export GDK_BACKEND=wayland
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export LP_NUM_THREADS=2
+          cleanup() {
+            kill "$WESTON_PID" 2>/dev/null || true
+            rm -rf "$XDG_RUNTIME_DIR"
+          }
+          trap cleanup EXIT
+          weston --backend=headless-backend.so --socket="$WAYLAND_DISPLAY" --width=1366 --height=768 --idle-time=0 > /tmp/m16-weston.log 2>&1 &
+          WESTON_PID=$!
+          for attempt in $(seq 1 70); do
+            if [ -S "$ELECTRON_OS_TEST_DISPLAY" ]; then break; fi
+            if ! kill -0 "$WESTON_PID" 2>/dev/null; then cat /tmp/m16-weston.log; exit 1; fi
+            sleep 0.2
+          done
+          if [ ! -S "$ELECTRON_OS_TEST_DISPLAY" ]; then cat /tmp/m16-weston.log; exit 1; fi
+          node tests/m16-files-linux-ci.mjs
+      - name: Retain Linux synthetic results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m16-linux-files-${{ github.sha }}
+          if-no-files-found: warn
+          path: artifacts/m16-linux-files-ui.json
           retention-days: 7
