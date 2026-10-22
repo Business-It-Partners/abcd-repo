@@ -63,6 +63,16 @@ window.addEventListener('pointermove', event => {
   lastEdge = performance.now(); ipcRenderer.send('runtime:edge', { x: event.clientX, y: event.clientY });
 });
 
+// Trusted activation observed only in the platform-isolated preload, never app JS.
+const fileActivate=(event:Event)=>{
+  if(!event.isTrusted || !document.hasFocus())return;
+  if(event instanceof MouseEvent && event.button!==0)return;
+  if(event instanceof KeyboardEvent && (event.repeat||event.ctrlKey||event.altKey||event.metaKey||event.isComposing ||
+    !['Enter',' '].includes(event.key)))return;
+  ipcRenderer.send('runtime:file-activation');
+};
+window.addEventListener('pointerdown',fileActivate,true);
+window.addEventListener('keydown',fileActivate,true);
 // Capture trusted DOM keys in the platform world; app code cannot invoke this IPC.
 window.addEventListener('keydown', event => {
   if (!event.isTrusted || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.isComposing) return;

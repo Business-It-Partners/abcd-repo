@@ -4,6 +4,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
 import { allowedClinicApiPath, appOperation, containsPresignedHandle } from './appPolicy';
+import type { FilePickInput } from '../host/filePickerContract';
 
 export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
@@ -15,7 +16,7 @@ export type Identity = {
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
-type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
+type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; authorizeLocalPick?(): boolean; pickLocal?(input:FilePickInput,requestId:string,signal:AbortSignal):Promise<unknown>; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
 const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
 type Pending = { controller: AbortController; write: boolean; media?: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
@@ -71,6 +72,7 @@ export class ApiBroker {
     r.connection ??= randomUUID(); r.generation = s.generation;
     return success({ connection: r.connection, generation: s.generation, appId: r.appId, appVersion: r.appVersion, sdk: SDK, capabilities: r.capabilities.filter(op => {
       if (this.identity.allowed?.(op) === false) return false;
+      if (op === 'local.files.pick') return r.authorizeLocalPick?.() === true && !!r.pickLocal;
       if (!apiEntryPoints.includes(op)) return true;
       return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true
         && (op !== 'clinic.media.upload' || !!uploadKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaUpload?.(r.appId, uploadKindForApp(r.appId)!) === true)
@@ -129,6 +131,7 @@ export class ApiBroker {
     if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
     if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
     if (!this.apiAllowed(r, v)) return failure('FORBIDDEN', 'not_sent', v);
+    if (v.operation==='local.files.pick' && (r.authorizeLocalPick?.()!==true || !r.pickLocal)) return failure('FORBIDDEN','not_sent',v);
     if (!r.capabilities.includes(v.operation) || this.identity.allowed?.(v.operation) === false) return failure('FORBIDDEN', 'not_sent', v);
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
@@ -150,11 +153,14 @@ export class ApiBroker {
       this.writes.set(key, fingerprint); this.writing.add(key);
     }
     const controller = new AbortController(); active.set(v.requestId, { controller, write, media: v.operation === 'clinic.media.read' }); this.pending.set(r, active);
-    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'clinic.media.upload' ? 60_000 : v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
+    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'local.files.pick' ? 180_000 : v.operation === 'clinic.media.upload' ? 60_000 : v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
     let dispatched = false;
     try {
       let value: unknown;
-      if (v.operation === 'clinic.media.upload') {
+      if (v.operation === 'local.files.pick') {
+        value = await abortable(r.pickLocal!(v.input as FilePickInput,v.requestId,controller.signal),controller.signal);
+        if(r.authorizeLocalPick?.()!==true)return failure('FORBIDDEN','not_sent',v);
+      } else if (v.operation === 'clinic.media.upload') {
         if (v.input.action === 'begin') value = this.uploads.begin(r, v.input);
         else if (v.input.action === 'chunk') value = this.uploads.chunk(r, v.input);
         else {
@@ -243,6 +249,11 @@ export class ApiBroker {
     } catch (error) {
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
       if (error instanceof MediaUploadError) return failure(error.code, error.outcome, v);
+      if(v.operation==='local.files.pick'){
+        const code = (error as {code?:unknown})?.code;
+        if(code==='CANCELLED'||code==='BUSY'||code==='FORBIDDEN'||code==='UNAVAILABLE')
+          return failure(code, 'not_sent',v);
+      }
       if (write && dispatched) return failure('UNKNOWN_OUTCOME', 'unknown', v);
       const code: ErrorCode = controller.signal.aborted ? controller.signal.reason === 'cancel' || controller.signal.reason === 'closed' ? 'CANCELLED' : 'TIMEOUT' : error instanceof TransportError || error instanceof MediaReadError ? error.code : error instanceof SyntaxError ? 'INVALID_RESPONSE' : 'OFFLINE';
       return failure(code, 'not_sent', v);

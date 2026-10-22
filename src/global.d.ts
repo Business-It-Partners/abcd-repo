@@ -22,6 +22,8 @@ declare global {
         subscribe(callback: (kind: string, value: unknown) => void): () => void;
       };
       files: {
+        subscribePicker(listener: (value: import('../electron/host/filePickerContract').FilePickerPrompt|null)=>void):()=>void;
+        pickResponse(input: import('../electron/host/filePickerContract').FilePickerResponse):Promise<boolean>;
         roots(generation: number): Promise<import('../electron/host/localFiles').FileRoot[]>;
         list(input: import('../electron/host/filesShell').ShellFilesList): Promise<import('../electron/host/localFiles').FilePage>;
       };

@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.3 Files core window implemented. Windows unit/build/typecheck verified; private Linux Files UI and final G16 picker/transfer acceptance remain open.
+**Status:** IMPLEMENTING — M16.4 typed custom/native picker flow and secure SDK authorization implemented in source; source-bound CI/UI evidence pending. M16.3 private-display Files UI and G16 transfer acceptance remain open.
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -24,10 +24,17 @@ The [Architecture](ARCHITECTURE.md) defines Files, OS picker/native fallback, tr
 - File window previews use a generic SVG animation/snapshot and privacy placeholder in overview, never captures of local filenames.
 - Files has **no selectable-to-dental-app transfer**, file-byte read/write, upload, native picker or generic app messaging.
 
+## M16.4 picker implementation checkpoint
+
+- Added local.files.pick typed SDK 1.5 candidate, signed package/local policy capability gate, scoped runtime activation ticket and broker-coordinated, abortable selection.
+- Added OS-owned shared-files custom picker with a parented native Electron fallback. Only shell IPC gets picker events and opaque file ID confirmation.
+- Added temporary native explicit-file receipts to M16.2 host adapter; paths/bytes remain internal to trusted Electron main, and no upload/read consumer is exposed.
+- Added focused parser/broker/coordinator tests. Existing app releases without the newly signed capability remain unable to open the picker.
+
 ## Not implemented
 
-No custom/native file picker, drag behavior, SDK 1.5 operation, upload, or backend deployment. The existing M15 upload denial remains intact. G16 has no implementation acceptance evidence.
+No M16.5 Files-to-app drag/send, no clinical file-byte read, Cloudflare upload, patient attachment or backend deployment. The existing M15 upload denial remains intact. G16 has no implementation acceptance evidence.
 
 ## Next
 
-M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. Before proceeding to M16.4 in a later session, execute `npm run test:files` on a supported private GNOME display and record its actual result. The M16.3 Windows unit/build source is verified; full Windows graphical runtime and user-facing Files UI acceptance remain open. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.
+M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. Pending: inspect M16.4 exact-source tests/build and run the private-display Files/picker UI flow on supported OS devices. Start M16.5 only in a separate session after recording limitations and correcting any M16.4 regression. Never imply the selection receipt uploads a patient file. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.

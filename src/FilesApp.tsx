@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { AlertCircle, ArrowDownAZ, ArrowLeft, ArrowRight, ArrowUp, ChevronRight, File, FileImage, FileText, Folder, FolderOpen, HardDrive, Home, LoaderCircle, RefreshCw } from 'lucide-react';
 import { useSessionGeneration } from './SessionBoundary';
-import type { FileEntry, FileRoot } from '../electron/host/localFiles';
+import type { FileEntry, FileRoot, FileFilter } from '../electron/host/localFiles';
 
 type Crumb = { id: string; name: string };
 type DisplaySort = 'name' | 'kind' | 'date' | 'size';
@@ -15,7 +15,8 @@ const statusText = (reason: unknown): string => {
   if (message.includes('Workspace')) return 'Your session changed. Reopen Files after signing in.';
   return 'Files are temporarily unavailable. Try refreshing this folder.';
 };
-export function FilesApp({ visible }: { visible: boolean }) {
+export type FilesPickerOptions={maxSelections:number;fileTypes:FileFilter;onChoose(ids:string[]):void;onNative():void;onCancel():void};
+export function FilesApp({ visible, picker }: { visible: boolean; picker?: FilesPickerOptions }) {
   const generation = useSessionGeneration();
   const [roots, setRoots] = useState<FileRoot[]>([]);
   const [history, setHistory] = useState<Crumb[][]>([]);
@@ -23,6 +24,7 @@ export function FilesApp({ visible }: { visible: boolean }) {
   const [rows, setRows] = useState<FileEntry[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
   const [sorting, setSorting] = useState<DisplaySort>('name');
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -35,7 +37,7 @@ export function FilesApp({ visible }: { visible: boolean }) {
   const navigate = useCallback((trail: Crumb[]) => {
     setHistory(previous => [...previous.slice(0, position + 1), trail]);
     setPosition(previous => previous + 1);
-    setSelected(null);
+    setSelected(null);setPicked([]);
     setError('');
   }, [position]);
   useEffect(() => {
@@ -55,7 +57,7 @@ export function FilesApp({ visible }: { visible: boolean }) {
       setRows([]); setNextCursor(null); setLoading(false); setLoadingMore(false);
       return;
     }
-    setLoading(true); setLoadingMore(false); setError(''); setRows([]); setNextCursor(null); setSelected(null);
+    setLoading(true); setLoadingMore(false); setError(''); setRows([]); setNextCursor(null); setSelected(null);setPicked([]);
     void window.desktop.files.list({ directoryId: folderId, cursor: null, limit: PAGE_LIMIT, generation })
       .then(value => { if (sequence.current === token) { setRows(value.entries); setNextCursor(value.nextCursor); } })
       .catch(reason => { if (sequence.current === token) setError(statusText(reason)); })
@@ -66,7 +68,7 @@ export function FilesApp({ visible }: { visible: boolean }) {
     // A new bounded page request; never replay a stale cursor.
     if (!folderId) return;
     const token = ++sequence.current;
-    setLoading(true); setLoadingMore(false); setError(''); setRows([]); setSelected(null); setNextCursor(null);
+    setLoading(true); setLoadingMore(false); setError(''); setRows([]); setSelected(null);setPicked([]); setNextCursor(null);
     void window.desktop?.files.list({ directoryId: folderId, cursor: null, limit: PAGE_LIMIT, generation })
       .then(value => { if (sequence.current === token) { setRows(value.entries); setNextCursor(value.nextCursor); } })
       .catch(reason => { if (sequence.current === token) setError(statusText(reason)); })
@@ -92,9 +94,26 @@ export function FilesApp({ visible }: { visible: boolean }) {
     if (sorting === 'kind') return a.typeHint.localeCompare(b.typeHint) || a.name.localeCompare(b.name);
     return a.name.localeCompare(b.name);
   });
+  const allowedFile=(item:FileEntry)=>{
+    if(item.kind==='directory'||!picker)return true;
+    if(picker.fileTypes==='all')return true;
+    const ext=item.typeHint;
+    if(picker.fileTypes==='documents')return ['.pdf','.txt','.csv','.doc','.docx','.xls','.xlsx'].includes(ext);
+    const image=['.png','.jpg','.jpeg','.webp','.gif','.bmp','.tif','.tiff'];
+    return image.includes(ext)||(picker.fileTypes==='medical-images'&&['.dcm','.dicom'].includes(ext));
+  };
   const chosen = list.find(item => item.id === selected);
+  const chooseEntry=(item:FileEntry,extend=false)=>{
+    setSelected(item.id);
+    if(!picker||item.kind!=='file'||!allowedFile(item))return;
+    setPicked(previous=>{
+      if(!extend||picker.maxSelections===1)return [item.id];
+      if(previous.includes(item.id))return previous.filter(id=>id!==item.id);
+      return previous.length<picker.maxSelections?[...previous,item.id]:previous;
+    });
+  };
   const open = (entry: FileEntry) => {
-    setSelected(entry.id);
+    chooseEntry(entry);
     if (entry.kind === 'directory') navigate([...current, { id: entry.id, name: entry.name }]);
   };
   const keyboard = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -104,13 +123,15 @@ export function FilesApp({ visible }: { visible: boolean }) {
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1
         : Math.max(0, Math.min(list.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)));
       if (list[next]) setSelected(list[next].id);
-    } else if (event.key === 'Enter' && chosen?.kind === 'directory') {
-      event.preventDefault(); open(chosen);
+    } else if (event.key === 'Enter' && chosen) {
+      event.preventDefault();
+      if(chosen.kind==='directory')open(chosen);
+      else chooseEntry(chosen);
     } else if (event.key === 'Backspace' && current.length > 1) {
       event.preventDefault(); navigate(current.slice(0, -1));
     }
   };
-  return <div className="files-app" data-testid="files-app">
+  return <div className="files-app" data-testid={picker?'files-picker-browser':'files-app'}>
     <aside className="files-sidebar" aria-label="File locations">
       <div className="files-heading"><FolderOpen size={17}/><span>Files</span><small>On this computer</small></div>
       {roots.map(root => <button key={root.id} className={'files-location' + (current[0]?.id === root.id ? ' is-active' : '')}
@@ -142,10 +163,10 @@ export function FilesApp({ visible }: { visible: boolean }) {
         </label>
       </div>
       <div className="files-columns" aria-hidden="true"><span>Name</span><span>Modified</span><span>Size</span></div>
-      <div className="files-list" role="listbox" aria-label="Files in current folder" tabIndex={0} ref={itemsRef} onKeyDown={keyboard} aria-activedescendant={selected ? 'file-option-' + selected : undefined}>
-        {list.map(item => <div role="option" id={'file-option-' + item.id} key={item.id}
-          className={'files-row' + (selected === item.id ? ' is-selected' : '')}
-          aria-selected={selected === item.id} onClick={() => setSelected(item.id)}
+      <div className="files-list" role="listbox" aria-label="Files in current folder" tabIndex={0} ref={itemsRef} onKeyDown={keyboard} aria-activedescendant={selected ? (picker?'picker-file-':'file-option-') + selected : undefined}>
+        {list.map(item => <div role="option" id={(picker?'picker-file-':'file-option-') + item.id} key={item.id}
+          className={'files-row' + (selected === item.id || picked.includes(item.id) ? ' is-selected' : '')}
+          aria-disabled={!allowedFile(item)} aria-selected={selected === item.id || picked.includes(item.id)} onClick={event => chooseEntry(item,event.ctrlKey||event.metaKey)}
           onDoubleClick={() => open(item)}>
           <span className="files-name">
             {item.kind === 'directory' ? <Folder size={17}/> : item.typeHint.match(/png|jpg|jpeg|webp|tif|bmp|dcm/i) ? <FileImage size={17}/> : item.typeHint.match(/pdf|doc|txt/i) ? <FileText size={17}/> : <File size={17}/>}
@@ -162,7 +183,11 @@ export function FilesApp({ visible }: { visible: boolean }) {
       <footer className="files-footer">
         <span>{rows.length} item{rows.length === 1 ? '' : 's'} loaded{nextCursor ? ' · More available' : ''}</span>
         <span>{chosen ? chosen.kind === 'directory' ? 'Double-click to open folder' : 'Selected: ' + chosen.name : 'Select a file to view its details'}</span>
-        <span className="files-readonly">Read-only · Attach & transfer coming later</span>
+        {picker ? <div className="files-picker-actions">
+          <button onClick={picker.onCancel}>Cancel</button>
+          <button onClick={picker.onNative}>Use native picker</button>
+          <button disabled={!picked.length||loading} onClick={()=>picker.onChoose(picked)}>Choose {picked.length||''} file{picked.length===1?'':'s'}</button>
+        </div> : <span className="files-readonly">Read-only · Attach & transfer coming later</span>}
       </footer>
     </section>
   </div>;

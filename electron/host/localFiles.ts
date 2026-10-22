@@ -202,6 +202,28 @@ export class LocalFileService {
     this.leases.set(selectionId,{owner:{...owner},files,expiresAt});
     return {selectionId,files:[...files.values()].map(x=>({...x.receipt})),expiresAt};
   }
+  /**
+   * Trusted main ONLY: call solely with actual paths returned from a user-confirmed,
+   * host-parented native picker. Grant individual files, not their parent directories.
+   */
+  selectNativePaths(paths:readonly string[],owner:FileRecipient,filter:FileFilter='all'):FileSelection{
+    this.ready();
+    if(!Array.isArray(paths)||paths.length<1||paths.length>MAX_FILES||new Set(paths).size!==paths.length
+      ||paths.some(v=>typeof v!=='string'||!path.isAbsolute(v)))throw new LocalFilesError('INVALID_REQUEST');
+    const temporary:string[]=[];
+    try{
+      for(const file of paths){
+        const absolute=path.resolve(file),root=path.dirname(absolute);
+        try{check(absolute,root,'file');}catch(e){throw this.err(e);}
+        const id=randomUUID();
+        this.handles.set(id,{absolute,root,kind:'file'});
+        temporary.push(id);
+      }
+      return this.select(temporary,owner,filter);
+    }finally{
+      for(const id of temporary)this.handles.delete(id);
+    }
+  }
   inspect(selectionId:string,receiptId:string,owner:FileRecipient):FileReceipt{
     this.ready();
     if(!isId(selectionId)||!isId(receiptId))throw new LocalFilesError('INVALID_REQUEST');

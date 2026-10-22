@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { validPickerPrompt } from './host/filePickerContract';
 const hostListeners = new Set<(transitioning: boolean) => void>();
 let hostTransitioning = false;
 function publishHostTransition(transitioning: boolean) {
@@ -36,6 +37,14 @@ contextBridge.exposeInMainWorld('desktop', {
     },
   },
   files: {
+    subscribePicker: (listener: (value: import('./host/filePickerContract').FilePickerPrompt|null)=>void) => {
+      const start=(_event:unknown,value:unknown)=>{if(validPickerPrompt(value))listener(value);};
+      const end=(_event:unknown,id:unknown)=>{if(typeof id==='string')listener(null);};
+      ipcRenderer.on('files:picker-open',start);
+      ipcRenderer.on('files:picker-close',end);
+      return()=>{ipcRenderer.removeListener('files:picker-open',start);ipcRenderer.removeListener('files:picker-close',end);};
+    },
+    pickResponse: (input: unknown)=>ipcRenderer.invoke('files:pick-response',input) as Promise<boolean>,
     roots: (generation: number) => ipcRenderer.invoke('files:roots', generation),
     list: (input: unknown) => ipcRenderer.invoke('files:list', input),
   },

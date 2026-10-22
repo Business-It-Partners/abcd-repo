@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.3 Files core window implementation drafted on the M16 branch; exact-source CI and private UI evidence tracked separately.
+**Status:** IMPLEMENTING — M16.4 custom and native file picker implementation; exact-source security/unit/build CI and private UI evidence must be tracked separately.
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -95,3 +95,18 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [ ] Run private Linux UI script `npm run test:files` when a private GNOME environment is available; no GUI acceptance is claimed yet. Do not use the user's display or real clinic files.
 
 **Stop before M16.4:** no OS-owned modal picker, native host file dialog, app SDK activation, file receipt transfer, drag/drop, or Cloudflare upload is enabled in M16.3.
+
+## M16.4 bounded implementation tasks (2026-10-22)
+
+- [x] Extend the existing typed SDK with local.files.pick (minor 1.5); strictly validate purpose, file category and selection count 1–10.
+- [x] Enforce separate local-file permission through verified company package manifest, signed app-level update policy, shipped trust ceiling, app family and live session — never use clinic API release grants for disk access.
+- [x] Bind a recent **isTrusted** user gesture recorded by the isolated platform preload to exactly one focused, verified app main frame (750 ms, one-use).
+- [x] Route the authorized request through the existing async/cancellable SDK broker; never add an app-visible filesystem IPC channel or network upload.
+- [x] Display an OS-owned custom picker using the shared Files browser, with explicit confirmation, keyboard Escape/cancel, and native Electron open dialog fallback parented to the fullscreen host window.
+- [x] Return only short-lived, single-recipient opaque metadata receipts. The trusted main process alone holds canonical host paths.
+- [x] Add unit tests for unauthorized/forged/invalid requests, recipient binding, cancellation, native-file consent, symlink denial and no host paths in replies.
+- [ ] Run exact-source unit/build checks and inspect failure evidence before marking verified.
+- [ ] Run the M16.3 Files and M16.4 modal/native picker **private-display** graphical scenarios on actual supported Windows/Linux hosts. No acceptance claims from an unavailable compositor.
+- [ ] Validate a company-signed dental application release explicitly declaring local.files.pick; older already-deployed app releases cannot gain authority retroactively. No staging deployment is part of this task.
+
+**Stop:** M16.5 drag-and-drop and Files-to-app explicit transfer, Cloudflare uploads and patient-record association remain excluded. A receipt does not permit reading local file bytes.

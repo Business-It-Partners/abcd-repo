@@ -1,5 +1,8 @@
 import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent, type NativeImage } from 'electron';
 import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/broker';
+import { appOperation } from '../sdk/appPolicy';
+import { FilePickerCoordinator } from '../host/filePicker';
+import type { FilePickInput } from '../host/filePickerContract';
 import type { Result } from '../sdk/contracts';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
@@ -14,6 +17,9 @@ const appLaunchHealthTimeoutMs=20_000;
 type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
 export class FixtureRuntime {
   private services = fixtureServices();
+  private filePicker?: FilePickerCoordinator;
+  private fileActivation = new Map<object,{frame:object;at:number}>();
+  setFilePicker(coordinator:FilePickerCoordinator){this.filePicker=coordinator;}
   private broker: ApiBroker;
   private identity: Identity;
   private entries = new Map<RuntimeId, Entry>();
@@ -241,7 +247,7 @@ export class FixtureRuntime {
     wc.on('will-navigate', event => event.preventDefault());
     wc.on('will-frame-navigate', event => event.preventDefault());
     wc.on('will-attach-webview', event => event.preventDefault());
-    wc.on('render-process-gone', () => this.fail(e, 'renderer-exited'));
+    wc.on('render-process-gone', () => {this.filePicker?.cancelRecipient(wc);this.fileActivation.delete(wc);this.fail(e, 'renderer-exited');});
     wc.on('unresponsive', () => this.markUnresponsive(e));
     wc.on('responsive', () => this.markResponsive(e));
     wc.on('did-finish-load', async () => {
@@ -266,7 +272,29 @@ export class FixtureRuntime {
       }
       e.launchFadePrepared=await this.prepareLaunchFade(e);
       if(this.entries.get(id)!==e||wc.isDestroyed())return;
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}}, report: value => this.reportState(e, value) });
+      const authorizedLocal=()=>{
+        try{
+          const family=appOperation(lease.manifest.appId);
+          return this.entries.get(id)===e && e.state.phase==='ready' &&
+            !!family && lease.capabilities.includes(family) &&
+            this.identity.allowed?.(family)!==false && this.packages.authorizeLocalPick(lease);
+        }catch{return false;}
+      };
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities],
+        authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}},
+        authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}},
+        authorizeLocalPick:authorizedLocal,
+        pickLocal:async(input:FilePickInput,requestId:string,signal:AbortSignal)=>{
+          const ticket=this.fileActivation.get(wc);this.fileActivation.delete(wc);
+          if(!ticket || ticket.frame!==wc.mainFrame || Date.now()-ticket.at>750 || !wc.isFocused() ||
+             !e.view.getVisible() || !authorizedLocal() || !this.filePicker)
+             throw Object.assign(Error('FORBIDDEN'),{code:'FORBIDDEN'});
+          return this.filePicker.pick(input,{
+            sender:wc,frame:wc.mainFrame,appId:lease.manifest.appId,appVersion:lease.manifest.version,
+            windowId:id,generation:this.identity.snapshot().generation,requestId,
+            authorized:()=>authorizedLocal() && !wc.isDestroyed(),
+          }, e.appMetadata?.title ?? 'Dental application',signal);
+        }, report: value => this.reportState(e, value) });
       e.connected=this.broker.connect({sender:wc,frame:wc.mainFrame,url:entryURL},{major:1,minor:0}).ok;
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
@@ -333,6 +361,12 @@ export class FixtureRuntime {
     e.state.dirty = v.dirty; e.state.modal = v.modal; if(changed)this.emit();
     clearTimeout(e.captureTimer); e.captureTimer = setTimeout(() => void this.refresh(e), 120);
   }
+  fileActivated(event:IpcMainEvent){
+    const e=[...this.entries.values()].find(x=>x.view.webContents===event.sender);
+    if(!e || e.state.phase!=='ready' || event.senderFrame!==event.sender.mainFrame ||
+       !e.view.getVisible() || !event.sender.isFocused())return;
+    this.fileActivation.set(event.sender,{frame:event.senderFrame,at:Date.now()});
+  }
   sdk(kind: 'connect' | 'request' | 'cancel', event: { sender: Electron.WebContents; senderFrame: Electron.WebFrameMain | null }, input: unknown) {
     const caller: Caller = { sender: event.sender, frame: event.senderFrame, url: event.senderFrame?.url ?? '' };
     const result=this.broker[kind](caller, input);
@@ -368,6 +402,8 @@ export class FixtureRuntime {
   close(id: RuntimeId) {
     const e = this.entries.get(id); if (!e) return;
     this.resolveModuleAcks(e,false);
+    this.fileActivation.delete(e.view.webContents);
+    this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.lease?.releaseLease();
     this.entries.delete(id); clearTimeout(e.healthTimer); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
@@ -382,11 +418,12 @@ export class FixtureRuntime {
   }
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
+    this.fileActivation.clear();this.filePicker?.cancelAll();
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
     // Closing a WebContents does not erase session storage. Never reuse a prior
     // account's in-memory partition, even while asynchronous erasure completes.
     const previous=[...this.sessions.values()];this.sessions.clear();this.instance=randomUUID();
     for(const ses of previous){try{ses.protocol.unhandle('dental-fixture');}catch{}void ses.clearStorageData().catch(()=>{});void ses.clearCache().catch(()=>{});}
   }
-  dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
+  dispose() { this.fileActivation.clear();this.filePicker?.cancelAll();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

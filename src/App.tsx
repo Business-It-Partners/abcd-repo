@@ -15,6 +15,8 @@ import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
 import { FilesApp } from './FilesApp';
+import { FilesPickerModal } from './FilesPickerModal';
+import type { FilePickerPrompt, FilePickerResponse } from '../electron/host/filePickerContract';
 import './FilesApp.css';
 import { ManagedWindowFrame } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
@@ -99,6 +101,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const [appExplorer,setAppExplorer]=useState<RuntimeExplorer|null>(null);
   const [appExplorerError,setAppExplorerError]=useState('');
   const [launchNotice,setLaunchNotice]=useState('');
+  const [pickerPrompt,setPickerPrompt]=useState<FilePickerPrompt|null>(null);
   const launchingPackage=useRef(false);
   const explorerReturnTarget=useRef<HTMLElement|null>(null);
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
@@ -173,6 +176,11 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
   useEffect(()=>{const listener=(event:Event)=>{const value=(event as CustomEvent<RuntimeExplorer>).detail;if(!value||typeof value.runtimeId!=='string'||typeof value.title!=='string'||typeof value.iconDataUrl!=='string'||!Array.isArray(value.modules))return;setFinanceExplorer(false);setAppExplorerError('');setAppExplorer(value);};window.addEventListener('runtime:app-explorer',listener);return()=>window.removeEventListener('runtime:app-explorer',listener);},[]);
   useEffect(() => { setDockRevealed(false); }, [immersive, frontApp]);
+  useEffect(()=>window.desktop?.files.subscribePicker(prompt=>{
+    setPickerPrompt(prompt);
+    if(prompt)window.desktop?.runtime.hideAll(session?.generation);
+  }),[session?.generation]);
+  const respondPicker = (response:FilePickerResponse)=>window.desktop?.files.pickResponse(response)??Promise.resolve(false);
   function trackChrome(event: React.PointerEvent<HTMLElement>) {
     if (state.overview || financeExplorer || appExplorer) { dock.leave(); return; }
     const { clientX: px, clientY: py } = event;
@@ -222,13 +230,13 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       if (toggle && !overviewShortcutEnabled.current) return;
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      if (event.repeat || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
+      if (event.repeat || pickerPrompt || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
       if (!current.overview) { dock.reset(); setDockRevealed(false); setFinanceExplorer(false); }
       dispatch({ type: 'overview', open: !current.overview });
     };
     window.addEventListener('keydown', shortcut, true);
     return () => window.removeEventListener('keydown', shortcut, true);
-  }, [dispatch, getState, hostTransitioning, dock.reset]);
+  }, [dispatch, getState, hostTransitioning, pickerPrompt, dock.reset]);
   useEffect(() => window.desktop?.onHostTransition(value => {
     setHostTransitioning(value);
     if (value) { setFinanceExplorer(false); dock.reset(); setDockRevealed(false); }
@@ -277,8 +285,8 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { setFinanceExplorer(false); setAppExplorer(null); dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
-    <div className="window-stage" style={{ bottom: DOCK.bottom + dockHeight }} inert={explorerOpen} aria-hidden={explorerOpen}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={explorerOpen || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    <div className="window-stage" style={{ bottom: DOCK.bottom + dockHeight }} inert={explorerOpen || !!pickerPrompt} aria-hidden={explorerOpen || !!pickerPrompt}>
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={explorerOpen || !!pickerPrompt || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -301,7 +309,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
         }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule} onOpenExplorer={openFinanceExplorer}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
     </div>
-    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock || explorerOpen} aria-label="Application dock">
+    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock || explorerOpen || !!pickerPrompt} aria-label="Application dock">
       <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * dockScale * 2, height: DOCK.bottom * dockScale + dockHeight }}/>
       <div className="dock-pill" style={{ left: dock.layout.left - DOCK.pad * dockScale, width: dock.layout.width + 2 * DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, height: dockHeight }}/>
       {dock.layout.items.map(item => {
@@ -332,6 +340,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
     {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
     {launchNotice && !appExplorer && !financeExplorer && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}
     {immersive && !state.overview && <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)}/>}
-    {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
+    {state.overview && !pickerPrompt && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
+    {pickerPrompt && <FilesPickerModal key={pickerPrompt.requestId} prompt={pickerPrompt} onReply={respondPicker}/> }
   </main>;
 }

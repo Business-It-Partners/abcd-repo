@@ -4,6 +4,7 @@ import {mkdirSync, writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
+import { FilePickerCoordinator } from './host/filePicker';
 import { parseFilesList } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
@@ -46,6 +47,7 @@ const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', ge
 const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
 let localFiles: LocalFileService | undefined;
+let filePicker: FilePickerCoordinator | undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -68,8 +70,10 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
+  if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
-  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}runtime?.dispose();});
+  if(filePicker)runtime?.setFilePicker(filePicker);
+  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -195,6 +199,10 @@ function requireFilesShell(event: Electron.IpcMainInvokeEvent, generation: unkno
   return localFiles;
 }
 ipcMain.handle('files:roots', (event, generation: unknown) => requireFilesShell(event, generation).roots());
+ipcMain.handle('files:pick-response', async(event,input:unknown)=>{
+  if(!isShell(event)||!canUseWorkspace()||!filePicker)throw new Error('FORBIDDEN');
+  return filePicker.respond(input);
+});
 ipcMain.handle('files:list', (event, input: unknown) => {
   const request = parseFilesList(input);
   if (!request) throw new Error('INVALID_REQUEST');
@@ -254,6 +262,7 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
 });
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
+ipcMain.on('runtime:file-activation',event=>runtime?.fileActivated(event));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
   diagnostics=new DiagnosticStore(path.join(app.getPath('userData'),'diagnostics'));
@@ -270,7 +279,7 @@ if (primary) void app.whenReady().then(async () => {
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
-      identity.subscribe(view => { localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
+      identity.subscribe(view => { filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
@@ -299,7 +308,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; localFiles?.dispose(); distribution?.dispose();
+  bootPhase = 'exiting'; filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

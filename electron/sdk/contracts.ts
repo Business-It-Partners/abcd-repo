@@ -1,13 +1,14 @@
 import { validMediaUpload } from './mediaUploadContract';
+import { validPickInput } from '../host/filePickerContract';
 /** Renderer-safe wire contract. No Electron, credential, filesystem or transport imports. */
-export const SDK = { major: 1, minor: 4 } as const;
+export const SDK = { major: 1, minor: 5 } as const;
 export const MAX_REQUEST_BYTES = 16_384;
 export const operations = [
   'appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.api.blob.read', 'clinic.media.read', 'clinic.media.upload',
   'clinic.app.followups', 'clinic.app.appointments', 'clinic.app.work-entry', 'clinic.app.patient-record',
   'clinic.app.treatment-progress', 'clinic.app.lab-tracker', 'clinic.app.finance', 'clinic.app.patient-payments',
   'clinic.app.staff', 'clinic.app.treatment-protocols', 'clinic.app.calendar',
-  'session.context', 'platform.status', 'preferences.read', 'preferences.update', 'lifecycle.report', 'notifications.show', 'native.intent',
+  'session.context', 'platform.status', 'preferences.read', 'preferences.update', 'lifecycle.report', 'notifications.show', 'native.intent', 'local.files.pick',
 ] as const;
 export type Operation = typeof operations[number];
 /** Closed host API contracts that update-policy v2 may grant to an exact app release. */
@@ -74,6 +75,7 @@ export function parseRequest(value: unknown): Request | undefined {
     case 'lifecycle.report': valid = shape(p, ['dirty', 'modal']) && typeof p.dirty === 'boolean' && typeof p.modal === 'boolean'; break;
     case 'notifications.show': valid = shape(p, ['message']) && text(p.message, 160) && p.message.length > 0; break;
     case 'native.intent': valid = shape(p, ['kind']) && ['print', 'export'].includes(p.kind as string); break;
+    case 'local.files.pick': valid = validPickInput(p); break;
     default: valid = shape(p, []);
   }
   return valid ? value as Request : undefined;
