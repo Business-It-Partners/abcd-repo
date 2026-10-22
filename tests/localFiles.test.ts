@@ -217,3 +217,45 @@ describe('M16.2 trusted read-only host files', () => {
     expect(existsSync(root)).toBe(false);
   });
 });
+
+describe('M16 trusted image viewer listing snapshots',()=>{
+  it('allows only opaque raster IDs from one current directory',()=>{
+    const {root,svc,id}=fixture();
+    const payload=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR42mP06FnCgA0wMeAAg1MCACmLAYglPyuxAAAAAElFTkSuQmCC','base64');
+    writeFileSync(path.join(root,'a.png'),payload);
+    writeFileSync(path.join(root,'b.png'),payload);
+    writeFileSync(path.join(root,'x.tiff'),payload);
+    mkdirSync(path.join(root,'nested'));
+    writeFileSync(path.join(root,'nested','other.png'),payload);
+    const entries=svc.list(id).entries,byName=(name:string)=>entries.find(v=>v.name===name)!.id;
+    expect(svc.viewerListing(id,[byName('a.png'),byName('b.png')])).toEqual([
+      {id:byName('a.png'),name:'a.png'}, {id:byName('b.png'),name:'b.png'},
+    ]);
+    expectCode(()=>svc.viewerListing(id,[byName('x.tiff')]),'FORBIDDEN');
+    expectCode(()=>svc.viewerListing(id,[byName('a.png'),byName('a.png')]),'INVALID_REQUEST');
+    expectCode(()=>svc.viewerListing(id,[byName('nested')]),'NOT_FOUND');
+    const nested=svc.list(byName('nested')).entries[0];
+    expectCode(()=>svc.viewerListing(id,[nested.id]),'FORBIDDEN');
+  });
+  it('rejects replaced image identity and session-invalidated handles before decoding',()=>{
+    const {root,svc,id}=fixture();
+    writeFileSync(path.join(root,'image.png'),'first');
+    const image=svc.list(id).entries[0];
+    expect(svc.viewerListing(id,[image.id])).toHaveLength(1);
+    writeFileSync(path.join(root,'image.png'),'replacement with a different length');
+    expectCode(()=>svc.viewerListing(id,[image.id]),'STALE_SELECTION');
+    expect(svc.previewBytes(image.id)).toBeNull();
+    svc.invalidateGeneration(2);
+    expectCode(()=>svc.viewerListing(id,[image.id]),'NOT_FOUND');
+  });
+  it('rejects linked image entries without granting native paths',()=>{
+    const {root,svc,id}=fixture();
+    const external=path.join(root,'source.png');
+    writeFileSync(external,'fixture');
+    symlinkSync(external,path.join(root,'linked.png'),'file');
+    const entries=svc.list(id).entries;
+    expect(entries.map(v=>v.name)).toEqual(['source.png']);
+    expect(svc.viewerListing(id,[entries[0].id])[0].name).toBe('source.png');
+    expect(JSON.stringify(svc.viewerListing(id,[entries[0].id]))).not.toContain(root);
+  });
+});

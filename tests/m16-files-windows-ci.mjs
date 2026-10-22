@@ -79,6 +79,41 @@ try{
   check('Windows shell renders bounded synthetic PNG thumbnail',
     await frame.locator('.files-card-preview img').evaluate(image=>image.complete&&image.naturalWidth===8));
   check('Files navigates inside a local folder',true);
+  const viewer=page.getByTestId('image-viewer-window');
+  const imageCard=frame.getByText('m16-synthetic-xray.png',{exact:true});
+  await imageCard.click();
+  check('Single-click selects image without launching viewer',
+    await viewer.getAttribute('data-phase')==='closed');
+  await imageCard.dblclick();
+  await viewer.waitFor({state:'visible',timeout:10000});
+  await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).waitFor({timeout:10000});
+  check('Double-click opens separate managed Image Viewer above persistent Files',
+    await frame.isVisible() && await viewer.getAttribute('data-phase')==='visible');
+  await viewer.getByRole('button',{name:'Zoom in'}).click();
+  check('Viewer zoom control adjusts percentage',
+    await viewer.getByLabel('Current zoom').innerText()==='125%');
+  await viewer.getByRole('button',{name:'Rotate picture right'}).click();
+  check('Viewer rotates image', (await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).getAttribute('style'))?.includes('rotate(90deg)'));
+  await viewer.getByRole('button',{name:'Fit image to window'}).click();
+  check('Viewer fits image to window',await viewer.getByLabel('Current zoom').innerText()==='100%');
+  await viewer.getByRole('button',{name:'Next picture'}).click();
+  await viewer.getByRole('img',{name:'m16-synthetic-xray-alt.png'}).waitFor({timeout:10000});
+  await viewer.getByRole('button',{name:'Previous picture'}).click();
+  await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).waitFor({timeout:10000});
+  check('Viewer next/previous stays within supported current folder images',true);
+  const captureDenied=await page.evaluate(async gen=>{
+    try{await window.desktop.capture({x:0,y:40,width:160,height:160},gen);return false;}catch{return true;}
+  },generation);
+  check('Private viewer denies shell screenshot captures',captureDenied);
+  await page.keyboard.press('Backquote');
+  const viewerOverview=page.getByRole('dialog',{name:'Open windows'});
+  await viewerOverview.waitFor({timeout:5000});
+  check('Viewer absent from overview and filenames omitted',!(await viewerOverview.innerText()).includes('Image Viewer')
+    && !(await viewerOverview.innerText()).includes('m16-synthetic-xray'));
+  await page.keyboard.press('Escape');
+  await viewer.getByRole('button',{name:'Close Image Viewer'}).click();
+  await page.waitForFunction(()=>document.querySelector('[data-testid="image-viewer-window"]')?.getAttribute('data-phase')==='closed');
+  check('Viewer close releases managed window without closing Files',await frame.isVisible());
   await frame.getByRole('button',{name:'Back',exact:true}).click();
   await frame.getByText('notes-synthetic.pdf',{exact:true}).waitFor();
   check('Files back navigation returns to root',true);

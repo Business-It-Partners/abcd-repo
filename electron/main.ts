@@ -250,7 +250,6 @@ ipcMain.handle('files:viewer-open',(event,input:unknown)=>{
   const request=parseViewerOpen(input);
   if(!request)throw new Error('INVALID_REQUEST');
   const files=requireFilesShell(event,request.generation);
-  viewerSession=undefined;
   const items=files.viewerListing(request.directoryId,request.fileIds);
   const index=items.findIndex(item=>item.id===request.selectedId);
   if(index<0)throw new Error('INVALID_REQUEST');

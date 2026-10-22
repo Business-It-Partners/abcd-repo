@@ -45,7 +45,7 @@ try {
   await frame.getByText('X-rays', { exact: true }).dblclick();
   await frame.getByText('m16-synthetic-xray.png', { exact: true }).waitFor();
   check('Double-click navigates into real host folder through opaque handles',
-    await entries.count() === 1);
+    await entries.count() === 2);
   await page.waitForFunction(() => {
     const image = document.querySelector('.files-card-preview img');
     return !!image && image.complete && image.naturalWidth > 0;

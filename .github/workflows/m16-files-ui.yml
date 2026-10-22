@@ -25,7 +25,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Focused Files and picker security tests
-        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/fileTransfer.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
+        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filesPreview.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/fileTransfer.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
       - name: Build and typecheck
         run: npm run build
       - name: Private synthetic Windows Files and picker UI
