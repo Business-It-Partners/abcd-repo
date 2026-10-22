@@ -27,9 +27,24 @@ export function ImageViewer({image,active,busy,error,onStep}:{
       let bitmap:ImageBitmap|undefined;
       try{
         bitmap=await createImageBitmap(blob);
-        if(bitmap.width!==dimensions.width||bitmap.height!==dimensions.height)throw Error('IMAGE_DIMENSIONS_CHANGED');
+        const orientationMatches=(bitmap.width===dimensions.width&&bitmap.height===dimensions.height)
+          ||(bitmap.width===dimensions.height&&bitmap.height===dimensions.width);
+        if(!orientationMatches||bitmap.width*bitmap.height>25_000_000)throw Error('IMAGE_DIMENSIONS_CHANGED');
         if(revoked)return;
-        url=URL.createObjectURL(blob);setSource(url);
+        // Flatten one decoded frame, cap rendered pixels and strip file metadata.
+        // Animated files never enter a live multi-frame <img> decoder.
+        const scale=Math.min(1,Math.sqrt(4_000_000/(bitmap.width*bitmap.height)));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.floor(bitmap.width*scale));
+        canvas.height=Math.max(1,Math.floor(bitmap.height*scale));
+        const context=canvas.getContext('2d',{alpha:true});
+        if(!context)throw Error('IMAGE_RENDER_UNAVAILABLE');
+        context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+        const flattened=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/png'));
+        canvas.width=0;canvas.height=0;
+        if(!flattened||flattened.size>16*1024*1024)throw Error('IMAGE_RENDER_LIMIT');
+        if(revoked)return;
+        url=URL.createObjectURL(flattened);setSource(url);
       }catch{if(!revoked)setMessage('Unable to decode this picture.');}
       finally{bitmap?.close();}
     })();
