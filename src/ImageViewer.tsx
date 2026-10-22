@@ -5,11 +5,20 @@ import './ImageViewer.css';
 
 /** Only the trusted shell preload can receive these bytes; no native paths or app bridge. */
 export type ViewerImage={sessionId:string;generation:number;name:string;index:number;count:number;bytes:Uint8Array;typeHint:string};
+type FitLayout={width:number;height:number;scale:number};
+function fitLayout(width:number,height:number,viewportWidth:number,viewportHeight:number,rotation:number):FitLayout{
+  if(width<1||height<1||viewportWidth<1||viewportHeight<1)return{width,height,scale:1};
+  const rotated=rotation%180!==0;
+  const fit=Math.min(1,viewportWidth/(rotated?height:width),viewportHeight/(rotated?width:height));
+  return{width:width*fit,height:height*fit,scale:fit};
+}
 export function ImageViewer({image,active,busy,error,onStep}:{
   image:ViewerImage|null;active:boolean;busy:boolean;error:string;onStep:(direction:-1|1)=>void;
 }){
   const [message,setMessage]=useState('');
   const [zoom,setZoom]=useState(1);
+  const [fitScale,setFitScale]=useState(1);
+  const [fitSize,setFitSize]=useState({width:0,height:0});
   const [rotation,setRotation]=useState(0);
   const [pan,setPan]=useState({x:0,y:0});
   const [panning,setPanning]=useState(false);
@@ -20,7 +29,7 @@ export function ImageViewer({image,active,busy,error,onStep}:{
   useEffect(()=>{if(active)focus.current?.focus({preventScroll:true});},[active,image?.sessionId]);
   useEffect(()=>{
     let cancelled=false;
-    panStart.current=null;setPanning(false);setReady(false);setMessage('');setZoom(1);setRotation(0);setPan({x:0,y:0});
+    panStart.current=null;setPanning(false);setReady(false);setMessage('');setZoom(1);setFitScale(1);setFitSize({width:0,height:0});setRotation(0);setPan({x:0,y:0});
     if(canvas.current){canvas.current.width=0;canvas.current.height=0;}
     if(!image)return;
     // Copy once into an immutable Blob and zero the renderer's IPC byte buffer.
@@ -47,12 +56,21 @@ export function ImageViewer({image,active,busy,error,onStep}:{
         const context=surface.getContext('2d',{alpha:true});
         if(!context)throw Error('IMAGE_RENDER_UNAVAILABLE');
         context.drawImage(bitmap,0,0,surface.width,surface.height);
+        const viewport=surface.parentElement;
+        const layout=fitLayout(surface.width,surface.height,viewport?.clientWidth??0,viewport?.clientHeight??0,0);
+        setFitSize({width:layout.width,height:layout.height});setFitScale(layout.scale);
         if(!cancelled)setReady(true);
       }catch{if(!cancelled){if(canvas.current){canvas.current.width=0;canvas.current.height=0;}setMessage('Unable to decode this picture.');}}
       finally{bitmap?.close();}
     })();
     return()=>{cancelled=true;if(canvas.current){canvas.current.width=0;canvas.current.height=0;}};
   },[image]);
+  const measureFit=useCallback((nextRotation=rotation)=>{
+    const surface=canvas.current,viewport=surface?.parentElement;
+    if(!surface||!viewport)return;
+    const layout=fitLayout(surface.width,surface.height,viewport.clientWidth,viewport.clientHeight,nextRotation);
+    setFitSize({width:layout.width,height:layout.height});setFitScale(layout.scale);
+  },[rotation]);
   const clampPan=useCallback((x:number,y:number,nextZoom=zoom,nextRotation=rotation)=>{
     const surface=canvas.current,viewport=surface?.parentElement;
     if(!ready||!surface||!viewport)return{x:0,y:0};
@@ -60,8 +78,8 @@ export function ImageViewer({image,active,busy,error,onStep}:{
     const renderedWidth=(swapped?height:width)*nextZoom;
     const renderedHeight=(swapped?width:height)*nextZoom;
     const bounds=viewport.getBoundingClientRect();
-    const centerX=bounds.left+viewport.clientLeft+surface.offsetLeft+width/2;
-    const centerY=bounds.top+viewport.clientTop+surface.offsetTop+height/2;
+    const centerX=bounds.left+viewport.clientLeft+viewport.clientWidth/2;
+    const centerY=bounds.top+viewport.clientTop+viewport.clientHeight/2;
     const minX=renderedWidth>viewport.clientWidth?bounds.right-centerX-renderedWidth/2:0;
     const maxX=renderedWidth>viewport.clientWidth?bounds.left-centerX+renderedWidth/2:0;
     const minY=renderedHeight>viewport.clientHeight?bounds.bottom-centerY-renderedHeight/2:0;
@@ -71,11 +89,12 @@ export function ImageViewer({image,active,busy,error,onStep}:{
   useEffect(()=>{
     const viewport=canvas.current?.parentElement;
     if(!ready||!viewport)return;
-    const reclamp=()=>setPan(current=>clampPan(current.x,current.y));
-    reclamp();
-    const observer=new ResizeObserver(reclamp);observer.observe(viewport);
+    const resize=()=>measureFit();
+    resize();
+    const observer=new ResizeObserver(resize);observer.observe(viewport);
     return()=>observer.disconnect();
-  },[clampPan,ready]);
+  },[measureFit,ready]);
+  useEffect(()=>{if(ready)setPan(current=>clampPan(current.x,current.y));},[clampPan,fitSize,ready]);
   const beginPan=(event:PointerEvent<HTMLCanvasElement>)=>{
     if(event.button!==0||!ready||zoom<=1)return;
     event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);
@@ -91,11 +110,16 @@ export function ImageViewer({image,active,busy,error,onStep}:{
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
   };
   const changeZoom=(delta:number)=>setZoom(value=>Math.max(.25,Math.min(4,Math.round((value+delta)*100)/100)));
+  const rotate=(direction:-1|1)=>{
+    const next=(rotation+(direction===1?90:270))%360;
+    setRotation(next);setPan({x:0,y:0});measureFit(next);
+  };
+  const fitToWindow=()=>{setZoom(1);setRotation(0);setPan({x:0,y:0});measureFit(0);};
   const keys=(event:KeyboardEvent<HTMLDivElement>)=>{
     if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();if(!busy)onStep(event.key==='ArrowLeft'?-1:1);}
     else if(event.key==='+'||event.key==='='){event.preventDefault();changeZoom(.25);}
     else if(event.key==='-'){event.preventDefault();changeZoom(-.25);}
-    else if(event.key.toLowerCase()==='r'){event.preventDefault();setRotation(value=>(value+90)%360);setPan({x:0,y:0});}
+    else if(event.key.toLowerCase()==='r'){event.preventDefault();rotate(1);}
   };
   return <div className="image-viewer" data-testid="image-viewer" data-app-focus tabIndex={-1} ref={focus} onKeyDown={keys}>
     <div className="image-viewer-tools">
@@ -107,11 +131,11 @@ export function ImageViewer({image,active,busy,error,onStep}:{
       <span className="image-viewer-filename" title={image?.name}>{image?.name??'Image Viewer'}</span>
       <div className="image-viewer-controls">
         <button aria-label="Zoom out" disabled={!ready} onClick={()=>changeZoom(-.25)}><ZoomOut size={17}/></button>
-        <span aria-label="Current zoom">{Math.round(zoom*100)}%</span>
+        <span aria-label="Current zoom">{Math.round(zoom*fitScale*100)}%</span>
         <button aria-label="Zoom in" disabled={!ready} onClick={()=>changeZoom(.25)}><ZoomIn size={17}/></button>
-        <button aria-label="Fit image to window" disabled={!ready} onClick={()=>{setZoom(1);setRotation(0);setPan({x:0,y:0});}}><Maximize size={17}/></button>
-        <button aria-label="Rotate picture left" disabled={!ready} onClick={()=>{setRotation(value=>(value+270)%360);setPan({x:0,y:0});}}><RotateCcw size={17}/></button>
-        <button aria-label="Rotate picture right" disabled={!ready} onClick={()=>{setRotation(value=>(value+90)%360);setPan({x:0,y:0});}}><RotateCw size={17}/></button>
+        <button aria-label="Fit image to window" disabled={!ready} onClick={fitToWindow}><Maximize size={17}/></button>
+        <button aria-label="Rotate picture left" disabled={!ready} onClick={()=>rotate(-1)}><RotateCcw size={17}/></button>
+        <button aria-label="Rotate picture right" disabled={!ready} onClick={()=>rotate(1)}><RotateCw size={17}/></button>
       </div>
     </div>
     <div className="image-viewer-canvas">
@@ -119,7 +143,7 @@ export function ImageViewer({image,active,busy,error,onStep}:{
         className={ready&&zoom>1?`is-zoomed${panning?' is-panning':''}`:''}
         onPointerDown={beginPan} onPointerMove={movePan} onPointerUp={endPan} onPointerCancel={endPan}
         onLostPointerCapture={()=>{panStart.current=null;setPanning(false);}}
-        style={{visibility:ready?'visible':'hidden',transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(${rotation}deg)`}}/>
+        style={{visibility:ready?'visible':'hidden',...(fitSize.width>0?{width:fitSize.width,height:fitSize.height}:{}),transform:`translate(-50%, -50%) translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(${rotation}deg)`}}/>
       {!ready&&<div role="status" className="image-viewer-loading">{error||message||'Opening picture…'}</div>}
       {(error||message)&&ready&&<div role="alert" className="image-viewer-alert">{error||message}</div>}
     </div>

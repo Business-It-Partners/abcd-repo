@@ -51,26 +51,34 @@ try {
     return !!image && image.complete && image.naturalWidth > 0;
   }, null, { timeout: 8000 });
   check('Bounded local PNG thumbnail renders in Files without a file path',
-    await frame.locator('.files-card-preview img').first().evaluate(image => image.complete && image.naturalWidth === 8));
+    await frame.locator('.files-card-preview img').first().evaluate(image => image.complete && image.naturalWidth === 96 && image.naturalHeight === 192));
   const viewer = page.getByTestId('image-viewer-window');
   await frame.getByText('m16-synthetic-xray.png', { exact: true }).dblclick();
   await viewer.waitFor({ state: 'visible', timeout: 10000 });
   await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).waitFor({ timeout: 10000 });
   await page.waitForFunction(() => {
     const canvas = document.querySelector('[data-testid="image-viewer"] canvas');
-    return canvas instanceof HTMLCanvasElement && canvas.width === 8 && canvas.height === 8;
+    return canvas instanceof HTMLCanvasElement && canvas.width === 320 && canvas.height === 640;
   }, null, { timeout: 10000 });
   check('Double-click opens a managed Image Viewer above the still-open Files window',
     await frame.isVisible() && await viewer.getAttribute('data-phase') === 'visible');
   check('Image Viewer decodes and paints pixels from the bounded synthetic PNG', await viewer.locator('canvas').evaluate(canvas => {
     const context = canvas.getContext('2d');
-    return canvas.width === 8 && canvas.height === 8 && !!context && context.getImageData(0, 0, 8, 8).data.some((value, index) => index % 4 === 3 && value > 0);
+    return canvas.width === 320 && canvas.height === 640 && !!context && context.getImageData(160, 320, 1, 1).data.some((value, index) => index % 4 === 3 && value > 0);
   }));
   const panCanvas=viewer.locator('.image-viewer-canvas canvas');
+  const initialBox=await panCanvas.boundingBox(),initialViewportBox=await viewer.locator('.image-viewer-canvas').boundingBox();
+  if(!initialBox||!initialViewportBox)throw new Error('Image Viewer initial fit bounds unavailable');
+  const initialRatio=initialBox.width/initialBox.height;
+  const initialZoom=Number((await viewer.getByLabel('Current zoom').innerText()).replace('%',''));
+  check('Portrait picture opens fully fitted, centered and undistorted',Math.abs(initialRatio-.5)<.01
+    &&initialBox.x>=initialViewportBox.x-1&&initialBox.y>=initialViewportBox.y-1
+    &&initialBox.x+initialBox.width<=initialViewportBox.x+initialViewportBox.width+1
+    &&initialBox.y+initialBox.height<=initialViewportBox.y+initialViewportBox.height+1);
   await panCanvas.evaluate(canvas=>{canvas.style.width='900px';canvas.style.height='700px';});
   await viewer.getByRole('button', { name: 'Zoom in' }).click();
   check('Image Viewer zoom control updates its displayed scale',
-    await viewer.getByLabel('Current zoom').innerText() === '125%');
+    Number((await viewer.getByLabel('Current zoom').innerText()).replace('%','')) > initialZoom);
   const panBox=await panCanvas.boundingBox(),viewportBox=await viewer.locator('.image-viewer-canvas').boundingBox();
   if(!panBox||!viewportBox)throw new Error('Image Viewer pan bounds unavailable');
   const startX=panBox.x+panBox.width/2,startY=panBox.y+panBox.height/2;
@@ -89,8 +97,16 @@ try {
     (await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).getAttribute('style'))?.includes('rotate(90deg)'));
   await viewer.getByRole('button', { name: 'Fit image to window' }).click();
   const fitStyle=await panCanvas.getAttribute('style');
-  check('Fitting the image recenters it and restores 100% zoom',await viewer.getByLabel('Current zoom').innerText()==='100%'
+  check('Fitting the image recenters it and restores its initial fit scale',await viewer.getByLabel('Current zoom').innerText()===`${initialZoom}%`
     &&/translate3d\(0px, 0px, 0(?:px)?\)/.test(fitStyle??''));
+  await viewer.getByRole('button', { name: 'Rotate picture right' }).click();
+  const rotatedBox=await panCanvas.boundingBox(),rotatedViewport=await viewer.locator('.image-viewer-canvas').boundingBox();
+  check('Rotating in fit mode keeps the full image visible at its preserved ratio',!!rotatedBox&&!!rotatedViewport
+    &&Math.abs(rotatedBox.width/rotatedBox.height-2)<.02
+    &&rotatedBox.x>=rotatedViewport.x-1&&rotatedBox.y>=rotatedViewport.y-1
+    &&rotatedBox.x+rotatedBox.width<=rotatedViewport.x+rotatedViewport.width+1
+    &&rotatedBox.y+rotatedBox.height<=rotatedViewport.y+rotatedViewport.height+1);
+  await viewer.getByRole('button', { name: 'Fit image to window' }).click();
   const viewerCaptureDenied = await page.evaluate(async generation => {
     try { await window.desktop.capture({ x: 0, y: 40, width: 160, height: 160 }, generation); return false; }
     catch { return true; }
