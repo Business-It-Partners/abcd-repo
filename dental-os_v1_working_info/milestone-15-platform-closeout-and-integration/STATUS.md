@@ -1,6 +1,6 @@
 # M15 Status — Platform Closeout and Integration
 
-**Status:** VERIFYING — P01–P05 and P08 have evidence-backed dispositions. All declared non-upload Linux/local/live-staging checks pass; P06/P07 await final exact-source Windows/source review under P09. Media upload is explicitly deferred and real-session denied. User manual review follows technical verification. G15 is not yet closed.
+**Status:** IMPLEMENTING — P01–P05 and P08 have evidence-backed dispositions. All declared non-upload Linux/local/live-staging checks pass; P06/P07 await final exact-source Windows/source review under P09. Media upload is explicitly deferred and real-session denied. User manual review follows technical verification. G15 is not yet closed.
 **Updated:** 2026-10-22.
 **User scope review:** the user accepted the proposed M15.1–M15.6 scope and directed that it be formalized. This records scope authorization, not runtime acceptance.
 **Integration branch:** `codex/milestone-15` in the lead `platform-closeout` worktree; milestone-record worker branch `codex/m15-plan-records`, created from committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`.
