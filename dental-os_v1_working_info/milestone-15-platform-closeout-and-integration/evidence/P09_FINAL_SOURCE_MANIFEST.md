@@ -5,18 +5,19 @@
 ## Source identity and test environment
 
 - Branch: `codex/milestone-15` in `/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os`.
-- Runtime/source commit: `11cb1bc8ae8331271eddf3a1dafdf4be2071c1cf` (`feat(m15): integrate closeout platform candidates`).
+- Runtime commit: `11cb1bc8ae8331271eddf3a1dafdf4be2071c1cf` (`feat(m15): integrate closeout platform candidates`). Test-only package-boundary checkpoint: `e3d82f0c`.
 - Source commit tree: `2a7925aaf87249156071b12227f335e774805206`.
 - The P03 checkpoint `125fa25bcc27d6ff198148259695d76cf895b0eb` is an ancestor; M15.1's accepted launch-feedback/frame-handoff checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5` is retained in the branch history.
 - Environment: Ubuntu 22.04.5 LTS, x86_64, Node 22.13.1, npm 10.9.2. UI tests used the repository's private headless GNOME/Wayland runner. The user's Brave session, live Dental OS session and profile were not inspected or controlled.
-- No runtime source changed after `11cb1bc8`; follow-on source-tree changes are this evidence/record update and generated test outputs only. All UI runs below use the private runner; no test opened or focused the user's desktop.
+- No runtime source changed after `11cb1bc8`. Test-only checkpoint `e3d82f0c` adds the exact package asset/expanded-bound regression; no production source changed. Follow-on changes are documentation/evidence and generated test outputs only. All UI runs below use the private runner; no test opened or focused the user's desktop.
 
 ## Required and focused checks
 
 | Check | Result | Evidence |
 | --- | --- | --- |
 | `npm run build` | PASS after the source commit: typecheck, Vite renderer build and Electron TypeScript build | Build command output in the lead task; generated `dist/` and `dist-electron/` are temporary and are removed after verification. |
-| `npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000` | PASS after the source commit: 19 files, 310/310 tests | Full serial unit run; includes `tests/apiAuthority.test.ts`, `tests/updatePolicyV2.test.ts`, update/fallback/race and package-bound cases. |
+| `npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000` | PASS on the exact test source committed as `e3d82f0c`: 19 files, 311/311 tests | Full serial unit run; includes `tests/apiAuthority.test.ts`, `tests/updatePolicyV2.test.ts`, update/fallback/race, and exact 2 MiB asset / 8 MiB expanded package bounds. |
+| `npm test -- tests/packages.test.ts --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS on the exact test source committed as `e3d82f0c`: 68/68 tests | Signed synthetic 8 MiB expanded package accepted at exact bounds; builder and verifier reject +1-byte individual and expanded totals. |
 | `npm test -- tests/updates.test.ts tests/updatePolicyV2.test.ts --maxWorkers=1 --no-file-parallelism --testTimeout=15000` | PASS on documentation-only checkout `7237173d`: 77/77 tests | Focused local synthetic expiry/recovery rerun. Runtime/test source is unchanged from `11cb1bc8`; the user will name actual staging operators later. Details in [M15 verification evidence](../VERIFICATION_EVIDENCE.md). |
 | `npm run test:sdk` | PASS after the source commit: 15 private UI assertions | [SDK report](../../../artifacts/sdk-verification.json). |
 | `npm run test:updates` | PASS after the source commit: 17 private UI assertions | [Update report](../../../artifacts/updates-verification.json). |
