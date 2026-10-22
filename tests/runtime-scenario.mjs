@@ -128,8 +128,15 @@ export async function verifyRuntime(profileArgs, reportName) {
   await moveShell(before.x+before.width/2,before.y+before.height/2);await shell.mouse.down();await shell.mouse.move(before.x+before.width/2+60,before.y+before.height/2+25,{steps:4});await shell.mouse.up();
   await ready('studio');check('resize uses shared manager',await shell.locator('[data-window-id="studio"]').evaluate(e=>e.getBoundingClientRect().width)>760);
   await shot('runtime-overlap.png');
+  // A resize can end in the dock hover band. Leave it and wait for the native
+  // surface before sending a key to that app; ready alone is not visibility.
+  await moveShell(20,20);await waitExpectedNative('alpha');
   await alpha.getByLabel('Your draft').click();
-  await alpha.keyboard.press('Backquote');await shell.getByRole('dialog',{name:'Open windows'}).waitFor();
+  check('overview shortcut starts in the visible focused native app',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).isFocused()));
+  await app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/'));globalThis.__runtimeShortcutInputs=[];wc.on('before-input-event',(_event,input)=>{globalThis.__runtimeShortcutInputs.push({type:input.type,key:input.key,code:input.code,shift:input.shift,control:input.control});if(globalThis.__runtimeShortcutInputs.length>16)globalThis.__runtimeShortcutInputs.shift();});});
+  await shell.evaluate(()=>{window.__runtimeForwardedKeys=[];window.addEventListener('keydown',e=>{window.__runtimeForwardedKeys.push({key:e.key,code:e.code,trusted:e.isTrusted});if(window.__runtimeForwardedKeys.length>16)window.__runtimeForwardedKeys.shift();},true);});
+  await alpha.keyboard.press('Backquote');
+  try{await shell.getByRole('dialog',{name:'Open windows'}).waitFor();}catch(error){throw Error(`${error.message}; shortcut native diagnostics ${JSON.stringify({native:await nativeView('alpha'),focused:await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).isFocused()),nativePointerMoves,inputs:await app.evaluate(()=>globalThis.__runtimeShortcutInputs),shell:await shell.evaluate(()=>({overview:document.querySelector('main.desktop')?.dataset.overview,keys:window.__runtimeForwardedKeys}))})}`);}
   await shell.waitForFunction(()=>document.querySelectorAll('.overview-card .isolated-mirror').length===2);
   check('overview contains both isolated snapshots',await shell.locator('.overview-card .isolated-mirror').count()===2);
   check('overview clones have no runtime identities',await shell.locator('.overview-card [data-runtime]').count()===0);

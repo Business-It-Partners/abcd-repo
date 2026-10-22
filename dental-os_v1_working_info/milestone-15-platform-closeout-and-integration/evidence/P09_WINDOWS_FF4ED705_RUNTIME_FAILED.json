@@ -1,0 +1,196 @@
+{
+  "nativePointerMoves": [
+    {
+      "host": "alpha",
+      "dip": {
+        "x": 512,
+        "y": 684
+      },
+      "physical": {
+        "x": 512,
+        "y": 684
+      },
+      "before": {
+        "x": 512,
+        "y": 384
+      },
+      "actual": {
+        "x": 512,
+        "y": 684
+      }
+    },
+    {
+      "host": "shell",
+      "dip": {
+        "x": 20,
+        "y": 20
+      },
+      "physical": {
+        "x": 20,
+        "y": 20
+      },
+      "before": {
+        "x": 512,
+        "y": 684
+      },
+      "actual": {
+        "x": 20,
+        "y": 20
+      }
+    },
+    {
+      "host": "alpha",
+      "dip": {
+        "x": 512,
+        "y": 684
+      },
+      "physical": {
+        "x": 512,
+        "y": 684
+      },
+      "before": {
+        "x": 20,
+        "y": 20
+      },
+      "actual": {
+        "x": 512,
+        "y": 684
+      }
+    },
+    {
+      "host": "shell",
+      "dip": {
+        "x": 20,
+        "y": 20
+      },
+      "physical": {
+        "x": 20,
+        "y": 20
+      },
+      "before": {
+        "x": 512,
+        "y": 684
+      },
+      "actual": {
+        "x": 20,
+        "y": 20
+      }
+    },
+    {
+      "host": "shell",
+      "dip": {
+        "x": 680,
+        "y": 618
+      },
+      "physical": {
+        "x": 680,
+        "y": 618
+      },
+      "before": {
+        "x": 20,
+        "y": 20
+      },
+      "actual": {
+        "x": 680,
+        "y": 618
+      }
+    },
+    {
+      "host": "shell",
+      "dip": {
+        "x": 20,
+        "y": 20
+      },
+      "physical": {
+        "x": 20,
+        "y": 20
+      },
+      "before": {
+        "x": 680,
+        "y": 618
+      },
+      "actual": {
+        "x": 20,
+        "y": 20
+      }
+    },
+    {
+      "host": "shell",
+      "dip": {
+        "x": 885,
+        "y": 700
+      },
+      "physical": {
+        "x": 885,
+        "y": 700
+      },
+      "before": {
+        "x": 20,
+        "y": 20
+      },
+      "actual": {
+        "x": 885,
+        "y": 700
+      }
+    }
+  ],
+  "checks": [
+    "dock-edge input stays inside both guest and shell hover bands",
+    "dock-edge handoff keeps the last app frame visible until its replacement is captured",
+    "dock-edge app frame refreshes to current content after the OS hides its native surface",
+    "moving away from the dock edge restores the same live app surface",
+    "Finance explorer covers the native app surface instead of appearing beside it",
+    "Finance explorer receives keyboard focus above the native app",
+    "Finance explorer stays in front as the pointer moves near and away from the dock",
+    "Closing Finance explorer restores the foreground native app surface",
+    "covered app preview keeps native capture resolution without CSS blur",
+    "covered app window keeps its existing shadow",
+    "two isolated renderer processes and separate shell",
+    "sandbox/context isolation and no Node",
+    "apps have no Node or shell bridge",
+    "storage is separated by app",
+    "switching from an isolated app to a shell window hides its native surface before paint",
+    "forged report rejected",
+    "network and cross-origin fetch denied",
+    "popup denied",
+    "unknown runtime IDs/layouts denied",
+    "modal stays in app content",
+    "local modal traps keyboard focus",
+    "beta-to-alpha switch focuses the native foreground",
+    "alpha-to-beta switch focuses the native foreground",
+    "dirty close cancellation preserves draft",
+    "resize uses shared manager"
+  ],
+  "topology": {
+    "shell": 7596,
+    "apps": [
+      {
+        "id": 3,
+        "url": "dental-fixture://beta/",
+        "pid": 5384,
+        "prefs": {
+          "sandbox": true,
+          "contextIsolation": true,
+          "nodeIntegration": false
+        }
+      },
+      {
+        "id": 2,
+        "url": "dental-fixture://alpha/",
+        "pid": 7284,
+        "prefs": {
+          "sandbox": true,
+          "contextIsolation": true,
+          "nodeIntegration": false
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "platform": "win32",
+  "sha": "ff4ed7059f5c50dbccbd1b4eee46b7800a192e97",
+  "passed": false,
+  "runId": 39728715376,
+  "failedAt": "Overview shortcut after resize: Open windows dialog did not appear.",
+  "scope": "Dock/mirror/explorer and initial isolation/modal/focus/resize checks passed with seven verified native pointer moves. Later checks not completed. Native source unchanged; fixture now exits hover, waits for visible native geometry and verifies focus before sending key."
+}

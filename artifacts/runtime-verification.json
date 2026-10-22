@@ -25,6 +25,7 @@
     "alpha-to-beta switch focuses the native foreground",
     "dirty close cancellation preserves draft",
     "resize uses shared manager",
+    "overview shortcut starts in the visible focused native app",
     "overview contains both isolated snapshots",
     "overview clones have no runtime identities",
     "maximized native app begins below the visible title bar with a clear dock hover gap",
@@ -49,12 +50,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 110416,
+    "shell": 113343,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/",
-        "pid": 110627,
+        "pid": 113559,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -64,7 +65,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/",
-        "pid": 110458,
+        "pid": 113399,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -75,5 +76,5 @@
   },
   "errors": [],
   "platform": "linux",
-  "sha": "5fceecaf8fde873c312fd79b5229c5012ac0efad"
+  "sha": "ff4ed7059f5c50dbccbd1b4eee46b7800a192e97"
 }
