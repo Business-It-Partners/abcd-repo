@@ -50,3 +50,12 @@ The user directed all remaining implementation and automated verification to con
 ## API contract checkpoint — `7420a898`
 
 P04 now has exact app/method/path/query rules and trusted capability checks under ADR-027/SDK 1.2, with exact signed package authority. Build, 367/367 full unit tests, 43 clinic-contract cases, private SDK 15 and identity 44 assertions pass. Real Worker/M14 adapter proof and media remain open. The user assigned further implementation/verification here; no parallel chat/worktree is active.
+
+
+## Media backend safety checkpoint — 2026-10-22
+
+The lead reused the existing SaaS backend checkout sequentially on `codex/sys-0009-mediated-media`, based on verified staging `1268bb3`. Reviewed source checkpoint `5fb1284` adds creator-scoped pending-upload cancellation, exact tenant object-key checks, bounded stream reads, late-PUT cleanup and conditional finalise/audit transitions. Replacement cancellation cannot withdraw the original X-ray. Existing unrelated SYS-0008 publisher files remain byte-for-byte unchanged and excluded from this commit.
+
+Worker typecheck passes. The full serial Worker suite passed 481/481 (53 files), including 39 new SQLite-backed media cases; after two additional route-auth cases, the affected auth matrix passed 143/143 and final typecheck passed. The full run also included five unrelated publisher tests without approving their source. [Source/check manifest](evidence/P07_MEDIA_BACKEND_5FB1284.json) records the exact checks and limits. No service deployment, live clinical writes, app restart, new chat/worktree or persistent generated build output occurred.
+
+This is a reviewed backend slice, not completed P07: intent expiry and abandoned-transfer recovery, typed host upload/download/checksum transport and actual Worker/D1/R2/role/tenant acceptance remain. M14 app UI stays separate. P04 JSON already permits Work Entry's media metadata list; private binary transport remains unavailable. P05/P06 final combined checks, the reported Windows dock-edge issue and P09 handoff also remain open. The lead continues implementation here; user manual acceptance follows technical verification.

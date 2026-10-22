@@ -1,0 +1,11 @@
+{
+  "checkout": "/home/master-x/Desktop/fewa_demo/dental-os-m07-backend",
+  "branch": "codex/sys-0009-mediated-media",
+  "base": "1268bb3ea613fadb8e31cd92a6fc45612280e7ea",
+  "preservedUnrelatedFiles": {
+    "apps/platform-worker/operations/dental-os/publish.mjs": "f4ee67b20acbbbdc1f98108bb676cbf75c7e090a5ed73c0404c76b4d704cac93",
+    "apps/platform-worker/operations/dental-os/publish.test.mjs": "032e801a19cc580a7c4ec399c178c5e088e67e41719b2a252b5f4008e97dd7c2",
+    "tickets/verification/SYS-0008-first-party-app-release-publication.md": "a811b0258feeac860b7105442c70f4f213d73e7594b886b28d9c53ac6d2ba744"
+  },
+  "unchangedAfterBranchCreation": true
+}
