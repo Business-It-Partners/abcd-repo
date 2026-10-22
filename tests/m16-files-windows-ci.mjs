@@ -14,7 +14,7 @@ import { spawn } from 'node:child_process';
 const repo=path.resolve(import.meta.dirname,'..');
 const profile=await mkdtemp(path.join(tmpdir(),'dental-m16-private-ui-'));
 const checks=[],errors=[];
-let app,page;
+let app,page,failed=false;
 const report={sha:process.env.GITHUB_SHA??null,platform:process.platform,checks,errors,startup:null};
 function check(label,value){assert.ok(value,label);checks.push(label);console.log('PASS',label);}
 function summarize(value){return JSON.stringify(value).slice(0,6000);}
@@ -137,6 +137,8 @@ try{
 
   console.log('M16 FILES/PICKER UI SUCCESS',checks.length);
 } catch(error) {
+  failed=true;
+  console.error('M16 Windows GUI assertion failed:',String(error));
   errors.push(String(error));
   try{
     const snapshot=await page?.evaluate(()=>({
@@ -149,21 +151,23 @@ try{
     console.error('DIAGNOSE',summarize(snapshot));report.failureState=snapshot;
     await page?.screenshot({path:path.join(repo,'artifacts','m16-windows-files-ui.png'),fullPage:true,timeout:5000});
   }catch(e){errors.push('Diagnostic capture failed: '+String(e));}
-  throw error;
 } finally {
   await mkdir(path.join(repo,'artifacts'),{recursive:true});
   await writeFile(path.join(repo,'artifacts','m16-windows-files-ui.json'),JSON.stringify(report,null,2)+'\n');
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   if(app){
     let closed=false;
-    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),
-      new Promise(resolve=>setTimeout(resolve,3500))]);
-    if(!closed){try{app.process().kill();}catch{/* only synthetic CI child */}}
+    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),sleep(1500)]);
+    if(!closed){try{app.process().kill();}catch{/* Only disposable CI Electron child */}}
   }
-  try {
-    await rm(profile,{recursive:true,force:true,maxRetries:3,retryDelay:150});
-  } catch(error) {
-    // An OS dialog failure can leave Electron native handles open transiently.
-    // Do not mask the primary test exception with a teardown EBUSY.
-    console.warn('Synthetic CI profile cleanup incomplete:',(error).code||'IO_ERROR');
-  }
+  // Windows can retain native Electron file-descriptor locks after the GUI
+  // assertions finish. Do not let pending Playwright handles consume the
+  // remaining free-plan job minutes or obscure test results.
+  await Promise.race([
+    rm(profile,{recursive:true,force:true,maxRetries:2,retryDelay:100})
+      .catch(error=>console.warn('Synthetic profile cleanup:',error?.code||'IO_ERROR')),
+    sleep(1800),
+  ]);
+  console.log('M16 WINDOWS VERIFIED EXIT',failed?'FAILED':'SUCCESS',checks.length);
+  process.exit(failed?1:0);
 }

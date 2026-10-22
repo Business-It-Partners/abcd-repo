@@ -126,3 +126,10 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [x] Prepare bounded Wayland private CI exit after synthetic GUI checks and avoid a repeat full-suite Windows run.
 - [ ] Observe one exact-source tagged Windows + Linux verification result and update evidence.
 - [ ] Confirm the native host dialog and signed app receipt on Windows, all Linux UI checks and clean runner completion before declaring these three M16.4 tasks finished.
+
+## M16.4 exact-source cross-platform checkpoint
+
+- [x] Windows 17 real GUI assertions passed on ef7acba, including company-signed SDK and actual native file-dialog selection; full Windows CI job timed out during teardown.
+- [x] Linux isolated Wayland: **completed success** with seven graphical checks on ef7acba.
+- [ ] Confirm one Windows-only bounded teardown correction completes with a green focused CI job; retain failing/cancelled prior evidence and avoid rerunning Linux.
+- [ ] Once confirmed, mark M16.4 picker verification complete (not overall G16, which still needs M16.5 transfer work).

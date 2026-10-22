@@ -41,8 +41,8 @@ jobs:
             artifacts/m16-windows-files-ui.png
           retention-days: 7
   linux-files-ui:
-    # Isolated Wayland, synthetic data, quota-bounded run.
-    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') }}
+    # Linux already passed on ef7acba; a teardown-only Windows fix must not consume another Linux job.
+    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') && !contains(github.event.head_commit.message, '[m16-win-only]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 9
     env:
