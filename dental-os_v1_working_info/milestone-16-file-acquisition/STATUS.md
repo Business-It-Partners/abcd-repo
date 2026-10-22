@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.4 custom/native picker and secure SDK authorization implemented, Windows unit/build/typecheck verified. Graphical picker and M16.3 private-display acceptance remain open; no G16 overall pass.
+**Status:** IMPLEMENTING — M16.3 Files browsing and M16.4 OS-owned custom picker now have successful synthetic hosted-Windows graphical evidence (12 checks), plus 26 focused security/unit tests and build/typecheck. Native Windows dialog, signed app SDK end-to-end, Linux GUI and G16 overall acceptance remain open.
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -46,3 +46,13 @@ A single tagged push will run the bounded hosted Windows Files/picker graphical 
 ## Graphical startup regression diagnosis
 
 The first bounded Windows GUI run passed focused security tests and build but failed before the Files window because Electron's sandboxed shell preload did not initialize. The M16.4 runtime import of the file-picker contract is being corrected with an inline self-contained validator and a permanent preload import regression test. A second **focused** run is required; overall GUI acceptance remains pending.
+
+## Remote Windows Files/picker GUI verification — completed (2026-10-22)
+
+- Source: `cd66c9e2165de7a4ec1a0dffb33b52e242e87ef8`. [Focused GitHub Actions 39766483727](https://github.com/Business-It-Partners/dental-os/actions/runs/39766483727) finished **successfully**.
+- Evidence: 26 targeted unit/security tests passed; build/typecheck passed; **12 real graphical Windows checks passed**. Host shell/dock and isolated runtime fixture started correctly; Files browsing, folder navigation, metadata-only picker choice and user cancellation were verified with synthetic files.
+- Previous [focused run 39766003708](https://github.com/Business-It-Partners/dental-os/actions/runs/39766003708) revealed an M16.4 sandboxed shell preload regression. Eliminating a runtime relative import and adding three preload compatibility regressions restored the bridge and launchers.
+- Free-plan quota: both focused pushes skipped the full historical Windows milestone job. Do not rerun passed GUI proof merely to seek another green badge.
+- **Still open:** actual Windows native-dialog interaction, signed dental app SDK gesture -> picker receipt end-to-end, Linux private-display GUI, Files minimize/overview privacy on platform, M16.5 transfer, file-byte consumption, patient association and Cloudflare upload. G16 not marked VERIFIED.
+
+Next working session: decide whether remaining M16.4 native/signed-app proof should be a targeted gate before M16.5. Do not bundle M16.5 drag/send work with this verification handoff.

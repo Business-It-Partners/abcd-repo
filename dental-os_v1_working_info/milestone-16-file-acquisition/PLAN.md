@@ -115,6 +115,6 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 
 - [x] Isolate prior Windows runtime failure: Motion Studio launcher not found before graphical test body proceeded.
 - [x] Prepare one tagged, bounded hosted Windows focused Files/picker verification job and skip costly full suite.
-- [ ] Observe exact focused graphical result and archive synthetic-only evidence.
+- [x] Observe and archive exact focused graphical result: Windows hosted Files navigation, custom picker and cancellation passed 12 checks; screenshots/JSON retained in GitHub artifacts.
 - [ ] Verify native host OS dialogs and private Linux GUI separately.
 - [ ] Verify company-signed first-party dental app permission and trusted gesture before claiming G16 verified.
