@@ -45,7 +45,13 @@ function check(full:string,root:string,kind:'directory'|'file'):Stats {
     if(s.isSymbolicLink()||(cursor!==resolved&&!s.isDirectory()))throw new LocalFilesError('FORBIDDEN');
   }
   const real=realpathSync.native(resolved);
-  if(cleanPath(real)!==cleanPath(resolved)||!within(root,real))throw new LocalFilesError('FORBIDDEN');
+  // Windows native realpath may use device/alias spelling different from the
+  // caller's absolute spelling. All original path components were checked
+  // with lstat above; require actual membership in the canonical trusted root.
+  const canonicalRoot=realpathSync.native(root);
+  if(process.platform==='win32'
+    ? !within(canonicalRoot,real)
+    : cleanPath(real)!==cleanPath(resolved)||!within(root,real))throw new LocalFilesError('FORBIDDEN');
   const s=lstatSync(resolved);
   if(s.isSymbolicLink()||!(kind==='file'?s.isFile():s.isDirectory()))throw new LocalFilesError('FORBIDDEN');
   return s;

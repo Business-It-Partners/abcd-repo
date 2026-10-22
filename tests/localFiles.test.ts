@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, realpathSync, mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { LocalFileService, LocalFilesError, type FileRecipient } from '../electron/host/localFiles';
@@ -12,7 +12,19 @@ function fixture(now: () => number = Date.now) {
   const svc = new LocalFileService([{ label: 'Synthetic root', path: root, kind: 'folder' }], now);
   services.push(svc);
   const id = svc.roots()[0]?.id;
-  if (!id) throw Error('Missing synthetic root');
+  if (!id) {
+    // Host-runner-safe diagnostics: no absolute file names or patient content.
+    const absolute = path.resolve(root);
+    let actual = '', linkedAncestor = false;
+    try { actual = realpathSync.native(absolute); } catch { /* only test diagnostics */ }
+    let cursor = path.parse(absolute).root;
+    for (const part of absolute.slice(cursor.length).split(path.sep).filter(Boolean)) {
+      cursor = path.join(cursor, part);
+      try { linkedAncestor ||= lstatSync(cursor).isSymbolicLink(); } catch { /* only test diagnostics */ }
+    }
+    throw Error('Missing synthetic root: host=' + process.platform + ', alias='
+      + (actual.toLowerCase() !== absolute.toLowerCase()) + ', linkedAncestor=' + linkedAncestor);
+  }
   return { root, svc, id };
 }
 function recipient(overrides: Partial<FileRecipient> = {}): FileRecipient {

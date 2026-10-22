@@ -34,3 +34,9 @@ Operational bounds: 32 configured roots, 200 entries per page, 2048 directory en
 **Intentional separation:** This phase creates a reusable host adapter, not a currently usable Files desktop app or picker. User gesture capture, app-release approval, shell-only IPC, generic removable-volume identification and cross-WebContentsView transfer belong to later slices. The adapter's `FileRecipient.authorized` callback must only be constructed by trusted main using existing package/session/policy binding; passing renderer-created callback or blindly forwarding untrusted IPC values is forbidden.
 
 **Known portability constraint:** Node `lstat`/`realpath` revalidation is meaningful for ordinary link/path replacement, but does **not** prove race-free directory traversal under a concurrently hostile filesystem. Before exposing it to untrusted app file consumption, require a specific Windows/Linux race/handle-security gate and document any host limitations. This milestone does not read file bytes or grant users executable filesystem access.
+
+## M16.2 Windows CI regression / focused fix — 2026-10-22
+
+Initial pushed source `259cd6e393b2e7c3ad6abe56631f0dcc9b790354`: Windows workflow [39756354235](https://github.com/Business-It-Partners/dental-os/actions/runs/39756354235) passed documentation validation and 434 existing tests, but 10 new host tests failed with the same `Missing synthetic root` error. Build was skipped. The likely cause is native Windows canonical path spelling differing from `path.resolve`, not 10 distinct file-permission defects.
+
+The narrow fix retains per-component `lstat` link checks and replaces Windows realpath spelling equality with canonical-root containment; Linux retains the strict original spelling/containment check. The new adapter is still unconnected to renderer/SDK IPC. This fix requires exact-source Windows evidence before claiming M16.2 platform verification. No unrelated tests or business code changed.
