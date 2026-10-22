@@ -69,7 +69,11 @@ export class FileTransferCoordinator {
   cancel(code:'CANCELLED'|'UNAVAILABLE'|'FORBIDDEN'|'STALE_SELECTION'='CANCELLED'){
     const p=this.pending;if(!p)return;
     this.pending=undefined;clearTimeout(p.timer);
-    try{this.files.cancel(p.selection.selectionId,p.owner);}catch{/* revoke below on recipient lifecycle */}
+    // Permission revocation makes the owner unauthorized even for cancel().
+    // Delete all leases for that exact receiving WebContents rather than
+    // retaining a 10-minute grant that could become usable if policy returns.
+    try{this.files.cancel(p.selection.selectionId,p.owner);}
+    catch{try{this.files.revokeRecipient(p.owner.sender);}catch{/* disposed host */}}
     p.reject(new FileTransferError(code));
   }
   cancelRecipient(sender:object){if(this.pending?.owner.sender===sender)this.cancel('CANCELLED');}

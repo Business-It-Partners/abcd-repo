@@ -55,6 +55,8 @@ describe('M16.5 shell-to-signed-recipient handoff',()=>{
   expect(c.acknowledge(owner.sender,owner.frame,notice.transferId,true)).toBe(false);
   await expect(p2).rejects.toMatchObject({code:'STALE_SELECTION'});
   setAllowed(true);
+  // Re-grant must not resurrect a lease created before revocation.
+  expect(()=>files.inspect(notice.selection.selectionId,notice.selection.files[0].receiptId,owner)).toThrow();
   const p3=c.send([file.id],owner,value=>{notice=value;});
   c.cancelRecipient(owner.sender);
   await expect(p3).rejects.toMatchObject({code:'CANCELLED'});

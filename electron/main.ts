@@ -31,13 +31,19 @@ let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
-const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
+// Private Xvfb test display: narrowly restricted to hosted Linux CI with
+// explicit synthetic-files and private-display flags. Never ordinary desktops.
+const privateX11Ci = process.platform === 'linux' && process.env.GITHUB_ACTIONS === 'true' &&
+  process.env.RUNNER_OS === 'Linux' && process.env.CI === 'true' &&
+  process.env.M16_PRIVATE_X11 === '1' && /^:[0-9]+(?:\.[0-9]+)?$/.test(process.env.DISPLAY ?? '') &&
+  app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-x11-verify');
+const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || privateX11Ci || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
 const runtimeFixtureAppCount = runtimeFixtures && app.commandLine.hasSwitch('runtime-app-count') ? Number(app.commandLine.getSwitchValue('runtime-app-count')) : 2;
 const modulePreviewFixtures = runtimeFixtures && app.commandLine.hasSwitch('module-preview-fixtures');
 const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch('slow-module-ack-fixtures');
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
 const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture || app.commandLine.hasSwitch('files-picker-app-fixtures'));
-const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const trustedTest = privateRuntimeDisplay || privateX11Ci || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
 const filePickerAppFixture = runtimeFixtures && trustedTest && app.commandLine.hasSwitch('files-picker-app-fixtures') && app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-picker-verify');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');

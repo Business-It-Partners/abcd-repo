@@ -8,19 +8,23 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
-if (process.platform!=='linux'||process.env.DISPLAY||!process.env.ELECTRON_OS_TEST_DISPLAY||
-    !process.env.WAYLAND_DISPLAY||!process.env.XDG_RUNTIME_DIR||
-    path.join(process.env.XDG_RUNTIME_DIR,process.env.WAYLAND_DISPLAY)!==process.env.ELECTRON_OS_TEST_DISPLAY||
-    !existsSync(process.env.ELECTRON_OS_TEST_DISPLAY))
-  throw Error('Private Wayland compositor required; refusing to use user desktop');
+const privateWayland = process.platform==='linux'&&!process.env.DISPLAY&&!!process.env.ELECTRON_OS_TEST_DISPLAY&&
+  !!process.env.WAYLAND_DISPLAY&&!!process.env.XDG_RUNTIME_DIR&&
+  path.join(process.env.XDG_RUNTIME_DIR,process.env.WAYLAND_DISPLAY)===process.env.ELECTRON_OS_TEST_DISPLAY&&
+  existsSync(process.env.ELECTRON_OS_TEST_DISPLAY);
+const privateX11 = process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&
+  process.env.RUNNER_OS==='Linux'&&process.env.CI==='true'&&process.env.M16_PRIVATE_X11==='1'&&
+  /^:[0-9]+$/.test(process.env.DISPLAY??'');
+if(!privateWayland&&!privateX11)
+  throw Error('Isolated private Linux display required; refusing user desktop');
 const root=path.resolve(import.meta.dirname,'..');
 const profile=await mkdtemp(path.join(tmpdir(),'dental-m16-linux-'));
 const checks=[],errors=[];let app,page,failed=false;
-const report={source:process.env.GITHUB_SHA??null,platform:'private-linux-wayland',checks,errors};
+const report={source:process.env.GITHUB_SHA??null,platform:privateWayland?'private-linux-wayland':'private-linux-x11',checks,errors};
 function check(message,ok){assert.ok(ok,message);checks.push(message);console.log('PASS',message);}
 try{
-  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;delete env.DISPLAY;
-  app=await electron.launch({args:[root,'--ozone-platform=wayland','--user-data-dir='+profile,
+  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;if(privateWayland)delete env.DISPLAY;
+  app=await electron.launch({args:[root,privateWayland?'--ozone-platform=wayland':'--ozone-platform=x11',...(privateX11?['--files-x11-verify']:[]),'--user-data-dir='+profile,
     '--runtime-fixtures','--files-fixtures','--files-picker-verify','--files-picker-app-fixtures'],env,timeout:35000});
   page=await app.firstWindow();
   page.on('pageerror',error=>errors.push(error.message));
@@ -29,7 +33,7 @@ try{
     const v=await window.desktop.identity.view();
     return window.desktop.files.roots(v.generation);
   });
-  check('Private Linux Wayland shell Files bridge and synthetic root',
+  check('Private Linux graphical shell Files bridge and synthetic root',
     roots.length===1&&roots[0].label==='Test Files'&&!JSON.stringify(roots).includes(profile));
   await page.locator('[data-dock-app="files"]').click();
   const frame=page.getByTestId('files-window');
@@ -78,11 +82,11 @@ try{
   const transferred=await guest.locator('#transfer-result').innerText();
   check('Linux Files explicit Send delivers metadata only to subscribed signed app',
     transferred.includes('m16-synthetic-xray.png')&&!transferred.includes(profile)&&!transferred.includes('/tmp/'));
-  console.log('M16 PRIVATE WAYLAND SUCCESS',checks.length);
+  console.log('M16 PRIVATE LINUX SUCCESS',checks.length);
 } catch(error) {
   failed=true;
   errors.push(String(error));
-  console.error('Private Wayland M16 graphical assertion failed:',String(error));
+  console.error('Private Linux M16 graphical assertion failed:',String(error));
   try {
     const state=await page?.evaluate(()=>({
       desktop:!!window.desktop, url:location.pathname+location.search,
@@ -90,7 +94,7 @@ try{
       text:document.body.innerText.slice(0,500)
     }));
     report.failureState=state;
-    console.error('WAYLAND DIAG',JSON.stringify(state));
+    console.error('LINUX GRAPHICAL DIAG',JSON.stringify(state));
   }catch{ /* no patient data ever captured */ }
 } finally {
   await mkdir(path.join(root,'artifacts'),{recursive:true});
@@ -106,6 +110,6 @@ try{
   // Weston/Wayland can leave Playwright native handles open even after all
   // GUI assertions pass. The dedicated synthetic CI script owns its process;
   // exiting with the recorded result avoids a 7-minute runner cancellation.
-  console.log('M16 PRIVATE WAYLAND EXIT',failed?'FAIL':'SUCCESS',checks.length);
+  console.log('M16 PRIVATE LINUX EXIT',failed?'FAIL':'SUCCESS',checks.length);
   process.exit(failed?1:0);
 }
