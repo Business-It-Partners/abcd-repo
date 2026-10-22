@@ -1,0 +1,14 @@
+{
+  "numTotalTestSuites": 70,
+  "numPassedTestSuites": 70,
+  "numTotalTests": 437,
+  "numPassedTests": 437,
+  "numFailedTests": 0,
+  "success": true,
+  "startTime": 1792644987880,
+  "runtimeSource": "680de739",
+  "testDiscoverySource": "e0db2ede",
+  "command": "npm test -- --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=release/m15-nonmedia-unit.json",
+  "fullReportSha256": "03c530933cc7d8a3e257fc2cd239a6a65de905f0747099478a0a7661ff47af2b",
+  "preliminaryFailure": "Default discovery started tests inside retained backend release snapshot; task-owned runner was stopped with SIGINT. Explicit owned-suite Vitest config corrected discovery. No prior failed run relabelled passed."
+}

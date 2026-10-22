@@ -9,42 +9,42 @@
   ],
   "samples": [
     {
-      "time": 1792626540078,
+      "time": 1792645629094,
       "processes": 6,
-      "workingSetKiB": 1113456,
+      "workingSetKiB": 1103452,
       "cpuPercent": 0,
       "views": 2
     },
     {
-      "time": 1792626555252,
+      "time": 1792645644241,
       "processes": 6,
-      "workingSetKiB": 1195792,
-      "cpuPercent": 0.7826102660948073,
+      "workingSetKiB": 1180688,
+      "cpuPercent": 0.7592279874224027,
       "views": 2
     },
     {
-      "time": 1792626570397,
+      "time": 1792645659380,
       "processes": 6,
-      "workingSetKiB": 974128,
-      "cpuPercent": 0.9656039004784408,
+      "workingSetKiB": 973044,
+      "cpuPercent": 0.9659912176504364,
       "views": 2
     },
     {
-      "time": 1792626585508,
+      "time": 1792645674520,
       "processes": 6,
-      "workingSetKiB": 1057260,
-      "cpuPercent": 0.6452383423275672,
+      "workingSetKiB": 1058832,
+      "cpuPercent": 0.6770077221603159,
       "views": 2
     },
     {
-      "time": 1792626600634,
+      "time": 1792645689607,
       "processes": 6,
-      "workingSetKiB": 1010508,
-      "cpuPercent": 0.8594187470991632,
+      "workingSetKiB": 998916,
+      "cpuPercent": 0.6876717522350535,
       "views": 2
     }
   ],
   "platform": "linux",
-  "source": null,
+  "source": "b68eab2b1496dba98df348715f1191b54ab58cbc",
   "scope": "Two configured sample runtimes, ten cycles and 60-second bounded sample; no claim of multi-hour physical-device soak or arbitrary app count."
 }

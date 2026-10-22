@@ -19,5 +19,5 @@
     "failed update shows rollback and recovery guidance in Store details"
   ],
   "platform": "linux",
-  "sha": null
+  "sha": "e0db2ede"
 }

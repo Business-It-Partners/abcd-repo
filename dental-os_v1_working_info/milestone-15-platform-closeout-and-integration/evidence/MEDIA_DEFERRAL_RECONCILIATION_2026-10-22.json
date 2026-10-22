@@ -1,0 +1,21 @@
+{
+  "environment": "cloudfare-staging",
+  "passed": true,
+  "checks": [
+    "authenticated staging admin with fixture capabilities",
+    "both existing synthetic names match the preserved marker",
+    "patient has no active media from the failed pre-transfer probe",
+    "synthetic Staff has no active document",
+    "only labelled synthetic Staff was inactivated"
+  ],
+  "binaryRequests": 0,
+  "mediaMutations": 0,
+  "productionRequests": false,
+  "preserved": "Labelled synthetic patient, inactive Staff and audit history retained. No patient archive route exists; no destructive SQL or fabricated deletion performed.",
+  "noBinaryTransferEvidence": "Preserved broker transport journal contains only failed intent POSTs, no PUT or finalise. Active media/document lists empty; this does not certify arbitrary abandoned-upload cleanup.",
+  "verifierSha256": {
+    "tools/verify-staging-platform-writes.mjs": "e523fb1f3082c0e32de234b7ba5fb0c30093a51ba1a20230ee0e1b25924825b8",
+    "tools/verify-backend-tenant-boundary.mjs": "20a328fbccef3ff421cd598c547fa25e4396874639d18af4967d63a5de5e1010",
+    "tools/reconcile-deferred-media-fixture.mjs": "503a56ca9b72c296b4d85cd930e9937ef86249312955ba72bf19117946771688"
+  }
+}

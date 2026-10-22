@@ -30,6 +30,6 @@
     "closed profile contains no password or private app storage/draft canary"
   ],
   "platform": "linux",
-  "source": null,
+  "source": "b68eab2b1496dba98df348715f1191b54ab58cbc",
   "scope": "Private synthetic identity/transport/packages only; no cloud API calls."
 }

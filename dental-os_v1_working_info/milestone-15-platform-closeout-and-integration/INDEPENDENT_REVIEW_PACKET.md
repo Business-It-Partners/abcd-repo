@@ -1,0 +1,21 @@
+# M15 independent verification packet
+
+Requested reviewer: **GPT-6.1 Sol, Medium**, after final verification source is available. Do not start another chat/worker automatically: the user now requires work in this existing chat. This packet prepares the review; it is not a completed independent review.
+
+## Source and scope
+
+Use the existing managed worktree `/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os`, branch `codex/milestone-15`. First inspect actual branch, HEAD and status; compare with the exact Windows run SHA recorded after CI. P03 `125fa25bcc27d6ff198148259695d76cf895b0eb` must be an ancestor. Do not start from main or the original dirty M13 checkout. Preserve source, evidence, old worktrees and unrelated backend publisher changes.
+
+Read AGENTS.md, PRODUCT_DIRECTION.md, WORK_CHECKLIST.md, canonical product vision, central checklist, M15 plan/status/notes/evidence, audits and `docs/PLATFORM_APP_CAPABILITIES.md`. Review actual source, not only reports. `evidence/P09_NONUPLOAD_VERIFICATION_MANIFEST.json` pins electron/src/test trees and scoped Linux/local/staging results. The final CI record pins the exact pushed source and hosted evidence.
+
+## Required review
+
+1. First-party-only package and release-scoped API authority: signature/identity/version/digest/operation ceilings, format compatibility, pre-credential denials, role/session/routing/query bounds. Credentials remain host-held; SaaS remains business authority.
+2. ADR-025: immutable preparation, existing renderer/version/work preservation, next full app launch, bounded trial/health, policy-eligible fallback, current-policy rejection, restart/interruption/race/retention safety.
+3. Shell/runtime: shared window/dock/Genie field, launch/focus/overview/scaling/reduced motion, dirty/modal/unknown-write gates, crash/hang containment and session clearing. Check the exact M15 Windows dock-edge result; do not borrow an M14 pass.
+4. Workload evidence: local fixtures vs actual staging identity/JSON role/write/retry/cleanup vs cryptographic two-SQLite backend isolation. The latter is not a two-remote-D1 staging drill. Check limits and report/source/tool hashes.
+5. User-approved media-upload deferral: real sessions must deny upload despite signed grants. Preserve candidate source/evidence and backend paused changes. The failed probe had no binary transfer; synthetic Staff inactive/patient audit retained. No upload or recovery acceptance is inferred.
+6. Capability handoff must explicitly mark unsupported native print/export and patient/case deep navigation; no general intents/messaging, third-party publishing, local clinical DB or hidden offline write queue.
+7. Staging metadata continuity, signer/tool controls, safe diagnostics and remaining M20/G21 release/device obligations. User manual visual/module review follows technical verification; do not silently close G12/G13/G15.
+
+Record actionable findings with actual file/line and reproduction. The lead fixes findings, reruns affected checks one heavy job at a time, updates exact source/CI evidence and only then records the result. No production deployment, main merge, history rewrite, live app/browser control or worktree deletion.

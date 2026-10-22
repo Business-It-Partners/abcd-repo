@@ -38,3 +38,7 @@ This supports app-only releases selecting already implemented operations. New Wo
 ## SDK 1.4 explicit upload extension
 
 [ADR-029](20_V1_ADR_REGISTER.md) and the [mediated upload contract](../docs/CLINIC_MEDIA_UPLOAD_CONTRACT.md) define a separately signed `clinic.media.upload` operation. The host receives bounded 8 KiB chunks, computes checksums and owns intent/content/finalise/abort calls, original-key reconciliation and transient lifetime. Buffered/unknown work participates in close/update safety; no client retry queue or disk business store is introduced. Patient replacement uses only the existing Worker replacement route; active facts are not undone by cancellation. Fresh-session recovery, real service proof and explicit grant publication remain separate M15 work.
+
+## M15 availability amendment — 2026-10-22
+
+The user deferred media upload. SDK 1.4 experimental source/evidence is preserved, but the real SessionManager denies upload regardless of a release grant until later staging lifecycle/recovery acceptance. [Current capability inventory](../docs/PLATFORM_APP_CAPABILITIES.md) distinguishes supported JSON/read/lifecycle/update contracts from unavailable uploads, native print/export and gated cross-app deep navigation. M14 app implementation and later manual/device acceptance remain separate.

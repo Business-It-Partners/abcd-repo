@@ -42,7 +42,7 @@ The exact manifest/capability rules belong to the [package contract](23_V1_PACKA
 
 Store Update downloads and verifies a separate candidate without closing, reloading or changing the running app. The Store reports Update ready — applies next time you open this app. After the user normally closes that app, its next full launch trials the candidate; a bounded startup-health check acknowledges success or recovers to an eligible known-good version. Focusing, minimizing or restoring an existing window is not a full launch. No automatic relaunch or live code injection is required.
 
-The [install/update contract](10_V1_INSTALL_UPDATE_AND_UNINSTALL.md) is the single authority for lifecycle states, dirty/pending-write safety, session transitions, compatibility, retention, recovery and acceptance. ADR-025 supersedes the earlier close-first target. Current Store/runtime alignment remains pending; accepted documentation is not implementation evidence. App rollback never reverses server business transactions.
+The [install/update contract](10_V1_INSTALL_UPDATE_AND_UNINSTALL.md) is the single authority for lifecycle states, dirty/pending-write safety, session transitions, compatibility, retention, recovery and acceptance. ADR-025 supersedes the earlier close-first target. M15 records the current Store/runtime implementation and source-bound checks; accepted documentation alone is not implementation evidence. App rollback never reverses server business transactions.
 
 ## Platform first, full app workflows next
 
