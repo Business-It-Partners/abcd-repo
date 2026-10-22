@@ -1,6 +1,6 @@
 # M16 Implementation Notes
 
-**Date:** 2026-10-22. **Disposition:** historical M16.1 design plus implemented M16.2/M16.3/M16.4 and completed cross-platform M16.4 verification. M16.5 not started.
+**Date:** 2026-10-22. **Disposition:** M16.1 design, M16.2–M16.6 hosted engineering, and the post-closeout Files UI/Image Viewer follow-ups are implemented. Native drag is formally deferred in the current runtime; physical-device/G16 acceptance remains open.
 
 M16 was based on the exact M15 branch source at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d. Source surveyed includes electron/main.ts, electron/runtime/manager.ts, electron/runtime/appPreload.ts, electron/sdk/contracts.ts, electron/sdk/broker.ts and src/windowManager.tsx.
 
@@ -175,3 +175,7 @@ No staging/production contact, host device access, real clinical data, upload fe
 On confirmed branch head `ad3e4bc0ed24fd11902693a0e34205716834f755`, source/API review found that Files is hosted in the shell renderer while managed apps occupy separate native views, and the runtime permits only one visible native input surface. A receiving app is therefore hidden while Files is foreground; shell DOM hit-testing cannot attest the native drop target. Electron `webContents.startDrag` initiates an outgoing drag from host file paths and does not prove inbound recipient identity. Native cross-view drag is formally deferred in the current architecture; no runtime code changed. Existing signed-recipient authorization, sandboxing, metadata-only receipts and explicit Send are unchanged.
 
 The physical-device walkthrough is **NOT RUN**. The current environment shares the user's active Ubuntu desktop, and no separate user-controlled Dental OS/test-clinic session was available. No app was started/focused and no user/clinic files were opened or modified. See [device handoff](DEVICE_ACCEPTANCE_HANDOFF.md) and [verification evidence](VERIFICATION_EVIDENCE.md). Hosted M16.6 evidence remains bound to runtime SHA `772a739ed3af3be4fd678f7ebd68baeceef2f954`; no build/tests/Actions were repeated for this documentation-only update. G16 remains open; the user will merge to `main` manually.
+
+## Image Viewer rendering correction after live review — 2026-10-22
+
+The user-provided desktop screenshot exposed that the Image Viewer displayed a broken image even though its controls appeared. A private Linux test with the guarded 8 × 8 synthetic PNG reproduced the unavailable object URL and zero natural width. The renderer now draws the single bounded, sanitized frame directly onto a maximum 4-million-pixel canvas and zeroes the canvas on image change or unmount. No host path or image bytes are sent to the dental app. Local build, 38 focused file/picker tests and 20 private Linux Files UI assertions pass. A Windows-only exact-source Actions run is pending; physical-device acceptance and G16 remain open.

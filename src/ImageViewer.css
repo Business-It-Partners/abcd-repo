@@ -7,7 +7,7 @@
 .image-viewer-pages span,.image-viewer-controls span{min-width:56px;text-align:center;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .image-viewer-filename{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;text-align:center;}
 .image-viewer-canvas{position:relative;display:grid;place-items:center;flex:1;min-height:0;overflow:hidden;background:#111317;}
-.image-viewer-canvas img{display:block;max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;user-select:none;}
+.image-viewer-canvas canvas{display:block;max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;user-select:none;}
 .image-viewer-loading{font-size:14px;color:#a5b4c4;}
 .image-viewer-alert{position:absolute;bottom:14px;left:14px;right:14px;background:#432d31;color:#fff;border-radius:7px;padding:9px 12px;font-size:12px;}
 @media(max-width:660px){.image-viewer-tools{gap:4px;padding:5px}.image-viewer-filename{display:none}.image-viewer-tools button{min-width:27px}.image-viewer-pages span,.image-viewer-controls span{min-width:40px}}

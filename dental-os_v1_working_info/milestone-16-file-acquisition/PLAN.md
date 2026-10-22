@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** M16.6 hosted integration and engineering closeout COMPLETE on exact tested source `772a739ed3af`. The later Image Viewer follow-up is implemented on `1ae45df4`; local Linux build/unit/UI checks pass, and targeted Windows Actions on test commit `72967aa4e7c721088725b018f929d113052e317a` passed 47 focused security tests, build/typecheck and 32/32 private GUI assertions. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device acceptance is NOT RUN. **G16 OPEN; M16 not yet accepted.**
+**Status:** M16.6 hosted integration and engineering closeout COMPLETE on exact tested source `772a739ed3af`. The Image Viewer was added on `1ae45df4`; its test-driver update passed Windows Actions on `72967aa4`. A later user screenshot exposed a broken preview URL. The follow-up now uses direct bounded canvas rendering and passes local build, 38 focused file/picker tests and 20/20 private Files UI assertions. Exact-source Windows-only verification is pending. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device acceptance is NOT RUN. **G16 OPEN; M16 not yet accepted.**
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.

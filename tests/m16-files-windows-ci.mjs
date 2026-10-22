@@ -87,8 +87,16 @@ try{
   await imageCard.dblclick();
   await viewer.waitFor({state:'visible',timeout:10000});
   await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).waitFor({timeout:10000});
+  await page.waitForFunction(()=>{
+    const canvas=document.querySelector('[data-testid="image-viewer"] canvas');
+    return canvas instanceof HTMLCanvasElement&&canvas.width===8&&canvas.height===8;
+  },null,{timeout:10000});
   check('Double-click opens separate managed Image Viewer above persistent Files',
     await frame.isVisible() && await viewer.getAttribute('data-phase')==='visible');
+  check('Image Viewer decodes and paints pixels from the bounded synthetic PNG',await viewer.locator('canvas').evaluate(canvas=>{
+    const context=canvas.getContext('2d');return canvas.width===8&&canvas.height===8&&!!context
+      &&context.getImageData(0,0,8,8).data.some((value,index)=>index%4===3&&value>0);
+  }));
   check('Viewer never appears in dock launcher inventory',
     await page.locator('[data-dock-app="image-viewer"]').count()===0);
   await viewer.getByRole('button',{name:'Maximize Image Viewer'}).click();

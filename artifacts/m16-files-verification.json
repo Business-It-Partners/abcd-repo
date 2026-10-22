@@ -9,6 +9,7 @@
     "Double-click navigates into real host folder through opaque handles",
     "Bounded local PNG thumbnail renders in Files without a file path",
     "Double-click opens a managed Image Viewer above the still-open Files window",
+    "Image Viewer decodes and paints pixels from the bounded synthetic PNG",
     "Image Viewer zoom control updates its displayed scale",
     "Image Viewer rotates the displayed picture",
     "Private Image Viewer blocks shell screenshot capture while its picture is visible",

@@ -3,7 +3,7 @@
 **Date:** 2026-10-22. **Status:** Codex continuation in progress after M16.6; native drag feasibility reviewed and formally deferred for the current runtime; physical-device walkthrough NOT RUN. **Milestone:** M16/G16 still OPEN.
 **Branch:** `codex/milestone-16`.
 **Exact latest runtime-tested implementation:** `772a739ed3af3be4fd678f7ebd68baeceef2f954`; [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605), Windows/Linux success.
-**Current Image Viewer follow-up:** source `1ae45df4` has a passing local Linux build, 25 focused unit tests, 19 Files UI assertions and 11 signed-app/transfer UI assertions. Corrected test drivers passed targeted Windows Actions 39821015828: 47 focused security tests, build/typecheck and 32/32 private GUI assertions. Physical-device acceptance remains NOT RUN. See the latest Image Viewer section in [verification evidence](VERIFICATION_EVIDENCE.md).
+**Current Image Viewer follow-up:** the earlier object-URL renderer showed a broken image in the user's live screenshot. That defect is reproduced with a synthetic PNG and corrected by drawing the bounded decoded frame directly to canvas. The correction passes local build, 38 focused file/picker tests and 20/20 private Linux Files UI assertions; exact-source Windows-only Actions verification is pending. Earlier Windows results on `72967aa4` cover the previous renderer only. Physical-device acceptance remains NOT RUN. See [verification evidence](VERIFICATION_EVIDENCE.md).
 **Evidence:** [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). **Contract:** [ARCHITECTURE.md](ARCHITECTURE.md). **Scope:** [PLAN.md](PLAN.md).
 
 ## 1. Do not assume this is already certified
