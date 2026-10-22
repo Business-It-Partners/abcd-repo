@@ -1,8 +1,7 @@
 {
   "repository": "Business-It-Partners/dental-saas",
   "revision": "f0d059d36540b4b6907cace089085ce0df62d454",
-  "m14OsRevision": "093cd96382466bf3aacf2a89a5b6389e19bce042",
-  "method": "selective source import; not a branch merge; original blob identities retained; M17 adaptations described in VERIFICATION.md",
+  "method": "The existing M17 Follow-ups package source in this worktree is retained as the implementation baseline. This ledger pins the Dental SaaS behavior and shared presentation inputs used to review that app. The new M17 release receives a new unique app ID, version 1.0.0, and the new suite signer.",
   "imports": [
     {
       "source": "apps/clinic-web/src/features/follow-ups/components/CreateFollowUpModal.tsx",
@@ -259,5 +258,6 @@
     "lucide-react",
     "react",
     "react-dom"
-  ]
+  ],
+  "m17AppSourceRevision": "f9fed854c564389a1121a9d116c1d82c0d65a4cf"
 }

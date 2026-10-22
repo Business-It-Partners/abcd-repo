@@ -1,9 +1,8 @@
 {
   "repository": "Business-It-Partners/dental-saas",
   "revision": "f0d059d36540b4b6907cace089085ce0df62d454",
-  "m14OsRevision": "6fd362ec51b3f4c256750202a10c16d4ece05518",
   "m15PlatformBaseRevision": "edc621420fd36f7a073bb61365afbb1ce3f90f7f",
-  "method": "Reviewed pinned SaaS behavior and selectively adapted the workflow to the current Dental OS SDK. The active M14 Appointments directory is still the static 1.0.0 shell; no functional M14 implementation or platform code was imported.",
+  "method": "The existing M17 Appointments package source in this worktree is retained as the implementation baseline. This ledger pins the Dental SaaS behavior and contract files reviewed for that app. The new M17 release receives a new unique app ID, version 1.0.0, and the new suite signer.",
   "imports": [
     {
       "source": "apps/clinic-web/src/features/appointments/api.ts",
@@ -24,7 +23,7 @@
       "gitBlob": "561ecd4d93fe72e17ba234e193671cacd8e6f325",
       "sha256": "56a8fef4c01d986d8017c398c32f6e60e0d0df74a26db94d1ba1cc8a7739b7d0",
       "destination": "src/appointments.ts and src/main.tsx",
-      "disposition": "Date-only storage, minute-of-day time, open statuses, local overlap warning and 09:00–19:00 clinic-day validation reviewed and adapted."
+      "disposition": "Date-only storage, minute-of-day time, open statuses, local overlap warning and 09:00\u201319:00 clinic-day validation reviewed and adapted."
     },
     {
       "source": "apps/clinic-web/src/features/appointments/components/AppointmentsView.tsx",
@@ -49,15 +48,28 @@
     }
   ],
   "contractSources": [
-    { "source": "apps/platform-worker/src/clinic/appointments/appointments.controller.ts", "gitBlob": "866fbf3e0ddece903de03894c050962a55889434" },
-    { "source": "apps/platform-worker/src/clinic/appointments/appointments.service.ts", "gitBlob": "e7b41e446ac944159385a380856e03d230082c60" },
-    { "source": "apps/platform-worker/src/clinic/appointments/appointments.types.ts", "gitBlob": "9b606432083aded4ac3bea195ce322d27596a111" },
-    { "source": "apps/platform-worker/src/clinic/staff/staff.controller.ts", "gitBlob": "f4ed09084d4e2d72f0912e9a75fe2b015cdbf70f" }
+    {
+      "source": "apps/platform-worker/src/clinic/appointments/appointments.controller.ts",
+      "gitBlob": "866fbf3e0ddece903de03894c050962a55889434"
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/appointments/appointments.service.ts",
+      "gitBlob": "e7b41e446ac944159385a380856e03d230082c60"
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/appointments/appointments.types.ts",
+      "gitBlob": "9b606432083aded4ac3bea195ce322d27596a111"
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/staff/staff.controller.ts",
+      "gitBlob": "f4ed09084d4e2d72f0912e9a75fe2b015cdbf70f"
+    }
   ],
   "excluded": [
     "Firebase identity and token access",
     "Direct HTTP transport and API base URL",
     "Patient search, patient record creation and patientId linkage",
-    "M14 Electron, preload, broker enforcement and runtime code"
-  ]
+    "Platform runtime, preload, broker implementation, and host code"
+  ],
+  "m17AppSourceRevision": "f9fed854c564389a1121a9d116c1d82c0d65a4cf"
 }
