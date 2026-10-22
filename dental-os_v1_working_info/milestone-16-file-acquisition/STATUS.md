@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** M16.6 integrated closeout IN PROGRESS. M16.5 Send remains source-verified; native cross-view drag and physical-device verification deferred by user. **G16 OPEN** until all scoped acceptance evidence is reviewed.
+**Status:** M16.6 hosted engineering closeout COMPLETE on exact tested source `772a739ed3af` (Windows/Linux success). Native cross-view drag and physical-device checks deferred by user. **G16 OPEN; overall M16 not yet accepted.**
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -87,3 +87,13 @@ A tightly scoped native Windows dialog automation correction and bounded Linux W
 **Known limits:** OS-native drag-and-drop between isolated `WebContentsView` windows was **not proven safe or implemented**; no physical Windows/Linux device claim, no file-byte consumption, no full milestone matrix, no Cloudflare/backend work or patient association. Focused successful runner evidence only; **G16 remains OPEN**.
 
 **Next phase, separate session:** M16.6 final integration/acceptance/evidence review and G16 closure decision. Do not start it automatically.
+
+## M16.6 hosted engineering closeout — exact-source success (2026-10-22)
+
+**Tested source** `772a739ed3af3be4fd678f7ebd68baeceef2f954`; [Actions run 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605) finished **success**, both Windows 2022 and Ubuntu 24.04 private-X11 jobs. The corresponding ordinary historical Windows validation workflow was **skipped** by tagged CI gating to preserve the free quota. The subsequent documentation-only commit is not a new tested implementation revision.
+
+- **Linux:** full 31-file Vitest regression **472/472 passed**; frontend/Electron typecheck/build passed; **10/10** real hosted GUI assertions passed in synthetic Xvfb, including signed isolated app, custom picker, cancellation, denied delayed request, unprivileged app renderer, denied script Send and successful explicit Send.
+- **Windows:** six focused Files security test files **35/35 passed**; frontend/Electron typecheck/build passed; **20/20** actual hosted Windows GUI assertions passed, including signed isolated app, OS-owned custom picker, real parented Windows native file chooser, denied app-shell privilege and denied script Send, and successful metadata-only transfer.
+- **Integrated fix:** the Files browser is now remounted when clinic session generation changes, so the host's invalidated opaque nested handles cannot remain in Files navigation history. Added host regression for invalidate/relist and fresh recipient, 64 outstanding-lease cap, expiry capacity reclamation, one in-flight transfer, and late authorization loss.
+- **Result:** M16.6 **hosted engineering integration complete**. This does **not** mean physical host/device certification or full G16 closeout. Native cross-`WebContentsView` OS drag is unimplemented and deliberately deferred; existing Send fallback remains the accepted transfer mode. No read bytes, uploads, clinical association, real patient data, staging/production operation, or app release publication occurred.
+- **Next controlled work, in Codex on user's machine:** [device and remaining-gesture handoff](DEVICE_ACCEPTANCE_HANDOFF.md). Test native drag separately, then Windows/Linux appropriate physical-device end-to-end and deliberate G16 acceptance decision. **Do not merge M16 to main as accepted while G16 remains open.**

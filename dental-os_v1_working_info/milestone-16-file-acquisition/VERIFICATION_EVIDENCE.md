@@ -166,3 +166,27 @@ Corrective fixture now provides a dedicated `Connect SDK` button activated only 
 **Unsuccessful infrastructure attempt retained:** first M16.5 source `9f0930aaea186a606478a04348a2f4c2724ae133`, [run `39779773853`](https://github.com/Business-It-Partners/dental-os/actions/runs/39779773853), Windows passed 32 focused tests, build and 18 GUI checks. The Linux job was **cancelled before any tests**, waiting for 94 Weston-related APT packages through `azure.archive.ubuntu.com` (slow downloads exhausted job time); cannot be counted as Linux verification. Correction switched only the synthetic Linux test environment to preinstalled private X11 and strengthened receipt revocation. No redundant Weston rerun was launched.
 
 **Excluded/unverified:** native drag-and-drop across isolated Electron views (not enabled or proven), raw file-byte consumption, file mutation, Cloudflare/R2 uploads, patient-file association, production promotion, all G16 integrated acceptance/resource/focus/physical-device cases. A delivered selection is only an in-memory metadata-only scoped receipt. **M16.5 explicit Send is accepted; G16 remains OPEN for M16.6.**
+
+## M16.6 integrated acceptance record — exact SHA, 2026-10-22
+
+**Implementation SHA:** `772a739ed3af3be4fd678f7ebd68baeceef2f954` (branch `codex/milestone-16`). **GitHub Actions:** [39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605) **conclusion SUCCESS**. Windows job `files-ui` and Linux job `linux-files-ui` both fully completed green. Conventional full Windows milestone workflow on same tagged push was skipped (quota protection); the separate doc-only closeout is not a new tested code SHA.
+
+| G16 acceptance area | M16.6 evidence and status | Remaining limit |
+| --- | --- | --- |
+| Read-only host Files browse and paging | Native host adapter read-only listing/cursors; full Linux host tests; actual synthetic Files window browse/back and mounted fixture folder on both GUI jobs — **HOSTED VERIFIED** | Human real-folder/removable-volume/access-denied experience on a physical device not done; no clinic data used |
+| Custom and native picker, OS window/focus | Signed first-party isolated app launched, OS-owned custom picker selected and cancelled on both; real parented **Windows native Win32 picker** accepted synthetic image — **HOSTED VERIFIED** | Device/fullscreen/compositor and Linux native dialog not newly certified; earlier Wayland 7/7 M16.4 still separate proof |
+| Temporary recipient-bound file selection | Forged frame/recipient ID, stale generation, replacement, expiry, revocation/regrant, one in-flight and negative ACK tests — **UNIT VERIFIED** | No actual file bytes or app upload; no arbitrary app file read API |
+| Explicit Files-to-app transfer and privilege | Signed isolated receiver accepted metadata; no absolute source path in returned metadata, app `window.desktop` bridge absent; direct shell script Send without trusted user gesture rejected on **both GUI jobs** — **HOSTED VERIFIED** | Real native cross-view drag/drop remains **NOT IMPLEMENTED** (user approved deferral) |
+| Session-switch consistency | `src/App.tsx` generation-keyed Files browser; host test ensures nested tokens unusable after reset, with fresh root/list/select — **CODE + UNIT VERIFIED** | Interactive login/logout switching is deferred to physical-device walkthrough; no claim of a graphical real-identity session switch |
+| Resource bounds/failure | Full Linux test suite 472/472; local 2048 scan cap, outstanding 64 file-receipt cap, cursor and handle ceilings, expiring/cancelled transfers; private GUI scripts exit cleanly — **UNIT/CI VERIFIED** | Prolonged physical soak, removable-volume interruption and low-resource machine proof deferred |
+| Accessibility/privacy | ARIA listbox, buttons, status, OS-owned modal and static Files overview privacy existing in code; hosted browser controls exercised — **PARTIAL** | Comprehensive keyboard, screen-reader, contrast, minimize/overview and focus walk-through on user device still pending |
+| Unsupported operations | No new filesystem read/delete/write bridge, general app bus, Cloudflare media upload, patient association, staging/production deployment — **SCOPED OUT** | Never describe receipt delivery as uploaded/saved clinical attachment |
+
+| CI environment | Source-bound observed result |
+| --- | --- |
+| Windows 2022 runner | 6 focused Vitest files **35/35 passed**; `npm run build` TypeScript/Vite/Electron PASS; private synthetic **20/20 GUI assertions passed**; real native file dialog; process exited SUCCESS |
+| Ubuntu 24.04 runner private Xvfb/X11 | 31 Vitest files **472/472 passed**; `npm run build` PASS; **10/10 GUI assertions passed**; process exited SUCCESS |
+| Linux Wayland | Separate M16.4 GUI baseline **7/7 passed** on `ef7acba596c2` (run 39775866409); **M16.6 code not rerun under Wayland** |
+| Physical Windows/Linux device | **NOT RUN**. To be performed by user in Codex after native drag follow-up; hosted CI is not device certification |
+
+**Decision:** M16.6 integration **engineering-complete on hosted source**; the milestone-wide **G16 is still OPEN**. The user explicitly deferred native drag and physical-device checks until after M16.6; these remain tracked in [device/gesture handoff](DEVICE_ACCEPTANCE_HANDOFF.md), not converted into a silent gate waiver. No full Windows historical suite was rerun; older failed/cancelled attempts remain preserved above for traceability.

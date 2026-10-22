@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** M16.6 integrated closeout IN PROGRESS; M16.5 explicit transfer accepted. Native cross-view drag and physical-device acceptance deferred by user; **G16 OPEN** until final acceptance.
+**Status:** M16.6 hosted integration and engineering closeout COMPLETE on exact tested source `772a739ed3af`; native cross-view drag and physical-device acceptance deferred by user. **G16 OPEN; M16 not yet accepted.**
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -163,7 +163,9 @@ Verified M16.5 source: `9425e0180088bc76041035a4e539e86ac73ec069`; [focused Wind
 
 - [x] Inspect exact current M16.5 tested source and G16 matrix, without expanding into upload, production, M20 or native drag.
 - [x] Identify and correct a session-switch UI lifecycle issue: remount the trusted Files browser when clinic generation changes so obsolete folder-history IDs are not reused.
-- [ ] Run host tests for nested-folder invalidation and fresh handles after session change, outstanding receipt resource cap/expiry, and cancellation on late authorization loss; test no-gesture Send and app-shell bridge absence on both private graphical hosts.
-- [ ] Run a single exact-source focused Windows Actions job and private-X11 Linux graphical job, with a full integrated Vitest pass only on Linux to conserve Windows minutes.
-- [ ] Reconcile G16 scope line by line, mark hosted automated M16.6 closeout appropriately, hand off native drag and physical-device/complete milestone acceptance to Codex on user's device.
+- [x] Run host tests for nested-folder invalidation and fresh handles after session change, outstanding receipt resource cap/expiry, and cancellation on late authorization loss; test no-gesture Send and app-shell bridge absence on both private graphical hosts.
+- [x] Run a single exact-source focused Windows Actions job and private-X11 Linux graphical job, with a full integrated Vitest pass only on Linux to conserve Windows minutes.
+- [x] Reconcile G16 scope line by line, mark hosted automated M16.6 closeout appropriately, hand off native drag and physical-device/complete milestone acceptance to Codex on user's device.
 - **Explicit deferral decision:** native isolated-view drag/drop is not a working feature and is not a G16 pass; the verified explicit Send remains the supported fallback. Physical-device certification is reserved for the user's Codex/device round. **G16 remains OPEN.**
+
+**M16.6 exact-source result:** `772a739ed3af3be4fd678f7ebd68baeceef2f954` — [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605) both jobs SUCCESS, Windows 35/35 focused unit + 20/20 GUI, Linux 472/472 full Vitest + 10/10 GUI, both build/typecheck. G16 OPEN for deferred drag/device review. [Codex/device handoff](DEVICE_ACCEPTANCE_HANDOFF.md).
