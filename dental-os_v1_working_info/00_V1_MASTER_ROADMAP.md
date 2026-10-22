@@ -36,7 +36,12 @@ Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOV
 | M13 — First-party app shells | Release a simple installable version 1.0.0 shell for each first-party Dental OS app. | M12/G12 | G13 | [Plan](milestone-13-first-party-app-shells/PLAN.md) |
 | M14 — Functional Dental OS apps | Implement each app's actual modules, UI and brokered workflows as app-only updates. | Parallel implementation authorized; final acceptance requires M13/G13 and M15/G15 | G14 | [Overview](milestone-14-dental-app-functionality/PLAN.md) |
 | M15 — Platform Closeout and Integration | Resolve evidenced platform gaps and verify one integrated app-ready baseline, reusing completed work. | M11 foundations and audited M13 candidate; exit requires existing G12/G13 residuals and G15 evidence | G15 | [Plan](milestone-15-platform-closeout-and-integration/PLAN.md) |
+| M16 — Dental OS Files and Local Acquisition | Read-only host Files view, custom/native picker and scoped OS-mediated Files-to-app selection without media uploads. | Exact M15 branch source; M16.1 design before implementation | G16 | [Plan](milestone-16-file-acquisition/PLAN.md) |
 | M20 — Windows/Linux release and operations | Certify installable, maintainable Dental OS platform releases on explicitly named Windows/Linux targets. | M14/G14 and M15/G15; retain M12/G12 | G20 | [Plan](milestone-20-windows-linux-release/PLAN.md) |
+
+## M16 architecture-first extension — 2026-10-22
+
+The user authorized codex/milestone-16 directly from codex/milestone-15 to add Dental OS local Files acquisition. [M16 architecture](milestone-16-file-acquisition/ARCHITECTURE.md) and [plan](milestone-16-file-acquisition/PLAN.md) govern this scope. M16.1 is documentation/contract design, not implementation; G16 needs actual trusted-host and Windows/Linux evidence. Media upload remains deferred, business backend unchanged and M20/G21 remain distinct.
 
 ## Integration order and evidence
 
