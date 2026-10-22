@@ -1,6 +1,6 @@
 # M15 Status — Platform Closeout and Integration
 
-**Status:** IMPLEMENTING — P03/M15.1 complete. P04–P06 implementation candidates and focused checks are integrated; P07 is under execution; P08's local synthetic expiry/recovery rerun passes 77/77 focused unit checks, while staging role assignments, no-package-write tool and real drill remain unresolved; P09 and G15 are open.
+**Status:** IMPLEMENTING — P03/M15.1 complete. P04–P06 implementation candidates and focused checks are integrated; P07 is under execution; P08 metadata-only tooling passes 13 focused checks and the full serial suite passes 324/324, while the real staging renewal/recovery drill is underway; P09 and G15 are open.
 **Updated:** 2026-10-22.
 **User scope review:** the user accepted the proposed M15.1–M15.6 scope and directed that it be formalized. This records scope authorization, not runtime acceptance.
 **Integration branch:** `codex/milestone-15` in the lead `platform-closeout` worktree; milestone-record worker branch `codex/m15-plan-records`, created from committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`.

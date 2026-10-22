@@ -82,3 +82,13 @@ This is a lead-owned working evidence addendum. The worktree source was dirty at
 - **P08 release disposition:** The proposal separates staging app-feed continuity for M15 from M20 production installers/updater/signing/host/support and G21 physical device/user acceptance. It supplies bounded support/recovery steps. Actual named operator/reviewer assignment and staging drill remain open. Abhishek's records identify scope/G21 review, not staging signer/operator duty.
 
 The original M13 checkout, worker worktrees and evidence artifacts remain preserved. No live profile, production data, staging publication, main merge, deployment or user app restart was performed in this addendum.
+
+## Lead-only completion work — 2026-10-22, metadata tooling checkpoint
+
+The user directed all remaining work to continue in the existing lead chat/worktree and assigned staging renewal to the lead. The sidebar-review automation was paused; no new chat/worktree was created. Manual user review follows technical completion. Historical operator-assignment and no-tool statements above describe their earlier checkpoint.
+
+Added an offline `prepareMetadataRenewal` library, protected-key CLI, metadata-only conditional publisher, bounded public-feed/core-registry drill and [operating procedure](../../docs/STAGING_METADATA_RENEWAL.md). Preparation preserves signing identity, semantic authority and immutable release rows. Expired baselines must authenticate; renewed envelopes pass present-time verification with original watermarks. The publisher checks both baseline hashes before any write, writes only the two fixed metadata keys, and reports partial ETag conflicts without rewinding a pointer. No package write path exists.
+
+`npm run build` passed with the renewal library. Focused preparation/publication tests passed 13/13; the full serial `npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000` passed **324/324 in 21 files**. Script syntax, documentation and Git whitespace checks passed. These checks ran against this checkpoint's source before commit; the subsequent operation record will name its committed identity. Normal runtime UI source remains unchanged from `11cb1bc8`; these operational additions required no graphical test.
+
+Read-only staging inspection found both real controls at sequence 21 and expired. The protected external staging signer and existing account access were verified without printing secrets. A metadata-only sequence-22 candidate was prepared and its signatures, live baseline hashes, unchanged authority and current expiry were validated. Actual publication/recovery proof is pending at this tooling checkpoint; preparation is not staging acceptance.
