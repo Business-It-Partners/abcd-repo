@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.1–M16.6 hosted engineering closeout is COMPLETE on `772a739ed3af` (Windows/Linux success). The user found a broken Image Viewer preview in the live UI; the bounded direct-canvas correction is now verified on `1151d58f8048bafeb78f876b80676c6ed121f8ce`: local build, 38 focused file/picker tests, 20/20 private Linux Files UI assertions, and Windows-only Actions 39823039280 with 47 focused tests, build/typecheck and 33/33 private Windows GUI assertions all pass. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device checks are NOT RUN. **G16 OPEN; overall M16 not yet accepted.**
+**Status:** IMPLEMENTING — M16.1–M16.6 hosted engineering closeout is COMPLETE on `772a739ed3af` (Windows/Linux success). The bounded direct-canvas viewer correction is verified on `1151d58f8048bafeb78f876b80676c6ed121f8ce`. The follow-up fit-to-window update is verified on `62e8929a9f81f2c8a68b8903da47234038de995f`: local build, 484/484 unit tests, 24/24 private Linux Files UI assertions, and Windows-only Actions 39828242459 with 47 focused tests and 37/37 private Windows GUI assertions all pass. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device checks are NOT RUN. **G16 OPEN; overall M16 not yet accepted.**
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
