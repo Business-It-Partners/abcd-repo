@@ -7,7 +7,7 @@ import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
 import { FileTransferCoordinator, parseShellTransfer } from './host/fileTransfer';
-import { parseFilesList } from './host/filesShell';
+import { parseFilesList, parseViewerOpen, parseViewerStep } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
@@ -59,6 +59,7 @@ let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
 let fileTransfer: FileTransferCoordinator | undefined;
 let shellTransferActivation=0;
+let viewerSession: {id:string;generation:number;sender:object;frame:object;items:Array<{id:string;name:string}>;index:number}|undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -215,7 +216,7 @@ ipcMain.handle('window:control', (event, action: unknown) => {
 ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || !isShell(event) || !rect || typeof rect !== 'object') throw new Error('Invalid capture');
-  if (!canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Workspace locked or stale');
+  if (!canUseWorkspace() || !identityBypass && generation !== identity?.view().generation || viewerSession) throw new Error('Workspace locked, stale or private viewer active');
   const captureGeneration = identityView().generation;
   const r = rect as Record<string, unknown>;
   const values = ['x', 'y', 'width', 'height'].map(k => r[k]);
@@ -244,6 +245,39 @@ ipcMain.handle('files:thumbnail',(event,fileId:unknown,generation:unknown)=>{
   // Image bytes are delivered only to the sandboxed OS shell for a bounded
   // local preview; app WebContentsViews have no access to this channel.
   return files.previewBytes(fileId);
+});
+ipcMain.handle('files:viewer-open',(event,input:unknown)=>{
+  const request=parseViewerOpen(input);
+  if(!request)throw new Error('INVALID_REQUEST');
+  const files=requireFilesShell(event,request.generation);
+  viewerSession=undefined;
+  const items=files.viewerListing(request.directoryId,request.fileIds);
+  const index=items.findIndex(item=>item.id===request.selectedId);
+  if(index<0)throw new Error('INVALID_REQUEST');
+  const preview=files.previewBytes(items[index].id);
+  if(!preview)throw new Error('NOT_FOUND');
+  const id=randomUUID();
+  viewerSession={id,generation:request.generation,sender:event.sender,frame:event.senderFrame,items,index};
+  return {sessionId:id,generation:request.generation,name:items[index].name,index,count:items.length,...preview};
+});
+ipcMain.handle('files:viewer-step',(event,input:unknown)=>{
+  const request=parseViewerStep(input);
+  if(!request)throw new Error('INVALID_REQUEST');
+  const files=requireFilesShell(event,request.generation),current=viewerSession;
+  if(!current||current.id!==request.sessionId||current.generation!==request.generation
+    ||current.sender!==event.sender||current.frame!==event.senderFrame)throw new Error('STALE_SELECTION');
+  const index=(current.index+request.direction+current.items.length)%current.items.length;
+  const preview=files.previewBytes(current.items[index].id);
+  if(!preview)throw new Error('STALE_SELECTION');
+  current.index=index;
+  return {sessionId:current.id,generation:current.generation,name:current.items[index].name,index,count:current.items.length,...preview};
+});
+ipcMain.handle('files:viewer-close',(event,sessionId:unknown,generation:unknown)=>{
+  requireFilesShell(event,generation);
+  const current=viewerSession;
+  if(!current||current.id!==sessionId||current.generation!==generation
+    ||current.sender!==event.sender||current.frame!==event.senderFrame)return false;
+  viewerSession=undefined;return true;
 });
 ipcMain.handle('files:foreground',(event,generation:unknown,active:unknown)=>{
   requireFilesShell(event,generation);
@@ -346,7 +380,7 @@ if (primary) void app.whenReady().then(async () => {
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
-      identity.subscribe(view => { shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
+      identity.subscribe(view => { viewerSession=undefined;shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
@@ -359,6 +393,7 @@ if (primary) void app.whenReady().then(async () => {
       mkdirSync(path.join(fixtureRoot, 'X-rays'), { recursive: true });
       const syntheticPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR42mP06FnCgA0wMeAAg1MCACmLAYglPyuxAAAAAElFTkSuQmCC','base64');
       writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray.png'), syntheticPng);
+       writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray-alt.png'), syntheticPng);
       writeFileSync(path.join(fixtureRoot, '.m16-hidden-synthetic.png'), syntheticPng);
       writeFileSync(path.join(fixtureRoot, 'notes-synthetic.pdf'), 'synthetic-only');
       localFiles = new LocalFileService([{ label: 'Test Files', path: fixtureRoot, kind: 'folder' }]);
@@ -377,7 +412,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
+  bootPhase = 'exiting'; viewerSession=undefined;shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

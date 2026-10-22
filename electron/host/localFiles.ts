@@ -22,14 +22,16 @@ export type FileRecipient = {
 };
 export type FileReceipt = { receiptId: string; name: string; sizeBytes: number; modifiedAt: number|null; typeHint: string };
 export type FileSelection = { selectionId: string; files: FileReceipt[]; expiresAt: number };
-type EntryRef = { absolute: string; root: string; kind: 'directory'|'file' };
+type EntryRef = { absolute: string; root: string; kind: 'directory'|'file'; fingerprint?: string };
 type StoredRoot = Omit<EntryRef,'kind'> & FileRoot;
 type Cursor = { directoryId: string; offset: number; fingerprint: string };
 type StoredFile = EntryRef & { fingerprint: string; receipt: FileReceipt };
 type Lease = { owner: FileRecipient; files: Map<string,StoredFile>; expiresAt: number };
 const MAX_PAGE=200, MAX_SCAN=2048, MAX_HANDLES=4096, MAX_CURSORS=128, MAX_LEASES=64, MAX_FILES=10, TTL=600000;
 const MAX_PREVIEW_BYTES=16*1024*1024;
-const PREVIEW_TYPES=new Set(['.png','.jpg','.jpeg','.webp','.gif','.bmp']);
+export const VIEWER_TYPES=new Set(['.png','.jpg','.jpeg','.webp','.gif','.bmp']);
+const PREVIEW_TYPES=VIEWER_TYPES;
+const MAX_VIEWER_ITEMS=2048;
 const isId=(x:unknown):x is string=>typeof x==='string'&&/^[0-9a-f-]{36}$/i.test(x);
 const typeHint=(x:string)=>path.extname(x).toLowerCase().slice(0,24);
 const validName=(s:string)=>s.length>0&&s!=='.'&&s!=='..'&&!/[\u0000-\u001f\u007f]/.test(s);
@@ -171,7 +173,7 @@ export class LocalFileService {
           const st=lstatSync(absolute);
           if(st.isSymbolicLink()||!(st.isFile()||st.isDirectory()))continue;
           const kind=st.isFile()?'file':'directory',safe=check(absolute,h.root,kind);
-          entries.push({id:this.put({absolute,root:h.root,kind}),name,kind,
+          entries.push({id:this.put({absolute,root:h.root,kind,fingerprint:fingerprint(safe)}),name,kind,
             sizeBytes:kind==='file'&&Number.isSafeInteger(safe.size)?safe.size:null,
             modifiedAt:Number.isFinite(safe.mtimeMs)?safe.mtimeMs:null,
             typeHint:kind==='file'?typeHint(name):''});
@@ -183,6 +185,24 @@ export class LocalFileService {
         while(this.cursors.size>MAX_CURSORS)this.cursors.delete(this.cursors.keys().next().value!);
       }
       return {directoryId,entries,nextCursor};
+    }catch(e){throw this.err(e);}
+  }
+  /** Only raster IDs from the same real directory as the loaded Files listing. */
+  viewerListing(directoryId:string,ids:readonly string[]):Array<{id:string;name:string}>{
+    this.ready();
+    if(!Array.isArray(ids)||ids.length<1||ids.length>MAX_VIEWER_ITEMS||new Set(ids).size!==ids.length)
+      throw new LocalFilesError('INVALID_REQUEST');
+    const directory=this.handle(directoryId,'directory');
+    try{
+      check(directory.absolute,directory.root,'directory');
+      return ids.map(id=>{
+        const h=this.handle(id,'file'),name=path.basename(h.absolute);
+        if(h.root!==directory.root||path.dirname(h.absolute)!==directory.absolute
+          ||name.startsWith('.')||!VIEWER_TYPES.has(typeHint(name)))throw new LocalFilesError('FORBIDDEN');
+        const stat=check(h.absolute,h.root,'file');
+        if(!h.fingerprint||fingerprint(stat)!==h.fingerprint)throw new LocalFilesError('STALE_SELECTION');
+        return {id,name};
+      });
     }catch(e){throw this.err(e);}
   }
   /**
@@ -198,6 +218,7 @@ export class LocalFileService {
     let fd:number|undefined;
     try{
       const before=check(h.absolute,h.root,'file');
+      if(h.fingerprint&&fingerprint(before)!==h.fingerprint)return null;
       if(!Number.isSafeInteger(before.size)||before.size<1||before.size>MAX_PREVIEW_BYTES)return null;
       const flags=fsConstants.O_RDONLY|(fsConstants.O_NOFOLLOW??0);
       fd=openSync(h.absolute,flags);

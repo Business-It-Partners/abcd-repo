@@ -27,6 +27,9 @@ declare global {
         roots(generation: number): Promise<import('../electron/host/localFiles').FileRoot[]>;
         list(input: import('../electron/host/filesShell').ShellFilesList): Promise<import('../electron/host/localFiles').FilePage>;
         thumbnail(fileId:string,generation:number):Promise<import('../electron/host/localFiles').FilePreviewData|null>;
+        viewerOpen(input:import('../electron/host/filesShell').ShellViewerOpen):Promise<import('./ImageViewer').ViewerImage>;
+        viewerStep(input:import('../electron/host/filesShell').ShellViewerStep):Promise<import('./ImageViewer').ViewerImage>;
+        viewerClose(sessionId:string,generation:number):Promise<boolean>;
         foreground(generation:number,active:boolean):Promise<boolean>;
         transferTarget(generation:number):Promise<{title:string}|null>;
         send(input:import('../electron/host/fileTransfer').ShellTransferRequest):Promise<{destination:string;fileCount:number;expiresAt:number}>;
