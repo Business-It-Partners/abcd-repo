@@ -1,0 +1,10 @@
+{
+  "source": "6d198b949ccaf9e405b3643d8ec48b1fe6291388",
+  "runId": 39726686588,
+  "url": "https://github.com/Business-It-Partners/dental-os/actions/runs/39726686588",
+  "result": "failure",
+  "failedStep": "Windows safe app update proof",
+  "diagnostic": "After staging Records, foreground Store window intercepted pointer events for Close Records. Playwright correctly refused clicking the covered control. Earlier unit/build/hardening/recovery/resources/integration/process-exit steps passed; later steps were skipped.",
+  "correction": "Use normal dock focus for Records, verify active foreground, close normally, refocus its Store detail before next launch. No force click, hidden-control invocation, runtime product change or reduced assertion.",
+  "rerun": "Affected private update scenario, then exact-source Windows workflow. Original failure retained; no pass inferred for skipped runtime/SDK/identity gates."
+}

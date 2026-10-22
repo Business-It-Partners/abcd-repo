@@ -15,9 +15,10 @@
     "bounded startup health marks the candidate known good",
     "other running app remains pinned to its original active digest",
     "refresh restores Store authority after the refused uninstall race",
+    "normal close targets the foreground Records window after staging",
     "failed successor launch rolls back only its own verified known-good pointer",
     "failed update shows rollback and recovery guidance in Store details"
   ],
   "platform": "linux",
-  "sha": "e0db2ede"
+  "sha": "6d198b949ccaf9e405b3643d8ec48b1fe6291388"
 }
