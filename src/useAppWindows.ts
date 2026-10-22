@@ -6,6 +6,7 @@ import { WINDOW_IDS, type WindowId } from './windowGeometry';
 export function useAppWindows() {
   const targets = useMemo(() => Object.fromEntries(WINDOW_IDS.map(id => [id, createRef<HTMLButtonElement>()])) as Record<WindowId, RefObject<HTMLButtonElement | null>>, []);
   const controllers = {
+    files: useManagedWindow('files', targets.files),
     store: useManagedWindow('store', targets.store),
     studio: useManagedWindow('studio', targets.studio),
     records: useManagedWindow('records', targets.records),

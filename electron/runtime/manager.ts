@@ -1,5 +1,9 @@
 import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent, type NativeImage } from 'electron';
 import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/broker';
+import { clinicAppFamily } from '../sdk/appPolicy';
+import { FilePickerCoordinator } from '../host/filePicker';
+import { FileTransferCoordinator } from '../host/fileTransfer';
+import type { FilePickInput } from '../host/filePickerContract';
 import type { Result } from '../sdk/contracts';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
@@ -14,6 +18,51 @@ const appLaunchHealthTimeoutMs=20_000;
 type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
 export class FixtureRuntime {
   private services = fixtureServices();
+  private filePicker?: FilePickerCoordinator;
+  private fileTransfer?: FileTransferCoordinator;
+  private transferSubscribers=new Set<object>();
+  private lastTransferId?:RuntimeId;
+  private filesForeground=false;
+  private fileActivation = new Map<object,{frame:object;at:number}>();
+  setFilePicker(coordinator:FilePickerCoordinator){this.filePicker=coordinator;}
+  setFileTransfer(coordinator:FileTransferCoordinator){this.fileTransfer=coordinator;}
+  setFilesForeground(active:boolean){this.filesForeground=active;if(!active)this.fileTransfer?.cancel();}
+  private eligibleTransfer(e:Entry|undefined):boolean{
+    if(!e||this.entries.get(e.state.id)!==e||e.state.phase!=='ready'||!e.lease||!e.connected||
+       e.view.webContents.isDestroyed()||e.state.dirty||e.state.modal||this.broker.hasUnsafeWrites(e.lease.manifest.appId)||
+       !this.transferSubscribers.has(e.view.webContents)||this.filePicker?.busy)return false;
+    try{
+      const family=clinicAppFamily(e.lease.capabilities),current=this.identity.snapshot();
+      return current.active&&!!family&&e.lease.capabilities.includes(family)&&
+        this.identity.allowed?.(family)!==false&&this.packages.authorizeLocalPick(e.lease);
+    }catch{return false;}
+  }
+  transferTarget():{title:string}|null{
+    if(!this.filesForeground||!this.lastTransferId||!this.fileTransfer||this.fileTransfer.busy)return null;
+    const e=this.entries.get(this.lastTransferId);
+    return this.eligibleTransfer(e)?{title:e!.appMetadata?.title??'Dental application'}:null;
+  }
+  async sendFiles(ids:readonly string[],generation:number){
+    const target=this.transferTarget();const e=this.lastTransferId?this.entries.get(this.lastTransferId):undefined;
+    if(!target||!e||!e.lease||this.identity.snapshot().generation!==generation||!this.fileTransfer)throw Error('FORBIDDEN');
+    const wc=e.view.webContents,lease=e.lease;
+    const owner={sender:wc,frame:wc.mainFrame,appId:lease.manifest.appId,appVersion:lease.manifest.version,
+      windowId:e.state.id,generation,requestId:randomUUID(),
+      authorized:()=>this.filesForeground&&this.lastTransferId===e.state.id&&this.eligibleTransfer(e)&&
+        this.identity.snapshot().generation===generation};
+    const receipt=await this.fileTransfer.send(ids,owner,value=>wc.send('runtime:file-transfer',value));
+    return {fileCount:receipt.files.length,expiresAt:receipt.expiresAt,destination:target.title};
+  }
+  fileTransferReady(event:IpcMainEvent,value:unknown){
+    const e=[...this.entries.values()].find(x=>x.view.webContents===event.sender);
+    if(!e||event.senderFrame!==event.sender.mainFrame||typeof value!=='boolean')return;
+    if(value)this.transferSubscribers.add(event.sender);else {this.transferSubscribers.delete(event.sender);this.fileTransfer?.cancelRecipient(event.sender);}
+  }
+  fileTransferAck(event:IpcMainEvent,value:unknown){
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join()!=='accepted,transferId')return;
+    const v=value as {accepted:unknown;transferId:unknown};
+    this.fileTransfer?.acknowledge(event.sender,event.senderFrame,v.transferId,v.accepted);
+  }
   private broker: ApiBroker;
   private identity: Identity;
   private entries = new Map<RuntimeId, Entry>();
@@ -24,11 +73,11 @@ export class FixtureRuntime {
   private lastEmission = '';
   private restartBudget=new RestartBudget();
   private launchFeedbackFixture = false;
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;filePickerFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
     this.diagnostic=options.diagnostic??(()=>{});
     this.launchFeedbackFixture=!!options.launchFeedbackFixture;
     const baseIdentity=identity??this.services.identity;
-    this.identity=options.launchFeedbackFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['followups.access','appointments.access','work_entry.access','patient_record.access','treatment_progress.access','lab_tracker.access','finance.manage','patient_payments.outstanding.read','staff.manage','treatment_protocols.manage','calendar.access','future_billing.access']}}})}:options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
+    this.identity=options.filePickerFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'doctor',capabilities:['patient_record.access']}}})}:options.launchFeedbackFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['followups.access','appointments.access','work_entry.access','patient_record.access','treatment_progress.access','lab_tracker.access','finance.manage','patient_payments.outstanding.read','staff.manage','treatment_protocols.manage','calendar.access','future_billing.access']}}})}:options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
     const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
     const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
     this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}});
@@ -61,6 +110,8 @@ export class FixtureRuntime {
     this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id==='studio'||e.state.id==='records'?e.state.id:'company-app');
     e.image=undefined;e.state.snapshot=undefined;clearTimeout(e.captureTimer);this.resolveModuleAcks(e,false);
     clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
+    this.transferSubscribers.delete(e.view.webContents);this.fileTransfer?.cancelRecipient(e.view.webContents);
+    this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
     if (wasVisible && !this.win.isDestroyed()) this.win.webContents.focus();
@@ -241,7 +292,7 @@ export class FixtureRuntime {
     wc.on('will-navigate', event => event.preventDefault());
     wc.on('will-frame-navigate', event => event.preventDefault());
     wc.on('will-attach-webview', event => event.preventDefault());
-    wc.on('render-process-gone', () => this.fail(e, 'renderer-exited'));
+    wc.on('render-process-gone', () => {this.filePicker?.cancelRecipient(wc);this.fileActivation.delete(wc);this.fail(e, 'renderer-exited');});
     wc.on('unresponsive', () => this.markUnresponsive(e));
     wc.on('responsive', () => this.markResponsive(e));
     wc.on('did-finish-load', async () => {
@@ -266,7 +317,29 @@ export class FixtureRuntime {
       }
       e.launchFadePrepared=await this.prepareLaunchFade(e);
       if(this.entries.get(id)!==e||wc.isDestroyed())return;
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities], authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}}, authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}}, report: value => this.reportState(e, value) });
+      const authorizedLocal=()=>{
+        try{
+          const family=clinicAppFamily(lease.capabilities);
+          return this.entries.get(id)===e && e.state.phase==='ready' &&
+            !!family && lease.capabilities.includes(family) &&
+            this.identity.allowed?.(family)!==false && this.packages.authorizeLocalPick(lease);
+        }catch{return false;}
+      };
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities],
+        authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}},
+        authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}},
+        authorizeLocalPick:authorizedLocal,
+        pickLocal:async(input:FilePickInput,requestId:string,signal:AbortSignal)=>{
+          const ticket=this.fileActivation.get(wc);this.fileActivation.delete(wc);
+          if(!ticket || ticket.frame!==wc.mainFrame || Date.now()-ticket.at>750 || !wc.isFocused() ||
+             !e.view.getVisible() || !authorizedLocal() || !this.filePicker)
+             throw Object.assign(Error('FORBIDDEN'),{code:'FORBIDDEN'});
+          return this.filePicker.pick(input,{
+            sender:wc,frame:wc.mainFrame,appId:lease.manifest.appId,appVersion:lease.manifest.version,
+            windowId:id,generation:this.identity.snapshot().generation,requestId,
+            authorized:()=>authorizedLocal() && !wc.isDestroyed(),
+          }, e.appMetadata?.title ?? 'Dental application',signal);
+        }, report: value => this.reportState(e, value) });
       e.connected=this.broker.connect({sender:wc,frame:wc.mainFrame,url:entryURL},{major:1,minor:0}).ok;
       e.state.phase = 'ready'; this.applyVisibility(e); if (e.view.getVisible()) wc.focus(); this.emit();
       e.captureTimer = setTimeout(() => void this.refresh(e), 100);
@@ -292,6 +365,8 @@ export class FixtureRuntime {
       if (horizontalOverflow > layout.rect.width * .7 + 1 || layout.rect.y + layout.rect.height > height + 1) throw new Error('Outside host');
     }
     const hadNativeInput = [...this.entries.values()].some(e => e.view.getVisible());
+    const active=next.find(layout=>layout.visible&&layout.open);
+    if(active)this.lastTransferId=active.id;
     this.desired = next;
     const retained = new Set(next.map(layout => layout.id));
     for (const id of [...this.entries.keys()]) if (!retained.has(id)) {
@@ -333,6 +408,12 @@ export class FixtureRuntime {
     e.state.dirty = v.dirty; e.state.modal = v.modal; if(changed)this.emit();
     clearTimeout(e.captureTimer); e.captureTimer = setTimeout(() => void this.refresh(e), 120);
   }
+  fileActivated(event:IpcMainEvent){
+    const e=[...this.entries.values()].find(x=>x.view.webContents===event.sender);
+    if(!e || e.state.phase!=='ready' || event.senderFrame!==event.sender.mainFrame ||
+       !e.view.getVisible() || !event.sender.isFocused())return;
+    this.fileActivation.set(event.sender,{frame:event.senderFrame,at:Date.now()});
+  }
   sdk(kind: 'connect' | 'request' | 'cancel', event: { sender: Electron.WebContents; senderFrame: Electron.WebFrameMain | null }, input: unknown) {
     const caller: Caller = { sender: event.sender, frame: event.senderFrame, url: event.senderFrame?.url ?? '' };
     const result=this.broker[kind](caller, input);
@@ -368,6 +449,11 @@ export class FixtureRuntime {
   close(id: RuntimeId) {
     const e = this.entries.get(id); if (!e) return;
     this.resolveModuleAcks(e,false);
+    this.fileActivation.delete(e.view.webContents);
+    this.transferSubscribers.delete(e.view.webContents);
+    this.fileTransfer?.cancelRecipient(e.view.webContents);
+    if(this.lastTransferId===id)this.lastTransferId=undefined;
+    this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.lease?.releaseLease();
     this.entries.delete(id); clearTimeout(e.healthTimer); clearTimeout(e.captureTimer); clearTimeout(e.pingTimer); clearInterval(e.watchdog);
@@ -382,11 +468,13 @@ export class FixtureRuntime {
   }
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
+    this.fileActivation.clear();this.transferSubscribers.clear();this.lastTransferId=undefined;
+    this.filesForeground=false;this.fileTransfer?.cancel();this.filePicker?.cancelAll();
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
     // Closing a WebContents does not erase session storage. Never reuse a prior
     // account's in-memory partition, even while asynchronous erasure completes.
     const previous=[...this.sessions.values()];this.sessions.clear();this.instance=randomUUID();
     for(const ses of previous){try{ses.protocol.unhandle('dental-fixture');}catch{}void ses.clearStorageData().catch(()=>{});void ses.clearCache().catch(()=>{});}
   }
-  dispose() { for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
+  dispose() { this.fileActivation.clear();this.transferSubscribers.clear();this.lastTransferId=undefined;this.fileTransfer?.cancel();this.filePicker?.cancelAll();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

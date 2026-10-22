@@ -26,6 +26,13 @@ export class PackageRegistry {
       && value.capabilities.includes(operation)
       && ceiling.includes(operation));
   }
+  /** Existing signed app policy + shipped trust ceiling; API release grants do not confer local access. */
+  authorizeLocalPick(value: VerifiedPackage): boolean {
+    this.guard(value);
+    const operation = 'local.files.pick';
+    return value.capabilities.includes(operation) &&
+      !!appTrust(this.policy,value.manifest.appId)?.capabilities.includes(operation);
+  }
   authorizeApiOperation(value: VerifiedPackage, operation: ApiOperationId) {
     this.guard(value);
     return this.apiOperations(value).includes(operation);

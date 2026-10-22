@@ -8,6 +8,10 @@ import { WindowTitleBar } from './WindowTitleBar';
 import type { Rect } from './motion';
 
 const edges: ResizeEdge[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
+const privateFilesSnapshot = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="630"><rect width="1040" height="630" rx="18" fill="#e7f2f4"/><rect x="54" y="54" width="930" height="520" rx="22" fill="#ffffff" stroke="#c1dce3"/><path d="M427 285h75l29 25h93v86H427z" fill="#4b9ab2"/><text x="520" y="443" font-size="28" text-anchor="middle" font-family="sans-serif" fill="#376378">Files</text></svg>'
+);
+
 const rectOf = (el: HTMLElement): Rect => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
 type Gesture = { pointerId: number; element: HTMLElement; bounds: Rect; size: Size; px: number; py: number; edge?: ResizeEdge; cursor: string; selection: string };
 
@@ -102,7 +106,8 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     try {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const source = rectOf(windowRef.current), destination = rectOf(target.current);
-      const data = minimizing ? await window.desktop?.capture(source, sessionGeneration) : snapshotRef.current;
+      // Files preview never captures local filenames or thumbnails into persisted snapshots.
+      const data = minimizing ? id === 'files' ? privateFilesSnapshot : await window.desktop?.capture(source, sessionGeneration) : snapshotRef.current;
       if (!data) return;
       const image = new Image(); image.src = data; await image.decode();
       if (generation.current !== token) return;
@@ -144,7 +149,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;
 
-export function ManagedWindowFrame({ controller: c, children }: { controller: WindowController; children: ReactNode }) {
+export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
@@ -156,7 +161,7 @@ export function ManagedWindowFrame({ controller: c, children }: { controller: Wi
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
-        onDrag={event => c.startGesture(event)} onClose={c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen}/>
+        onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}/>
       {children}
       {!fullscreen && !c.anyBusy && !c.win.modal && edges.map(edge => <div key={edge} className={`window-resize-handle resize-${edge}`} data-resize={edge}
         aria-hidden="true" onPointerDown={event => c.startGesture(event, edge)}/>)}

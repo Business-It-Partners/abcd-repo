@@ -1,0 +1,82 @@
+name: M16 targeted Windows Files UI
+on:
+  push:
+    branches: ['codex/milestone-16']
+permissions:
+  contents: read
+concurrency:
+  group: m16-files-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  files-ui:
+    # Only intentionally tagged M16 verification changes run this job.
+    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') }}
+    runs-on: windows-2022
+    timeout-minutes: 6
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused Files and picker security tests
+        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filesPreview.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/fileTransfer.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
+      - name: Build and typecheck
+        run: npm run build
+      - name: Private synthetic Windows Files and picker UI
+        run: node tests/m16-files-windows-ci.mjs
+      - name: Retain bounded Files UI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m16-files-ui-${{ github.sha }}
+          if-no-files-found: warn
+          path: |
+            artifacts/m16-windows-files-ui.json
+            artifacts/m16-windows-files-ui.png
+          retention-days: 7
+  linux-files-ui:
+    # Linux already passed on ef7acba; a teardown-only Windows fix must not consume another Linux job.
+    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') && !contains(github.event.head_commit.message, '[m16-win-only]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Require preinstalled private X11 tooling
+        shell: bash
+        run: command -v xvfb-run && command -v Xvfb
+      - name: M16.6 integrated Linux Vitest regression suite
+        run: node node_modules/vitest/vitest.mjs run --exclude "apps/dental-apps/**" --maxWorkers=2
+      - name: Build Linux Electron shell
+        run: npm run build
+      - name: Run Files and signed-app transfer on isolated headless X11
+        shell: bash
+        run: |
+          set -euo pipefail
+          export M16_PRIVATE_X11=1
+          export GDK_BACKEND=x11
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export LP_NUM_THREADS=2
+          xvfb-run -a -s "-screen 0 1366x768x24" node tests/m16-files-linux-ci.mjs
+      - name: Retain Linux synthetic results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m16-linux-files-${{ github.sha }}
+          if-no-files-found: warn
+          path: artifacts/m16-linux-files-ui.json
+          retention-days: 7

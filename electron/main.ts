@@ -1,9 +1,14 @@
 import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session, dialog, shell } from 'electron';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import {writeFileSync} from 'node:fs';
+import {mkdirSync, writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
+import { LocalFileService } from './host/localFiles';
+import { FilePickerCoordinator } from './host/filePicker';
+import { FileTransferCoordinator, parseShellTransfer } from './host/fileTransfer';
+import { parseFilesList, parseViewerOpen, parseViewerStep } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
@@ -27,7 +32,13 @@ let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
-const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
+// Private Xvfb test display: narrowly restricted to hosted Linux CI with
+// explicit synthetic-files and private-display flags. Never ordinary desktops.
+const privateX11Ci = process.platform === 'linux' && process.env.GITHUB_ACTIONS === 'true' &&
+  process.env.RUNNER_OS === 'Linux' && process.env.CI === 'true' &&
+  process.env.M16_PRIVATE_X11 === '1' && /^:[0-9]+(?:\.[0-9]+)?$/.test(process.env.DISPLAY ?? '') &&
+  app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-x11-verify');
+const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || privateX11Ci || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
 const stagingMediaFixtures = privateRuntimeDisplay && runtimeFixtures && app.commandLine.hasSwitch('identity-staging') && app.commandLine.hasSwitch('media-upload-staging-fixtures');
 const identityStageDiagnostics = (() => {
   if (!privateRuntimeDisplay || !app.commandLine.hasSwitch('identity-staging') || !app.commandLine.hasSwitch('identity-stage-diagnostics')) return undefined;
@@ -41,8 +52,9 @@ const runtimeFixtureAppCount = runtimeFixtures && app.commandLine.hasSwitch('run
 const modulePreviewFixtures = runtimeFixtures && app.commandLine.hasSwitch('module-preview-fixtures');
 const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch('slow-module-ack-fixtures');
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
-const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture || stagingMediaFixtures);
-const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture || stagingMediaFixtures || app.commandLine.hasSwitch('files-picker-app-fixtures'));
+const trustedTest = privateRuntimeDisplay || privateX11Ci || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const filePickerAppFixture = runtimeFixtures && trustedTest && app.commandLine.hasSwitch('files-picker-app-fixtures') && app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-picker-verify');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
@@ -53,6 +65,11 @@ const canUseWorkspace = () => identityBypass || identity?.view().phase === 'read
 const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
 const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
+let localFiles: LocalFileService | undefined;
+let filePicker: FilePickerCoordinator | undefined;
+let fileTransfer: FileTransferCoordinator | undefined;
+let shellTransferActivation=0;
+let viewerSession: {id:string;generation:number;sender:Electron.WebContents;frame:Electron.WebFrameMain;items:Array<{id:string;name:string}>;index:number}|undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -75,8 +92,38 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
-  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}runtime?.dispose();});
+  if(localFiles){filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
+    fileTransfer=new FileTransferCoordinator(localFiles);}
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,filePickerFixture:filePickerAppFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
+  if(filePicker)runtime?.setFilePicker(filePicker);
+  if(fileTransfer)runtime?.setFileTransfer(fileTransfer);
+  // M16 UI acceptance harness: unavailable on normal desktops, staging sessions
+  // and any runner without the three explicit CI-only guards.
+  if (process.platform==='win32' && process.env.GITHUB_ACTIONS==='true' &&
+      process.env.RUNNER_OS==='Windows' && app.commandLine.hasSwitch('files-fixtures') &&
+      app.commandLine.hasSwitch('files-picker-verify') && identityBypass && filePicker) {
+    let outcome: { status:'idle'|'pending'|'selected'|'cancelled'|'denied'; files?: string[] } = {status:'idle'};
+    const fixture = {
+      start(){
+        if(outcome.status==='pending' || !filePicker || !win.webContents || !canUseWorkspace())return false;
+        outcome={status:'pending'};
+        const sender=win.webContents;
+        void filePicker.pick(
+          {purpose:'patient-attachment',fileTypes:'medical-images',maxSelections:1},
+          {sender,frame:sender.mainFrame,appId:'company.future.patient-record-picker',
+           appVersion:'synthetic-test',windowId:'fixture-only',generation:identityView().generation,
+           requestId:randomUUID(),authorized:()=>!sender.isDestroyed()&&canUseWorkspace()},
+          'Synthetic Picker Test',new AbortController().signal
+        ).then(result=>{outcome={status:'selected',files:result.files.map(file=>file.name)};})
+         .catch(error=>{outcome={status:(error as {code?:string})?.code==='CANCELLED'?'cancelled':'denied'};});
+        return true;
+      },
+      outcome(){return {...outcome};},
+    };
+    Object.assign(globalThis,{__m16FilesCiFixture:fixture});
+    win.once('closed',()=>{delete (globalThis as typeof globalThis & {__m16FilesCiFixture?:unknown}).__m16FilesCiFixture;});
+  }
+  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}fileTransfer?.cancel();filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -179,7 +226,7 @@ ipcMain.handle('window:control', (event, action: unknown) => {
 ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || !isShell(event) || !rect || typeof rect !== 'object') throw new Error('Invalid capture');
-  if (!canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Workspace locked or stale');
+  if (!canUseWorkspace() || !identityBypass && generation !== identity?.view().generation || viewerSession) throw new Error('Workspace locked, stale or private viewer active');
   const captureGeneration = identityView().generation;
   const r = rect as Record<string, unknown>;
   const values = ['x', 'y', 'width', 'height'].map(k => r[k]);
@@ -189,9 +236,89 @@ ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknow
   if (x < 0 || y < 0 || width < 1 || height < 1 || x + width > w || y + height > h) throw new Error('Capture outside window');
   let image = await event.sender.capturePage({ x, y, width, height });
   if (runtime) image = await runtime.capture({x,y,width,height}, image);
-  if (!canUseWorkspace() || captureGeneration !== identityView().generation) throw new Error('Stale capture');
+  if (!canUseWorkspace() || captureGeneration !== identityView().generation || viewerSession) throw new Error('Stale or private capture');
   if (image.isEmpty()) throw new Error('Empty snapshot');
   return image.toDataURL();
+});
+// OS-only file browsing. Never expose arbitrary paths, file bytes or these channels to app preloads.
+function requireFilesShell(event: Electron.IpcMainInvokeEvent, generation: unknown): LocalFileService {
+  if (!isShell(event) || bootPhase !== 'ready' || !canUseWorkspace()
+    || !Number.isSafeInteger(generation) || generation !== identityView().generation || !localFiles) {
+    throw new Error('FORBIDDEN');
+  }
+  return localFiles;
+}
+ipcMain.handle('files:roots', (event, generation: unknown) => requireFilesShell(event, generation).roots());
+ipcMain.handle('files:thumbnail',(event,fileId:unknown,generation:unknown)=>{
+  const files=requireFilesShell(event,generation);
+  if(typeof fileId!=='string'||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(fileId))throw Error('INVALID_REQUEST');
+  // Image bytes are delivered only to the sandboxed OS shell for a bounded
+  // local preview; app WebContentsViews have no access to this channel.
+  return files.previewBytes(fileId);
+});
+ipcMain.handle('files:viewer-open',(event,input:unknown)=>{
+  const request=parseViewerOpen(input);
+  if(!request)throw new Error('INVALID_REQUEST');
+  // Keep the exact main-frame identity in the session. `isShell` below also
+  // enforces this boundary, but Electron types senderFrame as nullable.
+  const frame=event.senderFrame;
+  if(!frame||frame!==event.sender.mainFrame)throw new Error('FORBIDDEN');
+  const files=requireFilesShell(event,request.generation);
+  const items=files.viewerListing(request.directoryId,request.fileIds);
+  const index=items.findIndex(item=>item.id===request.selectedId);
+  if(index<0)throw new Error('INVALID_REQUEST');
+  const preview=files.previewBytes(items[index].id);
+  if(!preview)throw new Error('NOT_FOUND');
+  const id=randomUUID();
+  viewerSession={id,generation:request.generation,sender:event.sender,frame,items,index};
+  return {sessionId:id,generation:request.generation,name:items[index].name,index,count:items.length,...preview};
+});
+ipcMain.handle('files:viewer-step',(event,input:unknown)=>{
+  const request=parseViewerStep(input);
+  if(!request)throw new Error('INVALID_REQUEST');
+  const files=requireFilesShell(event,request.generation),current=viewerSession;
+  if(!current||current.id!==request.sessionId||current.generation!==request.generation
+    ||current.sender!==event.sender||current.frame!==event.senderFrame)throw new Error('STALE_SELECTION');
+  const index=(current.index+request.direction+current.items.length)%current.items.length;
+  const preview=files.previewBytes(current.items[index].id);
+  if(!preview)throw new Error('STALE_SELECTION');
+  current.index=index;
+  return {sessionId:current.id,generation:current.generation,name:current.items[index].name,index,count:current.items.length,...preview};
+});
+ipcMain.handle('files:viewer-close',(event,sessionId:unknown,generation:unknown)=>{
+  requireFilesShell(event,generation);
+  const current=viewerSession;
+  if(!current||current.id!==sessionId||current.generation!==generation
+    ||current.sender!==event.sender||current.frame!==event.senderFrame)return false;
+  viewerSession=undefined;return true;
+});
+ipcMain.handle('files:foreground',(event,generation:unknown,active:unknown)=>{
+  requireFilesShell(event,generation);
+  if(typeof active!=='boolean')throw Error('INVALID_REQUEST');
+  shellTransferActivation=0;runtime?.setFilesForeground(active);return true;
+});
+ipcMain.on('files:send-activation',event=>{
+  if(isShell(event)&&canUseWorkspace()&&hostWindow?.isFocused())shellTransferActivation=Date.now();
+});
+ipcMain.handle('files:transfer-target',(event,generation:unknown)=>{
+  requireFilesShell(event,generation);return runtime?.transferTarget()??null;
+});
+ipcMain.handle('files:send',async(event,input:unknown)=>{
+  const v=parseShellTransfer(input);
+  if(!v)throw Error('INVALID_REQUEST');
+  requireFilesShell(event,v.generation);
+  const at=shellTransferActivation;shellTransferActivation=0;
+  if(!at||Date.now()-at>750||!hostWindow?.isFocused()||!runtime||filePicker?.busy)throw Error('FORBIDDEN');
+  return runtime.sendFiles(v.fileIds,v.generation);
+});
+ipcMain.handle('files:pick-response', async(event,input:unknown)=>{
+  if(!isShell(event)||!canUseWorkspace()||!filePicker)throw new Error('FORBIDDEN');
+  return filePicker.respond(input);
+});
+ipcMain.handle('files:list', (event, input: unknown) => {
+  const request = parseFilesList(input);
+  if (!request) throw new Error('INVALID_REQUEST');
+  return requireFilesShell(event, request.generation).list(request.directoryId, request.cursor, request.limit);
 });
 ipcMain.handle('os:preferences', (event, input: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
@@ -247,6 +374,9 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
 });
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
+ipcMain.on('runtime:file-activation',event=>runtime?.fileActivated(event));
+ipcMain.on('runtime:file-transfer-ready',(event,value:unknown)=>runtime?.fileTransferReady(event,value));
+ipcMain.on('runtime:file-transfer-ack',(event,value:unknown)=>runtime?.fileTransferAck(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
   diagnostics=new DiagnosticStore(path.join(app.getPath('userData'),'diagnostics'));
@@ -258,17 +388,30 @@ if (primary) void app.whenReady().then(async () => {
     const packageRoot = path.join(app.getPath('userData'), 'packages');
     const catalogueStore = new CatalogueStore(path.join(app.getPath('userData'), 'distribution'));
     const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined, onboardingFixtures, { unavailableControlFile: app.commandLine.hasSwitch('distribution-unavailable-fixtures') ? path.join(app.getPath('userData'),'distribution-unavailable.fixture') : undefined, packageDelayMs: app.commandLine.hasSwitch('distribution-progress-fixtures') ? 900 : 0 }) : undefined;
-    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture,stagingMediaFixtures) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
+    packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture,stagingMediaFixtures,filePickerAppFixture) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging', Date.now, 8000, identityFixture ? undefined : identityStageDiagnostics);
-      identity.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
+      identity.subscribe(view => { viewerSession=undefined;shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
     if(!trustedTest)distribution.startUpdates();
     distribution.subscribe(view => { if(view.phase==='unavailable')diagnostics?.record('store-unavailable');if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
+    // Synthetic, non-clinical roots are available only on a private UI test display
+    // or an explicitly trusted hosted runner. Normal users see real accessible roots.
+    if (trustedTest && app.commandLine.hasSwitch('files-fixtures')) {
+      const fixtureRoot = path.join(app.getPath('userData'), 'm16-files-fixture');
+      mkdirSync(path.join(fixtureRoot, 'X-rays'), { recursive: true });
+      // Portrait-format synthetic artwork catches viewer fit/cropping regressions.
+      const syntheticPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAUAAAAKACAYAAADtkKGDAAALKElEQVR42u3UQQ0AIAwEwerCLBqqCQEkGAAZTcM81sAlN7H2uZL0Y2EESQCUJABKEgAlCYCSBEBJAqAkAVCSAChJAJQkAEoSACUJgJIEQEkCoCQBUJIAKEkAlCQAShIAJQmAkgRASQKgJAFQkgAoSQCUJABKEgAlCYCSAGgISQCUJABKEgAlCYCSBEBJAqAkAVCSAChJAJQkAEoSACUJgJIEQEkCoCQBUJIAKEkAlCQAShIAJQmAkgRASQKgJAFQkgAoSQCUJABKEgAlCYCSAChJAJQkAEoSACUJgJIEQEkCoCQBUJIAKEkAlCQAShIAJQmAkgRASQKgJAFQkgAoSQCUJABKEgAlCYCSBMDSxkypLB8EIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEoAAqAABQAAWgEAAqAABQABUAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACEIBOKAACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEoABCAAJQACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgAAUAAVAAAqAAiAABUABEIACoAAIQAFQAASgACgAAlAAFAABKAAC0BAAFAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQAFQAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAFAAFQAAKgAIgAAVAARCAAqAACEABUAAEoAAoAAJQABQAASgAAlAAFAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQAFQAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASj5IAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQAFQAASgAAhAIwBQAASgACgAAlAAFAABKAAKgAAUAAVAAAqAAiAABUABEIAAdEIBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAIgAAVAARCAAqAACEABEICGAKAACEABUAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAAKAACUAAUAAEoAAqAABQABUAACoACIAAFQAEQgAKgAAhAARCAAqAACEABUAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhAyQcBCEABUAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAIgAAVAABoBgAIgAAVAARCAAqAACEABUAAEoAAoAAJQABQAASgACoAABKATCoAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEoAAqAABQABUAACoAANAQABUAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEoABCAAJQACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEoABCAABUABEIACoAAIQAFQAASgACgAAlAAFAABKAAKgAAUAAVAAAqAABQABUAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEoABCAAJQACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEo+CEAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEoAALQCAAUAAEoAAqAABQABUAACoACIAAFQAEQgAKgAAhAAVAABCAAnVAABCAAJQACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhAAEoABCAAJQACEIASAAEIQAmAAASgBEAAAlACIAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQAFQAASgACgAAlAABKAhACgAAlAAFAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgACoAAFAAFQAAKgAIgAAVAARCAAqAACEABUAAEoAAoAAJQAASgACgAAlAAFAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQ8kEAAlAAFAABKAAKgAAUAAVAAAqAAiAABUABEIACoAAIQAEQgEYAoAAIQAFQAASgACgAAlAAFAABKAAKgAAUAAVAAAqAAiAAAeiEAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEAJgAAEoARAAAJQAiAAASgBEIAAlAAIQABKAAQgACUAAhCAEgABCEABUAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAIgAAVAARCAAiAADQFAARCAAqAACEABUAAEoAAoAAJQABQAASgACoAAFAAFQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhAAVAABKAAKAACUAAUAAEoAAqAABQABUAACoACIAAFQAEQgAIgAAVAARCAAqAACEABUAAEoAAoAAJQABQAASgACoAAFAAFQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgJIPAhCAAqAACEABUAAEoAAoAAJQABQAASgACoAAFAAFQAAKgAA0AgAFQAAKgAIgAAVAARCAAqAACEABUAAEoAAoAAJQABQAAQhAJxQAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAASgAEIAAlAAIQgBIAAQhACYAABKAEQAACUAIgAAEoARCAAJQACEAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACUAAUAAEoAAqAABQAAWgIAAqAABQABUAACoACIAAFQAEQgAKgAAhAAVAABKAAKAACEIASAAEIQAmAAASgBEAAAlACIAABKAEQgACUAAhASQKgJAFQkgAoSQCUJABKEgAlCYCSBEBJAqAkAVCSAChJAJQkAEoSACUJgJIAKEkAlCQAShIAJQmAkgRASQKgJAFQkgAoSQCUJABKEgAlCYCSBEBJAqAkAVCSAChJAJQkAEoSACUJgJIEQEkCoCQBUJIAKEkAlCQAShIAJQHQCJIAKEkAlCQAShIAJQmAkgRASQKgJAFQkgAoSQCUJABKEgAlCYCSBEBJAqAkAVCSAChJAJQkAEoSACUJgJIEQEkCoCQBUJIAKEkAlCQAShIAJQHQEJIAKEkAlCQAShIAJQmAkgRASWreA6YCAs+UzKTaAAAAAElFTkSuQmCC','base64');
+      writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray.png'), syntheticPng);
+       writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray-alt.png'), syntheticPng);
+      writeFileSync(path.join(fixtureRoot, '.m16-hidden-synthetic.png'), syntheticPng);
+      writeFileSync(path.join(fixtureRoot, 'notes-synthetic.pdf'), 'synthetic-only');
+      localFiles = new LocalFileService([{ label: 'Test Files', path: fixtureRoot, kind: 'folder' }]);
+    } else localFiles = new LocalFileService();
     bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); if (identity) void identity.restore();
   } catch {
     bootPhase = 'recovery';diagnostics?.record('boot-recovery');
@@ -283,7 +426,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; distribution?.dispose();
+  bootPhase = 'exiting'; viewerSession=undefined;shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

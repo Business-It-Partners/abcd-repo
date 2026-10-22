@@ -1,4 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
+// Sandboxed Electron preloads may import only Electron's limited built-ins.
+// Keep this defensive wire check self-contained, never require a local module.
+function validShellPickerPrompt(input: unknown): boolean {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return false;
+  const v = input as Record<string, unknown>;
+  if (Object.keys(v).sort().join(',') !== 'appTitle,fileTypes,generation,maxSelections,purpose,requestId') return false;
+  if (typeof v.requestId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v.requestId)) return false;
+  if (!Number.isSafeInteger(v.generation) || (v.generation as number) < 1 ||
+      !Number.isSafeInteger(v.maxSelections) || (v.maxSelections as number) < 1 || (v.maxSelections as number) > 10) return false;
+  if (typeof v.appTitle !== 'string' || v.appTitle.length < 1 || v.appTitle.length > 80 || /[\u0000-\u001f<>]/.test(v.appTitle)) return false;
+  return ['patient-attachment','lab-attachment','staff-document','general'].includes(v.purpose as string) &&
+    ['images','medical-images','documents','all'].includes(v.fileTypes as string);
+}
 const hostListeners = new Set<(transitioning: boolean) => void>();
 let hostTransitioning = false;
 function publishHostTransition(transitioning: boolean) {
@@ -35,6 +48,25 @@ contextBridge.exposeInMainWorld('desktop', {
       return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); ipcRenderer.removeListener('runtime:app-explorer',appExplorer); };
     },
   },
+  files: {
+    subscribePicker: (listener: (value: import('./host/filePickerContract').FilePickerPrompt|null)=>void) => {
+      const start=(_event:unknown,value:unknown)=>{if(validShellPickerPrompt(value))listener(value as import('./host/filePickerContract').FilePickerPrompt);};
+      const end=(_event:unknown,id:unknown)=>{if(typeof id==='string')listener(null);};
+      ipcRenderer.on('files:picker-open',start);
+      ipcRenderer.on('files:picker-close',end);
+      return()=>{ipcRenderer.removeListener('files:picker-open',start);ipcRenderer.removeListener('files:picker-close',end);};
+    },
+    pickResponse: (input: unknown)=>ipcRenderer.invoke('files:pick-response',input) as Promise<boolean>,
+    roots: (generation: number) => ipcRenderer.invoke('files:roots', generation),
+    list: (input: unknown) => ipcRenderer.invoke('files:list', input),
+    thumbnail: (fileId: string, generation: number) => ipcRenderer.invoke('files:thumbnail', fileId, generation),
+    viewerOpen: (input: unknown) => ipcRenderer.invoke('files:viewer-open', input),
+    viewerStep: (input: unknown) => ipcRenderer.invoke('files:viewer-step', input),
+    viewerClose: (sessionId: string, generation: number) => ipcRenderer.invoke('files:viewer-close', sessionId, generation),
+    foreground: (generation:number,active:boolean)=>ipcRenderer.invoke('files:foreground',generation,active),
+    transferTarget: (generation:number)=>ipcRenderer.invoke('files:transfer-target',generation),
+    send: (input:unknown)=>ipcRenderer.invoke('files:send',input),
+  },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),
   control: (action: 'close' | 'minimize') => {
@@ -52,3 +84,13 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   capture: (rect: { x: number; y: number; width: number; height: number }, generation?: number) => ipcRenderer.invoke('window:capture', rect, generation),
 });
+
+// Genuine host-shell activation, single-use and short-lived in trusted main.
+const markFileSend=(event:Event)=>{
+  if(!event.isTrusted||!document.hasFocus())return;
+  if(event instanceof MouseEvent&&event.button!==0)return;
+  if(event instanceof KeyboardEvent&&(event.repeat||event.ctrlKey||event.altKey||event.metaKey||!['Enter',' '].includes(event.key)))return;
+  ipcRenderer.send('files:send-activation');
+};
+window.addEventListener('pointerdown',markFileSend,true);
+window.addEventListener('keydown',markFileSend,true);

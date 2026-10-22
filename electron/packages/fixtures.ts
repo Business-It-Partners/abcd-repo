@@ -1,11 +1,12 @@
 /** Called ONLY after bootstrap verifies its private-display/Windows CI fixture guard. */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { generateKeyPairSync } from 'node:crypto';
-import { apiOperations, operations } from '../sdk/contracts';
+import { generateKeyPairSync, sign } from 'node:crypto';
+import { apiOperations, operations, type Operation } from '../sdk/contracts';
+import { verifyUpdatePolicy } from '../distribution/updatePolicy';
 import { PackageRegistry } from './registry';
-import { buildPackage, type Manifest, type TrustPolicy } from './format';
-export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2, modulePreviewFixture = false, slowModuleAckFixture = false, launchFeedbackFixture = false, mediaUploadFixture = false) {
+import { buildPackage, canonical, type Manifest, type TrustPolicy } from './format';
+export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2, modulePreviewFixture = false, slowModuleAckFixture = false, launchFeedbackFixture = false, mediaUploadFixture = false, filePickerFixture = false) {
   if (!Number.isInteger(appCount) || appCount < 2 || appCount > 16) throw new Error('Invalid runtime fixture app count');
   const publicKey = readFileSync(path.join(fixtureRoot, 'public-key.txt'), 'utf8');
   const keys: Record<string, { publicKey: string; publisher: string }> = { 'test-only-m06': { publicKey, publisher: 'company' } };
@@ -13,7 +14,8 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
   const policy: TrustPolicy = { keys, apps: {
     'company.sample.alpha': { publisher: 'company', capabilities: operations },
     'company.sample.beta': { publisher: 'company', capabilities: operations.filter(op => op !== 'appointments.setStatus') },
-  }, ...(appCount > 2 || launchFeedbackFixture || mediaUploadFixture ? { companyApps: { publisher: 'company', capabilities: mediaUploadFixture ? mediaCapabilities : [] } } : {}) };
+    ...(filePickerFixture ? { 'company.future.patient-record-picker': { publisher: 'company', capabilities: [...(mediaUploadFixture ? mediaCapabilities : []), 'clinic.app.patient-record', 'local.files.pick'] as Operation[] } } : {}),
+  }, ...(appCount > 2 || launchFeedbackFixture || mediaUploadFixture || filePickerFixture ? { companyApps: { publisher: 'company', capabilities: mediaUploadFixture ? mediaCapabilities : [] } } : {}) };
   const registry = new PackageRegistry(root, policy); registry.initialize();
   // This registry is created only by the guarded private UI/CI fixture path.
   registry.setApiGrantResolver(value => apiOperations.filter(operation => value.capabilities.includes(operation)));
@@ -93,6 +95,51 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
       }
       registry.install(buildPackage({ appId, publisher: 'company', version: '1.0.0', entry: modulePreviewFixture && index <= 2 ? 'src/index.html' : 'index.html', sdkMajor: 1, apiMajor: 1, capabilities: [] }, files, keyId, pair.privateKey));
     }
+  }
+  if(filePickerFixture){
+    // Synthetic, ephemeral company-signed release + company-signed app-level
+    // policy. Only enabled behind private CI or isolated-display launch flags.
+    const appId='company.future.patient-record-picker', keyId='test-m16-file-picker';
+    const pair=generateKeyPairSync('ed25519');
+    keys[keyId]={publicKey:pair.publicKey.export({type:'spki',format:'pem'}).toString(),publisher:'company'};
+    const policyValue={format:1,environment:'cloudfare-staging',channel:'staging',sequence:1,
+      issuedAt:Date.now()-1000,expiresAt:Date.now()+3600_000,revokedKeys:[],
+      apps:[{id:appId,capabilities:['clinic.app.patient-record','local.files.pick'],minimumVersion:'1.0.0',revokedDigests:[],rollback:null}]};
+    const signature=sign(null,Buffer.from(canonical({purpose:'dental-os-update-policy',keyId,policy:policyValue})),pair.privateKey).toString('base64');
+    const verified=verifyUpdatePolicy(Buffer.from(canonical({policy:policyValue,keyId,signature})),policy,{sequence:0,digest:'',observedAt:0}).policy;
+    registry.setUpdateGuards(value=>{
+      if(value.manifest.appId!==appId)return;
+      const row=verified.apps.find(x=>x.id===appId);
+      if(!row||verified.expiresAt<=Date.now()||value.capabilities.some(x=>!row.capabilities.includes(x))
+        ||value.manifest.version!=='1.0.0'||value.release.keyId!==keyId)throw Error('Signed M16 fixture policy denied');
+    },()=>false);
+    const metadata={format:1,appId,title:'Synthetic Records Picker',
+      description:'Company signed file selection fixture; no real patient records.',icon:'assets/picker.svg',
+      anyCapabilities:['patient_record.access'],excludedRoles:[],allowedRoles:[],
+      modules:[{id:'records',label:'Records',tab:'records',capability:'patient_record.access'}]};
+    const html=`<!doctype html><html lang="en"><meta charset="utf-8"><title>Synthetic Records Picker</title>
+      <h1>Synthetic Records Picker</h1><button id="connect-sdk">Connect SDK</button><button id="pick-local">Choose local X-ray</button>
+      <button id="try-synthetic">Programmatic picker request</button><pre id="pick-result" role="status">Connecting</pre>
+      <pre id="transfer-result" role="status">No Files transfer received</pre>
+      <script>let current;const result=document.getElementById('pick-result');
+      function connectSdk(){window.dentalApp.connect({major:1,minor:5}).then(value=>{current=value.ok?value.value:null;
+      result.textContent=value.ok?'SDK connected':'Connection denied';
+      if(value.ok)window.dentalApp.onFilesReceived(selection=>{document.getElementById('transfer-result').textContent=JSON.stringify(selection);});});}
+      async function choose(){if(!current){result.textContent='Not connected';return;}
+      const response=await window.dentalApp.request({version:1,connection:current.connection,generation:current.generation,
+      requestId:crypto.randomUUID(),operation:'local.files.pick',
+      input:{purpose:'patient-attachment',fileTypes:'medical-images',maxSelections:1}});
+      result.textContent=JSON.stringify(response);}
+      document.getElementById('connect-sdk').addEventListener('click',connectSdk);
+      document.getElementById('pick-local').addEventListener('click',choose);
+      document.getElementById('try-synthetic').addEventListener('click',()=>setTimeout(choose,1100));
+      </script>`;
+    const icon=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><rect width="2" height="2" fill="#276579"/></svg>');
+    const files=new Map<string,Buffer>([['index.html',Buffer.from(html)],
+      ['app.json',Buffer.from(JSON.stringify(metadata))],['assets/picker.svg',icon]]);
+    registry.install(buildPackage({appId,publisher:'company',version:'1.0.0',
+      entry:'index.html',sdkMajor:1,apiMajor:1,
+      capabilities:['clinic.app.patient-record','local.files.pick']},files,keyId,pair.privateKey));
   }
   return registry;
 }

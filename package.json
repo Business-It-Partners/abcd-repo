@@ -12,6 +12,7 @@
     "test:scaling": "node tools/run-ui-test.mjs tests/scaling.mjs",
     "test:records": "node tools/run-ui-test.mjs tests/records.mjs",
     "test:windows": "node tools/run-ui-test.mjs tests/windows.mjs",
+    "test:files": "node tools/run-ui-test.mjs tests/files.mjs",
     "test:native-session": "node tools/run-ui-test.mjs tests/native-session.mjs",
     "test:followups": "node tools/run-ui-test.mjs tests/followups.mjs",
     "test:ui": "node tools/run-ui-test.mjs tests/store.mjs tests/labs.mjs tests/staff.mjs tests/overview.mjs tests/finance.mjs tests/dockapps.mjs tests/followups.mjs tests/records.mjs tests/windows.mjs tests/electron.mjs tests/native-session.mjs tests/scaling.mjs",
