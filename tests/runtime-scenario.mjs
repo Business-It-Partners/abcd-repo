@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -7,13 +8,40 @@ export async function verifyRuntime(profileArgs, reportName) {
  const app=await electron.launch({args:[root,...profileArgs,'--runtime-fixtures'],env,timeout:30000});
  const checks=[],errors=[];let topology;const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
  const shell=await app.firstWindow();shell.on('pageerror',e=>errors.push(e.message));
+ const nativePointerMoves=[];
+ async function movePointer(page,x,y,host){
+  if(process.platform==='win32'){
+   if(process.env.GITHUB_ACTIONS!=='true'||process.env.RUNNER_OS!=='Windows'||process.env.CI!=='true')throw Error('Native pointer input requires the isolated hosted Windows CI job');
+   const point=await app.evaluate(({BrowserWindow,screen},{x,y,host})=>{
+    const win=BrowserWindow.getAllWindows()[0],content=win.getContentBounds();
+    const view=host?win.contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`)):undefined;
+    if(host&&!view)throw Error('Native pointer target missing');
+    const bounds=view?.getBounds()??{x:0,y:0};
+    const dip={x:Math.round(content.x+bounds.x+x),y:Math.round(content.y+bounds.y+y)};
+    return{dip,physical:screen.dipToScreenPoint(dip),before:screen.getCursorScreenPoint()};
+   },{x,y,host});
+   for(const n of [point.physical.x,point.physical.y])if(!Number.isSafeInteger(n)||Math.abs(n)>20000)throw Error('Native pointer coordinate bound');
+   // CDP moves only Chromium's injected pointer. A native child handoff can
+   // resume the real Windows cursor at its old position. Align both input
+   // sources so the test exercises the same native mouse path as a user.
+   const source='using System; using System.Runtime.InteropServices; public static class DentalCiPointer { [DllImport("user32.dll", SetLastError=true)] public static extern bool SetCursorPos(int x,int y); [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr value); }';
+   const script=`$ErrorActionPreference='Stop'; Add-Type -TypeDefinition '${source}'; [void][DentalCiPointer]::SetProcessDpiAwarenessContext([IntPtr]::new(-4)); if(-not [DentalCiPointer]::SetCursorPos(${point.physical.x},${point.physical.y})){throw 'Native CI pointer move failed'}`;
+   execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:10000,stdio:'pipe'});
+   const actual=await app.evaluate(({screen})=>screen.getCursorScreenPoint());
+   assert.ok(Math.abs(actual.x-point.dip.x)<=2&&Math.abs(actual.y-point.dip.y)<=2,'OS cursor must match injected runtime input');
+   nativePointerMoves.push({host:host??'shell',...point,actual});
+  }
+  await page.mouse.move(x,y);
+ }
+ const moveShell=(x,y)=>movePointer(shell,x,y);
+ const moveGuest=(page,host,x,y)=>movePointer(page,x,y,host);
  const state=id=>shell.locator(`[data-runtime="${id}"]`);
  const geometryTolerance=2,geometryMatches=(actual,expected)=>Math.abs(actual-expected)<=geometryTolerance;
  const ready=id=>shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',id,{timeout:15000});
  const native=()=>app.evaluate(({webContents,BrowserWindow})=>({shell:BrowserWindow.getAllWindows()[0].webContents.getOSProcessId(),apps:webContents.getAllWebContents().filter(w=>w.getURL().startsWith('dental-fixture:')).map(w=>({id:w.id,url:w.getURL(),pid:w.getOSProcessId(),prefs:{sandbox:w.getLastWebPreferences().sandbox,contextIsolation:w.getLastWebPreferences().contextIsolation,nodeIntegration:w.getLastWebPreferences().nodeIntegration}}))}));
  const nativeView=host=>app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)return null;const b=view.getBounds();return{visible:view.getVisible(),bounds:{x:b.x,y:b.y,width:b.width,height:b.height}};},host);
  async function waitNativeView(host,predicate){for(let i=0;i<100;i++){const view=await nativeView(host);if(predicate(view))return view;await new Promise(r=>setTimeout(r,20));}throw new Error(`Native app view did not settle: ${host} ${JSON.stringify(await nativeView(host))}`);}
- async function dragWindow(id,dx,dy){const frame=shell.locator(`[data-testid="${id}-window"]`),b=await frame.boundingBox(),viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));const x=Math.max(2,Math.min(viewport.width-2,b.x+b.width/2)),y=Math.max(35,Math.min(viewport.height-2,b.y+21));await shell.mouse.move(x,y);await shell.mouse.down();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='moving',id);await shell.mouse.move(x+dx,y+dy,{steps:8});await shell.mouse.up();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='idle',id);return frame.boundingBox();}
+ async function dragWindow(id,dx,dy){const frame=shell.locator(`[data-testid="${id}-window"]`),b=await frame.boundingBox(),viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));const x=Math.max(2,Math.min(viewport.width-2,b.x+b.width/2)),y=Math.max(35,Math.min(viewport.height-2,b.y+21));await moveShell(x,y);await shell.mouse.down();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='moving',id);await shell.mouse.move(x+dx,y+dy,{steps:8});await shell.mouse.up();await shell.waitForFunction(id=>document.querySelector(`[data-testid="${id}-window"]`).dataset.interaction==='idle',id);return frame.boundingBox();}
  async function expectedNative(host){const surface=shell.locator(`[data-runtime="${host==='alpha'?'studio':'records'}"]`),r=await surface.boundingBox(),dockTop=await shell.locator('.window-stage').evaluate(e=>e.getBoundingClientRect().bottom);const y=Math.max(0,Math.round(r.y)),height=Math.min(Math.max(1,Math.round(r.height)),Math.floor(dockTop-y));return{x:Math.round(r.x),y,width:Math.max(1,Math.round(r.width)),height};}
  async function waitExpectedNative(host){const expected=await expectedNative(host);try{return await waitNativeView(host,v=>v?.visible&&geometryMatches(v.bounds.x,expected.x)&&geometryMatches(v.bounds.y,expected.y)&&geometryMatches(v.bounds.width,expected.width)&&geometryMatches(v.bounds.height,expected.height));}catch(error){throw new Error(`Expected native app bounds ${JSON.stringify(expected)}; ${error.message}`);}}
  async function mirrorCenterPixel(id){return shell.locator(`[data-runtime="${id}"] .isolated-mirror`).evaluate(image=>{const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const context=canvas.getContext('2d');context.drawImage(image,0,0);return [...context.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data];});}
@@ -36,27 +64,27 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.__runtimeShellPointerTrace=[];window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);window.addEventListener('pointermove',event=>{window.__runtimeShellPointerTrace.push({x:event.clientX,y:event.clientY,trusted:event.isTrusted});if(window.__runtimeShellPointerTrace.length>20)window.__runtimeShellPointerTrace.shift();},true);});
   await shell.waitForTimeout(180);
   await app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)throw new Error('Native app view missing');const webContents=view.webContents,original=webContents.capturePage.bind(webContents);webContents.capturePage=async(...args)=>{webContents.capturePage=original;await new Promise(resolve=>setTimeout(resolve,400));return original(...args);};},'alpha');
-  await alpha.mouse.move(alphaSize.width/2,edgeY);
-  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents,pointerMoves:window.__runtimeShellPointerTrace})),native:await nativeView('alpha')};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
+  await moveGuest(alpha,'alpha',alphaSize.width/2,edgeY);
+  try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents,pointerMoves:window.__runtimeShellPointerTrace})),native:await nativeView('alpha'),cursor:await app.evaluate(({screen})=>screen.getCursorScreenPoint()),nativePointerMoves};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
   await shell.waitForTimeout(60);
   check('dock-edge handoff keeps the last app frame visible until its replacement is captured',await state('studio').locator('.isolated-mirror').count()===1&&await state('studio').locator('.runtime-message').count()===0);
   await shell.waitForTimeout(520);
   const edgePreviewPixel=await mirrorCenterPixel('studio');
   check('dock-edge app frame refreshes to current content after the OS hides its native surface',edgePreviewPixel[1]>150&&edgePreviewPixel[0]<100&&edgePreviewPixel[2]<150);
-  await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
+  await moveShell(20,20);await waitNativeView('alpha',view=>view?.visible);
   check('moving away from the dock edge restores the same live app surface',await alpha.evaluate(()=>!!document.querySelector('#module-preview-probe')));
   await alpha.evaluate(()=>document.querySelector('#module-preview-probe')?.remove());
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await alpha.mouse.move(alphaSize.width/2,edgeY);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
-  await shell.mouse.move(20,20);await waitNativeView('alpha',view=>view?.visible);
+  await moveGuest(alpha,'alpha',alphaSize.width/2,edgeY);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
+  await moveShell(20,20);await waitNativeView('alpha',view=>view?.visible);
   await shell.getByRole('button',{name:'Finance',exact:true}).click();
   const financeExplorer=shell.getByTestId('finance-explorer');await financeExplorer.waitFor();
   const hiddenForExplorer=await waitNativeView('alpha',view=>view&&!view.visible);
   check('Finance explorer covers the native app surface instead of appearing beside it',!!hiddenForExplorer);
   check('Finance explorer receives keyboard focus above the native app',await shell.waitForFunction(()=>document.querySelector('.app-explorer')?.contains(document.activeElement)).then(()=>true));
-  await shell.mouse.move(680,(await shell.evaluate(()=>innerHeight))-150);await new Promise(resolve=>setTimeout(resolve,120));
+  await moveShell(680,(await shell.evaluate(()=>innerHeight))-150);await new Promise(resolve=>setTimeout(resolve,120));
   const nativeNearDock=await nativeView('alpha');
-  await shell.mouse.move(20,20);await new Promise(resolve=>setTimeout(resolve,180));
+  await moveShell(20,20);await new Promise(resolve=>setTimeout(resolve,180));
   const nativeAwayFromDock=await nativeView('alpha');
   check('Finance explorer stays in front as the pointer moves near and away from the dock',!nativeNearDock?.visible&&!nativeAwayFromDock?.visible&&await financeExplorer.isVisible());
   await shot('finance-explorer-over-native.png');
@@ -97,7 +125,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.getByRole('button',{name:'Keep working',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
   await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
   const handle=shell.locator('[data-window-id="studio"] [data-resize="se"]'),before=await handle.boundingBox();
-  await shell.mouse.move(before.x+before.width/2,before.y+before.height/2);await shell.mouse.down();await shell.mouse.move(before.x+before.width/2+60,before.y+before.height/2+25,{steps:4});await shell.mouse.up();
+  await moveShell(before.x+before.width/2,before.y+before.height/2);await shell.mouse.down();await shell.mouse.move(before.x+before.width/2+60,before.y+before.height/2+25,{steps:4});await shell.mouse.up();
   await ready('studio');check('resize uses shared manager',await shell.locator('[data-window-id="studio"]').evaluate(e=>e.getBoundingClientRect().width)>760);
   await shot('runtime-overlap.png');
   await alpha.getByLabel('Your draft').click();
@@ -114,10 +142,10 @@ export async function verifyRuntime(profileArgs, reportName) {
   // React presentation changes before native layout/guest resize acknowledgement.
   await beta.waitForFunction(({w,h})=>innerWidth===w&&innerHeight===h,{w:Math.round(expected.width),h:Math.round(expected.height)});
   const size=await beta.evaluate(()=>({w:innerWidth,h:innerHeight}));
-  await beta.mouse.move(size.w/2,size.h/2);await beta.mouse.move(size.w/2,size.h-80);
+  await moveGuest(beta,'beta',size.w/2,size.h/2);await moveGuest(beta,'beta',size.w/2,size.h-80);
   await shell.waitForFunction(()=>!document.querySelector('.dock-region').inert);check('native app bottom edge reveals fullscreen dock');
   await shell.getByRole('button',{name:'Restore Records size',exact:true}).click();
-  await shell.mouse.move(10,10);
+  await moveShell(10,10);
   await shell.getByRole('button',{name:'Minimize Records',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='minimized');
   check('Genie thumbnail contains captured native app',await shell.locator('[data-preview-app="records"] img').count()>0 || await shell.locator('[aria-label="Restore Records"] img').count()>0);
   await shell.getByRole('button',{name:'Restore Records',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='visible');
@@ -145,7 +173,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   const recordsFrame=shell.locator('[data-testid="records-window"]'),originalBounds=await recordsFrame.boundingBox();
   const viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));
   const frameBox=await recordsFrame.boundingBox(),dragX=Math.max(2,Math.min(viewport.width-2,frameBox.x+frameBox.width/2)),dragY=Math.max(35,Math.min(viewport.height-2,frameBox.y+21));
-  await shell.mouse.move(dragX,dragY);await shell.mouse.down();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='moving');
+  await moveShell(dragX,dragY);await shell.mouse.down();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='moving');
   const hiddenDuringDrag=await nativeView('beta');check('native app surface hides synchronously when window movement starts',!!hiddenDuringDrag&&!hiddenDuringDrag.visible);
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="records"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
   check('moving window uses its crisp full-resolution app preview',await state('records').locator('.isolated-mirror').evaluate(image=>image.naturalWidth>=image.clientWidth&&getComputedStyle(image).filter==='none'&&getComputedStyle(image).backdropFilter==='none'));
@@ -167,5 +195,5 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('edge dragging leaves no selected app text',!await shell.evaluate(()=>window.getSelection()?.toString())&&!await betaNew.evaluate(()=>window.getSelection()?.toString()));
   check('no shell renderer errors',errors.length===0);
   return {checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null};
- } finally {await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));await app.close();}
+ } finally {await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({nativePointerMoves,checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));await app.close();}
 }

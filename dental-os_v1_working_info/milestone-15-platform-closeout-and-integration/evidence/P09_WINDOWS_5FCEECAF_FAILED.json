@@ -1,0 +1,26 @@
+{
+  "source": "5fceecaf8fde873c312fd79b5229c5012ac0efad",
+  "runId": 39727536704,
+  "url": "https://github.com/Business-It-Partners/dental-os/actions/runs/39727536704",
+  "result": "failure",
+  "failedStep": "Windows isolated runtime proof",
+  "updateScenario": "PASS 18 checks after foreground correction",
+  "diagnostic": {
+    "guestEdgePoint": {
+      "x": 380,
+      "y": 610,
+      "height": 634,
+      "trusted": true
+    },
+    "shellPointerPoint": {
+      "x": 512,
+      "y": 384,
+      "trusted": true
+    },
+    "dockEdgeEvents": 1,
+    "nativeVisible": true
+  },
+  "hypothesis": "CDP guest input and the real native Windows cursor may be independent. Trace shows a shell-centre event after the guest edge event. Actual OS cursor position was not recorded by this attempt, so root cause is not yet confirmed.",
+  "nextCheck": "Hosted Windows-only guarded SetCursorPos input aligns the OS cursor and CDP input using Electron DIP conversion, asserts actual OS coordinates and retains pointer trace. Product code/assertions remain unchanged. Runtime gate moved before expensive resource checks; no gate removed.",
+  "productionRequests": false
+}

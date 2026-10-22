@@ -54,6 +54,8 @@ jobs:
             $code = $LASTEXITCODE
             if ($code -ne 0) { exit $code }
           }
+      - name: Windows isolated runtime proof
+        run: node tests/runtime-ci.mjs
       - name: Windows hardening proof
         run: node tests/hardening-ci.mjs
       - name: Windows preserved-state recovery
@@ -76,8 +78,6 @@ jobs:
         run: node tests/packages-ci.mjs
       - name: Windows hosted-runner startup and recovery
         run: node tests/windows-host-ci.mjs
-      - name: Windows isolated runtime proof
-        run: node tests/runtime-ci.mjs
       - name: Windows SDK and broker proof
         run: node tests/sdk-ci.mjs
       - name: Windows identity and session proof

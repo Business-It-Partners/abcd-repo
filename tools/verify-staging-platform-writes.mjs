@@ -85,8 +85,8 @@ try {
     check('explicit original-key retry confirms real staging create', r.ok && r.value.status === 201 && r.value.body.appointment.patientName === appointmentBody.patientName); j.appointmentId = r.value.body.appointment.appointmentId; save();
   }
   const listed = await call('company.dental.appointments', 'GET', '/v1/appointments?date=' + j.date);
-  const owned = listed.ok && listed.value.body.appointments.filter(a => a.appointmentId === j.appointmentId && a.patientName === appointmentBody.patientName && a.doctorName === appointmentBody.doctorName);
-  check('real staging contains exactly one original synthetic appointment', Array.isArray(owned) && owned.length === 1);
+  const owned = listed.ok && listed.value.body.appointments.filter(a => a.patientName === appointmentBody.patientName && a.doctorName === appointmentBody.doctorName && a.reason === appointmentBody.reason);
+  check('real staging contains exactly one original synthetic appointment', Array.isArray(owned) && owned.length === 1 && owned[0].appointmentId === j.appointmentId);
   const before = network, denied = await call('company.dental.followups', 'GET', '/v1/clinic/users');
   check('unrelated privileged route denied before credentials and transport', !denied.ok && denied.error.code === 'FORBIDDEN' && network === before);
   const conflict = await call('company.dental.appointments', 'POST', '/v1/appointments', { ...appointmentBody, reason: appointmentBody.reason + ' changed' }, key('appointment'));

@@ -1,4 +1,5 @@
 {
+  "nativePointerMoves": [],
   "checks": [
     "dock-edge handoff keeps the last app frame visible until its replacement is captured",
     "dock-edge app frame refreshes to current content after the OS hides its native surface",
@@ -48,12 +49,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 94729,
+    "shell": 110416,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/",
-        "pid": 94849,
+        "pid": 110627,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -63,7 +64,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/",
-        "pid": 94775,
+        "pid": 110458,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -74,5 +75,5 @@
   },
   "errors": [],
   "platform": "linux",
-  "sha": "b68eab2b1496dba98df348715f1191b54ab58cbc"
+  "sha": "5fceecaf8fde873c312fd79b5229c5012ac0efad"
 }
