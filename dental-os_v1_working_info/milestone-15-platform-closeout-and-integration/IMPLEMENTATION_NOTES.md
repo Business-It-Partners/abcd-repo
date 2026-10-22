@@ -1,21 +1,27 @@
 # M15 Implementation Notes — Source Reconciliation and Execution Record
 
-**Phase:** M15.1 complete. P04–P06 implementation candidates integrated with focused evidence; P07 execution underway; P08 operational ownership/drill open; P09 final verification in progress.
+**Current disposition:** P01–P09 technical work and required automated checks complete for the agreed non-upload scope on `8a0b07a2`; independent verification remains before checklist completion. G12/G13 owner acceptance and formal G15 closure remain open. Media upload is deferred.
 **Source checkpoints:** committed M13 snapshot `963633620d9fa620979bd33fc292949ab1a6c2e6`; accepted M15.1 source checkpoint `ad3fa6a10437bf58606631325d93f6b3cc0369b5`; last integrated milestone baseline is M11 `main` at `8c8211c00614b095c529d9d14964ca2ce912db73`.
 **Integration branch:** `codex/milestone-15`; milestone-record worker branch `codex/m15-plan-records`.
+
+## Current status summary — 2026-10-22
+
+Final platform status and evidence are in [STATUS](STATUS.md), [VERIFICATION_EVIDENCE](VERIFICATION_EVIDENCE.md), and the [central checklist](../PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md). Linux and exact-source Windows automation pass on `8a0b07a2`. The M15 lead role owns staging continuity; the metadata-only renewal/expiry-recovery drill is complete. Independent GPT-6.1 Sol Medium review remains. User visual/module/profile acceptance stays with G12/G13, and G15 remains open until review and owner-gate requirements are satisfied. M14 app feature/release acceptance and M20/G21 remain separate. Uploads are deferred and denied by the current platform.
+
+Sections below retain dated planning and implementation history. Earlier statements that P07/P09 were underway or that the staging drill was pending describe earlier checkpoints, not current progress.
 
 ## Accepted planning scope
 
 On 2026-10-21, the user accepted the proposed M15 closeout scope and directed its formalization in a separate worker worktree. This directory records six phases: source reconciliation; versioned app authority and required host contracts; ADR-025 update alignment; M12/G12 and M13/G13 residuals; representative workloads and operational continuity; and final combined-source verification. The matching roadmap/global-status/checklist changes and G15/traceability/checker edits were prepared in separate scopes and combined by the lead in `codex/milestone-15`.
 
-M15 is IMPLEMENTING. P03 established the plan; M15.1 reviewed source layers and accepted a limited launch-feedback/frame-handoff slice. On 2026-10-22, the user chose the existing signed company catalogue/update-policy authority for first-party release-scoped API grants. P04–P06 candidates and focused checks are integrated; P07–P09 and G15 acceptance remain open. M14 feature work remains separate. The integrated G14 path depends on a verified M15 platform baseline. M20/G20 and G21 remain later release and device gates.
+At the time this planning note was written, P03 was complete and P04–P09 had not yet been executed. M14 feature work remains separate; M20/G20 and G21 remain later release and device gates. See the current status summary above for final results.
 
 ## Baseline facts carried into the plan
 
 - The M11-integrated `main` at `8c8211c0` is the last integrated verified platform milestone. The M13 committed candidate at `96363362` already contains M12 shell/module-navigation/store-arrival ancestors, but the original checkout has additional unintegrated deltas. Do not equate those layers.
 - M01–M11 closeouts remain valid within their retained exact source and scope. The evidence audit identifies stale summary/opening prose and historical limits; dated corrections must preserve originals, not rewrite them.
 - M12.1–M12.5 have scoped Linux/private-display results. M12.6/G12 remains open. M13 shell packages are placeholders, not functional apps; G13 retains the Follow-ups health receipt and Finance/Lab Tracker 1.0.1/profile module-review items.
-- M14's external dependency register at revision `48c18401cada192bfa0bea02a4afdd0cb10e45ca` supplies concrete integration requests. M15 scopes platform work to these documented needs and their evidence, without taking app UI/workflow ownership.
+- M14's external dependency register at revision `48c18401cada192bfa0bea02a4afdd0cb10e45ca` supplied the original integration requests. M15 completed its declared platform-side scope without taking app UI/workflow ownership; M14 app-specific rollout remains separate.
 - Existing staging catalogue/update metadata enforces a 24-hour freshness bound. The audit found no scheduled metadata renewal service and calls for a named operator plus a metadata-only higher-sequence renewal and expired-feed recovery drill. This is an operational continuity prerequisite, not evidence that renewal already occurred.
 
 ## M15.1 source and side-branch disposition — 2026-10-21
@@ -34,7 +40,7 @@ Side-branch review: `main` at M11 `8c8211c0` remains historical. The M13 candida
 
 ## M15.2 initial contract guardrails — P03 record, updated by the 2026-10-22 P04 decision
 
-The current host clinic API policy was compiled in `electron/sdk/appPolicy.ts`. Generic M11 package onboarding did not prove a newly signed package could acquire a new clinic API grant on an unchanged desktop. P03 selected no route-manifest, remotely supplied policy model or permission mechanism; the user later selected an existing signed company catalogue/update-policy authority in P04. ADR-026 records the accepted format-2 exact-release grant and host-enforcement rules below. M14 app-specific route/role inventory and service-backed compatibility remain open.
+At initial planning, the host clinic API policy was compiled in `electron/sdk/appPolicy.ts`, and generic M11 package onboarding did not prove independent grant evolution. The user later selected an existing signed company catalogue/update-policy authority in P04; ADR-026 records the accepted format-2 exact-release grant and host-enforcement rules. M15's scoped route/role and staging JSON compatibility proof is now complete. M14's app-specific public release/grant rollout remains a separate acceptance.
 
 M14's cross-app patient/case links are not authorization for a general app-to-app system. Architecture requirement R13 and the permanent exclusions in `19_V1_NON_GOALS.md` remain unchanged. M15 may assess a bounded OS-owned navigation/selection contract under a separate explicit contract/ADR, including source dirty/modal preservation, independent destination authorization, missing/denied destinations and identifiers kept out of sensitive URLs. No arbitrary messages, app-selected targets with authority, or app-to-app intents are designed or implemented here.
 
@@ -44,7 +50,7 @@ Media/payload scope follows the M14 register only: Patient Record/Staff private 
 
 | Concern | Existing owner/source | M15 disposition |
 | --- | --- | --- |
-| App API calls and identity | `electron/sdk/appPolicy.ts`, `contracts.ts`, `broker.ts`, `electron/identity/`; existing Worker authority | Reconcile app requirements and design approval/enforcement. The contract and implementation remain pending. |
+| App API calls and identity | `electron/sdk/appPolicy.ts`, `contracts.ts`, `broker.ts`, `electron/identity/`; existing Worker authority | Historical initial-plan disposition. Current signed authority, host enforcement and scoped compatibility proof are complete; see current status/evidence above. |
 | Package/session/update safety | `electron/packages/registry.ts`, `electron/distribution/`, `electron/runtime/manager.ts`, `src/DeliveryStore.tsx` | Reuse M08/M11 foundations; align the default Store path with ADR-025 and prove the complete combined-source path. |
 | Shell/module handoff | M12 shell and `electron/packages/appMetadata.ts`, `src/AppExplorer.tsx`, shared window manager | Close M12.6/G12 and the M13 profile/module residuals in owner records; do not fork the shared lifecycle. |
 | Private media | Existing SaaS Worker endpoints plus M14 Staff dependency | Design host mediation with app owner; test only synthetic bytes and declared limits. No media adapter is claimed present. |
@@ -65,7 +71,7 @@ Historical runs identify a local Ubuntu 22.04.5 x86_64 private GNOME/Wayland env
 
 The lead combined these four records with the other sidebar worker's gates/build-phases/traceability/checker changes and the lead's roadmap/status/checklist amendments. The review corrected an ambiguous worker phrase: activation occurs on the next full **app** launch, not a required Dental OS restart. The accepted install/update contract remains authoritative. Earlier worker validation statements describe the partial worker stage; integrated P03 checks are recorded in VERIFICATION_EVIDENCE.md.
 
-## P04–P08 lead review and execution — 2026-10-22
+## P04–P08 initial lead review snapshot — 2026-10-22 (superseded by final P09 status above)
 
 | Item | Integrated work and accepted disposition | Remaining evidence / owner |
 | --- | --- | --- |

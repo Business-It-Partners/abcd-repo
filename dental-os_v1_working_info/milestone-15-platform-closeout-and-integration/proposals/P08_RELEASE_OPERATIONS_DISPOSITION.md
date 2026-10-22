@@ -1,6 +1,6 @@
 # P08 — Release and operations disposition
 
-**Prepared:** 2026-10-22. **State:** lead-integrated disposition; no release or operations gate is closed by this document. A local synthetic renewal/expiry regression passes; named staging ownership and the real drill remain open.
+**Prepared:** 2026-10-22. **State:** historical worker proposal; it does not itself close a release gate. The M15 lead later completed the actual metadata-only staging renewal/expiry-recovery drill; see [P08 operation evidence](../evidence/P08_METADATA_RENEWAL_2026-10-22.json) and the current [M15 status](../STATUS.md). M15 staging continuity is complete for its declared scope; M20/G20/G21 remain open.
 
 ## Decision summary
 

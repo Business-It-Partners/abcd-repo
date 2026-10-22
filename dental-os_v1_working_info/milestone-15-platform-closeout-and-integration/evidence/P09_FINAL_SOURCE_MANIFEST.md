@@ -3,7 +3,7 @@
 > **Latest source and result (2026-10-22):** `8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1` passes the full Windows workflow and declared non-upload automated baseline. [Exact-source result](P09_WINDOWS_8A0B07A2_SUCCESS.json), [current M15 status](../STATUS.md), [independent review packet](../INDEPENDENT_REVIEW_PACKET.md). Later sections below retain earlier dated snapshots; older “remaining Windows/live-profile/staging proof” statements are historical and superseded by this result. Independent review is still pending; no G15 completion or public API-grant rollout is claimed.
 
 
-**Prepared:** 2026-10-22. **State:** lead candidate source checks pass; independent review and external acceptance gates remain open. This manifest binds the lead test evidence to the reviewed source commit; it does not close G15.
+**Prepared:** 2026-10-22. **State:** final-source automated checks pass for the declared non-upload scope; independent review and owner acceptance gates remain open. This manifest binds the lead test evidence to the reviewed source; it does not close G15.
 
 ## Source identity and test environment
 
@@ -72,7 +72,7 @@ The only synthetic typed host API operations currently enabled and tested by thi
 
 ## Subsequent operations tooling and P08 closure — 2026-10-22
 
-Operational tooling source checkpoint `d5504845` adds `electron/distribution/renewal.ts`, metadata-only preparation/publication scripts and a disposable public-feed/core-registry drill. Normal shell/runtime UI source is unchanged from `11cb1bc8`. Build passes; the new full serial unit suite passes 324/324 in 21 files (13 new focused renewal/publication regressions). The actual signed staging controls advanced 21→22; all 14 immutable package identities and disposable registry pointers stayed unchanged. Anonymous/replay checks, temporary Worker removal and existing staging client reachability passed. [Source-bound report](P08_METADATA_RENEWAL_2026-10-22.json). This supersedes the earlier P08 people/tool/drill open item for this technical scope; authenticated Store/native UI/clinical integration remains P07. The user directs remaining work and source review in the lead chat and manual acceptance afterward; the separate sidebar review automation is paused. G15 remains open while the other technical dependencies are unfinished.
+Operational tooling source checkpoint `d5504845` adds `electron/distribution/renewal.ts`, metadata-only preparation/publication scripts and a disposable public-feed/core-registry drill. Normal shell/runtime UI source is unchanged from `11cb1bc8`. Build passes; the new full serial unit suite passes 324/324 in 21 files (13 new focused renewal/publication regressions). The actual signed staging controls advanced 21→22; all 14 immutable package identities and disposable registry pointers stayed unchanged. Anonymous/replay checks, temporary Worker removal and existing staging client reachability passed. [Source-bound report](P08_METADATA_RENEWAL_2026-10-22.json). The actual drill is complete; the M15 lead role owns staging continuity. M14 authenticated Store/native UI/clinical app acceptance remains a separate app-track matter. G15 remains open pending independent review and the G12/G13 owner gates.
 
 
 ## Subsequent API candidate and build correction — 2026-10-22

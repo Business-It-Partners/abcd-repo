@@ -1,6 +1,6 @@
 # P07 — Representative Platform Workload Matrix (Proposal)
 
-**Status:** Worker proposal integrated; the lead executed the supported synthetic read/write, update, session, package, multiwindow, failure and bounded-resource rows listed below. P09 source checks pass on `11cb1bc8`; M14 media/live-service contracts remain open, so the matrix and P07 remain partially open.
+**Current status:** The declared non-upload P07 workload scope is complete, with required final-source Linux and Windows checks passing; see [M15 status](../STATUS.md) and [final verification](../evidence/P09_FINAL_SOURCE_MANIFEST.md). Media upload is user-deferred and denied by the current SessionManager. M14 app-specific release acceptance and G12/G13/G15 owner gates remain separate. Earlier addenda below preserve the test-by-test history and intermediate open statuses.
 **Prepared:** 2026-10-22 on `codex/m15-p07-sidebar`, based on `codex/milestone-15` at `76c9251851a30daf8d2bed34de275cc9c0a4e3e2`.
 **Owner:** M15 lead owns fixture selection, execution, evidence, and final disposition. M14 supplies sanitized app requirements and synthetic fixtures. This worker does not own P07 acceptance.
 
