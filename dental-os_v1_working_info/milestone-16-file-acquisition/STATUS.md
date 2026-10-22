@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** M16.6 hosted engineering closeout COMPLETE on exact tested source `772a739ed3af` (Windows/Linux success). Native cross-view drag and physical-device checks deferred by user. **G16 OPEN; overall M16 not yet accepted.**
+**Status:** IMPLEMENTING — M16.6 hosted engineering closeout COMPLETE on exact tested source `772a739ed3af` (Windows/Linux success). Native cross-view drag formally deferred after source/API feasibility review; physical-device checks NOT RUN. **G16 OPEN; overall M16 not yet accepted.**
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 

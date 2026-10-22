@@ -41,7 +41,7 @@ Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOV
 
 ## M16 architecture-first extension — 2026-10-22
 
-The user authorized codex/milestone-16 directly from codex/milestone-15 to add Dental OS local Files acquisition. [M16 architecture](milestone-16-file-acquisition/ARCHITECTURE.md) and [plan](milestone-16-file-acquisition/PLAN.md) govern this scope. M16.1 is documentation/contract design, not implementation; G16 needs actual trusted-host and Windows/Linux evidence. Media upload remains deferred, business backend unchanged and M20/G21 remain distinct.
+The user authorized codex/milestone-16 directly from codex/milestone-15 to add Dental OS local Files acquisition. [M16 architecture](milestone-16-file-acquisition/ARCHITECTURE.md) and [plan](milestone-16-file-acquisition/PLAN.md) govern this scope. Hosted M16.1–M16.6 engineering is complete on the recorded source. Follow-up source/API review formally defers native cross-view drag in the current one-visible-native-input-surface runtime; explicit Send remains. Physical-device walkthrough is NOT RUN, so G16 is OPEN pending the device matrix and agreement on the drag disposition. Media upload remains deferred, business backend unchanged and M20/G21 remain distinct.
 
 ## Integration order and evidence
 

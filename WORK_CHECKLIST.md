@@ -7,6 +7,10 @@
 **Project directory:** `/home/master-x/Desktop/fewa_business_os`  
 **Product name:** Not yet chosen; the directory name is a working label.
 
+## M16 post-hosted closeout checkpoint — 2026-10-22
+
+`codex/milestone-16` latest confirmed remote documentation head before this continuation: `ad3e4bc0ed24fd11902693a0e34205716834f755`; latest runtime-tested implementation remains `772a739ed3af3be4fd678f7ebd68baeceef2f954` (Actions 39785068605). Source/API review formally defers cross-`WebContentsView` drag under the current one-visible-native-input-surface model; recipient authorization, sandbox isolation and explicit Send remain unchanged. Physical-device verification is **NOT RUN** because this checkout shares the user's active desktop and no separate user-controlled Dental OS/test-clinic session was available. **G16 remains OPEN** pending physical cases and agreement on the drag disposition. Evidence and the exact preflight snapshot are in [M16 verification evidence](dental-os_v1_working_info/milestone-16-file-acquisition/VERIFICATION_EVIDENCE.md). No merge to `main` is authorized here; the user will merge manually.
+
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
 
 ## Staged app-update contract — 2026-10-21

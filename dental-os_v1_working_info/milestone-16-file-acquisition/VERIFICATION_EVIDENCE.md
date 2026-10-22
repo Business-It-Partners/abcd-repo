@@ -1,6 +1,6 @@
 # M16 Verification Evidence
 
-**Scope:** evolving M16 source-bound architecture, unit/build and graphical test record, latest Windows/Linux M16.4 evidence dated 2026-10-22.
+**Scope:** evolving M16 source-bound architecture, unit/build and graphical test record, latest Windows/Linux M16.6 evidence dated 2026-10-22. The post-closeout drag review is source/API analysis only; physical-device acceptance remains NOT RUN.
 **Base SHA:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
 Evidence available: authenticated GitHub repository inspection of M15 architecture, contracts, host/runtime SDK and shell code; branch creation; M16 architecture and plan authored with explicit trust and non-upload boundaries.
@@ -190,3 +190,20 @@ Corrective fixture now provides a dedicated `Connect SDK` button activated only 
 | Physical Windows/Linux device | **NOT RUN**. To be performed by user in Codex after native drag follow-up; hosted CI is not device certification |
 
 **Decision:** M16.6 integration **engineering-complete on hosted source**; the milestone-wide **G16 is still OPEN**. The user explicitly deferred native drag and physical-device checks until after M16.6; these remain tracked in [device/gesture handoff](DEVICE_ACCEPTANCE_HANDOFF.md), not converted into a silent gate waiver. No full Windows historical suite was rerun; older failed/cancelled attempts remain preserved above for traceability.
+
+## Post-M16.6 native-drag and device review — 2026-10-22
+
+**Git state at review start:** `origin/codex/milestone-16` and the clean local branch both pointed to documentation head `ad3e4bc0ed24fd11902693a0e34205716834f755`. The most recent runtime-tested implementation remains `772a739ed3af3be4fd678f7ebd68baeceef2f954`, verified by Actions `39785068605` as recorded above. This documentation commit does not represent a newly built/tested runtime SHA.
+
+**Native drag feasibility review — source/API decision, not an execution test:**
+
+- `src/App.tsx` hosts Files in the shell renderer; managed app content is hosted separately in `WebContentsView`s.
+- `src/RuntimeFixtures.tsx` exposes only the current front native app surface. Runtime layout validation rejects more than one visible native input surface, and the runtime hides non-front app views.
+- With Files foreground, a candidate recipient app is hidden. Shell/React hit-testing is not native target attestation, and the hidden recipient cannot receive/confirm an OS-delivered drop. Electron `webContents.startDrag` takes host file path(s) for an outgoing OS drag and does not attest an incoming secure recipient.
+- **Decision:** native cross-view drag is formally deferred for the current architecture. No drag code, payload, path exposure, IPC, or runtime test was added. Existing signed-release/session/frame recipient authorization, isolation, receipt revocation/ACK checks, and explicit **Send to active eligible app** remain in place. Send is still the supported and previously hosted-verified flow. This is not native-drag acceptance and does not close G16.
+
+**Physical-device verification — NOT RUN:** the current checkout shares the user's active Ubuntu desktop. Repository AGENTS instructions prohibit UI automation on that live display and prohibit focusing/restarting the user's running Dental OS. No separate user-controlled Dental OS/test-clinic session was available. Codex did not open or focus Dental OS, start `--files-fixtures`, or open/change/create any user or clinic files. Every physical walkthrough case in sections 3.A–3.C of [DEVICE_ACCEPTANCE_HANDOFF.md](DEVICE_ACCEPTANCE_HANDOFF.md) remains NOT RUN. Hosted Windows/Linux synthetic test displays are not physical-device proof.
+
+**Preflight environment snapshot (environment only, not acceptance):** on 2026-10-22, Ubuntu 22.04.5 LTS, kernel `6.8.0-111-generic`, x86_64; Node `v22.13.1`; npm `10.9.2`; uptime/load averages at observation `0.78, 1.08, 0.91`; memory `11 GiB` total, `3.8 GiB` available; swap `16 GiB` total, `1.5 GiB` used. Physical target model, display scale/compositor, Dental OS build/session and test fixture package are unknown because no device run occurred.
+
+**Validation performed for this documentation-only record:** no build, unit/UI suite, runtime launch, or GitHub Actions workflow was started. Run the repository-required `python3 tools/check-dental-docs.py` plus `git diff --check`; do not rerun hosted jobs solely for prose. G16 remains **OPEN** pending physical-device evidence, review of the full case matrix, and an agreed disposition of the deferred native drag scope.

@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** M16.6 hosted integration and engineering closeout COMPLETE on exact tested source `772a739ed3af`; native cross-view drag and physical-device acceptance deferred by user. **G16 OPEN; M16 not yet accepted.**
+**Status:** M16.6 hosted integration and engineering closeout COMPLETE on exact tested source `772a739ed3af`. Native cross-view drag has been formally deferred after source/API feasibility review; physical-device acceptance is NOT RUN and remains pending. **G16 OPEN; M16 not yet accepted.**
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -169,3 +169,13 @@ Verified M16.5 source: `9425e0180088bc76041035a4e539e86ac73ec069`; [focused Wind
 - **Explicit deferral decision:** native isolated-view drag/drop is not a working feature and is not a G16 pass; the verified explicit Send remains the supported fallback. Physical-device certification is reserved for the user's Codex/device round. **G16 remains OPEN.**
 
 **M16.6 exact-source result:** `772a739ed3af3be4fd678f7ebd68baeceef2f954` — [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605) both jobs SUCCESS, Windows 35/35 focused unit + 20/20 GUI, Linux 472/472 full Vitest + 10/10 GUI, both build/typecheck. G16 OPEN for deferred drag/device review. [Codex/device handoff](DEVICE_ACCEPTANCE_HANDOFF.md).
+
+## Post-M16.6 drag/device continuation — 2026-10-22
+
+- [x] Confirm current `origin/codex/milestone-16` before edits: `ad3e4bc0ed24fd11902693a0e34205716834f755`. Runtime test evidence remains bound to `772a739ed3af3be4fd678f7ebd68baeceef2f954`; the docs head is not a new tested runtime source.
+- [x] Review native surface visibility and Electron drag semantics. Current runtime shows only one native input surface; Files is in the shell renderer, and the recipient `WebContentsView` is hidden while Files is foreground. Current shell hit-testing and `webContents.startDrag` cannot establish a genuine authorized destination.
+- [x] Formally defer native cross-view drag in this architecture; preserve existing signed-recipient checks, sandbox isolation, narrow metadata receipt/ACK and explicit Send behavior. No runtime source was changed.
+- [ ] Conduct physical-device G16 walkthrough with safe synthetic files in a separate user-controlled Dental OS/test-clinic session. All physical cases remain NOT RUN; hosted synthetic evidence is not a substitute.
+- [ ] Reconcile the agreed acceptance criteria and every G16 row after device evidence. Keep G16 open until they pass and the remaining drag deferral is explicitly accepted as within scope.
+
+Validation is documentation-only under the repository rules: run `python3 tools/check-dental-docs.py` and `git diff --check`; do not spend Actions quota or rerun runtime suites for this record. The user will merge to `main` manually; do not merge this branch.

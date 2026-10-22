@@ -1,6 +1,6 @@
 # M16 — Dental OS Files and Local File Acquisition Architecture
 
-**Design baseline:** 2026-10-22. **Current status:** M16.1–M16.5 implemented; M16.5 explicit transfer has source-bound hosted Windows/Linux proof. Native cross-WebContentsView drag is **not enabled**, and overall G16 remains **OPEN** pending M16.6 closeout.
+**Design baseline:** 2026-10-22. **Current status:** M16.1–M16.6 hosted engineering is complete on tested source `772a739ed3af3be4fd678f7ebd68baeceef2f954`. Source review formally defers native cross-WebContentsView drag because this runtime cannot attest the real drop target while preserving its one-visible-native-input-surface invariant. Explicit Send remains the verified fallback. Physical-device verification is not run; G16 remains **OPEN**.
 **Source base:** M15 commit 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d on codex/milestone-15.
 
 ## 1. Problem and product outcome
@@ -244,4 +244,14 @@ The **single destination** is bound through the existing `LocalFileService.selec
 
 The OS-mediated Files/picker/explicit Send design remains unchanged by M16.6. The Files browser instance is keyed by current clinic session generation, so obsolete local folder selection/history state is discarded when the trusted host invalidates its per-session handles. Integrated signed-app isolation and no-gesture refusal are now hosted GUI-verified on Windows and Linux synthetic displays, alongside prior receipt/authority unit evidence. Tested source: `772a739ed3af3be4fd678f7ebd68baeceef2f954`, [successful hosted CI](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605).
 
-Native cross-isolated-view drag/drop is **not implemented**; no OS-owned hit-testing may be inferred from the explicit Send fallback. The user chose to address that and then run complete milestone device verification in Codex after the M16.6 hosted engineering closeout. **G16 cannot be marked fully accepted on the hosted evidence alone.** Physical G21 release acceptance remains a separately governed later gate. See [DEVICE_ACCEPTANCE_HANDOFF.md](DEVICE_ACCEPTANCE_HANDOFF.md).
+Native cross-isolated-view drag/drop is **not implemented**; no OS-owned hit-testing may be inferred from the explicit Send fallback. The user requested a follow-up source review and device verification after the M16.6 hosted engineering closeout. The review outcome and current-runtime deferral are recorded in §15; the physical-device walkthrough remains NOT RUN. **G16 cannot be marked fully accepted on the hosted evidence alone.** Physical G21 release acceptance remains a separately governed later gate. See [DEVICE_ACCEPTANCE_HANDOFF.md](DEVICE_ACCEPTANCE_HANDOFF.md).
+
+## 15. Native cross-WebContentsView drag feasibility review — 2026-10-22
+
+**Reviewed source:** latest branch/documentation head `ad3e4bc0ed24fd11902693a0e34205716834f755`; latest runtime-tested implementation `772a739ed3af3be4fd678f7ebd68baeceef2f954`. This is a source/API feasibility review, not a successful drag test.
+
+The current runtime renders Files in the shell `BrowserWindow` renderer and managed company apps in separate `WebContentsView`s. `RuntimeFixtures` marks a native app surface visible only when it is the front app, and `FixtureRuntime` hides the other views. The native layout parser rejects more than one visible input surface. Therefore, when Files is foreground, the destination app view is hidden and cannot attest a genuine OS-delivered drop. Shell React bounds or DOM hit-testing would not prove which native target received the pointer. Electron's `webContents.startDrag` starts a native drag using host file paths; that API does not establish a trusted inbound target and is not suitable evidence for secure Files-to-app delivery.
+
+**Decision:** formally defer native cross-view drag for this runtime. No drag payload, host path, or new IPC was added; recipient authorization, signed `local.files.pick` policy, sandbox isolation, metadata-only receipts, revocation/ACK checks, and the explicit Send confirmation remain unchanged. The existing Files **Send to active eligible app** path is the supported transfer feature and retains hosted source-bound verification. This deferral is an unresolved G16 acceptance item, not a pass or a waiver.
+
+Reconsider drag only with a reviewed architecture that can attest one exact native recipient while safely handling simultaneous surface visibility/stacking and input ownership, plus updated threat analysis and real Windows/Linux proof. Preserve the signed-release/session/frame binding, no-path/no-byte boundary, single-recipient receipt and explicit Send fallback. Do not infer drag acceptance from Send or hosted synthetic UI tests.
