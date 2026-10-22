@@ -1,5 +1,8 @@
 # P09 — Final Source and Verification Manifest
 
+> **Latest source and result (2026-10-22):** `8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1` passes the full Windows workflow and declared non-upload automated baseline. [Exact-source result](P09_WINDOWS_8A0B07A2_SUCCESS.json), [current M15 status](../STATUS.md), [independent review packet](../INDEPENDENT_REVIEW_PACKET.md). Later sections below retain earlier dated snapshots; older “remaining Windows/live-profile/staging proof” statements are historical and superseded by this result. Independent review is still pending; no G15 completion or public API-grant rollout is claimed.
+
+
 **Prepared:** 2026-10-22. **State:** lead candidate source checks pass; independent review and external acceptance gates remain open. This manifest binds the lead test evidence to the reviewed source commit; it does not close G15.
 
 ## Source identity and test environment

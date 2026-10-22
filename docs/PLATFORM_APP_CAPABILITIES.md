@@ -29,4 +29,6 @@ Build and sign a company-approved package against this SDK/API inventory. Preser
 
 ## Remaining acceptance boundaries
 
-M14 owns functional app acceptance. User visual/manual review follows platform technical verification. M20 owns production host/support matrix, installers, executable signing, desktop updater and release support; G21 retains physical/device acceptance. Hosted Windows/Linux runners describe test environments, not certified customer-device support. The final source/Windows/review gates remain open until their results are recorded in the central checklist.
+M14 owns functional app acceptance. User visual/manual review follows platform technical verification. M20 owns production host/support matrix, installers, executable signing, desktop updater and release support; G21 retains physical/device acceptance. Hosted Windows/Linux runners describe test environments, not certified customer-device support. Exact-source Linux/Windows automated checks now pass on `8a0b07a2`; independent source/evidence review remains before checklist completion. The central checklist records the results.
+
+API-enabled release publication must include reviewed format-2 release grants matching the signed package manifest and catalogue. Existing format-1 release helper output grants no API authority. The private acceptance profiles did not publish public API grants; actual M14 app-release publication remains separate and must not infer approval from these tests.

@@ -40,10 +40,10 @@ Dependencies below order the work. P03 adopts responsibility/scope, not a specif
 | P03 | Define platform closeout scope | VERIFIED (planning/documentation only) | Platform track; Abhishek reviews scope | P02 | Reviewed scope, acceptance criteria and aligned roadmap/status/gates |
 | P04 | Resolve independent API-permission evolution | TECHNICAL PROOF PASSES — signed authority/unchanged-desktop extension, exact JSON contract, 25 live staging JSON/role/revocation checks and 10 crypto/two-SQLite tenant checks; upload deferred | Lead in this chat/worktree; prior proposal retained | M15.1; signed company authority; existing Worker contracts | Current progress/evidence below; final Windows/source review belongs to P09 |
 | P05 | Align staged app updates with ADR-025 | LINUX TECHNICAL PROOF PASSES — 70 unit, 17 private staged-update, 26 integrated and 12 process-exit cases | Lead; prior worker source retained | M15.1; ADR-025 | Running pinning/next-launch trial/health/fallback/interruption/races verified; final Windows/source review P09 |
-| P06 | Close integrated shell usability | LINUX TECHNICAL PROOF PASSES — shell/usability/overview/scaling/runtime/session; all 11 live profile packages/assets/health receipts verified read-only | Lead; user manual visual acceptance follows technical verification | M15.1; existing G12/G13 obligations | Final Windows proof and review P09; manual/module/device acceptance retained separately |
-| P07 | Validate representative platform workloads | NON-UPLOAD WORKLOAD PROOF PASSES SO FAR — live ordinary write/stable retry/role/revocation/cleanup, package bounds, private lifecycle/multiwindow/failure; final Linux batch passes | Lead owns fixtures/runs/evidence; no M14 app edits | P04–P06; declared supported capability inventory | Current live/private/source-bound reports; media upload explicitly deferred and real-session denied |
+| P06 | Close integrated shell usability | TECHNICAL DISPOSITION COMPLETE — Linux/local/live-staging scopes and exact-source Windows workflow pass; final review retained under P09; user/device gates separate | Lead; user manual visual acceptance follows technical verification | M15.1; existing G12/G13 obligations | Final Windows proof and review P09; manual/module/device acceptance retained separately |
+| P07 | Validate representative platform workloads | TECHNICAL DISPOSITION COMPLETE — Linux/local/live-staging scopes and exact-source Windows workflow pass; final review retained under P09; user/device gates separate | Lead owns fixtures/runs/evidence; no M14 app edits | P04–P06; declared supported capability inventory | Current live/private/source-bound reports; media upload explicitly deferred and real-session denied |
 | P08 | Reconcile release and operations requirements | VERIFIED for staging feed continuity — signed metadata-only sequence 21→22 renewal and actual expiry recovery pass on `d5504845`; all 14 package objects and registry pointers unchanged; temporary publisher removed; no authenticated Store/native UI or production acceptance inferred | M15 lead owns preparation, technical review, authorized staging execution and evidence in this chat; user manual acceptance follows technical completion | P03; P07 workload constraints; staging signer/publisher controls | M15 vs M20 scope, user-authorized lead execution, reviewed metadata-only tool, real renewal/recovery report `P08_METADATA_RENEWAL_2026-10-22.json`, cleanup inventory and operating/support procedure |
-| P09 | Integrate and verify platform baseline | IN PROGRESS — lead owns integration, record alignment and final verification; not yet verified | Lead | P04–P08; M14 handoff | Exact final source identity, required build/unit/private UI and applicable CI checks, M14 dependency handoff, retained release/device gates |
+| P09 | Integrate and verify platform baseline | TECHNICAL DISPOSITION COMPLETE — Linux/local/live-staging scopes and exact-source Windows workflow pass; independent review remains; packet ready | Lead | P04–P08; M14 handoff | Exact final source identity, required build/unit/private UI and applicable CI checks, M14 dependency handoff, retained release/device gates |
 
 P01–P09 are checklist identifiers, not renamed historical milestones or M14 dependency IDs.
 
@@ -163,17 +163,17 @@ P04/P05/P06 were separate GPT-6 Luna Extra High sidebar chats with distinct work
 
 ## P06 — Close integrated shell usability
 
-- [ ] Reconcile outstanding [M12/G12 work](milestone-12-os-ui-experience/PLAN.md), relevant M13 platform follow-ups and intermittent failures against the chosen source.
-- [ ] Verify complete installed-app journeys across launch, focus, windows, dock, explorer/module selection, minimize/restore, close, Store and lock/logout/session recovery; preserve the shared lifecycle and dock/Genie pipeline.
-- [ ] Complete required keyboard/focus, scaling, reduced-motion, error/recovery and user-review evidence; separate private/hosted technical checks from physical-device/user acceptance.
+- [x] Reconcile outstanding [M12/G12 work](milestone-12-os-ui-experience/PLAN.md), relevant M13 platform follow-ups and intermittent failures against the chosen source.
+- [x] Verify complete installed-app journeys across launch, focus, windows, dock, explorer/module selection, minimize/restore, close, Store and lock/logout/session recovery; preserve the shared lifecycle and dock/Genie pipeline.
+- [x] Complete required automated keyboard/focus, scaling, reduced-motion and error/recovery evidence; record user visual/module review afterward and retain physical-device/user acceptance separately.
 
 **Evidence / decisions:** Integrated candidate includes focus trapping/restoration, scaling/reduced-motion adjustments and overview placement using actual managed-window bounds. Private usability, scaling and overview checks passed (10, 5 and 30 assertions respectively); the fixture setup and fullscreen geometry required corrections before pass. App-launch feedback also passed its 132-check suite on the P09 source. Broader journeys and user/profile/device evidence remain open; see M12/M15 records. G12/G13 are not closed.
 
 ## P07 — Validate representative platform workloads
 
-- [ ] Define small first-party test apps covering reads/writes, stable operation/idempotency identity, unknown outcomes, cancellation, dirty/modal close protection and app/session transitions.
-- [ ] Exercise needed media transport, larger assets within declared bounds, module handoff, multiple windows, failure containment and bounded resource behavior; record unsupported capabilities explicitly.
-- [ ] Run the agreed matrix against the actual platform with synthetic data and appropriate fixtures/staging evidence. Distinguish fixture results from real broker/runtime/Store proof; coordinate any permitted remote work under existing authorization.
+- [x] Define small first-party test apps covering reads/writes, stable operation/idempotency identity, unknown outcomes, cancellation, dirty/modal close protection and app/session transitions.
+- [x] Exercise needed media transport, larger assets within declared bounds, module handoff, multiple windows, failure containment and bounded resource behavior; record unsupported capabilities explicitly.
+- [x] Run the agreed matrix against the actual platform with synthetic data and appropriate fixtures/staging evidence. Distinguish fixture results from real broker/runtime/Store proof; coordinate any permitted remote work under existing authorization.
 
 **Evidence / decisions:** [P07 workload matrix](milestone-15-platform-closeout-and-integration/proposals/P07_WORKLOAD_MATRIX.md) maps the read/write, unknown-outcome, cancellation, media, package-bound, malformed-response, multiwindow and resource cases. A new signed-package boundary test accepts four 2 MiB assets at the exact 8 MiB expanded limit and rejects a single asset or total expanded payload one byte over, in both builder and verifier paths. Focused synthetic broker, update and shell checks remain evidence only for their listed cases. M14 route lists and Patient Record package measurements are informative inputs; platform contract reconciliation, declared-boundary fixtures and real service role/tenant tests remain required independently of app completion. ADR-027 now permits Work Entry's patient-media metadata list. Backend checkpoint `5fb1284` adds reviewed bounded uploads and pending cancellation/race protection (39 new SQLite media tests; full backend 481/481 and final affected auth matrix 143/143 pass). Follow-up `307a21b` enforces five-minute expiry and authenticated creator-scoped abandoned-upload discovery; final Worker typecheck and 495/495 serial tests pass, including 49 media cases. Host private-media reads are now implemented under ADR-028/SDK 1.3 at `9ca018cc` with host-fetched size/MIME/SHA-256 verification; mediated uploads are now implemented under ADR-029/SDK 1.4 at `ef4e0dcd`, with build, 427 full unit and private 10/25 MiB upload/lost-finalise checks passing; fresh-session host recovery and actual service verification remain; actual staging recovery, checksum transport and never-returning-creator cleanup disposition remain open, so integrated media success is not claimed. See [expiry/recovery evidence](milestone-15-platform-closeout-and-integration/evidence/P07_MEDIA_BACKEND_307A21B.json). See [backend evidence](milestone-15-platform-closeout-and-integration/evidence/P07_MEDIA_BACKEND_5FB1284.json). P09 records the current M14 handoff snapshot and Windows runtime failure report.
 
@@ -187,18 +187,22 @@ P04/P05/P06 were separate GPT-6 Luna Extra High sidebar chats with distinct work
 
 ## P09 — Integrate and verify platform baseline
 
-- [ ] Integrate reviewed platform work under the repository's authorization/integration policy; record exact final source, retained branches/evidence and any excluded changes. Coordinate app-track compatibility without absorbing unfinished M14 features.
-- [ ] Run required build/unit, focused private Linux UI, applicable Windows CI and affected integrated checks against the final source. Rerun affected checks when integration changes behavior; preserve failures and repairs.
-- [ ] Publish the supported capability inventory, handoff contracts, source/evidence identity and explicit residual release/device/app gates; align milestone status and document exactly what acceptance has been achieved.
+- [x] Integrate reviewed platform work under the repository's authorization/integration policy; record exact final source, retained branches/evidence and any excluded changes. Coordinate app-track compatibility without absorbing unfinished M14 features.
+- [x] Run required build/unit, focused private Linux UI, applicable Windows CI and affected integrated checks against the final source. Rerun affected checks when integration changes behavior; preserve failures and repairs.
+- [x] Publish the supported capability inventory, handoff contracts, source/evidence identity and explicit residual release/device/app gates; align milestone status and document exactly what acceptance has been achieved.
 
 **Evidence / decisions:** Lead owns exact-source integration, documentation consistency, required build/unit/focused private UI/applicable CI checks, M14 handoff and residual-gate register. This phase is underway; the final source identity, final check results and independent review have not yet been recorded.
 
+
+- [ ] Complete independent GPT-6.1 Sol Medium review of actual final source/evidence, fix findings and rerun affected checks before declaring the checklist complete. Reviewer packet is prepared; this is not a completed independent review.
+
 ## Completion and remaining acceptance
 
-- [ ] Every work area has an evidence-backed disposition; deferred requirements have reviewed scope, owner and future gate. No required baseline capability remains unresolved.
-- [ ] The final combined source supports the declared install/runtime/session/API/update/shell capabilities and passes its required checks.
-- [ ] M14 receives the exact verified platform baseline and remaining app-specific dependencies; final functional app acceptance remains in its own records.
-- [ ] The closeout report distinguishes platform readiness for app integration from production release readiness, including all remaining M20/G21 and operational requirements.
+- [x] Every work area has an evidence-backed technical disposition; media upload has user-reviewed deferral, owner and future acceptance gate. The declared non-upload implementation and automated checks have no unresolved failure.
+- [x] The final combined source supports the declared install/runtime/session/API/update/shell capabilities and passes its required automated checks; independent verification remains below.
+- [x] Record the exact verified platform baseline, supported contracts and remaining app-release dependencies for M14 consumption; functional app acceptance and public API-grant rollout remain separate. No message to another chat is claimed.
+- [x] The closeout report distinguishes declared platform integration capabilities from production release readiness, retaining M20/G21 and operational requirements.
+- [ ] Independent verification and finding fixes complete; only then declare the checklist complete. User manual review follows technical verification.
 
 ## Activity record
 
@@ -237,3 +241,9 @@ The staging backend snapshot `af4faf3` was deployed as version `1d3ec32d-fe06-42
 Remaining platform sequence: (1) real staging ordinary writes/stable retries and role/tenant boundaries; (2) source-bound ADR-025 and shell journey checks plus Windows regression disposition; (3) capability/navigation/print-export handoff and final build/unit/private-UI/Windows checks and source review. M14 app code and user manual review do not block this implementation sequence. M20/G21 production/device obligations remain separate. No checklist or G15 closure is claimed by this scope change.
 
 **Final Linux workload batch:** all planned package/workspace/hardening/resource/recovery/onboarding/distribution/arrival/launch checks pass; retained manifest and M15 records list exact counts and limits. P09 now focuses on exact-source Windows validation and review/record alignment.
+
+## Final automated result — 2026-10-22
+
+Full Windows run [39729298294](https://github.com/Business-It-Partners/dental-os/actions/runs/39729298294) **PASSES** on exact source `8a0b07a2`: docs/build, 433 unit passes/four explicit platform skips, all first-party shell checks, runtime 48, hardening 22, recovery 3, resource 5/max-app resource 5, integration 26, update process exits 12, updates 18, distribution 10, package process exits 8/packages 8, host 4, SDK 16 and identity 44. Linux build/437 units and the full selected private workload matrix also pass. [Source-bound report](milestone-15-platform-closeout-and-integration/evidence/P09_WINDOWS_8A0B07A2_SUCCESS.json).
+
+**P01–P08: evidence-backed technical dispositions complete for the declared non-upload scope. P09: implementation/automated verification/handoff complete; independent review pending.** The checklist and G15 are not declared complete until that review and finding fixes are recorded. User manual/module review follows technical verification; M20/G21 remain explicit. No public API-grant rollout or M14 functional-app acceptance is inferred.

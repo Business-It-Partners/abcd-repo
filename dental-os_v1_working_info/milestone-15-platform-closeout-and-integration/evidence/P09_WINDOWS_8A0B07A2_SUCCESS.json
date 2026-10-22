@@ -1,0 +1,167 @@
+{
+  "source": "8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1",
+  "runId": 39729298294,
+  "url": "https://github.com/Business-It-Partners/dental-os/actions/runs/39729298294",
+  "result": "success",
+  "environment": "GitHub-hosted Windows Server 2022; not physical-device/customer-host certification",
+  "artifactId": 12404806650,
+  "artifactSha256": "10fce1537f36d3fb734dd7b05363508faefbc39b31f38aa9dc3c8f1ed599342d",
+  "reports": {
+    "win32-updates-crash.json": {
+      "checks": 12
+    },
+    "windows-updates.json": {
+      "checks": 18
+    },
+    "windows-recovery.json": {
+      "checks": 3
+    },
+    "windows-hardening.json": {
+      "checks": 22
+    },
+    "windows-resources.json": {
+      "checks": 5
+    },
+    "windows-resources-limit.json": {
+      "checks": 5
+    },
+    "windows-integration.json": {
+      "checks": 26
+    },
+    "windows-unit.json": {
+      "numTotalTests": 437,
+      "numPassedTests": 433,
+      "numFailedTests": 0,
+      "numPendingTests": 4,
+      "success": true
+    },
+    "windows-distribution.json": {
+      "checks": 10
+    },
+    "win32-packages-crash.json": {
+      "checks": 8
+    },
+    "windows-packages.json": {
+      "checks": 8
+    },
+    "windows-host-ci.json": {
+      "checks": 4
+    },
+    "windows-runtime.json": {
+      "checks": 48
+    },
+    "windows-sdk.json": {
+      "checks": 16
+    },
+    "windows-identity.json": {
+      "checks": 44
+    }
+  },
+  "steps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-node@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Install locked dependencies",
+      "conclusion": "success"
+    },
+    {
+      "name": "Validate documentation",
+      "conclusion": "success"
+    },
+    {
+      "name": "Unit and filesystem state checks",
+      "conclusion": "success"
+    },
+    {
+      "name": "Build and typecheck",
+      "conclusion": "success"
+    },
+    {
+      "name": "First-party app shell package checks",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows isolated runtime proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows hardening proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows preserved-state recovery",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows bounded runtime resource profile",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows maximum app-count resource profile",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows integrated OS and API contract proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows app update process-exit recovery",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows safe app update proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows Store and distribution proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows package process-exit recovery",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows verified package runtime",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows hosted-runner startup and recovery",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows SDK and broker proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows identity and session proof",
+      "conclusion": "success"
+    },
+    {
+      "name": "Retain evidence",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-node@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success"
+    }
+  ],
+  "scope": "Exact-source full Windows workflow. All required steps pass. Four deliberate platform-specific unit skips remain explicitly recorded. Media uploads remain user-deferred and real-session denied. Production, independent review and physical/user acceptance are not implied."
+}

@@ -1,0 +1,18 @@
+{
+  "verifiedSource": "8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1",
+  "removedGeneratedOutputs": [
+    "dist",
+    "dist-electron",
+    "task-created node_modules link"
+  ],
+  "preserved": [
+    "all source and reports",
+    "all worktrees and branch history",
+    "protected staging journals/private profiles",
+    "shared dependency target",
+    "original dirty M13 checkout",
+    "user live app/browser"
+  ],
+  "productionChanges": false,
+  "mainMerged": false
+}

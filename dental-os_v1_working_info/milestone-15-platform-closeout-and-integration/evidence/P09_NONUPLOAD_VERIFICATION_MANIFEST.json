@@ -107,6 +107,26 @@
   "mediaUpload": "USER-DEFERRED; real SessionManager denies authority",
   "productionRequests": false,
   "liveDesktopControlled": false,
-  "windows": "PENDING exact-source hosted run",
-  "independentReview": "Prepared packet; no independent review claimed"
+  "windows": {
+    "source": "8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1",
+    "runId": 39729298294,
+    "result": "success",
+    "report": "P09_WINDOWS_8A0B07A2_SUCCESS.json"
+  },
+  "independentReview": "PENDING; packet prepared; final declaration requires review and any finding fixes",
+  "finalSourceTrees": {
+    "electron": "d280b074795a32d7d6873b0d82bdad76f525aeb8",
+    "src": "81cfbd975cd3294920dfa3dcfc62cce187d0a7b0",
+    "tests": "a8059ce925973c600ea328f21b2a01c6c9fc9689",
+    "tools": "087dc92c7a28e43876d0941a3225ba5a5055ddc9"
+  },
+  "finalLinuxRuntime": {
+    "checks": 47,
+    "dpr2": true,
+    "evidence": "P09_RUNTIME_SHORTCUT_PRECONDITION_LINUX.json"
+  },
+  "latestLinuxUpdates": {
+    "checks": 18,
+    "evidence": "P09_UPDATE_FOCUS_FIX_2026-10-22.json"
+  }
 }

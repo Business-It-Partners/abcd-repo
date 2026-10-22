@@ -1,0 +1,584 @@
+{
+  "passed": true,
+  "checks": [
+    "all 16 signed synthetic company apps are installed before opening",
+    "the configured limit opens and health-checks all 16 isolated app views",
+    "16 app views stay live for the full 60-second sample",
+    "all app views remain health-checked through the sample",
+    "closing all 16 apps releases all isolated app views"
+  ],
+  "samples": [
+    {
+      "time": 1792647850628,
+      "processCount": 20,
+      "processes": [
+        {
+          "pid": 5652,
+          "type": "Browser",
+          "workingSetKiB": 153796
+        },
+        {
+          "pid": 6840,
+          "type": "GPU",
+          "workingSetKiB": 146472
+        },
+        {
+          "pid": 2184,
+          "type": "Utility",
+          "workingSetKiB": 42888
+        },
+        {
+          "pid": 5792,
+          "type": "Tab",
+          "workingSetKiB": 382304
+        },
+        {
+          "pid": 5716,
+          "type": "Tab",
+          "workingSetKiB": 96488
+        },
+        {
+          "pid": 4272,
+          "type": "Tab",
+          "workingSetKiB": 100532
+        },
+        {
+          "pid": 5640,
+          "type": "Tab",
+          "workingSetKiB": 92316
+        },
+        {
+          "pid": 2020,
+          "type": "Tab",
+          "workingSetKiB": 94056
+        },
+        {
+          "pid": 4176,
+          "type": "Tab",
+          "workingSetKiB": 92480
+        },
+        {
+          "pid": 1636,
+          "type": "Tab",
+          "workingSetKiB": 94844
+        },
+        {
+          "pid": 4068,
+          "type": "Tab",
+          "workingSetKiB": 95032
+        },
+        {
+          "pid": 4600,
+          "type": "Tab",
+          "workingSetKiB": 95108
+        },
+        {
+          "pid": 7052,
+          "type": "Tab",
+          "workingSetKiB": 97920
+        },
+        {
+          "pid": 4032,
+          "type": "Tab",
+          "workingSetKiB": 98004
+        },
+        {
+          "pid": 6192,
+          "type": "Tab",
+          "workingSetKiB": 98064
+        },
+        {
+          "pid": 6136,
+          "type": "Tab",
+          "workingSetKiB": 98124
+        },
+        {
+          "pid": 4724,
+          "type": "Tab",
+          "workingSetKiB": 95344
+        },
+        {
+          "pid": 5504,
+          "type": "Tab",
+          "workingSetKiB": 95296
+        },
+        {
+          "pid": 2512,
+          "type": "Tab",
+          "workingSetKiB": 95356
+        },
+        {
+          "pid": 5408,
+          "type": "Tab",
+          "workingSetKiB": 95756
+        }
+      ],
+      "aggregateWorkingSetKiB": 2260180,
+      "appViews": 16
+    },
+    {
+      "time": 1792647865749,
+      "processCount": 20,
+      "processes": [
+        {
+          "pid": 5652,
+          "type": "Browser",
+          "workingSetKiB": 140660
+        },
+        {
+          "pid": 6840,
+          "type": "GPU",
+          "workingSetKiB": 137064
+        },
+        {
+          "pid": 2184,
+          "type": "Utility",
+          "workingSetKiB": 39532
+        },
+        {
+          "pid": 5792,
+          "type": "Tab",
+          "workingSetKiB": 363032
+        },
+        {
+          "pid": 5716,
+          "type": "Tab",
+          "workingSetKiB": 92196
+        },
+        {
+          "pid": 4272,
+          "type": "Tab",
+          "workingSetKiB": 96292
+        },
+        {
+          "pid": 5640,
+          "type": "Tab",
+          "workingSetKiB": 87540
+        },
+        {
+          "pid": 2020,
+          "type": "Tab",
+          "workingSetKiB": 89024
+        },
+        {
+          "pid": 4176,
+          "type": "Tab",
+          "workingSetKiB": 87692
+        },
+        {
+          "pid": 1636,
+          "type": "Tab",
+          "workingSetKiB": 91544
+        },
+        {
+          "pid": 4068,
+          "type": "Tab",
+          "workingSetKiB": 92592
+        },
+        {
+          "pid": 4600,
+          "type": "Tab",
+          "workingSetKiB": 92500
+        },
+        {
+          "pid": 7052,
+          "type": "Tab",
+          "workingSetKiB": 95852
+        },
+        {
+          "pid": 4032,
+          "type": "Tab",
+          "workingSetKiB": 96340
+        },
+        {
+          "pid": 6192,
+          "type": "Tab",
+          "workingSetKiB": 97140
+        },
+        {
+          "pid": 6136,
+          "type": "Tab",
+          "workingSetKiB": 97480
+        },
+        {
+          "pid": 4724,
+          "type": "Tab",
+          "workingSetKiB": 95296
+        },
+        {
+          "pid": 5504,
+          "type": "Tab",
+          "workingSetKiB": 95196
+        },
+        {
+          "pid": 2512,
+          "type": "Tab",
+          "workingSetKiB": 95392
+        },
+        {
+          "pid": 5408,
+          "type": "Tab",
+          "workingSetKiB": 95796
+        }
+      ],
+      "aggregateWorkingSetKiB": 2178160,
+      "appViews": 16
+    },
+    {
+      "time": 1792647880917,
+      "processCount": 20,
+      "processes": [
+        {
+          "pid": 5652,
+          "type": "Browser",
+          "workingSetKiB": 144820
+        },
+        {
+          "pid": 6840,
+          "type": "GPU",
+          "workingSetKiB": 131580
+        },
+        {
+          "pid": 2184,
+          "type": "Utility",
+          "workingSetKiB": 36284
+        },
+        {
+          "pid": 5792,
+          "type": "Tab",
+          "workingSetKiB": 301492
+        },
+        {
+          "pid": 5716,
+          "type": "Tab",
+          "workingSetKiB": 88956
+        },
+        {
+          "pid": 4272,
+          "type": "Tab",
+          "workingSetKiB": 92660
+        },
+        {
+          "pid": 5640,
+          "type": "Tab",
+          "workingSetKiB": 83628
+        },
+        {
+          "pid": 2020,
+          "type": "Tab",
+          "workingSetKiB": 85012
+        },
+        {
+          "pid": 4176,
+          "type": "Tab",
+          "workingSetKiB": 83776
+        },
+        {
+          "pid": 1636,
+          "type": "Tab",
+          "workingSetKiB": 86696
+        },
+        {
+          "pid": 4068,
+          "type": "Tab",
+          "workingSetKiB": 87252
+        },
+        {
+          "pid": 4600,
+          "type": "Tab",
+          "workingSetKiB": 87336
+        },
+        {
+          "pid": 7052,
+          "type": "Tab",
+          "workingSetKiB": 90612
+        },
+        {
+          "pid": 4032,
+          "type": "Tab",
+          "workingSetKiB": 90948
+        },
+        {
+          "pid": 6192,
+          "type": "Tab",
+          "workingSetKiB": 91732
+        },
+        {
+          "pid": 6136,
+          "type": "Tab",
+          "workingSetKiB": 92076
+        },
+        {
+          "pid": 4724,
+          "type": "Tab",
+          "workingSetKiB": 90104
+        },
+        {
+          "pid": 5504,
+          "type": "Tab",
+          "workingSetKiB": 89980
+        },
+        {
+          "pid": 2512,
+          "type": "Tab",
+          "workingSetKiB": 90476
+        },
+        {
+          "pid": 5408,
+          "type": "Tab",
+          "workingSetKiB": 91652
+        }
+      ],
+      "aggregateWorkingSetKiB": 2037072,
+      "appViews": 16
+    },
+    {
+      "time": 1792647896037,
+      "processCount": 20,
+      "processes": [
+        {
+          "pid": 5652,
+          "type": "Browser",
+          "workingSetKiB": 146216
+        },
+        {
+          "pid": 6840,
+          "type": "GPU",
+          "workingSetKiB": 127364
+        },
+        {
+          "pid": 2184,
+          "type": "Utility",
+          "workingSetKiB": 34148
+        },
+        {
+          "pid": 5792,
+          "type": "Tab",
+          "workingSetKiB": 280920
+        },
+        {
+          "pid": 5716,
+          "type": "Tab",
+          "workingSetKiB": 85060
+        },
+        {
+          "pid": 4272,
+          "type": "Tab",
+          "workingSetKiB": 88648
+        },
+        {
+          "pid": 5640,
+          "type": "Tab",
+          "workingSetKiB": 79988
+        },
+        {
+          "pid": 2020,
+          "type": "Tab",
+          "workingSetKiB": 80028
+        },
+        {
+          "pid": 4176,
+          "type": "Tab",
+          "workingSetKiB": 78768
+        },
+        {
+          "pid": 1636,
+          "type": "Tab",
+          "workingSetKiB": 82608
+        },
+        {
+          "pid": 4068,
+          "type": "Tab",
+          "workingSetKiB": 83344
+        },
+        {
+          "pid": 4600,
+          "type": "Tab",
+          "workingSetKiB": 83420
+        },
+        {
+          "pid": 7052,
+          "type": "Tab",
+          "workingSetKiB": 86456
+        },
+        {
+          "pid": 4032,
+          "type": "Tab",
+          "workingSetKiB": 86728
+        },
+        {
+          "pid": 6192,
+          "type": "Tab",
+          "workingSetKiB": 87408
+        },
+        {
+          "pid": 6136,
+          "type": "Tab",
+          "workingSetKiB": 87564
+        },
+        {
+          "pid": 4724,
+          "type": "Tab",
+          "workingSetKiB": 85700
+        },
+        {
+          "pid": 5504,
+          "type": "Tab",
+          "workingSetKiB": 85560
+        },
+        {
+          "pid": 2512,
+          "type": "Tab",
+          "workingSetKiB": 85884
+        },
+        {
+          "pid": 5408,
+          "type": "Tab",
+          "workingSetKiB": 87204
+        }
+      ],
+      "aggregateWorkingSetKiB": 1943016,
+      "appViews": 16
+    },
+    {
+      "time": 1792647911082,
+      "processCount": 20,
+      "processes": [
+        {
+          "pid": 5652,
+          "type": "Browser",
+          "workingSetKiB": 144404
+        },
+        {
+          "pid": 6840,
+          "type": "GPU",
+          "workingSetKiB": 127256
+        },
+        {
+          "pid": 2184,
+          "type": "Utility",
+          "workingSetKiB": 32660
+        },
+        {
+          "pid": 5792,
+          "type": "Tab",
+          "workingSetKiB": 262532
+        },
+        {
+          "pid": 5716,
+          "type": "Tab",
+          "workingSetKiB": 80532
+        },
+        {
+          "pid": 4272,
+          "type": "Tab",
+          "workingSetKiB": 84024
+        },
+        {
+          "pid": 5640,
+          "type": "Tab",
+          "workingSetKiB": 75608
+        },
+        {
+          "pid": 2020,
+          "type": "Tab",
+          "workingSetKiB": 76400
+        },
+        {
+          "pid": 4176,
+          "type": "Tab",
+          "workingSetKiB": 74296
+        },
+        {
+          "pid": 1636,
+          "type": "Tab",
+          "workingSetKiB": 77660
+        },
+        {
+          "pid": 4068,
+          "type": "Tab",
+          "workingSetKiB": 78240
+        },
+        {
+          "pid": 4600,
+          "type": "Tab",
+          "workingSetKiB": 78256
+        },
+        {
+          "pid": 7052,
+          "type": "Tab",
+          "workingSetKiB": 81140
+        },
+        {
+          "pid": 4032,
+          "type": "Tab",
+          "workingSetKiB": 81524
+        },
+        {
+          "pid": 6192,
+          "type": "Tab",
+          "workingSetKiB": 81952
+        },
+        {
+          "pid": 6136,
+          "type": "Tab",
+          "workingSetKiB": 82328
+        },
+        {
+          "pid": 4724,
+          "type": "Tab",
+          "workingSetKiB": 80540
+        },
+        {
+          "pid": 5504,
+          "type": "Tab",
+          "workingSetKiB": 80400
+        },
+        {
+          "pid": 2512,
+          "type": "Tab",
+          "workingSetKiB": 81028
+        },
+        {
+          "pid": 5408,
+          "type": "Tab",
+          "workingSetKiB": 82884
+        }
+      ],
+      "aggregateWorkingSetKiB": 1843664,
+      "appViews": 16
+    }
+  ],
+  "final": {
+    "time": 1792647914905,
+    "processCount": 4,
+    "processes": [
+      {
+        "pid": 5652,
+        "type": "Browser",
+        "workingSetKiB": 139760
+      },
+      {
+        "pid": 6840,
+        "type": "GPU",
+        "workingSetKiB": 133796
+      },
+      {
+        "pid": 2184,
+        "type": "Utility",
+        "workingSetKiB": 31980
+      },
+      {
+        "pid": 5792,
+        "type": "Tab",
+        "workingSetKiB": 304996
+      }
+    ],
+    "aggregateWorkingSetKiB": 610532,
+    "appViews": 0
+  },
+  "appCount": 16,
+  "platform": "win32",
+  "source": "8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1",
+  "scope": "Sixteen installed and simultaneously open capability-free synthetic company apps; 60-second idle/foreground-switch sample. Measures Electron aggregate working set/processes and view cleanup; not a clinical workload or physical-device soak."
+}

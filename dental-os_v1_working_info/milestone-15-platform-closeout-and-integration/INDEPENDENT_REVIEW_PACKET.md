@@ -19,3 +19,9 @@ Read AGENTS.md, PRODUCT_DIRECTION.md, WORK_CHECKLIST.md, canonical product visio
 7. Staging metadata continuity, signer/tool controls, safe diagnostics and remaining M20/G21 release/device obligations. User manual visual/module review follows technical verification; do not silently close G12/G13/G15.
 
 Record actionable findings with actual file/line and reproduction. The lead fixes findings, reruns affected checks one heavy job at a time, updates exact source/CI evidence and only then records the result. No production deployment, main merge, history rewrite, live app/browser control or worktree deletion.
+
+## Exact final automated source
+
+Full Windows workflow [39729298294](https://github.com/Business-It-Partners/dental-os/actions/runs/39729298294) succeeds on `8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1`. Final evidence/status commits are records only: compare `git diff 8a0b07a2 HEAD -- electron src tests tools package.json package-lock.json tsconfig.json tsconfig.electron.json vite.config.mts vitest.config.mts .github/workflows` and require no differences, unless a later finding fix is explicitly recorded with affected reruns. Inspect actual HEAD and full report JSONs.
+
+Publication scope: current public controls were renewed without adding API grants. Private company-signed probes prove the runtime format-2 contract; existing legacy format-1 app preparers/publishers must not be represented as having published API approval. Actual API-enabled M14 release preparation/publication must supply reviewed matching format-2 manifest/catalogue/policy authority under the company signer. Review this handoff boundary explicitly; no unreviewed backend SYS-0008 publisher changes were accepted.

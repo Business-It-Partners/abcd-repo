@@ -1,5 +1,8 @@
 # Dental OS V1 — Global Status
 
+**Latest M15 (2026-10-22):** declared non-upload implementation and automated verification pass on `8a0b07a2`, including the full Windows workflow, Linux build/437 units and scoped real staging JSON proof. Independent source/evidence review is pending; user manual review follows technical verification. Uploads are explicitly deferred/denied; M14 functional/public-release and M20/G21 gates remain separate. [Current M15 status](milestone-15-platform-closeout-and-integration/STATUS.md).
+
+
 **Updated:** 2026-10-22.
 
 **Platform reconciliation tracking:** [Central checklist](PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) owns nine work areas. P01–P03 and M15.1 are complete. The user selected the existing signed company catalogue/update-policy authority for first-party release-scoped API grants; ADR-026 and the format-2 implementation are integrated with synthetic proof. P05 update and P06 shell candidates have focused checks; P07 execution is underway. P08 staging signed-feed continuity is verified: the lead completed the real metadata-only renewal/expiry-recovery drill, with retained package and registry identity proof. P09 final integrated verification and G15 remain open. M12/G12, M13/G13 and M14 app acceptance remain separate.

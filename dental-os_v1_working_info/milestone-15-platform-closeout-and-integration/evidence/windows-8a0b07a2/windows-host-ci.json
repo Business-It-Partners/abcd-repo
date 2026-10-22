@@ -1,0 +1,11 @@
+{
+  "sha": "8a0b07a2f7e4182b8e1f39d4b2d82f8663e427d1",
+  "platform": "win32",
+  "checks": [
+    "host ready",
+    "preference survives restart",
+    "safe recovery without preload",
+    "corrupt state retained"
+  ],
+  "scope": "GitHub Windows runner automation; physical device acceptance deferred"
+}
