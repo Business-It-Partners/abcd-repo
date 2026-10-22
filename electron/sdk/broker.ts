@@ -1,3 +1,4 @@
+import { readClinicMedia, mediaKindForApp, MediaReadError, type MediaKind } from './mediaRead';
 import { randomUUID, createHash } from 'node:crypto';
 import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
@@ -7,13 +8,14 @@ export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
   allowed?(operation: Operation): boolean;
   allowedClinicRequest?(appId: string, path: string, method: string): boolean;
+  allowedMediaRead?(appId: string, kind: MediaKind): boolean;
   rejected?(status: 401 | 403): void;
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
 type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
 const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
-type Pending = { controller: AbortController; write: boolean };
+type Pending = { controller: AbortController; write: boolean; media?: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 const messages: Record<ErrorCode, string> = {
   INVALID_REQUEST: 'Invalid SDK request.', UNKNOWN_CALLER: 'Unregistered application frame.', INCOMPATIBLE_SDK: 'Unsupported SDK contract.', STALE_SESSION: 'Session changed; discard this result.', FORBIDDEN: 'Operation is not granted to this app.', BUSY: 'Request capacity reached.', AUTH_REQUIRED: 'Sign in is required.', ACCESS_DENIED: 'Access denied by the service.', CONFLICT: 'The record changed; refresh before deciding.', VALIDATION: 'The service rejected the input.', OFFLINE: 'Service connection failed.', MAINTENANCE: 'Service temporarily unavailable.', TIMEOUT: 'Request deadline exceeded.', CANCELLED: 'Request stopped locally.', UNKNOWN_OUTCOME: 'Write outcome is unknown. Reconcile using the original operation key.', INVALID_RESPONSE: 'Service response did not match the contract.', REDIRECT_DENIED: 'Service redirect refused.', UNAVAILABLE: 'This platform adapter is not available yet.',
@@ -68,6 +70,7 @@ export class ApiBroker {
       if (this.identity.allowed?.(op) === false) return false;
       if (!apiEntryPoints.includes(op)) return true;
       return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true
+        && (op !== 'clinic.media.read' || !!mediaKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaRead?.(r.appId, mediaKindForApp(r.appId)!) === true)
         && (op !== 'clinic.api.request' || !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!)
           && this.identity.allowed?.(appOperation(r.appId)!) !== false && !!this.identity.allowedClinicRequest);
     }) });
@@ -75,6 +78,10 @@ export class ApiBroker {
   private apiAllowed(r: Registration, v: Request): boolean {
     if (!apiEntryPoints.includes(v.operation)) return true;
     if (!apiOperations.includes(v.operation as ApiOperationId) || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true) return false;
+    if (v.operation === 'clinic.media.read') {
+      const family = appOperation(r.appId);
+      return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false && mediaKindForApp(r.appId) === v.input.kind && this.identity.allowedMediaRead?.(r.appId, v.input.kind as MediaKind) === true;
+    }
     if (v.operation !== 'clinic.api.request') return true;
     const family = appOperation(r.appId);
     return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false
@@ -118,6 +125,10 @@ export class ApiBroker {
     const active = this.pending.get(r) ?? new Map<string, Pending>();
     const total = [...this.pending.values()].reduce((sum, list) => sum + list.size, 0);
     if (active.has(v.requestId) || active.size >= this.limits.perApp || total >= this.limits.total) return failure('BUSY', 'not_sent', v);
+    if (v.operation === 'clinic.media.read') {
+      const readers = [...this.pending].flatMap(([owner, list]) => [...list.values()].filter(value => value.media).map(() => owner));
+      if (readers.length >= 2 || readers.includes(r)) return failure('BUSY', 'not_sent', v);
+    }
     const write = v.operation === 'appointments.setStatus' || v.operation === 'clinic.api.request' && v.input.method !== 'GET';
     if (write) {
       const key = v.input.idempotencyKey as string;
@@ -130,12 +141,23 @@ export class ApiBroker {
       if (!prior && this.writes.size >= this.limits.operationKeys) return failure('BUSY', 'not_sent', v);
       this.writes.set(key, fingerprint); this.writing.add(key);
     }
-    const controller = new AbortController(); active.set(v.requestId, { controller, write }); this.pending.set(r, active);
-    const timer = setTimeout(() => controller.abort('timeout'), this.limits.timeoutMs);
+    const controller = new AbortController(); active.set(v.requestId, { controller, write, media: v.operation === 'clinic.media.read' }); this.pending.set(r, active);
+    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
     let dispatched = false;
     try {
       let value: unknown;
-      if (v.operation.startsWith('appointments.') || v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
+      if (v.operation === 'clinic.media.read') {
+        const token = await abortable(this.credential(v.generation), controller.signal);
+        const assertCurrent = () => {
+          if (!this.connected(r, v) || r.authorize?.() === false || !this.apiAllowed(r, v)) throw new MediaReadError('ACCESS_DENIED');
+        };
+        assertCurrent();
+        if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
+        value = await abortable(readClinicMedia(v.input as { kind: MediaKind; recordId: string; assetId: string }, {
+          apiBase: this.environment.apiBase, token, signal: controller.signal, requestId: v.requestId,
+          transport: this.transport, assertCurrent, rejected: status => this.identity.rejected?.(status),
+        }), controller.signal);
+      } else if (v.operation.startsWith('appointments.') || v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
         const token = await abortable(this.credential(v.generation), controller.signal);
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
         if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
@@ -199,7 +221,7 @@ export class ApiBroker {
     } catch (error) {
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
       if (write && dispatched) return failure('UNKNOWN_OUTCOME', 'unknown', v);
-      const code: ErrorCode = controller.signal.aborted ? controller.signal.reason === 'cancel' || controller.signal.reason === 'closed' ? 'CANCELLED' : 'TIMEOUT' : error instanceof TransportError ? error.code : error instanceof SyntaxError ? 'INVALID_RESPONSE' : 'OFFLINE';
+      const code: ErrorCode = controller.signal.aborted ? controller.signal.reason === 'cancel' || controller.signal.reason === 'closed' ? 'CANCELLED' : 'TIMEOUT' : error instanceof TransportError || error instanceof MediaReadError ? error.code : error instanceof SyntaxError ? 'INVALID_RESPONSE' : 'OFFLINE';
       return failure(code, 'not_sent', v);
     } finally {
       clearTimeout(timer); if (write) this.writing.delete(v.input.idempotencyKey as string); active.delete(v.requestId); if (!active.size) this.pending.delete(r);

@@ -1,8 +1,8 @@
 /** Renderer-safe wire contract. No Electron, credential, filesystem or transport imports. */
-export const SDK = { major: 1, minor: 2 } as const;
+export const SDK = { major: 1, minor: 3 } as const;
 export const MAX_REQUEST_BYTES = 16_384;
 export const operations = [
-  'appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.api.blob.read',
+  'appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.api.blob.read', 'clinic.media.read',
   'clinic.app.followups', 'clinic.app.appointments', 'clinic.app.work-entry', 'clinic.app.patient-record',
   'clinic.app.treatment-progress', 'clinic.app.lab-tracker', 'clinic.app.finance', 'clinic.app.patient-payments',
   'clinic.app.staff', 'clinic.app.treatment-protocols', 'clinic.app.calendar',
@@ -10,7 +10,7 @@ export const operations = [
 ] as const;
 export type Operation = typeof operations[number];
 /** Closed host API contracts that update-policy v2 may grant to an exact app release. */
-export const apiOperations = ['appointments.list', 'appointments.setStatus', 'clinic.api.request'] as const;
+export const apiOperations = ['appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.media.read'] as const;
 export type ApiOperationId = typeof apiOperations[number];
 export type ErrorCode = 'INVALID_REQUEST' | 'UNKNOWN_CALLER' | 'INCOMPATIBLE_SDK' | 'STALE_SESSION' | 'FORBIDDEN' | 'BUSY' | 'AUTH_REQUIRED' | 'ACCESS_DENIED' | 'CONFLICT' | 'VALIDATION' | 'OFFLINE' | 'MAINTENANCE' | 'TIMEOUT' | 'CANCELLED' | 'UNKNOWN_OUTCOME' | 'INVALID_RESPONSE' | 'REDIRECT_DENIED' | 'UNAVAILABLE';
 export type Outcome = 'not_sent' | 'rejected' | 'unknown';
@@ -66,6 +66,7 @@ export function parseRequest(value: unknown): Request | undefined {
       }
       break;
     }
+    case 'clinic.media.read': valid = shape(p, ['kind', 'recordId', 'assetId']) && ['patient_media', 'staff_document'].includes(p.kind as string) && uuid(p.recordId) && uuid(p.assetId); break;
     case 'clinic.api.blob.read': valid = shape(p, ['path']) && text(p.path, 1024) && p.path.startsWith('/v1/') && !/[\\\u0000-\u001f\u007f#]/.test(p.path); break;
     case 'preferences.update': valid = shape(p, ['textScale']) && [0.9, 1, 1.1].includes(p.textScale as number); break;
     case 'lifecycle.report': valid = shape(p, ['dirty', 'modal']) && typeof p.dirty === 'boolean' && typeof p.modal === 'boolean'; break;

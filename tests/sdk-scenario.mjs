@@ -23,6 +23,7 @@ export async function verifySdk(profileArgs,reportName){
   check('copied alpha connection rejected by beta sender',(await invoke(beta,a.value,'platform.status',{})).error.code==='STALE_SESSION');
   check('URL and raw-channel injection rejected',(await invoke(beta,b.value,'platform.status',{}, {url:'https://outside.invalid',channel:'window:control'})).error.code==='INVALID_REQUEST');
   check('oversized request rejected before IPC',(await invoke(beta,b.value,'notifications.show',{message:'x'.repeat(20000)})).error.code==='INVALID_REQUEST');
+  check('typed media API refuses a sample app without its required app-family authority',(await invoke(beta,b.value,'clinic.media.read',{kind:'patient_media',recordId:'11111111-1111-4111-8111-111111111111',assetId:'22222222-2222-4222-8222-222222222222'})).error.code==='FORBIDDEN');
   check('unconfigured native adapter fails explicitly',(await invoke(beta,b.value,'native.intent',{kind:'export'})).error.code==='UNAVAILABLE');
   const context=await invoke(beta,b.value,'session.context',{});check('only synthetic display context returned',context.ok&&context.value.clinicLabel==='Synthetic clinic'&&!JSON.stringify(context).includes('credential'));
   check('no privileged bridge, token getter or raw transport exposed',await beta.evaluate(()=>typeof require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request'));

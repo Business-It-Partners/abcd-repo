@@ -1,3 +1,4 @@
+import { mediaKindForApp, type MediaKind } from '../sdk/mediaRead';
 import type { Operation } from '../sdk/contracts';
 import type { Identity } from '../sdk/broker';
 import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client';
@@ -104,6 +105,10 @@ export class SessionManager implements Identity {
       return !!appId&&appAllowed(appId,this.clinic.role,this.clinic.capabilities);
     }
     return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
+  }
+  allowedMediaRead(appId: string, kind: MediaKind) {
+    return this.phase === 'ready' && !!this.clinic && mediaKindForApp(appId) === kind
+      && appAllowed(appId, this.clinic.role, this.clinic.capabilities);
   }
   allowedClinicRequest(appId: string, path: string, method: string) {
     return this.phase === 'ready' && !!this.clinic
