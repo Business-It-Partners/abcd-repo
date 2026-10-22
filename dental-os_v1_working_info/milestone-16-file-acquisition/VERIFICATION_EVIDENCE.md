@@ -240,3 +240,9 @@ This follow-up verifies the Files gallery and existing Send behavior using synth
 ## Image Viewer follow-up (2026-10-22) — pending verification
 
 Scope: shell-owned image window launched by Files supported-image double-click; raster allowlist, opaque viewer token/session sender checks, guarded on-disk identity, bounded single-frame decode, rotate/zoom/navigation, blocked shell capture and no dock/overview/minimized image captures. Focused local static checks, final tagged Windows test results and physical-device walkthrough must be recorded before claiming PASS. Linux host GUI verification delegated to user after final branch handoff. Native cross-view drag and physical G16 acceptance remain OPEN.
+
+### Focused pre-CI inspection for Image Viewer
+
+- Branch/remote tip at inspection: `8ff20d0de196c5958982b5aa739bcb587bc70d72`. 21 source-level cross-file structural/security assertions **passed** (strict IPC parser presence; shell main-frame/generation/sender binding; directory/fingerprint/allowlist/bounds; shell-only preload; GUI launch/close; no dock/overview/minimize; pre/post capture privacy guards; tests and Windows-only Action gating).
+- These are **static source inspections, not TypeScript compilation, unit tests or graphical verification**. The GitHub-connected editing environment exposes repository files but no mountable checkout/node_modules; a local `npm ci`, `npm run typecheck` and Vitest run could not be executed in this session. The sole tagged hosted Windows job must run focused tests and build on the exact new commit before this viewer can be marked hosted-verified.
+- Deferred: Linux private-device verification to the user's next handoff, and the separate physical-device/G16 criteria. No real clinic data, production/staging deployment, native drag or merge.
