@@ -105,16 +105,17 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
       anyCapabilities:['patient_record.access'],excludedRoles:[],allowedRoles:[],
       modules:[{id:'records',label:'Records',tab:'records',capability:'patient_record.access'}]};
     const html=`<!doctype html><html lang="en"><meta charset="utf-8"><title>Synthetic Records Picker</title>
-      <h1>Synthetic Records Picker</h1><button id="pick-local">Choose local X-ray</button>
+      <h1>Synthetic Records Picker</h1><button id="connect-sdk">Connect SDK</button><button id="pick-local">Choose local X-ray</button>
       <button id="try-synthetic">Programmatic picker request</button><pre id="pick-result" role="status">Connecting</pre>
       <script>let current;const result=document.getElementById('pick-result');
-      window.dentalApp.connect({major:1,minor:5}).then(value=>{current=value.ok?value.value:null;
-      result.textContent=value.ok?'SDK connected':'Connection denied';});
+      function connectSdk(){window.dentalApp.connect({major:1,minor:5}).then(value=>{current=value.ok?value.value:null;
+      result.textContent=value.ok?'SDK connected':'Connection denied';});}
       async function choose(){if(!current){result.textContent='Not connected';return;}
       const response=await window.dentalApp.request({version:1,connection:current.connection,generation:current.generation,
       requestId:crypto.randomUUID(),operation:'local.files.pick',
       input:{purpose:'patient-attachment',fileTypes:'medical-images',maxSelections:1}});
       result.textContent=JSON.stringify(response);}
+      document.getElementById('connect-sdk').addEventListener('click',connectSdk);
       document.getElementById('pick-local').addEventListener('click',choose);
       document.getElementById('try-synthetic').addEventListener('click',()=>setTimeout(choose,1100));
       </script>`;

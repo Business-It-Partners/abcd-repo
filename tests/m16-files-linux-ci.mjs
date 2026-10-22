@@ -45,6 +45,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-runtime="company.dental.patient-record"]')?.dataset.runtimePhase==='ready',null,{timeout:15000});
   const guest=app.context().pages().find(v=>v.url().startsWith('dental-fixture://company.dental.patient-record/'));
   check('Ephemeral signed dental app runs in separate Linux WebContentsView',!!guest);
+  await guest.getByRole('button',{name:'Connect SDK'}).click();
   await guest.locator('#pick-result').filter({hasText:'SDK connected'}).waitFor({timeout:12000});
   await guest.getByRole('button',{name:'Programmatic picker request'}).click();
   await guest.locator('#pick-result').filter({hasText:'FORBIDDEN'}).waitFor({timeout:6000});
@@ -82,6 +83,11 @@ try{
 } finally {
   await mkdir(path.join(root,'artifacts'),{recursive:true});
   await writeFile(path.join(root,'artifacts','m16-linux-files-ui.json'),JSON.stringify(report,null,2)+'\n');
-  if(app)await app.close().catch(()=>{});
+  if(app){
+    let closed=false;
+    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),
+      new Promise(resolve=>setTimeout(resolve,3500))]);
+    if(!closed){try{app.process().kill();}catch{/* only synthetic CI child */}}
+  }
   await rm(profile,{recursive:true,force:true,maxRetries:3,retryDelay:50});
 }

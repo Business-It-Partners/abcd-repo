@@ -127,6 +127,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-runtime="company.dental.patient-record"]')?.dataset.runtimePhase==='ready',null,{timeout:15000});
   const signedApp=app.context().pages().find(p=>p.url().startsWith('dental-fixture://company.dental.patient-record/'));
   check('Ephemeral company-signed dental app launched in isolated runtime',!!signedApp);
+  await signedApp.getByRole('button',{name:'Connect SDK'}).click();
   await signedApp.locator('#pick-result').filter({hasText:'SDK connected'}).waitFor({timeout:12000});
   check('Signed app SDK is connected and ready',true);
   await signedApp.getByRole('button',{name:'Programmatic picker request'}).click();
@@ -172,6 +173,11 @@ try{
 } finally {
   await mkdir(path.join(repo,'artifacts'),{recursive:true});
   await writeFile(path.join(repo,'artifacts','m16-windows-files-ui.json'),JSON.stringify(report,null,2)+'\n');
-  if(app)await app.close().catch(()=>{});
+  if(app){
+    let closed=false;
+    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),
+      new Promise(resolve=>setTimeout(resolve,3500))]);
+    if(!closed){try{app.process().kill();}catch{/* only synthetic CI child */}}
+  }
   await rm(profile,{recursive:true,force:true,maxRetries:6,retryDelay:100});
 }
