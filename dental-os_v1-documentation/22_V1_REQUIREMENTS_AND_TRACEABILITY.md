@@ -20,7 +20,8 @@ This matrix connects the constitution to acceptance gates and execution owners. 
 | R12 Bounded operational diagnostics/resource management | 15; INV-11/13 | G10/G11/G12/G13/G14/G15 (representative workload and renewal operations)/G20; M10..M15/M20 |
 | R13 No direct app-to-app system | 11,19; INV-05/07 | G04/G09/G15 (bounded OS-navigation design assessment only; no messaging implementation); M04/M09/M15 |
 | R14 Platform release/update and supported-host proof | 10,16,18; INV-12/13 | G20/G21; M20 |
-| R15 Honest baseline, decisions and acceptance evidence | 20,21; INV-10/13 | G01/G11/G12/G13/G14/G15/G20/G21 and every milestone |
+| R15 Honest baseline, decisions and acceptance evidence | 20,21; INV-10/13 | G01/G11/G12/G13/G14/G15/G16/G20/G21 and every milestone |
+| R16 Host file acquisition without app filesystem authority | M16 architecture; 07,11,14; INV-01/05/07/09/11/13 | G16; M16 |
 
 G15 closes only the app-ready platform portions shown above. Its R13 work assesses any M14 cross-app navigation need as a bounded OS-owned design; no arbitrary app-grant format, direct app messaging bus, or general cross-app intent capability is approved by this matrix. Any such navigation implementation requires a later explicit contract/ADR. G12/G13 retain their own residual evidence and gate status. R14 installer, platform-update, supported-host and final-release proof remains under G20/G21.
 
