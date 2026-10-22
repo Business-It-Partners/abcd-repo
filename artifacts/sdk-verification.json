@@ -10,6 +10,7 @@
     "copied alpha connection rejected by beta sender",
     "URL and raw-channel injection rejected",
     "oversized request rejected before IPC",
+    "typed media API refuses a sample app without its required app-family authority",
     "unconfigured native adapter fails explicitly",
     "only synthetic display context returned",
     "no privileged bridge, token getter or raw transport exposed",
@@ -18,5 +19,5 @@
   ],
   "errors": [],
   "platform": "linux",
-  "sha": "7420a898"
+  "sha": "9ca018cca77179d9806a6d8aa04c4029f9100eb1"
 }

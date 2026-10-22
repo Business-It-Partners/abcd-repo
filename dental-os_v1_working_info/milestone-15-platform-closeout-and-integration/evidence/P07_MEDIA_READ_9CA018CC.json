@@ -1,0 +1,68 @@
+{
+  "sourceCommit": "9ca018cca77179d9806a6d8aa04c4029f9100eb1",
+  "sourceHashes": {
+    "dental-os_v1-documentation/20_V1_ADR_REGISTER.md": "5e2a04a9b4680575829923a59f05994987c655b7e739dea88913856db788c484",
+    "docs/CLINIC_MEDIA_API_CONTRACT.md": "4d43c59182ee7ed539e75fc20d6949ddebf0e269a675c8e01bed720982bc246a",
+    "electron/identity/session.ts": "3adf43db4de46929cd4de09d6fa9f69ab0acf85271c4bc849ee0adca22719cfc",
+    "electron/sdk/broker.ts": "b1fdd4cb4354bf9ec1725f5a3f328a3a09d7690e8bed9483bd90a3e5719b02a2",
+    "electron/sdk/contracts.ts": "32d84a25b0fa8c0f6e50d42a8646423d59311c18984b689986d6c934e3e74a9f",
+    "electron/sdk/mediaRead.ts": "4129e848ef37a655936cbc7ac173724287dc8c36eb349410d840465b0f1ff334",
+    "src/capabilityLabels.ts": "7f4e2fbf5c87566e93ec765cf753d5b4b1a5ff30682aa74dc263ff93403c4087",
+    "tests/distribution.test.ts": "0894927f20dc0d73f788fcd2153d352ac99b177e3c6893b9e2835aa1561ca79f",
+    "tests/mediaRead.test.ts": "a9658f0d0700cdb6ee30a8926345cdc22c312c1216534cb93ca7401ea51a3e74",
+    "tests/sdk-scenario.mjs": "e20b95b99cb53bd7519c21737eb310bf49a85d8ec621315a2ab72b57cb4b2b2a",
+    "tools/verify-staging-platform-reads.mjs": "6bd6d2df50ce9ebba9df428621e631d30e29af6a3fb15ee46bed830376e34cd1"
+  },
+  "additionalNativeFixture": {
+    "file": "tests/media-runtime.mjs",
+    "sha256": "9fdae778489c2b36c354a0908b596e9a76dc05e66e4bb079d30b0c940127561a"
+  },
+  "scope": "ADR-028/SDK 1.3 typed private-media read; not upload or final M15 readiness",
+  "checks": {
+    "build": "PASS, complete runtime/test source content committed as 9ca018cc",
+    "fullSerialUnit": {
+      "passed": 397,
+      "files": 23,
+      "command": "npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000"
+    },
+    "newMediaUnitCases": 29,
+    "privateSDK": 16,
+    "privateIdentity": 44,
+    "privateNativeMedia": {
+      "passed": 2,
+      "bytes": [
+        10485760,
+        26214400
+      ],
+      "boundary": "Real sandboxed appPreload/IPC/ApiBroker; synthetic metadata, object bytes and local registration grant"
+    },
+    "stagingReadOnly": {
+      "passed": 7,
+      "boundary": "Real supplied staging account, authoritative session and Follow-ups broker read; synthetic local registration authority; no public signed-grant claim"
+    },
+    "docsAndWhitespace": "PASS"
+  },
+  "retainedFailuresAndRepairs": [
+    "Initial build identified missing capability label and Uint8Array test assignment typing; corrected before complete build passed.",
+    "Initial full unit run: 393/394, Store BUSY expectation saw CANCELLED because a 100ms real deadline elapsed before assertion. Replaced test sleeps with controlled timers and added separate bounded-timeout assertion; initial edit missed vi import, fixed; affected 75/75 then passed.",
+    "On committed source, default 5-second per-test budget timed out update role-denial case at 5421ms: 396/397. Full serial run with explicit bounded 15-second per-test budget passed 397/397; production deadlines and assertions unchanged.",
+    "First native media fixture used unsupported dynamic import in Electron evaluation; corrected fixture to existing process.mainModule.require pattern; both real preload/IPC size-bound checks then passed."
+  ],
+  "remaining": [
+    "Mediated host uploads and recovery orchestration",
+    "Actual media/D1/R2 and write/unknown-outcome/role/tenant staging proof; backend 307a21b is not deployed by this checkpoint",
+    "Never-returning-creator support cleanup disposition",
+    "Navigation/print-export capability decisions",
+    "Windows dock-edge and final P05/P06/P09 integrated verification/review/handoff"
+  ],
+  "productionRequests": false,
+  "clinicalWrites": false,
+  "liveAppOrBrowserRestarted": false,
+  "cleanup": {
+    "taskGeneratedDistAndDistElectronRemoved": true,
+    "taskDependencySymlinkRemoved": true,
+    "privateRunnersCompleted": true,
+    "preservedLiveAppCwd": "/home/master-x/Desktop/fewa_business_os",
+    "sourceReportsEvidenceAndWorktreesPreserved": true
+  }
+}
