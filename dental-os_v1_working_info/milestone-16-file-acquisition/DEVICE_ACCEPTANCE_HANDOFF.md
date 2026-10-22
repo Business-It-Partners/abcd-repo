@@ -25,6 +25,7 @@ Before running anything, note source SHA, Node/Electron versions, Windows/Linux 
 
 - [ ] Open Dental OS as a real installed/development application on the target physical OS, authenticate an authorized test clinic, and launch Files from dock.
 - [ ] Browse actual consented Home/Documents/Downloads/Pictures locations and accessible mounted volumes; validate pagination, sort, breadcrumb/back/forward/up/refresh and readable large-folder/permission-error states.
+- [ ] Confirm the grid shows folder and document type icons, hides dot-prefixed entries, and renders only supported picture thumbnails; use safe non-clinical samples and verify files do not open or upload from the grid.
 - [ ] Confirm symlinks, junctions, changed/removed files, unreadable/offline folders and changing/removable volumes fail safely; no arbitrary path input, raw byte read, rename, delete or upload controls.
 - [ ] Exercise keyboard-only navigation and focus indicators, screen-reader labels/ARIA, Escape/Cancel, modal focus and full-screen presentation; test native picker parent stays above the OS window, including minimize/restore and relevant multiple-monitor behavior.
 - [ ] Test Files minimize/Genie, privacy-preserving overview, dock reopen, resize, host focus and workspace transitions. Avoid capturing/showing filenames in diagnostic screenshots.

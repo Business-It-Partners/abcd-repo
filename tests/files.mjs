@@ -24,14 +24,34 @@ try {
   await phase('visible');
   const frame = page.getByTestId('files-window');
   check('Files is a managed OS window and accessible from the dock', await frame.getByTestId('files-app').isVisible());
-  await frame.getByRole('option').first().waitFor();
-  check('Root listing has synthetic folder and document',
-    await frame.getByRole('option').count() === 2 &&
-    await frame.getByText('X-rays', {exact:true}).count() === 1);
+  check('Image-friendly grid is the default Files view', await frame.locator('.files-list.is-grid').isVisible()
+    && await frame.getByRole('button', { name: 'Grid view' }).getAttribute('aria-pressed') === 'true');
+  await frame.getByRole('button', { name: 'List view' }).click();
+  check('List view remains available for detailed file metadata', await frame.locator('.files-list.is-list').isVisible()
+    && await frame.locator('.files-columns').isVisible());
+  await frame.getByRole('button', { name: 'Grid view' }).click();
+  const entries = frame.locator('[role="option"][id^="file-option-"]');
+  await entries.first().waitFor();
+  check('Root listing has synthetic folder and document, with hidden entries omitted',
+    await entries.count() === 2 &&
+    await frame.getByText('X-rays', {exact:true}).count() === 1 &&
+    await frame.getByText('.m16-hidden-synthetic.png', {exact:true}).count() === 0);
+  const folderCard = entries.filter({ hasText: 'X-rays' });
+  const documentCard = entries.filter({ hasText: 'notes-synthetic.pdf' });
+  check('Folders and documents use type icons while grid thumbnails are reserved for supported pictures',
+    await folderCard.locator('[data-file-icon="folder"]').count() === 1 &&
+    await documentCard.locator('[data-file-icon="document"]').count() === 1 &&
+    await entries.locator('.files-card-preview img').count() === 0);
   await frame.getByText('X-rays', { exact: true }).dblclick();
   await frame.getByText('m16-synthetic-xray.png', { exact: true }).waitFor();
   check('Double-click navigates into real host folder through opaque handles',
-    await frame.getByRole('option').count() === 1);
+    await entries.count() === 1);
+  await page.waitForFunction(() => {
+    const image = document.querySelector('.files-card-preview img');
+    return !!image && image.complete && image.naturalWidth > 0;
+  }, null, { timeout: 8000 });
+  check('Bounded local PNG thumbnail renders in Files without a file path',
+    await frame.locator('.files-card-preview img').evaluate(image => image.complete && image.naturalWidth === 8));
   await frame.getByRole('button', { name: 'Back', exact: true }).click();
   await frame.getByText('notes-synthetic.pdf', { exact: true }).waitFor();
   await frame.getByRole('button', { name: 'Forward', exact: true }).click();

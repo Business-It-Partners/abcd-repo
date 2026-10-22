@@ -1,11 +1,76 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { AlertCircle, ArrowDownAZ, ArrowLeft, ArrowRight, ArrowUp, ChevronRight, File, FileImage, FileText, Folder, FolderOpen, HardDrive, Home, LoaderCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, ArrowUp, ChevronRight, File, FileImage, FileText, Folder, Grid2X2, HardDrive, Home, List, LoaderCircle, RefreshCw } from 'lucide-react';
 import { useSessionGeneration } from './SessionBoundary';
 import type { FileEntry, FileRoot, FileFilter } from '../electron/host/localFiles';
+import { createLocalThumbnail } from './filesPreview';
 
 type Crumb = { id: string; name: string };
 type DisplaySort = 'name' | 'kind' | 'date' | 'size';
+type DisplayMode = 'grid' | 'list';
 const PAGE_LIMIT = 100;
+const THUMBNAIL_TYPES = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
+const IMAGE_FILE_TYPES = new Set([...THUMBNAIL_TYPES, '.tif', '.tiff', '.dcm', '.dicom']);
+const DOCUMENT_FILE_TYPES = new Set(['.pdf', '.txt', '.csv', '.doc', '.docx', '.xls', '.xlsx', '.rtf', '.odt']);
+let activeThumbnailReads = 0;
+const thumbnailWaiters: Array<() => void> = [];
+async function withThumbnailSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (activeThumbnailReads >= 2) await new Promise<void>(resolve => thumbnailWaiters.push(resolve));
+  activeThumbnailReads++;
+  try { return await work(); }
+  finally { activeThumbnailReads--; thumbnailWaiters.shift()?.(); }
+}
+
+function FileTypeIcon({ item, size }: { item: FileEntry; size: number }) {
+  if (item.kind === 'directory') return <Folder size={size} data-file-icon="folder"/>;
+  if (IMAGE_FILE_TYPES.has(item.typeHint)) return <FileImage size={size} data-file-icon="image"/>;
+  if (DOCUMENT_FILE_TYPES.has(item.typeHint)) return <FileText size={size} data-file-icon="document"/>;
+  return <File size={size} data-file-icon="file"/>;
+}
+
+function FileThumbnail({ item, generation, scrollRoot }: { item: FileEntry; generation: number; scrollRoot: HTMLDivElement | null }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const [source, setSource] = useState<string | null>(null);
+  useEffect(() => {
+    const node = frame.current;
+    if (!node || item.kind !== 'file' || !THUMBNAIL_TYPES.has(item.typeHint)) return;
+    let disposed = false, requested = false;
+    const load = () => {
+      if (requested) return;
+      requested = true;
+      void withThumbnailSlot(async () => {
+        if (disposed || !window.desktop?.files) return;
+        const preview = await window.desktop.files.thumbnail(item.id, generation);
+        if (!preview) return;
+        if (disposed) { preview.bytes.fill(0); return; }
+        const blob = await createLocalThumbnail({ bytes: preview.bytes, typeHint: preview.typeHint });
+        preview.bytes.fill(0);
+        if (!blob || disposed) return;
+        const dataUrl = await new Promise<string | null>(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+        if (!dataUrl || disposed) return;
+        setSource(dataUrl);
+      }).catch(() => {});
+    };
+    if (typeof IntersectionObserver === 'undefined') load();
+    else {
+      const observer = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) { observer.disconnect(); load(); }
+      }, { root: scrollRoot, rootMargin: '72px' });
+      observer.observe(node);
+      return () => { disposed = true; observer.disconnect(); };
+    }
+    return () => { disposed = true; };
+  }, [item.id, item.kind, item.typeHint, generation, scrollRoot]);
+
+  return <div className="files-card-preview" ref={frame} aria-hidden="true">
+    {source ? <img src={source} alt="" draggable={false}/> : <FileTypeIcon item={item} size={30}/>}
+  </div>;
+}
+
 const statusText = (reason: unknown): string => {
   const message = reason instanceof Error ? reason.message : String(reason ?? '');
   if (message.includes('RESOURCE_LIMIT')) return 'This folder contains too many items for safe browsing. Choose a smaller folder.';
@@ -26,6 +91,7 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
   const [selected, setSelected] = useState<string | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [sorting, setSorting] = useState<DisplaySort>('name');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('grid');
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -146,10 +212,15 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
   };
   const keyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = list.findIndex(item => item.id === selected);
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
+    const horizontalGridKey = displayMode === 'grid' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight');
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End' || horizontalGridKey) {
       event.preventDefault();
+      const columns = displayMode === 'grid' && itemsRef.current
+        ? Math.max(1, getComputedStyle(itemsRef.current).gridTemplateColumns.split(' ').length) : 1;
+      const step = event.key === 'ArrowDown' ? columns : event.key === 'ArrowUp' ? -columns
+        : event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1
-        : Math.max(0, Math.min(list.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)));
+        : Math.max(0, Math.min(list.length - 1, (index < 0 ? 0 : index) + step));
       if (list[next]) setSelected(list[next].id);
     } else if (event.key === 'Enter' && chosen) {
       event.preventDefault();
@@ -161,14 +232,13 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
   };
   return <div className="files-app" data-testid={picker?'files-picker-browser':'files-app'}>
     <aside className="files-sidebar" aria-label="File locations">
-      <div className="files-heading"><FolderOpen size={17}/><span>Files</span><small>On this computer</small></div>
+      <div className="files-heading">Favorites</div>
       {roots.map(root => <button key={root.id} className={'files-location' + (current[0]?.id === root.id ? ' is-active' : '')}
         onClick={() => navigate([{ id: root.id, name: root.label }])} aria-current={current[0]?.id === root.id ? 'page' : undefined}>
         {root.kind === 'home' ? <Home size={17}/> : root.kind === 'volume' ? <HardDrive size={17}/> : <Folder size={17}/>}
         <span>{root.label}</span>
       </button>)}
       {!roots.length && <p className="files-side-note">No accessible locations found.</p>}
-      <p className="files-side-note">Read-only browsing. Files stay on your computer.</p>
     </aside>
     <section className="files-main" aria-label="Local files">
       <div className="files-toolbar">
@@ -184,24 +254,36 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
             <button onClick={() => navigate(current.slice(0,index + 1))} aria-current={index === current.length - 1 ? 'location' : undefined}>{part.name}</button>
           </span>)}
         </nav>
-        <label className="files-sort">Sort loaded files
-          <select aria-label="Sort loaded files" value={sorting} onChange={event => setSorting(event.target.value as DisplaySort)}>
+        <label className="files-sort"><span>Sort by</span>
+          <select aria-label="Sort files" value={sorting} onChange={event => setSorting(event.target.value as DisplaySort)}>
             <option value="name">Name</option><option value="kind">Type</option><option value="date">Modified</option><option value="size">Size</option>
-          </select><ArrowDownAZ size={15} aria-hidden="true"/>
+          </select>
         </label>
       </div>
-      <div className="files-columns" aria-hidden="true"><span>Name</span><span>Modified</span><span>Size</span></div>
-      <div className="files-list" role="listbox" aria-label="Files in current folder" tabIndex={0} ref={itemsRef} onKeyDown={keyboard} aria-activedescendant={selected ? (picker?'picker-file-':'file-option-') + selected : undefined}>
+      <div className="files-view-toggle" role="group" aria-label="File display">
+        <button type="button" aria-label="Grid view" aria-pressed={displayMode === 'grid'} onClick={() => setDisplayMode('grid')}><Grid2X2 size={15}/></button>
+        <button type="button" aria-label="List view" aria-pressed={displayMode === 'list'} onClick={() => setDisplayMode('list')}><List size={15}/></button>
+      </div>
+      {displayMode === 'list' && <div className="files-columns" aria-hidden="true"><span>Name</span><span>Modified</span><span>Size</span></div>}
+      <div className={'files-list ' + (displayMode === 'grid' ? 'is-grid' : 'is-list')} role="listbox" aria-label="Files in current folder" tabIndex={0} ref={itemsRef} onKeyDown={keyboard} aria-activedescendant={selected ? (picker?'picker-file-':'file-option-') + selected : undefined}>
         {list.map(item => <div role="option" id={(picker?'picker-file-':'file-option-') + item.id} key={item.id}
-          className={'files-row' + (selected === item.id || picked.includes(item.id) ? ' is-selected' : '')}
+          data-testid="file-entry" data-file-kind={item.kind}
+          className={'files-row' + (displayMode === 'grid' ? ' is-card' : '') + (selected === item.id || picked.includes(item.id) ? ' is-selected' : '')}
           aria-disabled={!allowedFile(item)} aria-selected={selected === item.id || picked.includes(item.id)} onClick={event => chooseEntry(item,event.ctrlKey||event.metaKey)}
           onDoubleClick={() => open(item)}>
+          {displayMode === 'grid' ? <>
+            <FileThumbnail item={item} generation={generation} scrollRoot={itemsRef.current}/>
+            <span className="files-card-name" title={item.name}>{item.name}</span>
+            <span className="files-card-meta">{item.modifiedAt === null ? '—' : new Date(item.modifiedAt).toLocaleDateString()}
+              {item.kind === 'file' && item.sizeBytes !== null ? ' · ' + (item.sizeBytes < 1024 ? item.sizeBytes + ' B' : (item.sizeBytes / 1024).toFixed(1) + ' KB') : ''}</span>
+          </> : <>
           <span className="files-name">
-            {item.kind === 'directory' ? <Folder size={17}/> : item.typeHint.match(/png|jpg|jpeg|webp|tif|bmp|dcm/i) ? <FileImage size={17}/> : item.typeHint.match(/pdf|doc|txt/i) ? <FileText size={17}/> : <File size={17}/>}
+            <FileTypeIcon item={item} size={17}/>
             <span title={item.name}>{item.name}</span>
           </span>
           <span>{item.modifiedAt === null ? '—' : new Date(item.modifiedAt).toLocaleDateString()}</span>
           <span>{item.sizeBytes === null ? '—' : item.sizeBytes < 1024 ? item.sizeBytes + ' B' : (item.sizeBytes / 1024).toFixed(1) + ' KB'}</span>
+          </>}
         </div>)}
         {!loading && !error && !list.length && <div className="files-placeholder">This folder is empty.</div>}
         {loading && <p className="files-state" role="status"><LoaderCircle size={16} className="files-spin"/> Reading files…</p>}
@@ -209,15 +291,15 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
         {nextCursor && !loading && <button className="files-more" onClick={more} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Show more files'}</button>}
       </div>
       <footer className="files-footer">
-        <span>{rows.length} item{rows.length === 1 ? '' : 's'} loaded{nextCursor ? ' · More available' : ''}</span>
-        <span>{chosen ? chosen.kind === 'directory' ? 'Double-click to open folder' : 'Selected: ' + chosen.name : 'Select a file to view its details'}</span>
+        <span>{rows.length} item{rows.length === 1 ? '' : 's'}{nextCursor ? ' · More in folder' : ''}</span>
+        <span>{chosen ? chosen.kind === 'directory' ? 'Folder · Double-click to open' : 'Selected: ' + chosen.name : 'No file selected'}</span>
         {picker ? <div className="files-picker-actions">
           <button onClick={picker.onCancel}>Cancel</button>
           <button onClick={picker.onNative}>Use native picker</button>
           <button disabled={!picked.length||loading} onClick={()=>picker.onChoose(picked)}>Choose {picked.length||''} file{picked.length===1?'':'s'}</button>
         </div> : <div className="files-send-actions">
-          <span className="files-readonly">{destination ? 'Recipient: ' + destination.title : 'Open an eligible dental app before Files to enable transfer'}</span>
-          <button disabled={!active||!destination||!picked.length||loading||sending} onClick={()=>void sendSelected()}>Send to active eligible app</button>
+          <span className="files-readonly">{destination ? 'To ' + destination.title : 'No eligible app open'}</span>
+          <button aria-label="Send selected files to active eligible app" disabled={!active||!destination||!picked.length||loading||sending} onClick={()=>void sendSelected()}>Send</button>
         </div>}
       </footer>
       {!picker&&sendMessage&&<p className="files-send-status" role="status">{sendMessage}</p>}

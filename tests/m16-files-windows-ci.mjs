@@ -74,6 +74,10 @@ try{
   check('Files window opens and enumerates synthetic directory',true);
   await frame.getByText('X-rays',{exact:true}).dblclick();
   await frame.getByText('m16-synthetic-xray.png',{exact:true}).waitFor();
+  await frame.locator('.files-card-preview img').waitFor({timeout:8000});
+  await page.waitForFunction(()=>{const image=document.querySelector('.files-card-preview img');return !!image&&image.complete&&image.naturalWidth>0},null,{timeout:8000});
+  check('Windows shell renders bounded synthetic PNG thumbnail',
+    await frame.locator('.files-card-preview img').evaluate(image=>image.complete&&image.naturalWidth===8));
   check('Files navigates inside a local folder',true);
   await frame.getByRole('button',{name:'Back',exact:true}).click();
   await frame.getByText('notes-synthetic.pdf',{exact:true}).waitFor();

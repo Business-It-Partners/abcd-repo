@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld('desktop', {
     pickResponse: (input: unknown)=>ipcRenderer.invoke('files:pick-response',input) as Promise<boolean>,
     roots: (generation: number) => ipcRenderer.invoke('files:roots', generation),
     list: (input: unknown) => ipcRenderer.invoke('files:list', input),
+    thumbnail: (fileId: string, generation: number) => ipcRenderer.invoke('files:thumbnail', fileId, generation),
     foreground: (generation:number,active:boolean)=>ipcRenderer.invoke('files:foreground',generation,active),
     transferTarget: (generation:number)=>ipcRenderer.invoke('files:transfer-target',generation),
     send: (input:unknown)=>ipcRenderer.invoke('files:send',input),

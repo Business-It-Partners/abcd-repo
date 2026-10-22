@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "Private fixture exposes one opaque root without paths",
+    "Files is a managed OS window and accessible from the dock",
+    "Image-friendly grid is the default Files view",
+    "List view remains available for detailed file metadata",
+    "Root listing has synthetic folder and document, with hidden entries omitted",
+    "Folders and documents use type icons while grid thumbnails are reserved for supported pictures",
+    "Double-click navigates into real host folder through opaque handles",
+    "Bounded local PNG thumbnail renders in Files without a file path",
+    "Back and forward navigation reuse bounded file listings",
+    "Keyboard file selection does not execute or upload files",
+    "Overview privacy placeholder excludes local file names",
+    "Minimized File preview is nonclinical static artwork",
+    "Files uses shared minimize, restore and close lifecycle",
+    "No renderer errors"
+  ],
+  "errors": []
+}

@@ -26,6 +26,7 @@ declare global {
         pickResponse(input: import('../electron/host/filePickerContract').FilePickerResponse):Promise<boolean>;
         roots(generation: number): Promise<import('../electron/host/localFiles').FileRoot[]>;
         list(input: import('../electron/host/filesShell').ShellFilesList): Promise<import('../electron/host/localFiles').FilePage>;
+        thumbnail(fileId:string,generation:number):Promise<import('../electron/host/localFiles').FilePreviewData|null>;
         foreground(generation:number,active:boolean):Promise<boolean>;
         transferTarget(generation:number):Promise<{title:string}|null>;
         send(input:import('../electron/host/fileTransfer').ShellTransferRequest):Promise<{destination:string;fileCount:number;expiresAt:number}>;

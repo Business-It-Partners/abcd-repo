@@ -1,6 +1,6 @@
 // M16.2 read-only local filesystem adapter. Trusted Electron main only, never renderer IPC.
 import { createHash, randomUUID } from 'node:crypto';
-import { lstatSync, opendirSync, realpathSync, type Stats } from 'node:fs';
+import { closeSync, constants as fsConstants, fstatSync, lstatSync, openSync, opendirSync, readSync, realpathSync, type Stats } from 'node:fs';
 import path from 'node:path';
 import { homedir } from 'node:os';
 
@@ -13,6 +13,7 @@ export type RootLocation = { label: string; path: string; kind?: 'home'|'folder'
 export type FileRoot = { id: string; label: string; kind: 'home'|'folder'|'volume' };
 export type FileEntry = { id: string; name: string; kind: 'directory'|'file'; sizeBytes: number|null; modifiedAt: number|null; typeHint: string };
 export type FilePage = { directoryId: string; entries: FileEntry[]; nextCursor: string|null };
+export type FilePreviewData = { bytes: Uint8Array; typeHint: string };
 export type FileFilter = 'images'|'medical-images'|'documents'|'all';
 export type FileRecipient = {
   sender: object; frame: object; appId: string; appVersion: string;
@@ -27,6 +28,8 @@ type Cursor = { directoryId: string; offset: number; fingerprint: string };
 type StoredFile = EntryRef & { fingerprint: string; receipt: FileReceipt };
 type Lease = { owner: FileRecipient; files: Map<string,StoredFile>; expiresAt: number };
 const MAX_PAGE=200, MAX_SCAN=2048, MAX_HANDLES=4096, MAX_CURSORS=128, MAX_LEASES=64, MAX_FILES=10, TTL=600000;
+const MAX_PREVIEW_BYTES=16*1024*1024;
+const PREVIEW_TYPES=new Set(['.png','.jpg','.jpeg','.webp','.gif','.bmp']);
 const isId=(x:unknown):x is string=>typeof x==='string'&&/^[0-9a-f-]{36}$/i.test(x);
 const typeHint=(x:string)=>path.extname(x).toLowerCase().slice(0,24);
 const validName=(s:string)=>s.length>0&&s!=='.'&&s!=='..'&&!/[\u0000-\u001f\u007f]/.test(s);
@@ -151,7 +154,9 @@ export class LocalFileService {
         let item;
         while((item=dir.readSync())!==null){
           if(names.length>=MAX_SCAN)throw new LocalFilesError('RESOURCE_LIMIT');
-          if(validName(item.name))names.push(item.name);
+          // Match the ordinary Finder view: Unix-style dotfiles and hidden
+          // folders stay out of the user's everyday browser listing.
+          if(validName(item.name)&&!item.name.startsWith('.'))names.push(item.name);
         }
       }finally{dir.closeSync();}
       const after=fingerprint(check(h.absolute,h.root,'directory'));
@@ -179,6 +184,42 @@ export class LocalFileService {
       }
       return {directoryId,entries,nextCursor};
     }catch(e){throw this.err(e);}
+  }
+  /**
+   * Trusted-shell-only source bytes for a bounded image preview. This method
+   * never returns a path; callers must keep the bytes inside Dental OS and
+   * must not forward them to a Dental app. File identity is rechecked around
+   * the descriptor read to avoid symlink/replacement races.
+   */
+  previewBytes(id:string):{bytes:Uint8Array;typeHint:string}|null{
+    this.ready();
+    const h=this.handle(id,'file'),name=path.basename(h.absolute),ext=typeHint(name);
+    if(name.startsWith('.')||!PREVIEW_TYPES.has(ext))return null;
+    let fd:number|undefined;
+    try{
+      const before=check(h.absolute,h.root,'file');
+      if(!Number.isSafeInteger(before.size)||before.size<1||before.size>MAX_PREVIEW_BYTES)return null;
+      const flags=fsConstants.O_RDONLY|(fsConstants.O_NOFOLLOW??0);
+      fd=openSync(h.absolute,flags);
+      const opened=fstatSync(fd);
+      if(!opened.isFile()||fingerprint(opened)!==fingerprint(before)
+        ||!Number.isSafeInteger(opened.size)||opened.size<1||opened.size>MAX_PREVIEW_BYTES)return null;
+      const bytes=new Uint8Array(opened.size);
+      let offset=0;
+      while(offset<bytes.byteLength){
+        const count=readSync(fd,bytes,offset,bytes.byteLength-offset,offset);
+        if(count<=0)return null;
+        offset+=count;
+      }
+      const after=fstatSync(fd),current=check(h.absolute,h.root,'file');
+      if(fingerprint(after)!==fingerprint(opened)||fingerprint(current)!==fingerprint(opened))return null;
+      return {bytes,typeHint:ext};
+    }catch(e){
+      if(e instanceof LocalFilesError)throw e;
+      const code=(e as NodeJS.ErrnoException)?.code;
+      if(code==='ELOOP'||code==='ENOENT'||code==='ENOTDIR'||code==='EPERM'||code==='EACCES')return null;
+      throw this.err(e);
+    }finally{if(fd!==undefined)try{closeSync(fd);}catch{}}
   }
   // Trusted main invokes this only AFTER verified OS-level user consent.
   select(ids:readonly string[],owner:FileRecipient,filter:FileFilter='all'):FileSelection{

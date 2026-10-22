@@ -238,6 +238,13 @@ function requireFilesShell(event: Electron.IpcMainInvokeEvent, generation: unkno
   return localFiles;
 }
 ipcMain.handle('files:roots', (event, generation: unknown) => requireFilesShell(event, generation).roots());
+ipcMain.handle('files:thumbnail',(event,fileId:unknown,generation:unknown)=>{
+  const files=requireFilesShell(event,generation);
+  if(typeof fileId!=='string'||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(fileId))throw Error('INVALID_REQUEST');
+  // Image bytes are delivered only to the sandboxed OS shell for a bounded
+  // local preview; app WebContentsViews have no access to this channel.
+  return files.previewBytes(fileId);
+});
 ipcMain.handle('files:foreground',(event,generation:unknown,active:unknown)=>{
   requireFilesShell(event,generation);
   if(typeof active!=='boolean')throw Error('INVALID_REQUEST');
@@ -350,7 +357,9 @@ if (primary) void app.whenReady().then(async () => {
     if (trustedTest && app.commandLine.hasSwitch('files-fixtures')) {
       const fixtureRoot = path.join(app.getPath('userData'), 'm16-files-fixture');
       mkdirSync(path.join(fixtureRoot, 'X-rays'), { recursive: true });
-      writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray.png'), 'synthetic-only');
+      const syntheticPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR42mP06FnCgA0wMeAAg1MCACmLAYglPyuxAAAAAElFTkSuQmCC','base64');
+      writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray.png'), syntheticPng);
+      writeFileSync(path.join(fixtureRoot, '.m16-hidden-synthetic.png'), syntheticPng);
       writeFileSync(path.join(fixtureRoot, 'notes-synthetic.pdf'), 'synthetic-only');
       localFiles = new LocalFileService([{ label: 'Test Files', path: fixtureRoot, kind: 'folder' }]);
     } else localFiles = new LocalFileService();

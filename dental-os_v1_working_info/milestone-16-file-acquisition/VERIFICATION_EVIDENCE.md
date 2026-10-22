@@ -207,3 +207,15 @@ Corrective fixture now provides a dedicated `Connect SDK` button activated only 
 **Preflight environment snapshot (environment only, not acceptance):** on 2026-10-22, Ubuntu 22.04.5 LTS, kernel `6.8.0-111-generic`, x86_64; Node `v22.13.1`; npm `10.9.2`; uptime/load averages at observation `0.78, 1.08, 0.91`; memory `11 GiB` total, `3.8 GiB` available; swap `16 GiB` total, `1.5 GiB` used. Physical target model, display scale/compositor, Dental OS build/session and test fixture package are unknown because no device run occurred.
 
 **Validation performed for this documentation-only record:** no build, unit/UI suite, runtime launch, or GitHub Actions workflow was started. Run the repository-required `python3 tools/check-dental-docs.py` plus `git diff --check`; do not rerun hosted jobs solely for prose. G16 remains **OPEN** pending physical-device evidence, review of the full case matrix, and an agreed disposition of the deferred native drag scope.
+
+## Post-closeout Files gallery UI follow-up — local validation (2026-10-22)
+
+**Branch baseline:** `codex/milestone-16`, local and `origin/codex/milestone-16` both at `459ff232018264ba1a1013737df876912d5bf57a` before this follow-up. The runtime/UI changes are in the current branch working tree; the committed source SHA and hosted run are recorded after push below.
+
+- `npx vitest run tests/localFiles.test.ts tests/filesPreview.test.ts --maxWorkers=1` — **2 files, 19 tests passed**. The first attempt exposed a test-fixture setup error (truncating a file before creating it); the fixture now creates the synthetic file first and the exact command passes.
+- `npm run build` — **PASS**, including TypeScript checks, Vite renderer build and Electron TypeScript build.
+- `npm test -- --maxWorkers=2` — **32 files, 478 tests passed**.
+- `npm run test:files` — **exit 0**, private headless GNOME display; **14 UI assertions passed**, including grid default/list toggle, folder/PDF icons, dotfile omission, bounded 8 × 8 synthetic PNG thumbnail, keyboard selection, navigation, static overview/minimized privacy previews, lifecycle and zero renderer errors. The generated assertion record is `artifacts/m16-files-verification.json`.
+- `python3 tools/check-dental-docs.py` — **PASS**, 24 architecture documents, 17 milestones, 68 required milestone files, 16 requirements, 18 acceptance gates and 14 invariants; zero errors. `git diff --check` — **PASS**.
+
+The GUI run used only guarded synthetic fixtures and a private display. It does not certify a physical device, clinic sign-in, removable media or real user folders. Windows/Linux hosted thumbnail assertions remain pending the tagged source push. Physical-device acceptance is still NOT RUN; native cross-view drag remains deferred, explicit Send remains available, and G16 remains OPEN.

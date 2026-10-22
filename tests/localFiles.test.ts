@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { existsSync, lstatSync, realpathSync, mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, realpathSync, mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { LocalFileService, LocalFilesError, type FileRecipient } from '../electron/host/localFiles';
@@ -56,6 +56,29 @@ describe('M16.2 trusted read-only host files', () => {
     expect(page.entries[0].kind).toBe('directory');
     expect(svc.list(page.entries[0].id).entries).toEqual([]);
     expect(JSON.stringify(page)).not.toContain(root);
+  });
+  it('hides dot-prefixed entries and returns bounded image bytes only by opaque file ID', () => {
+    const { root, svc, id } = fixture();
+    const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR42mP06FnCgA0wMeAAg1MCACmLAYglPyuxAAAAAElFTkSuQmCC', 'base64');
+    writeFileSync(path.join(root, '.hidden-xray.png'), image);
+    writeFileSync(path.join(root, 'visible-xray.png'), image);
+    const page = svc.list(id);
+    expect(page.entries.map(entry => entry.name)).toEqual(['visible-xray.png']);
+    const preview = svc.previewBytes(page.entries[0].id);
+    expect(preview?.typeHint).toBe('.png');
+    expect(Buffer.from(preview?.bytes ?? [])).toEqual(image);
+    expect(JSON.stringify(preview)).not.toContain(root);
+    expectCode(() => svc.previewBytes('00000000-0000-0000-0000-000000000000'), 'NOT_FOUND');
+  });
+  it('declines unsupported picture formats and source images larger than the read bound', () => {
+    const { root, svc, id } = fixture();
+    writeFileSync(path.join(root, 'medical-image.dcm'), 'synthetic');
+    writeFileSync(path.join(root, 'oversized.png'), '');
+    truncateSync(path.join(root, 'oversized.png'), 16 * 1024 * 1024 + 1);
+    const page = svc.list(id);
+    const byName = new Map(page.entries.map(entry => [entry.name, entry]));
+    expect(svc.previewBytes(byName.get('medical-image.dcm')!.id)).toBeNull();
+    expect(svc.previewBytes(byName.get('oversized.png')!.id)).toBeNull();
   });
   it('rejects path injection, malformed cursor, file as directory and page bounds', () => {
     const { root, svc, id } = fixture();

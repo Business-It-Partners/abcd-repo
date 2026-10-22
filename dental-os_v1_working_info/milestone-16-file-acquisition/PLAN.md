@@ -179,3 +179,17 @@ Verified M16.5 source: `9425e0180088bc76041035a4e539e86ac73ec069`; [focused Wind
 - [ ] Reconcile the agreed acceptance criteria and every G16 row after device evidence. Keep G16 open until they pass and the remaining drag deferral is explicitly accepted as within scope.
 
 Validation is documentation-only under the repository rules: run `python3 tools/check-dental-docs.py` and `git diff --check`; do not spend Actions quota or rerun runtime suites for this record. The user will merge to `main` manually; do not merge this branch.
+
+## Post-closeout Files gallery follow-up — 2026-10-22
+
+This is a UI follow-up within M16, not a new acquisition capability. The Files grid is image-first, with a standard folder icon for folders, type icons for documents and other files, and small thumbnails only for supported common raster pictures. A detail-list toggle remains available. Dot-prefixed entries stay hidden. Opening a card is not a general document/image preview workflow; existing picker and explicit **Send** actions remain the only app handoff paths.
+
+- [x] Review current Electron isolation/Files source and document the safe local-preview boundary.
+- [x] Add bounded shell-only raster thumbnail reads by opaque file ID; keep the Files shell sandboxed and app receipts metadata-only.
+- [x] Add the default grid/detail-list switch, type-specific icons, lazy thumbnails, and dotfile filtering.
+- [x] Extend synthetic tests for folders, PDF icon, hidden-entry filtering, bounded source bytes, thumbnail rendering and overview/minimize privacy.
+- [x] Complete local build, unit and private-display UI checks: build passed; focused Vitest 19/19; full `npm test -- --maxWorkers=2` 478/478; private `npm run test:files` 14/14 assertions with no renderer errors.
+- [ ] Run one quota-bounded Windows/Linux workflow on the committed source and record the exact SHA/result.
+- [ ] Record exact SHA and CI results; keep G16 OPEN because physical-device acceptance remains NOT RUN and native cross-view drag remains deferred.
+
+No test-clinic data or staging/production services are involved. Research notes are retained in [Finder UI/UX research](FINDER_UI_UX_RESEARCH.md). The user explicitly asked to see the updated OS after the work; restart only the separate M16 preview after checks, without touching the primary checkout or any other worktree.
