@@ -33,3 +33,8 @@ This supports app-only releases selecting already implemented operations. New Wo
 ## SDK 1.3 private-media read extension
 
 [ADR-028](20_V1_ADR_REGISTER.md) and the [typed media contract](../docs/CLINIC_MEDIA_API_CONTRACT.md) define `clinic.media.read`: exact signed-release grant and trusted app/session scope, fixed host-derived routes, fresh metadata and size/MIME/SHA-256 verification before bytes reach the renderer. Domain bounds are 10 MiB patient media and 25 MiB Staff documents, with one reader per registration/two globally and a 30-second deadline. The legacy blob entry point remains denied; uploads are not implied by this read operation. M15 evidence owns source-bound tests and remaining real-service proof.
+
+
+## SDK 1.4 explicit upload extension
+
+[ADR-029](20_V1_ADR_REGISTER.md) and the [mediated upload contract](../docs/CLINIC_MEDIA_UPLOAD_CONTRACT.md) define a separately signed `clinic.media.upload` operation. The host receives bounded 8 KiB chunks, computes checksums and owns intent/content/finalise/abort calls, original-key reconciliation and transient lifetime. Buffered/unknown work participates in close/update safety; no client retry queue or disk business store is introduced. Patient replacement uses only the existing Worker replacement route; active facts are not undone by cancellation. Fresh-session recovery, real service proof and explicit grant publication remain separate M15 work.

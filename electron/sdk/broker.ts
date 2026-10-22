@@ -1,3 +1,4 @@
+import { MediaUploads, MediaUploadError, uploadKindForApp } from './mediaUpload';
 import { readClinicMedia, mediaKindForApp, MediaReadError, type MediaKind } from './mediaRead';
 import { randomUUID, createHash } from 'node:crypto';
 import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
@@ -8,6 +9,7 @@ export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
   allowed?(operation: Operation): boolean;
   allowedClinicRequest?(appId: string, path: string, method: string): boolean;
+  allowedMediaUpload?(appId: string, kind: MediaKind): boolean;
   allowedMediaRead?(appId: string, kind: MediaKind): boolean;
   rejected?(status: 401 | 403): void;
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
@@ -20,7 +22,7 @@ export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 const messages: Record<ErrorCode, string> = {
   INVALID_REQUEST: 'Invalid SDK request.', UNKNOWN_CALLER: 'Unregistered application frame.', INCOMPATIBLE_SDK: 'Unsupported SDK contract.', STALE_SESSION: 'Session changed; discard this result.', FORBIDDEN: 'Operation is not granted to this app.', BUSY: 'Request capacity reached.', AUTH_REQUIRED: 'Sign in is required.', ACCESS_DENIED: 'Access denied by the service.', CONFLICT: 'The record changed; refresh before deciding.', VALIDATION: 'The service rejected the input.', OFFLINE: 'Service connection failed.', MAINTENANCE: 'Service temporarily unavailable.', TIMEOUT: 'Request deadline exceeded.', CANCELLED: 'Request stopped locally.', UNKNOWN_OUTCOME: 'Write outcome is unknown. Reconcile using the original operation key.', INVALID_RESPONSE: 'Service response did not match the contract.', REDIRECT_DENIED: 'Service redirect refused.', UNAVAILABLE: 'This platform adapter is not available yet.',
 };
-export const failure = (code: ErrorCode, outcome: Outcome = 'not_sent', r?: Request): Result<never> => ({ ok: false, error: { code, message: messages[code], outcome, ...(r ? { requestId: r.requestId, ...(['appointments.setStatus', 'clinic.api.request'].includes(r.operation) && r.input.idempotencyKey ? { operationId: r.input.idempotencyKey as string } : {}) } : {}) } });
+export const failure = (code: ErrorCode, outcome: Outcome = 'not_sent', r?: Request): Result<never> => ({ ok: false, error: { code, message: messages[code], outcome, ...(r ? { requestId: r.requestId, ...(['appointments.setStatus', 'clinic.api.request', 'clinic.media.upload'].includes(r.operation) && r.input.idempotencyKey ? { operationId: r.input.idempotencyKey as string } : {}) } : {}) } });
 const success = <T>(value: T): Result<T> => ({ ok: true, value });
 function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -34,6 +36,7 @@ class TransportError extends Error { constructor(readonly code: ErrorCode) { sup
 
 /** Credentials and transport remain in main. App-supplied identity/URLs/headers never enter this API. */
 export class ApiBroker {
+  private uploads = new MediaUploads(owner => this.notify((owner as Registration).appId));
   private registrations = new Map<object, Registration>();
   private pending = new Map<Registration, Map<string, Pending>>();
   private writing = new Set<string>();
@@ -70,6 +73,7 @@ export class ApiBroker {
       if (this.identity.allowed?.(op) === false) return false;
       if (!apiEntryPoints.includes(op)) return true;
       return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true
+        && (op !== 'clinic.media.upload' || !!uploadKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaUpload?.(r.appId, uploadKindForApp(r.appId)!) === true)
         && (op !== 'clinic.media.read' || !!mediaKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaRead?.(r.appId, mediaKindForApp(r.appId)!) === true)
         && (op !== 'clinic.api.request' || !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!)
           && this.identity.allowed?.(appOperation(r.appId)!) !== false && !!this.identity.allowedClinicRequest);
@@ -78,6 +82,10 @@ export class ApiBroker {
   private apiAllowed(r: Registration, v: Request): boolean {
     if (!apiEntryPoints.includes(v.operation)) return true;
     if (!apiOperations.includes(v.operation as ApiOperationId) || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true) return false;
+    if (v.operation === 'clinic.media.upload') {
+      const kind = v.input.action === 'begin' ? v.input.kind : this.uploads.kind(r, v.input.transferId), family = appOperation(r.appId);
+      return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false && !!kind && uploadKindForApp(r.appId) === kind && this.identity.allowedMediaUpload?.(r.appId, kind as MediaKind) === true;
+    }
     if (v.operation === 'clinic.media.read') {
       const family = appOperation(r.appId);
       return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false && mediaKindForApp(r.appId) === v.input.kind && this.identity.allowedMediaRead?.(r.appId, v.input.kind as MediaKind) === true;
@@ -99,12 +107,12 @@ export class ApiBroker {
     const pending = this.pending.get(r)?.get(input.requestId);
     pending?.controller.abort('cancel'); return success({ cancelledLocally: !!pending, serverCommitUndone: false });
   }
-  writeState(appId:string):'none'|'pending'|'unknown' {if(this.writeCalls.get(appId)||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write)))return 'pending';return [...this.uncertain].some(k=>k.startsWith(appId+':'))?'unknown':'none';}
+  writeState(appId:string):'none'|'pending'|'unknown' {if([...this.registrations.values()].some(r=>r.appId===appId&&this.uploads.has(r))||this.writeCalls.get(appId)||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write)))return 'pending';return [...this.uncertain].some(k=>k.startsWith(appId+':'))?'unknown':'none';}
   private notify(appId:string){try{this.activity(appId);}catch{/* Trusted observer cannot disrupt transport/outcome bookkeeping. */}}
-  hasUnsafeWrites(appId:string) {return !!this.writeCalls.get(appId)|| [...this.uncertain].some(k=>k.startsWith(appId+':'))||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write));}
+  hasUnsafeWrites(appId:string) {return [...this.registrations.values()].some(r=>r.appId===appId&&this.uploads.has(r))||!!this.writeCalls.get(appId)|| [...this.uncertain].some(k=>k.startsWith(appId+':'))||[...this.pending].some(([r,list])=>r.appId===appId&&[...list.values()].some(p=>p.write));}
   async request(caller: Caller, input: unknown): Promise<Result> {
     const r=this.caller(caller),v=parseRequest(input),generation=this.identity.snapshot().generation;
-    const writing=!!r&&!!v&&(v.operation==='appointments.setStatus'||v.operation==='clinic.api.request'&&v.input.method!=='GET');
+    const writing=!!r&&!!v&&(v.operation==='appointments.setStatus'||v.operation==='clinic.api.request'&&v.input.method!=='GET'||v.operation==='clinic.media.upload'&&['commit','cancel'].includes(v.input.action as string));
     if(writing){this.writeCalls.set(r!.appId,(this.writeCalls.get(r!.appId)??0)+1);this.notify(r!.appId);}
     try {
       const result=await this.execute(caller,input);
@@ -129,12 +137,12 @@ export class ApiBroker {
       const readers = [...this.pending].flatMap(([owner, list]) => [...list.values()].filter(value => value.media).map(() => owner));
       if (readers.length >= 2 || readers.includes(r)) return failure('BUSY', 'not_sent', v);
     }
-    const write = v.operation === 'appointments.setStatus' || v.operation === 'clinic.api.request' && v.input.method !== 'GET';
+    const write = v.operation === 'appointments.setStatus' || v.operation === 'clinic.api.request' && v.input.method !== 'GET' || v.operation === 'clinic.media.upload' && ['commit', 'cancel'].includes(v.input.action as string);
     if (write) {
       const key = v.input.idempotencyKey as string;
       const fingerprint = v.operation === 'appointments.setStatus'
         ? createHash('sha256').update(JSON.stringify([v.operation, v.input.appointmentId, v.input.status, v.input.expectedRowVersion])).digest('hex')
-        : createHash('sha256').update(JSON.stringify([v.operation, v.input.method, v.input.path, v.input.body])).digest('hex');
+        : createHash('sha256').update(JSON.stringify(v.operation === 'clinic.media.upload' ? [v.operation, v.input.transferId] : [v.operation, v.input.method, v.input.path, v.input.body])).digest('hex');
       if (this.writing.has(key)) return failure('BUSY', 'not_sent', v);
       const prior = this.writes.get(key);
       if (prior && prior !== fingerprint) return failure('CONFLICT', 'not_sent', v);
@@ -142,11 +150,25 @@ export class ApiBroker {
       this.writes.set(key, fingerprint); this.writing.add(key);
     }
     const controller = new AbortController(); active.set(v.requestId, { controller, write, media: v.operation === 'clinic.media.read' }); this.pending.set(r, active);
-    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
+    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'clinic.media.upload' ? 60_000 : v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
     let dispatched = false;
     try {
       let value: unknown;
-      if (v.operation === 'clinic.media.read') {
+      if (v.operation === 'clinic.media.upload') {
+        if (v.input.action === 'begin') value = this.uploads.begin(r, v.input);
+        else if (v.input.action === 'chunk') value = this.uploads.chunk(r, v.input);
+        else {
+          const remote = this.uploads.needsRemote(r, v.input);
+          const token = remote ? await abortable(this.credential(v.generation), controller.signal) : 'local-transfer-only';
+          const assertCurrent = () => { if (!this.connected(r, v) || r.authorize?.() === false || !this.apiAllowed(r, v)) throw new MediaUploadError('ACCESS_DENIED', dispatched ? 'unknown' : 'not_sent'); };
+          assertCurrent();
+          if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
+          value = await abortable(this.uploads.finish(r, v.input, { apiBase: this.environment.apiBase, token, signal: controller.signal, requestId: v.requestId,
+            assertCurrent, dispatched: () => { dispatched = true; }, rejected: status => this.identity.rejected?.(status),
+            transport: (url, init) => { if (!remote) throw new MediaUploadError('FORBIDDEN'); return abortable(this.transport(url, init), controller.signal); },
+          }), controller.signal);
+        }
+      } else       if (v.operation === 'clinic.media.read') {
         const token = await abortable(this.credential(v.generation), controller.signal);
         const assertCurrent = () => {
           if (!this.connected(r, v) || r.authorize?.() === false || !this.apiAllowed(r, v)) throw new MediaReadError('ACCESS_DENIED');
@@ -220,6 +242,7 @@ export class ApiBroker {
       return success(value);
     } catch (error) {
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
+      if (error instanceof MediaUploadError) return failure(error.code, error.outcome, v);
       if (write && dispatched) return failure('UNKNOWN_OUTCOME', 'unknown', v);
       const code: ErrorCode = controller.signal.aborted ? controller.signal.reason === 'cancel' || controller.signal.reason === 'closed' ? 'CANCELLED' : 'TIMEOUT' : error instanceof TransportError || error instanceof MediaReadError ? error.code : error instanceof SyntaxError ? 'INVALID_RESPONSE' : 'OFFLINE';
       return failure(code, 'not_sent', v);
@@ -269,12 +292,14 @@ export class ApiBroker {
   }
   invalidateSession() {
     this.generation = this.identity.snapshot().generation;
+    this.uploads.dispose();
     this.flight?.controller.abort('session'); this.flight = undefined; this.writes.clear(); this.uncertain.clear(); this.writeCalls.clear();
     for (const r of this.registrations.values()) { r.connection = undefined; r.generation = undefined; }
     for (const list of this.pending.values()) for (const p of list.values()) p.controller.abort('session');
   }
   unregister(sender: object) {
     const r = this.registrations.get(sender); if (!r) return;
+    this.uploads.forget(r);
     this.registrations.delete(sender);
     for (const p of this.pending.get(r)?.values() ?? []) p.controller.abort('closed');
     this.pending.delete(r);

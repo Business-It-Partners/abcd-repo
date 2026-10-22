@@ -17,7 +17,7 @@ type Context = {
 };
 const mimeTypes = { patient_media: ['image/jpeg', 'image/png', 'image/webp'], staff_document: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'] };
 
-async function readExact(response: Response, expected: number | undefined, maximum: number, signal: AbortSignal): Promise<Uint8Array> {
+export async function readExact(response: Response, expected: number | undefined, maximum: number, signal: AbortSignal): Promise<Uint8Array> {
   const length = response.headers.get('content-length');
   if (length !== null && (!/^\d+$/.test(length) || Number(length) > maximum || expected !== undefined && Number(length) !== expected)) {
     void response.body?.cancel(); throw new MediaReadError('INVALID_RESPONSE');
