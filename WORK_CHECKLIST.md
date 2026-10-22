@@ -15,6 +15,8 @@
 
 Latest verified follow-up commit is `36c45cc7962088fde4e27f351e723311f29ff7c9`; [Windows Actions 39810891440](https://github.com/Business-It-Partners/dental-os/actions/runs/39810891440) passed security/unit checks, build/typecheck and 21/21 private GUI assertions. Corrected private Linux/Wayland Files, picker and transfer UI passed 11/11. The first combined attempt `39810071174` failed only at stale selectors for the renamed Send control; both test scripts now use its accessible label. Physical-device verification remains NOT RUN; **G16 remains OPEN**.
 
+**Image Viewer follow-up:** source `1ae45df4` is on the same branch. Build and 25 focused unit tests passed; private Linux Files and signed-app integration runs passed 19/19 and 11/11 assertions. The first Windows-only run passed security/build but found a stale thumbnail selector before viewer checks; both integration drivers now select one picture, and one final tagged Windows run is pending. Physical-device acceptance and G16 remain open; this work does not merge to `main`.
+
 The user-requested M16 preview was relaunched from the separate worktree using its own temporary profile and no test-fixture flag. It is running for visual review; no device acceptance actions were performed. The other active worktree/OS instance was left untouched.
 
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.

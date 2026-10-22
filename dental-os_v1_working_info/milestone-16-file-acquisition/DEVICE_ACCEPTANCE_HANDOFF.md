@@ -3,6 +3,7 @@
 **Date:** 2026-10-22. **Status:** Codex continuation in progress after M16.6; native drag feasibility reviewed and formally deferred for the current runtime; physical-device walkthrough NOT RUN. **Milestone:** M16/G16 still OPEN.
 **Branch:** `codex/milestone-16`.
 **Exact latest runtime-tested implementation:** `772a739ed3af3be4fd678f7ebd68baeceef2f954`; [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605), Windows/Linux success.
+**Current Image Viewer follow-up:** source `1ae45df4` has a passing local Linux build, 25 focused unit tests, 19 Files UI assertions and 11 signed-app/transfer UI assertions. The first Windows-only run found a stale thumbnail selector before viewer assertions; both Windows/Linux test drivers are corrected and the final tagged Windows check is pending. See the latest Image Viewer section in [verification evidence](VERIFICATION_EVIDENCE.md).
 **Evidence:** [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). **Contract:** [ARCHITECTURE.md](ARCHITECTURE.md). **Scope:** [PLAN.md](PLAN.md).
 
 ## 1. Do not assume this is already certified
