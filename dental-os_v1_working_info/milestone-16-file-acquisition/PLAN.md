@@ -189,7 +189,9 @@ This is a UI follow-up within M16, not a new acquisition capability. The Files g
 - [x] Add the default grid/detail-list switch, type-specific icons, lazy thumbnails, and dotfile filtering.
 - [x] Extend synthetic tests for folders, PDF icon, hidden-entry filtering, bounded source bytes, thumbnail rendering and overview/minimize privacy.
 - [x] Complete local build, unit and private-display UI checks: build passed; focused Vitest 19/19; full `npm test -- --maxWorkers=2` 478/478; private `npm run test:files` 14/14 assertions with no renderer errors.
-- [ ] Run one quota-bounded Windows/Linux workflow on the committed source and record the exact SHA/result.
+- [x] Run the first tagged Windows/Linux workflow on committed source `5da11f620e9fe49feeda79c95661d350b829e002`; both builds and unit suites passed, while both platform UI scripts exposed a stale pre-redesign Send-button selector.
+- [x] Update the synthetic Windows/Linux UI selectors to use the current accessible label; corrected private Linux Wayland integration passed 11/11 assertions, including authorized Send and rejection without a fresh trusted gesture.
+- [ ] Run a Windows-only tagged verification on the corrected test scripts, skipping the already locally verified Linux job to conserve Actions quota.
 - [ ] Record exact SHA and CI results; keep G16 OPEN because physical-device acceptance remains NOT RUN and native cross-view drag remains deferred.
 
 No test-clinic data or staging/production services are involved. Research notes are retained in [Finder UI/UX research](FINDER_UI_UX_RESEARCH.md). The user explicitly asked to see the updated OS after the work; restart only the separate M16 preview after checks, without touching the primary checkout or any other worktree.

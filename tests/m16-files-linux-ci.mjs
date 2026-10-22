@@ -81,8 +81,8 @@ try{
   await page.locator('[data-dock-app="files"]').click();
   await frame.getByText('X-rays',{exact:true}).dblclick();
   await frame.getByText('m16-synthetic-xray.png',{exact:true}).click();
-  const send=frame.getByRole('button',{name:'Send to active eligible app'});
-  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  const send=frame.getByRole('button',{name:'Send selected files to active eligible app'});
+  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Send selected files to active eligible app');return b&&!b.disabled;},null,{timeout:10000});
   const unsolicited=await page.evaluate(async()=>{
     const gen=(await window.desktop.identity.view()).generation;
     const roots=await window.desktop.files.roots(gen);

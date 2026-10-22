@@ -145,9 +145,9 @@ try{
   await filesButton.click();
   await frame.getByText('X-rays',{exact:true}).dblclick();
   await frame.getByText('m16-synthetic-xray.png',{exact:true}).click();
-  const send=frame.getByRole('button',{name:'Send to active eligible app'});
+  const send=frame.getByRole('button',{name:'Send selected files to active eligible app'});
   await send.waitFor({state:'visible'});
-  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Send selected files to active eligible app');return b&&!b.disabled;},null,{timeout:10000});
   // An arbitrary shell script must not transfer even a valid selected token.
   // Wait beyond the main-process one-use trusted activation window.
   const unsolicited=await page.evaluate(async gen=>{
