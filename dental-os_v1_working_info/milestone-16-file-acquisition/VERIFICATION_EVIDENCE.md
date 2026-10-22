@@ -57,3 +57,9 @@ The previous doc-check pass is tied to its recorded SHA, **not automatically to 
 - Exact-source Windows unit/build validation and private Linux display UI **not yet claimed** by authoring these tests. Record their actual results before accepting M16.3 as verified. In this tooling session private GNOME compositor and full repository node_modules are unavailable; avoid claiming that static inspection constitutes UI proof.
 
 Existing M16.2 Windows evidence and its unrelated pointer timeout remain recorded above. Do not spend quota repeatedly rerunning graphical CI without a changed, targeted reason.
+
+## M16.3 source-bound Windows CI and handoff (2026-10-22)
+
+Commit fa3fc247a047e0051768a68699bee676a1b7ead6 on codex/milestone-16 passed documentation validation, 448 Windows unit tests (4 skipped), application package checks and build/typecheck in [Actions run 39759665540](https://github.com/Business-It-Partners/dental-os/actions/runs/39759665540). The full workflow **failed** at the pre-existing Windows isolated runtime proof step, with `page.waitForFunction: Timeout 30000ms exceeded`; downstream Windows runtime tests did not run. This is not proof of a Files UI failure or a pass.
+
+The dedicated Files UI scenario `npm run test:files` remains **not executed** because this working environment lacks an isolated GNOME headless compositor. Do not run it on the user's actual desktop or with clinic files. Preserve this limitation when assessing M16.3 verification. The next session may perform private-display acceptance before proceeding to M16.4. No new CI run was requested solely for the graphical timeout.

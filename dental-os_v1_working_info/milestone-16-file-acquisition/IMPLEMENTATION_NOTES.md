@@ -54,3 +54,9 @@ The app is always dock-accessible in normal runtime and reuses the static manage
 A privacy review revealed that generic minimized/overview captures could include host filenames. For `files` only, M16.3 provides sanitized icon artwork for Genie minimization and a generic privacy card in overview. Other app snapshot paths are unchanged.
 
 Implementation deliberately avoids any M16.4 picker or M16.5 transfer, and adds a private-display synthetic test root under isolated user-data only when `--files-fixtures` is supplied in a trusted private test environment. Files are never uploaded, persisted in OS state, or logged to diagnostics. Browser UI/file-dialog cross-platform proof remains an explicit M16.3 acceptance limitation until private Linux and Windows UI tests execute.
+
+## M16.3 source-bound Windows CI and handoff (2026-10-22)
+
+Commit fa3fc247a047e0051768a68699bee676a1b7ead6 on codex/milestone-16 passed documentation validation, 448 Windows unit tests (4 skipped), application package checks and build/typecheck in [Actions run 39759665540](https://github.com/Business-It-Partners/dental-os/actions/runs/39759665540). The full workflow **failed** at the pre-existing Windows isolated runtime proof step, with `page.waitForFunction: Timeout 30000ms exceeded`; downstream Windows runtime tests did not run. This is not proof of a Files UI failure or a pass.
+
+The dedicated Files UI scenario `npm run test:files` remains **not executed** because this working environment lacks an isolated GNOME headless compositor. Do not run it on the user's actual desktop or with clinic files. Preserve this limitation when assessing M16.3 verification. The next session may perform private-display acceptance before proceeding to M16.4. No new CI run was requested solely for the graphical timeout.

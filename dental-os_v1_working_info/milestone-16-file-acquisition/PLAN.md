@@ -91,6 +91,7 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [x] Enforce trusted main-frame **shell-only** IPC for `files:roots` and `files:list` with exact generation and closed payload schema. No app-preload, business SDK, or raw path/bytes operations.
 - [x] Add a synthetic private-display fixture and targeted security, window-lifecycle and UI regression scripts.
 - [x] Protect file names in OS overview and minimized previews with static sanitized artwork.
-- [ ] Complete source-bound Windows unit/build CI check and run private Linux UI script `npm run test:files` when a private GNOME environment is available. Do not use the user's display or real clinic files.
+- [x] Source-bound Windows documentation, 448 unit tests (4 skipped), app package checks and build/typecheck passed at fa3fc247; full graphical workflow failed at a runtime timeout unrelated to a direct Files test.
+- [ ] Run private Linux UI script `npm run test:files` when a private GNOME environment is available; no GUI acceptance is claimed yet. Do not use the user's display or real clinic files.
 
 **Stop before M16.4:** no OS-owned modal picker, native host file dialog, app SDK activation, file receipt transfer, drag/drop, or Cloudflare upload is enabled in M16.3.

@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.3 OS-owned Files window and shell-only host browsing integrated; Windows build/unit and private Linux UI evidence pending. G16 picker/transfer acceptance remains open.
+**Status:** IMPLEMENTING — M16.3 Files core window implemented. Windows unit/build/typecheck verified; private Linux Files UI and final G16 picker/transfer acceptance remain open.
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -30,4 +30,4 @@ No custom/native file picker, drag behavior, SDK 1.5 operation, upload, or backe
 
 ## Next
 
-M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. After source-bound checks, start **M16.4 — Custom and native file picker** in a separate working session. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.
+M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. Before proceeding to M16.4 in a later session, execute `npm run test:files` on a supported private GNOME display and record its actual result. The M16.3 Windows unit/build source is verified; full Windows graphical runtime and user-facing Files UI acceptance remain open. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.
