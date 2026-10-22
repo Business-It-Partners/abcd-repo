@@ -29,6 +29,37 @@ describe('dentalpkg/1 signature and portable inventory', () => {
   const verified = verifyPackage(buildPackage(meta(), appFiles, 'test', keys.privateKey), policy);
   expect(verified.files.get('large.js')?.length).toBe(1_200_000);
  });
+ it('accepts exact per-asset and expanded package limits, and rejects the next byte', () => {
+  const exactFiles = new Map<string, Buffer>([
+   ['a.js', Buffer.alloc(limits.file, 65)],
+   ['b.js', Buffer.alloc(limits.file, 66)],
+   ['c.js', Buffer.alloc(limits.file, 67)],
+   ['index.html', Buffer.alloc(limits.file, 68)],
+  ]);
+  const exactPackage = buildPackage(meta(), exactFiles, 'test', keys.privateKey);
+  const verified = verifyPackage(exactPackage, policy);
+  expect([...verified.files.values()].every(data => data.length === limits.file)).toBe(true);
+  expect([...verified.files.values()].reduce((sum, data) => sum + data.length, 0)).toBe(limits.expanded);
+  expect(exactPackage.length).toBeLessThan(limits.wire);
+
+  const oneByteOverFile = Buffer.alloc(limits.file + 1, 97);
+  const signedOverFile = resign(b => {
+   b.manifest.assets = [{ path: 'index.html', size: oneByteOverFile.length, sha256: sha256(oneByteOverFile) }];
+   b.files = [{ path: 'index.html', data: oneByteOverFile.toString('base64') }];
+  });
+  expect(() => buildPackage(meta(), new Map([['index.html', oneByteOverFile]]), 'test', keys.privateKey)).toThrow('Invalid inventory');
+  expect(() => verifyPackage(signedOverFile, policy)).toThrow('Invalid inventory');
+
+  const oneByteOverExpanded = new Map(exactFiles);
+  oneByteOverExpanded.set('extra.js', Buffer.from([97]));
+  expect(() => buildPackage(meta(), oneByteOverExpanded, 'test', keys.privateKey)).toThrow('Invalid inventory');
+  const signedOverExpanded = resign(b => {
+   const ordered = [...oneByteOverExpanded].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+   b.manifest.assets = ordered.map(([assetPath, data]) => ({ path: assetPath, size: data.length, sha256: sha256(data) }));
+   b.files = ordered.map(([assetPath, data]) => ({ path: assetPath, data: data.toString('base64') }));
+  });
+  expect(() => verifyPackage(signedOverExpanded, policy)).toThrow('Invalid inventory');
+ });
  it('normal production policy never trusts fixture keys or identities', () => { expect(() => verifyPackage(bundle(), productionTrust)).toThrow('Untrusted'); });
  it('refuses an unknown app signed by an untrusted key before installation or launch', () => {
   const outsider = generateKeyPairSync('ed25519');
