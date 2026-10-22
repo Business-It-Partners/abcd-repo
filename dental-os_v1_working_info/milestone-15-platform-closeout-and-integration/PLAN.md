@@ -70,3 +70,11 @@ M15 is not a general extension/API platform, arbitrary messaging/intent system, 
 ## Worktree output cleanup
 
 After a worktree task is complete and required evidence is retained, remove only its unnecessary task-generated build outputs. Preserve source, reports, commits and evidence; never delete the user's live build or unrelated checkout outputs. P03 is documentation-only and produces no build output or dependency installation.
+
+## Approved media-upload deferral — 2026-10-22
+
+The user explicitly paused media uploads and directed completion of the remaining platform baseline first. The lead owns this revised scope in the current chat/worktree. Retain ADR-029 implementation, local synthetic evidence, backend branch, failed live attempt and all worktrees. Media upload is excluded from the current app-ready capability inventory and denied by the real SessionManager even if a signed release requests it. No public upload grant was published. Re-enablement requires a later reviewed media capability task proving actual staging transfer, outcome/recovery, role/tenant boundaries and support cleanup. This deferral does not defer ordinary JSON writes, API authority, update safety, shell checks or final source verification.
+
+The staging backend snapshot `af4faf3` was deployed as version `1d3ec32d-fe06-425f-9d14-6008fc17a9df`; health and existing bindings passed. The private probe created one labelled synthetic patient and Staff record. Intent creation returned 500 before binary transfer; null capture-date validation mismatched the existing NOT NULL schema. Candidate validation corrections and a new backend schema regression remain preserved, uncommitted and paused; they are not a deployed fix or acceptance. Synthetic-record reconciliation remains a bounded cleanup task. No production operation occurred.
+
+Remaining platform sequence: (1) real staging ordinary writes/stable retries and role/tenant boundaries; (2) source-bound ADR-025 and shell journey checks plus Windows regression disposition; (3) capability/navigation/print-export handoff and final build/unit/private-UI/Windows checks and source review. M14 app code and user manual review do not block this implementation sequence. M20/G21 production/device obligations remain separate. No checklist or G15 closure is claimed by this scope change.

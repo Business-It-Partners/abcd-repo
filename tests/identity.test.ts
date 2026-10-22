@@ -72,6 +72,12 @@ describe('single platform session',()=>{
   }finally{broker.dispose();await h.close();}
  });
 });
+describe('deferred media upload gate',()=>{
+ it('denies uploads for authenticated clinic sessions even with every domain capability',async()=>{
+  const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access','staff.manage']})});
+  try{expect((await h.session.login(input)).ok).toBe(true);expect(h.session.allowedMediaRead('company.dental.patient-record','patient_media')).toBe(true);expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);}finally{await h.close();}
+ });
+});
 describe('Firebase/Worker fixed-endpoint contract',()=>{
  const jwt=(project=staging.firebaseProject)=>`header.${Buffer.from(JSON.stringify({aud:project,iss:`https://securetoken.google.com/${project}`,sub:'fixture-user',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')}.signature`;
  it('keeps email/password and refresh token in host transport and checks /v1/me shape',async()=>{

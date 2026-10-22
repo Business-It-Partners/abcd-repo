@@ -9,7 +9,7 @@ export function uploadMetadata(kind: unknown, value: unknown): value is Record<s
   const patient = kind === 'patient_media'; if (!patient && kind !== 'staff_document') return false;
   if (!shape(value, [...common, ...(patient ? ['chiefComplaintId', 'xrayType', 'toothCode', 'clinicalNote', 'capturedOn'] : ['documentType', 'expiresOn'])])) return false;
   if (!text(value.displayFilename, 200, false) || !Number.isSafeInteger(value.byteSize) || (value.byteSize as number) < 1 || (value.byteSize as number) > (patient ? 10 : 25) * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', ...(patient ? [] : ['application/pdf'])].includes(value.mimeType as string)) return false;
-  return patient ? (value.chiefComplaintId === null || uuid(value.chiefComplaintId)) && ['IOPA', 'OPG', 'CBCT', 'Intraoral photo'].includes(value.xrayType as string) && nullable(value.toothCode, 40) && nullable(value.clinicalNote, 1000) && date(value.capturedOn)
+  return patient ? (value.chiefComplaintId === null || uuid(value.chiefComplaintId)) && ['IOPA', 'OPG', 'CBCT', 'Intraoral photo'].includes(value.xrayType as string) && nullable(value.toothCode, 40) && nullable(value.clinicalNote, 1000) && value.capturedOn !== null && date(value.capturedOn)
     : ['identity', 'license', 'contract', 'certificate', 'other'].includes(value.documentType as string) && date(value.expiresOn);
 }
 export function validMediaUpload(value: unknown): boolean {

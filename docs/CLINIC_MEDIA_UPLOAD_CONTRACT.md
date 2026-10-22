@@ -1,5 +1,7 @@
 # Mediated clinic uploads — SDK 1.4
 
+**Availability (2026-10-22): user-deferred experimental capability. Real host sessions deny uploads regardless of signed grants. Local synthetic proof is retained; actual staging lifecycle/recovery acceptance is incomplete.**
+
 `clinic.media.upload` is an explicit signed format-2 exact-release operation. Patient Record may upload patient media and Staff may upload Staff documents, subject to package, app-family and trusted session access. Worker authorization and tenant selection remain authoritative. Read permission does not imply upload permission; Work Entry's read scope is unchanged.
 
 ## Wire protocol
@@ -16,3 +18,5 @@ A lost remote response returns `UNKNOWN_OUTCOME`; the transfer remains available
 Patient media remains at most 10 MiB; Staff documents at most 25 MiB. There is one transfer per registration and two broker-wide, with 128 terminal receipts, a five-minute memory lifetime and a 60-second commit/cancel deadline. Begin/chunk perform no remote writes. Buffered and unknown work participates in the shell close/update safety gate. Successful completion, cancellation, frame removal, logout and session invalidation clear/zero the buffer; no file or offline retry queue is created. Expiration performs no background network work and does not claim to undo remote state. In-flight expiry is cleaned up when the bounded request finishes.
 
 After a process closes, backend `307a21b` exposes authenticated owner-scoped expired/cleanup-pending discovery and abort actions. Native recovery orchestration across fresh sessions and the never-returning-creator support cleanup disposition remain open. This host implementation is still a candidate until required build/unit/native checks and real staging D1/R2/write/receipt-concurrency tests pass. No signed feed grant is published automatically, and no deployment or production action follows from this document. Test fixtures do not certify real Worker receipt races or eventual cleanup.
+
+Patient X-ray metadata requires a real `capturedOn` calendar date (`YYYY-MM-DD`), matching the existing clinical schema. The host rejects null or impossible dates before any request. Staff `expiresOn` remains nullable.

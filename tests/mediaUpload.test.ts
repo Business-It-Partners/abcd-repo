@@ -7,7 +7,7 @@ import { staging } from '../electron/sdk/environment';
 import type { MediaKind } from '../electron/sdk/mediaRead';
 
 const recordId = '11111111-1111-4111-8111-111111111111', assetId = '22222222-2222-4222-8222-222222222222', key = 'original-upload-key';
-function metadata(kind: MediaKind, size = 3) { return { displayFilename: 'synthetic.png', mimeType: 'image/png', byteSize: size, ...(kind === 'patient_media' ? { chiefComplaintId: null, xrayType: 'IOPA', toothCode: null, clinicalNote: null, capturedOn: null } : { documentType: 'other', expiresOn: null }) }; }
+function metadata(kind: MediaKind, size = 3) { return { displayFilename: 'synthetic.png', mimeType: 'image/png', byteSize: size, ...(kind === 'patient_media' ? { chiefComplaintId: null, xrayType: 'IOPA', toothCode: null, clinicalNote: null, capturedOn: '2026-10-22' } : { documentType: 'other', expiresOn: null }) }; }
 function fixture(kind: MediaKind = 'patient_media') {
   const manager = new MediaUploads(), owner = {}, input = { action: 'begin', kind, recordId, metadata: metadata(kind), idempotencyKey: key };
   const transfer = manager.begin(owner, input); let grant = true, status = 'pending', failStage = '', failOnce = true, badHandle = false;
@@ -75,7 +75,7 @@ describe('upload bounds and owner lifetime', () => {
   it('rejects caller checksum, unsafe MIME, extra route/credentials and over-limit declarations', () => {
     const input = { action: 'begin', kind: 'patient_media', recordId, metadata: metadata('patient_media'), idempotencyKey: key };
     expect(validMediaUpload(input)).toBe(true);
-    for (const patch of [{ checksum: 'a'.repeat(64) }, { mimeType: 'text/html' }, { uploadUrl: staging.apiBase }, { byteSize: 10 * 1024 * 1024 + 1 }]) expect(validMediaUpload({ ...input, metadata: { ...input.metadata, ...patch } })).toBe(false);
+    for (const patch of [{ capturedOn: null }, { capturedOn: '2026-02-30' }, { checksum: 'a'.repeat(64) }, { mimeType: 'text/html' }, { uploadUrl: staging.apiBase }, { byteSize: 10 * 1024 * 1024 + 1 }]) expect(validMediaUpload({ ...input, metadata: { ...input.metadata, ...patch } })).toBe(false);
     expect(validMediaUpload({ ...input, authorization: 'untrusted' })).toBe(false);
   });
 });

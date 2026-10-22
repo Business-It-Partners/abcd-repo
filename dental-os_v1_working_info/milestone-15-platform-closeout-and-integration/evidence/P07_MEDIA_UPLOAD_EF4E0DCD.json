@@ -1,0 +1,72 @@
+{
+  "sourceCommit": "ef4e0dcdda00fdc3289167a22a5591a2179c63e1",
+  "sourceHashes": {
+    "dental-os_v1-documentation/11_V1_SDK_AND_API_BROKER.md": "1dc09a85d387d316eb5bda3d4696bede28e1c0a3a2b505536d5fe121b88ffca2",
+    "dental-os_v1-documentation/20_V1_ADR_REGISTER.md": "e1c1f60b560b511516eb566d16fa42707e97e31790d8c6849ea59a58c92ee291",
+    "docs/CLINIC_MEDIA_UPLOAD_CONTRACT.md": "70d4e8e18a9b257cc721bf7cc2c74529545a04e6225c420ecfbdba747c8beb8f",
+    "electron/identity/session.ts": "8f8042203978501d0b5d134ba31e5ec25ce42ed4bff679108feac006e3ab138c",
+    "electron/sdk/broker.ts": "d2a204272b7b272ced0fb6130a56ef800e0d36b01ffa436ce79f482a54ad9f4d",
+    "electron/sdk/contracts.ts": "a75b3fb2bfda6d0370232cc7b8b175b01f210b18479aa1eec7ca12ae4776729e",
+    "electron/sdk/mediaRead.ts": "ce56fd2ed5613814714a1b22e1c64c831883ba6f0a0a632cd56c6fc4ab1f8050",
+    "electron/sdk/mediaUpload.ts": "8747932d0e8cd94cf24d5b466319abb0dd768909f7d9dba0f320eb53b5ea3b14",
+    "electron/sdk/mediaUploadContract.ts": "8e07f84d84b003afa54b8b091abdf3d0876f615a4dab14d9454f2b69e511bfe4",
+    "src/capabilityLabels.ts": "5f64185cbd1b01bab3e9a08da35188a26a1d1c3969657924e6a7d1df8af0de72",
+    "tests/media-upload-runtime.mjs": "f1fa00031ef2dcb5602ea94afd1523008fdc75529904da28c907fa1f0de8908c",
+    "tests/mediaUpload.test.ts": "2f586f83fa940eb6c468ce3ba7d2bb97086491bfae24dd71164221df5e06902d"
+  },
+  "scope": "ADR-029/SDK 1.4 bounded mediated upload candidate, locally verified; not final M15 acceptance",
+  "checks": {
+    "build": "PASS on identical runtime/test content before commit",
+    "fullSerialUnit": {
+      "passed": 427,
+      "files": 24,
+      "command": "npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000"
+    },
+    "focusedMedia": {
+      "read": 29,
+      "upload": 30,
+      "passed": 59
+    },
+    "privateSDK": 16,
+    "privateIdentity": 44,
+    "privateMediaRead": {
+      "passed": 2,
+      "bytes": [
+        10485760,
+        26214400
+      ]
+    },
+    "privateMediaUpload": {
+      "passed": 2,
+      "bytes": [
+        10485760,
+        26214400
+      ],
+      "staffLostFinaliseResponse": "Original-key reconciliation confirms one finalisation and clears close/update unsafe state"
+    }
+  },
+  "reviewedBehavior": [
+    "Host-controlled intent/content/finalise/abort; caller cannot choose URL, checksum, headers or credentials",
+    "8 KiB chunks retain the 16 KiB SDK envelope and unchanged 10/25 MiB domain limits",
+    "Owner/session/grant isolation, two explicit buffers and bounded terminal receipts; no disk/offline retry queue",
+    "Same-key unknown-outcome retries, explicit cancellation and confirmed committed-result replay",
+    "Explicit patient replacement route; original clinical fact remains backend-owned",
+    "Unsent cancellation and terminal replay require no credential acquisition or remote calls"
+  ],
+  "preliminaryFailuresAndRepairs": [
+    "Duplicate local path declaration prevented transform; renamed before test pass.",
+    "Staff retry test incorrectly counted a metadata GET among intent keys; fixture predicate corrected to POST-only.",
+    "Typecheck required explicit transfer existence in kind lookup; corrected before build pass."
+  ],
+  "remaining": [
+    "Fresh-session host discovery/cleanup orchestration and never-returning-creator support disposition",
+    "Staging backend deployment and real D1/R2/media/write/role/tenant/idempotency race proof",
+    "Reviewed capability grant publication; current public policy is unchanged",
+    "Navigation/print-export decisions, Windows dock-edge issue and final P05/P06/P09 checks/review"
+  ],
+  "publicGrantPublished": false,
+  "backendDeploymentPerformed": false,
+  "productionRequests": false,
+  "clinicalWrites": false,
+  "liveDesktopChanged": false
+}

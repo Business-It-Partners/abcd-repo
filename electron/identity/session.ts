@@ -1,4 +1,3 @@
-import { uploadKindForApp } from '../sdk/mediaUpload';
 import { mediaKindForApp, type MediaKind } from '../sdk/mediaRead';
 import type { Operation } from '../sdk/contracts';
 import type { Identity } from '../sdk/broker';
@@ -107,9 +106,10 @@ export class SessionManager implements Identity {
     }
     return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
   }
-  allowedMediaUpload(appId: string, kind: MediaKind) {
-    return this.phase === 'ready' && !!this.clinic && uploadKindForApp(appId) === kind
-      && appAllowed(appId, this.clinic.role, this.clinic.capabilities);
+  allowedMediaUpload(_appId: string, _kind: MediaKind) {
+    // User-deferred capability: retain experimental code/tests, deny real sessions.
+    // Re-enable only after the staging lifecycle and recovery gate is satisfied.
+    return false;
   }
   allowedMediaRead(appId: string, kind: MediaKind) {
     return this.phase === 'ready' && !!this.clinic && mediaKindForApp(appId) === kind
