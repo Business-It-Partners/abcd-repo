@@ -19,45 +19,25 @@ const report={sha:process.env.GITHUB_SHA??null,platform:process.platform,checks,
 function check(label,value){assert.ok(value,label);checks.push(label);console.log('PASS',label);}
 function summarize(value){return JSON.stringify(value).slice(0,6000);}
 
-async function driveNativeWindowsOpenDialog(filePath) {
-  // Synthetic private runner only: Windows SendKeys targets a dialog by exact title.
-  // Never type into an unknown foreground window and never use real patient files.
-  const script=[
-    'Add-Type -AssemblyName System.Windows.Forms',
-    "$code = @'",
-    'using System; using System.Runtime.InteropServices;',
-    'public static class M16Dialog {',
-    ' [DllImport("user32.dll", CharSet=CharSet.Unicode)]',
-    ' public static extern IntPtr FindWindow(string cls, string title);',
-    ' [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);',
-    '}',
-    "'@",
-    'Add-Type -TypeDefinition $code',
-    '$deadline=(Get-Date).AddSeconds(22)',
-    '$dialog=[IntPtr]::Zero',
-    'do { $dialog=[M16Dialog]::FindWindow($null,"Choose local files for Dental OS");',
-    ' if($dialog -ne [IntPtr]::Zero){break}; Start-Sleep -Milliseconds 130',
-    '} while((Get-Date) -lt $deadline)',
-    'if($dialog -eq [IntPtr]::Zero){throw "Native file chooser did not appear"}',
-    '[void][M16Dialog]::SetForegroundWindow($dialog)',
-    'Start-Sleep -Milliseconds 260',
-    '[System.Windows.Forms.SendKeys]::SendWait("%n")',
-    'Start-Sleep -Milliseconds 200',
-    '[System.Windows.Forms.Clipboard]::SetText($env:M16_NATIVE_SAMPLE)',
-    '[System.Windows.Forms.SendKeys]::SendWait("^v")',
-    'Start-Sleep -Milliseconds 220',
-    '[System.Windows.Forms.SendKeys]::SendWait("{ENTER}")',
-    'Write-Output "Native chooser appeared and received synthetic selection"'
-  ].join('\n');
-  const encoded=Buffer.from(script,'utf16le').toString('base64');
+async function driveNativeWindowsOpenDialog(filePath, electronPid) {
+  // The external PowerShell driver locates the actual OS common file dialog,
+  // using Win32 HWND + UI Automation with keyboard fallback. Hosted CI only.
+  if (!Number.isSafeInteger(electronPid) || electronPid<=0) throw Error('Missing Electron host PID');
+  const script=path.join(repo,'tests','m16-native-dialog-ci.ps1');
   return await new Promise((resolve,reject)=>{
-    const proc=spawn('powershell.exe',['-NoProfile','-STA','-EncodedCommand',encoded],
-      {env:{...process.env,M16_NATIVE_SAMPLE:filePath},windowsHide:true,stdio:['ignore','pipe','pipe']});
+    const proc=spawn('powershell.exe',
+      ['-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',script,'-ElectronPid',String(electronPid)],
+      {env:{...process.env,M16_NATIVE_SAMPLE:filePath},windowsHide:false,stdio:['ignore','pipe','pipe']});
     let out='',err='';
-    proc.stdout.on('data',v=>out=(out+v).slice(-1000));
-    proc.stderr.on('data',v=>err=(err+v).slice(-1000));
-    proc.on('error',reject);
-    proc.on('exit',code=>code===0?resolve(out.trim()):reject(Error('Private native file-dialog driver failed code '+code+': '+err.replaceAll(filePath,'[synthetic]'))));
+    proc.stdout.on('data',v=>out=(out+v).slice(-2200));
+    proc.stderr.on('data',v=>err=(err+v).slice(-2000));
+    proc.once('error',reject);
+    proc.once('exit',code=>{
+      const clean=(out+'\n'+err).replaceAll(filePath,'[synthetic test file]').trim();
+      console.log('NATIVE WIN32 DRIVER',clean.slice(0,2000));
+      if(code===0)resolve(clean);
+      else reject(Error('Native Windows dialog automation failed (exit '+code+'): '+clean));
+    });
   });
 }
 
@@ -146,7 +126,7 @@ try{
   await signedApp.getByRole('button',{name:'Choose local X-ray'}).click();
   await modal.waitFor({state:'visible'});
   const samplePath=path.join(profile,'m16-files-fixture','X-rays','m16-synthetic-xray.png');
-  const nativeDriver=driveNativeWindowsOpenDialog(samplePath);
+  const nativeDriver=driveNativeWindowsOpenDialog(samplePath,app.process().pid);
   await modal.getByRole('button',{name:'Use native picker'}).click();
   await nativeDriver;
   await modal.waitFor({state:'detached',timeout:10000});
@@ -179,5 +159,11 @@ try{
       new Promise(resolve=>setTimeout(resolve,3500))]);
     if(!closed){try{app.process().kill();}catch{/* only synthetic CI child */}}
   }
-  await rm(profile,{recursive:true,force:true,maxRetries:6,retryDelay:100});
+  try {
+    await rm(profile,{recursive:true,force:true,maxRetries:3,retryDelay:150});
+  } catch(error) {
+    // An OS dialog failure can leave Electron native handles open transiently.
+    // Do not mask the primary test exception with a teardown EBUSY.
+    console.warn('Synthetic CI profile cleanup incomplete:',(error).code||'IO_ERROR');
+  }
 }

@@ -56,3 +56,6 @@ The first bounded Windows GUI run passed focused security tests and build but fa
 - **Still open:** actual Windows native-dialog interaction, signed dental app SDK gesture -> picker receipt end-to-end, Linux private-display GUI, Files minimize/overview privacy on platform, M16.5 transfer, file-byte consumption, patient association and Cloudflare upload. G16 not marked VERIFIED.
 
 Next working session: decide whether remaining M16.4 native/signed-app proof should be a targeted gate before M16.5. Do not bundle M16.5 drag/send work with this verification handoff.
+## Corrective verification follow-up (pending)
+
+A tightly scoped native Windows dialog automation correction and bounded Linux Wayland teardown have been prepared. The previous `b552f18` logs already proved the signed custom-picker flow on Windows and 7 Linux graphical assertions; those earlier jobs were not green. Do not mark native Windows picker or full cross-platform acceptance passed until the corrected exact-source focused jobs finish.

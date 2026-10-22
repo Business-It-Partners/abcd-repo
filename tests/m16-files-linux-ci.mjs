@@ -15,7 +15,7 @@ if (process.platform!=='linux'||process.env.DISPLAY||!process.env.ELECTRON_OS_TE
   throw Error('Private Wayland compositor required; refusing to use user desktop');
 const root=path.resolve(import.meta.dirname,'..');
 const profile=await mkdtemp(path.join(tmpdir(),'dental-m16-linux-'));
-const checks=[],errors=[];let app,page;
+const checks=[],errors=[];let app,page,failed=false;
 const report={source:process.env.GITHUB_SHA??null,platform:'private-linux-wayland',checks,errors};
 function check(message,ok){assert.ok(ok,message);checks.push(message);console.log('PASS',message);}
 try{
@@ -69,7 +69,9 @@ try{
   check('Linux custom picker cancel revokes pending request',true);
   console.log('M16 PRIVATE WAYLAND SUCCESS',checks.length);
 } catch(error) {
+  failed=true;
   errors.push(String(error));
+  console.error('Private Wayland M16 graphical assertion failed:',String(error));
   try {
     const state=await page?.evaluate(()=>({
       desktop:!!window.desktop, url:location.pathname+location.search,
@@ -79,15 +81,20 @@ try{
     report.failureState=state;
     console.error('WAYLAND DIAG',JSON.stringify(state));
   }catch{ /* no patient data ever captured */ }
-  throw error;
 } finally {
   await mkdir(path.join(root,'artifacts'),{recursive:true});
   await writeFile(path.join(root,'artifacts','m16-linux-files-ui.json'),JSON.stringify(report,null,2)+'\n');
+  const sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
   if(app){
     let closed=false;
-    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),
-      new Promise(resolve=>setTimeout(resolve,3500))]);
-    if(!closed){try{app.process().kill();}catch{/* only synthetic CI child */}}
+    await Promise.race([app.close().then(()=>{closed=true}).catch(()=>{}),sleep(1800)]);
+    if(!closed){try{app.process().kill('SIGKILL');}catch{/* only private CI child */}}
   }
-  await rm(profile,{recursive:true,force:true,maxRetries:3,retryDelay:50});
+  await Promise.race([rm(profile,{recursive:true,force:true,maxRetries:2,retryDelay:80})
+    .catch(error=>console.warn('Synthetic profile cleanup:',error?.code||'IO_ERROR')),sleep(1800)]);
+  // Weston/Wayland can leave Playwright native handles open even after all
+  // GUI assertions pass. The dedicated synthetic CI script owns its process;
+  // exiting with the recorded result avoids a 7-minute runner cancellation.
+  console.log('M16 PRIVATE WAYLAND EXIT',failed?'FAIL':'SUCCESS',checks.length);
+  process.exit(failed?1:0);
 }

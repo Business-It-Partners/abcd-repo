@@ -118,3 +118,11 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [x] Observe and archive exact focused graphical result: Windows hosted Files navigation, custom picker and cancellation passed 12 checks; screenshots/JSON retained in GitHub artifacts.
 - [ ] Verify native host OS dialogs and private Linux GUI separately.
 - [ ] Verify company-signed first-party dental app permission and trusted gesture before claiming G16 verified.
+
+## Latest cross-platform graphical verification tasks
+
+- [x] Inspect exact b552f18 Windows/Linux logs and classify native dialog versus Linux teardown separately.
+- [x] Prepare bounded Win32 HWND/UIAutomation native dialog selection and error-preserving test cleanup.
+- [x] Prepare bounded Wayland private CI exit after synthetic GUI checks and avoid a repeat full-suite Windows run.
+- [ ] Observe one exact-source tagged Windows + Linux verification result and update evidence.
+- [ ] Confirm the native host dialog and signed app receipt on Windows, all Linux UI checks and clean runner completion before declaring these three M16.4 tasks finished.
