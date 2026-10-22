@@ -9,9 +9,17 @@ if (guard !== '--prepare-staging-only' || !backendInput || !outputInput || proce
 const backend = path.resolve(backendInput), output = path.resolve(outputInput), hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const git = args => execFileSync('git', args, { cwd: backend, encoding: 'utf8' }).trim();
 const source = git(['rev-parse', 'HEAD']), branch = git(['branch', '--show-current']), staging = git(['rev-parse', 'origin/cloudfare-staging']);
-if (branch !== 'codex/sys-0009-mediated-media' || git(['remote', 'get-url', 'origin']) !== 'https://github.com/Business-It-Partners/dental-saas.git' || !/^[a-f0-9]{40}$/.test(source)) throw Error('Unreviewed source checkout');
-git(['merge-base', '--is-ancestor', '307a21b', source]); git(['merge-base', '--is-ancestor', staging, source]);
-if (git(['diff', '--name-only', '307a21b', source, '--', 'apps/platform-worker/src']).length) throw Error('Media runtime changed after its reviewed source');
+if (branch !== 'codex/sys-0010-staging-media-probe' || git(['remote', 'get-url', 'origin']) !== 'https://github.com/Business-It-Partners/dental-saas.git' || !/^[a-f0-9]{40}$/.test(source)) throw Error('Unreviewed source checkout');
+// The last reviewed Worker snapshot was deployed directly to staging; the Git staging ref was intentionally not advanced.
+const deployedStagingSource = 'af4faf356db4fbea8d56f1d3bccb2da411bfea06';
+const sharedStagingBase = git(['merge-base', staging, source]);
+const stagingOnlyChanges = git(['diff', '--name-only', sharedStagingBase, staging]).split('\n').filter(Boolean).sort();
+const expectedReadOnlyStagingChanges = ['.github/workflows/m14-existing-tenant-readiness.yml', 'operations/m14-existing-tenant-readiness.mjs'];
+if (JSON.stringify(stagingOnlyChanges) !== JSON.stringify(expectedReadOnlyStagingChanges)) throw Error('Staging branch advanced with unreviewed changes');
+git(['merge-base', '--is-ancestor', '307a21b', source]); git(['merge-base', '--is-ancestor', sharedStagingBase, source]); git(['merge-base', '--is-ancestor', deployedStagingSource, source]);
+const workerSourceChanges = git(['diff', '--name-only', deployedStagingSource, source, '--', 'apps/platform-worker/src']).split('\n').filter(Boolean).sort();
+const expectedWorkerSourceChanges = ['apps/platform-worker/src/clinic/patients/media/patientMedia.service.ts', 'apps/platform-worker/src/clinic/patients/media/patientMedia.types.ts'];
+if (JSON.stringify(workerSourceChanges) !== JSON.stringify(expectedWorkerSourceChanges)) throw Error('Worker source changes differ from the reviewed media validation fix');
 const tokenFile = '/home/master-x/.config/.wrangler/config/default.toml', token = fs.readFileSync(tokenFile, 'utf8').match(/^oauth_token\s*=\s*"([^"]+)"/m)?.[1];
 if (!token) throw Error('Existing staging Wrangler session required');
 const cloud = async (suffix, init = {}) => {

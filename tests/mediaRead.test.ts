@@ -57,6 +57,9 @@ for (const kind of ['patient_media', 'staff_document'] as const) describe(kind +
   });
 });
 describe('media envelope and declared transfer bounds', () => {
+  it('uses the Dental SaaS media size contract', () => {
+    expect(MEDIA_LIMITS).toEqual({ patient_media: 10 * 1024 * 1024, staff_document: 25 * 1024 * 1024 });
+  });
   it('rejects paths, headers, caller checksums and malformed identifiers', () => {
     const f = fixture();
     for (const input of [{ ...f.input.input, path: '/v1/secret' }, { ...f.input.input, checksum: 'a'.repeat(64) }, { ...f.input.input, assetId: '../secret' }, { ...f.input.input, kind: 'arbitrary' }]) expect(parseRequest({ ...f.input, input })).toBeUndefined();

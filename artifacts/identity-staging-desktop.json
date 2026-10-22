@@ -1,11 +1,22 @@
 {
   "passed": true,
-  "phase": "logout",
+  "phase": "final-signout",
+  "failureClass": null,
   "checks": [
     "real staging mode starts gated",
     "actual desktop sign-in reaches Worker-authorized staging workspace without remember-me",
     "real session lock clears context and advances generation",
-    "real desktop local logout returns to sign-in"
+    "real desktop sign-out clears clinic context and advances generation",
+    "fresh sign-in succeeds after sign-out",
+    "second sign-out returns to the signed-out gate"
   ],
-  "scope": "Private Linux desktop with approved staging identity; no business operations, user mutations or global revocation."
+  "authStatus": "ready",
+  "authFailureStage": null,
+  "authFailureOutcome": null,
+  "observedSessionPhase": null,
+  "observedViewPhase": null,
+  "observedAlert": false,
+  "observedSubmitDisabled": null,
+  "pageErrorCount": 0,
+  "scope": "Private Linux desktop with approved staging identity; sign-in, lock, sign-out and fresh-login session boundaries; no business operations, user mutations or global revocation."
 }

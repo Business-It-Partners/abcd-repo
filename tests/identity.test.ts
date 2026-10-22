@@ -14,11 +14,11 @@ function encryptedProvider(available=true):SecretProvider{
  const key=randomBytes(32);
  return{available:()=>available,encrypt:async value=>{const iv=randomBytes(12),c=createCipheriv('aes-256-gcm',key,iv);return Buffer.concat([iv,c.update(value),c.final(),c.getAuthTag()]);},decrypt:async value=>{const d=createDecipheriv('aes-256-gcm',key,value.subarray(0,12));d.setAuthTag(value.subarray(-16));return Buffer.concat([d.update(value.subarray(12,-16)),d.final()]).toString();}};
 }
-async function harness(clientOverride?:Partial<AuthClient>,available=true,timeout=100){
+async function harness(clientOverride?:Partial<AuthClient>,available=true,timeout=100,diagnostic?:(value:{stage:string;outcome:string})=>void){
  const root=await mkdtemp(path.join(tmpdir(),'dental-identity-unit-'));let invalidated=0,refreshes=0;
  const store=new CredentialStore(path.join(root,'identity'),encryptedProvider(available));
  const client:AuthClient={signIn:async email=>token(email),refresh:async()=>token('user@fixture.invalid',++refreshes+1),resolve:async()=>clinic,...clientOverride};
- const session=new SessionManager(client,store,()=>invalidated++,'fixture',Date.now,timeout);
+ const session=new SessionManager(client,store,()=>invalidated++,'fixture',Date.now,timeout,diagnostic);
  await session.restore();
  return{session,client,store,root,invalidated:()=>invalidated,refreshes:()=>refreshes,close:async()=>{session.dispose();await session.flush();await rm(root,{recursive:true,force:true});}};
 }
@@ -44,6 +44,18 @@ describe('protected credential storage',()=>{
  });
 });
 describe('single platform session',()=>{
+ it('reports only the failed authentication stage through an opt-in diagnostic observer',async()=>{
+  const reports:{stage:string;outcome:string}[]=[];const h=await harness({signIn:async()=>{throw new AuthFailure('denied');}},true,100,value=>reports.push(value));
+  try{
+   expect(await h.session.login(input)).toMatchObject({ok:false,code:'DENIED'});
+   expect(reports).toEqual([{stage:'credential-store-clear',outcome:'started'},{stage:'firebase-sign-in',outcome:'started'},{stage:'firebase-sign-in',outcome:'denied'}]);
+   h.client.signIn=async()=>token(input.email);
+   h.client.resolve=async()=>{throw new AuthFailure('unavailable');};
+   expect(await h.session.login(input)).toMatchObject({ok:false,code:'UNAVAILABLE'});
+   expect(reports.slice(3)).toEqual([{stage:'credential-store-clear',outcome:'started'},{stage:'firebase-sign-in',outcome:'started'},{stage:'clinic-session-resolve',outcome:'started'},{stage:'clinic-session-resolve',outcome:'unavailable'}]);
+   expect(JSON.stringify(reports)).not.toContain(input.email);expect(JSON.stringify(reports)).not.toContain(input.password);
+  }finally{await h.close();}
+ });
  it('does not become ready before Worker clinic access and gives apps no credentials',async()=>{
   let resolve!:(v:Clinic)=>void;const h=await harness({resolve:()=>new Promise(r=>resolve=r)});try{const login=h.session.login(input);await new Promise(r=>setTimeout(r,5));expect(h.session.view().phase).toBe('signing-in');expect(h.session.snapshot().active).toBe(false);resolve(clinic);expect(await login).toEqual({ok:true});expect(h.session.allowed('appointments.list')).toBe(true);expect(JSON.stringify(h.session.view())).not.toContain('fixture-id');expect(JSON.stringify(h.session.view())).not.toContain('fixture-refresh');}finally{await h.close();}
  });
@@ -72,10 +84,47 @@ describe('single platform session',()=>{
   }finally{broker.dispose();await h.close();}
  });
 });
-describe('deferred media upload gate',()=>{
- it('denies uploads for authenticated clinic sessions even with every domain capability',async()=>{
+describe('session-scoped media upload gate',()=>{
+ it('authorizes only the matching first-party app and media kind from trusted clinic claims',async()=>{
   const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access','staff.manage']})});
-  try{expect((await h.session.login(input)).ok).toBe(true);expect(h.session.allowedMediaRead('company.dental.patient-record','patient_media')).toBe(true);expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);}finally{await h.close();}
+  try{
+   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
+   expect((await h.session.login(input)).ok).toBe(true);
+   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(true);
+   expect(h.session.allowedMediaUpload('company.dental.patient-record','staff_document')).toBe(false);
+   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(true);
+   expect(h.session.allowedMediaUpload('company.dental.staff','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('company.dental.work-entry','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('company.sample.future','patient_media')).toBe(false);
+   h.session.lock();
+   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);
+  }finally{await h.close();}
+ });
+ it('denies uploads when the clinic session lacks the owning app capability',async()=>{
+  const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['appointments.access']})});
+  try{
+   expect((await h.session.login(input)).ok).toBe(true);
+   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);
+  }finally{await h.close();}
+ });
+ it('advertises upload to the host broker only for an authorized session and exact signed operation grant',async()=>{
+  const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access']})});
+  const broker=new ApiBroker(staging,h.session),trustedSender={},trustedFrame={},trustedUrl='dental-fixture://patient-record/index.html';
+  const trustedCaller={sender:trustedSender,frame:trustedFrame,url:trustedUrl};
+  const deniedSender={},deniedFrame={},deniedUrl='dental-fixture://ungranted-patient-record/index.html';
+  try{
+   expect((await h.session.login(input)).ok).toBe(true);
+   broker.register({sender:trustedSender,frame:trustedFrame,origin:trustedUrl,appId:'company.dental.patient-record',appVersion:'1.0.0',capabilities:['clinic.app.patient-record','clinic.media.upload'],authorizeApiOperation:operation=>operation==='clinic.media.upload',report(){}});
+   const trusted=broker.connect(trustedCaller,{major:1,minor:4});
+   expect(trusted.ok).toBe(true);
+   if(trusted.ok)expect(trusted.value.capabilities).toContain('clinic.media.upload');
+   broker.register({sender:deniedSender,frame:deniedFrame,origin:deniedUrl,appId:'company.dental.patient-record',appVersion:'1.0.0',capabilities:['clinic.app.patient-record','clinic.media.upload'],authorizeApiOperation:()=>false,report(){}});
+   const denied=broker.connect({sender:deniedSender,frame:deniedFrame,url:deniedUrl},{major:1,minor:4});
+   expect(denied.ok).toBe(true);
+   if(denied.ok)expect(denied.value.capabilities).not.toContain('clinic.media.upload');
+  }finally{broker.dispose();await h.close();}
  });
 });
 describe('Firebase/Worker fixed-endpoint contract',()=>{

@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-22",
+  "passed": true,
+  "environment": "cloudfare-staging",
+  "sourceHead": "9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d",
+  "worktreeChangesPresent": true,
+  "sourceSha256": {
+    "tools/verify-staging-media.mjs": "f44508e17a9aba588fbf523b5e89a90ee72b40792a570078e77fba708db4e6b5",
+    "electron/sdk/mediaUpload.ts": "aa44886e01d8e3a57227311e81ef7163d8b6489bdac100c77521c285bf0bdb8d",
+    "electron/sdk/mediaUploadContract.ts": "5d62fcb70133684073cd8d32de2511d1b77b0cd3ae4da5b59933d3e7a4cbb704",
+    "dist-electron/sdk/mediaUpload.js": "7ad51643c4c98803ed951d464ae0b96d1d9e4a4aa33c0063b14e80a05f955fb6",
+    "tests/mediaUpload.test.ts": "969509382b2fd08eb920a13b0fadc33fc2e7e5d4500cb6c6354c5e6da42e4578",
+    "tools/cleanup-staging-media-fixture.mjs": "2518bbae5bb9b53eb6eb3f8bcf30b0b24feb04baf3e12ebcae3093a63a5069b4"
+  },
+  "checksPassed": 25,
+  "limits": {
+    "patientMedia": {
+      "acceptedBytes": 10485760,
+      "acceptedMiB": 10,
+      "readbackSha256Matched": true,
+      "oneByteOverRejectedBeforeCredentials": true,
+      "oneByteOverRejectedBeforeNetwork": true
+    },
+    "staffDocument": {
+      "acceptedBytes": 26214400,
+      "acceptedMiB": 25,
+      "readbackSha256Matched": true,
+      "oneByteOverRejectedBeforeCredentials": true,
+      "oneByteOverRejectedBeforeNetwork": true
+    }
+  },
+  "patientMediaInterruption": {
+    "successfulContentPutResponseDeliberatelyDropped": true,
+    "signOutClearedInMemoryTransferAndSession": true,
+    "freshSignInResolvedSameClinic": true,
+    "sameSyntheticFileBytesReselected": true,
+    "originalOperationKeyReused": true,
+    "uploadFinalisedAndReadbackHashMatched": true
+  },
+  "staffDocumentInterruption": {
+    "successfulFinaliseResponseDeliberatelyDropped": true,
+    "originalOperationKeyReconciled": true,
+    "readbackHashMatched": true
+  },
+  "publicCatalogueAndPolicyUnchanged": true,
+  "productionRequests": false,
+  "publicAppGrantPublished": false,
+  "syntheticPatientAndStaffRecordsRetained": true,
+  "syntheticMediaWithdrawnAndAbsentFromActiveLists": true,
+  "activeSyntheticMediaCleanupPending": false,
+  "storedBytesCleanupPending": true,
+  "uploadedSyntheticBytesNotPhysicallyDeletedByThisRun": 36700160,
+  "withdrawalCleanup": {
+    "patientMediaWithdrawn": true,
+    "staffDocumentWithdrawn": true,
+    "activeMediaRemaining": false,
+    "physicalR2DeletionPerformed": false,
+    "withdrawalHandlerDeletesR2": false,
+    "externalBucketLifecycleChecked": false,
+    "physicalBytesAfterWithdrawalVerified": false,
+    "storedBytesCleanupPending": true
+  },
+  "scope": "Private staging acceptance through the actual signed ApiBroker, Worker and R2 path. It validates the SaaS upload caps, host-side one-byte-over rejection, lost-response recovery after fresh sign-in to the same clinic, and exact-size readback integrity. The fixture reselects its synthetic source bytes; it does not test OS-profile persistence or deletion. Synthetic media records were withdrawn and are absent from active lists. The Worker withdrawal handler updates status and does not delete R2; this run did not inspect external bucket lifecycle or verify object bytes after withdrawal. No physical purge was run for the 35 MiB uploaded. This does not complete cross-clinic negative acceptance or general app-grant publication."
+}

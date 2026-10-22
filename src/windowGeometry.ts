@@ -42,10 +42,9 @@ export function workArea(size: Size): Rect {
   return { x, y, width: Math.max(1, size.width - 2 * x), height: Math.max(1, dockTop - y - dockWindowGap) };
 }
 
-/** Maximize within the desktop chrome while using the full horizontal span. */
+/** Fullscreen app bounds fill the viewport underneath the floating desktop chrome. */
 export function maximizedBounds(size: Size): Rect {
-  const area = workArea(size);
-  return { x: 0, y: area.y, width: size.width, height: area.height };
+  return { x: 0, y: 0, width: size.width, height: size.height };
 }
 
 export function fitBounds(bounds: Rect, size: Size, minimum: Size): Rect {

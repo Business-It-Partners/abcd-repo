@@ -1,4 +1,5 @@
 // Renderer-safe upload envelope validation; no transport, credential or native imports.
+import { MEDIA_UPLOAD_LIMITS } from './mediaLimits';
 const uuid = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 const text = (v: unknown, max: number, empty = true) => typeof v === 'string' && v.length <= max && (empty || v.length > 0) && !/[\u0000-\u001f\u007f]/.test(v);
 const shape = (v: unknown, names: string[]): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join() === names.sort().join();
@@ -8,7 +9,7 @@ export function uploadMetadata(kind: unknown, value: unknown): value is Record<s
   const common = ['displayFilename', 'mimeType', 'byteSize'];
   const patient = kind === 'patient_media'; if (!patient && kind !== 'staff_document') return false;
   if (!shape(value, [...common, ...(patient ? ['chiefComplaintId', 'xrayType', 'toothCode', 'clinicalNote', 'capturedOn'] : ['documentType', 'expiresOn'])])) return false;
-  if (!text(value.displayFilename, 200, false) || !Number.isSafeInteger(value.byteSize) || (value.byteSize as number) < 1 || (value.byteSize as number) > (patient ? 10 : 25) * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', ...(patient ? [] : ['application/pdf'])].includes(value.mimeType as string)) return false;
+  if (!text(value.displayFilename, 200, false) || !Number.isSafeInteger(value.byteSize) || (value.byteSize as number) < 1 || (value.byteSize as number) > MEDIA_UPLOAD_LIMITS[patient ? 'patient_media' : 'staff_document'] || !['image/jpeg', 'image/png', 'image/webp', ...(patient ? [] : ['application/pdf'])].includes(value.mimeType as string)) return false;
   return patient ? (value.chiefComplaintId === null || uuid(value.chiefComplaintId)) && ['IOPA', 'OPG', 'CBCT', 'Intraoral photo'].includes(value.xrayType as string) && nullable(value.toothCode, 40) && nullable(value.clinicalNote, 1000) && value.capturedOn !== null && date(value.capturedOn)
     : ['identity', 'license', 'contract', 'certificate', 'other'].includes(value.documentType as string) && date(value.expiresOn);
 }

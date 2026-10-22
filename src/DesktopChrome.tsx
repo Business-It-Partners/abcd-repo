@@ -9,6 +9,7 @@ type Props = {
   activeApp?: string;
   session?: SessionView;
   sessionControls?: ReactNode;
+  statusbarVisible: boolean;
   onOpenApps?: () => void;
   onShowWindows?: () => void;
   onSupport?: () => void;
@@ -19,7 +20,7 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ activeApp, session, sessionControls, onOpenApps, onShowWindows, onSupport }: Props) {
+export function DesktopChrome({ activeApp, session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
@@ -52,7 +53,7 @@ export function DesktopChrome({ activeApp, session, sessionControls, onOpenApps,
   const formatTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(now);
 
   return <>
-    <header className="desktop-statusbar" aria-label="Desktop status bar">
+    <header className={`desktop-statusbar ${statusbarVisible ? 'chrome-shown' : 'chrome-hidden'}`} aria-label="Desktop status bar" aria-hidden={!statusbarVisible} inert={!statusbarVisible}>
       <div className="statusbar-active" aria-live="polite">
         <Building2 size={15} aria-hidden="true" />
         <span>{activeApp || 'Sajilo Dental'}</span>

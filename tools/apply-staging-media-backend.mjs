@@ -12,7 +12,7 @@ if (!stat.isFile() || stat.isSymbolicLink() || stat.mode & 0o077) throw Error('P
 const review = JSON.parse(fs.readFileSync(reviewFile, 'utf8'));
 if (review.environment !== 'cloudfare-staging' || JSON.stringify(review.target) !== JSON.stringify(target) || !review.dryRunPassed || review.cloudWrites !== false || review.uncommittedInputsIncluded !== false || !review.previousDeployment || !/^[a-f0-9]{40}$/.test(review.source)) throw Error('Invalid staging review');
 const git = args => execFileSync('git', args, { cwd: backend, encoding: 'utf8' }).trim();
-if (git(['rev-parse', 'HEAD']) !== review.source || git(['branch', '--show-current']) !== 'codex/sys-0009-mediated-media') throw Error('Reviewed backend source moved');
+if (git(['rev-parse', 'HEAD']) !== review.source || git(['branch', '--show-current']) !== 'codex/sys-0010-staging-media-probe') throw Error('Reviewed backend source moved');
 const remote = git(['ls-remote', 'origin', 'refs/heads/cloudfare-staging']).split(/\s+/)[0];
 if (remote !== review.stagingBase) throw Error('Staging branch advanced; review required');
 if (path.resolve(review.snapshot) !== path.join(root, 'snapshot') || path.resolve(review.configFile) !== path.join(root, 'snapshot/apps/platform-worker/.m15-staging.wrangler.json')) throw Error('Unexpected snapshot path');

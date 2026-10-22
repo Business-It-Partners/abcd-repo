@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
+import { MEDIA_LIMITS } from './mediaLimits';
 
 export type MediaKind = 'patient_media' | 'staff_document';
-export const MEDIA_LIMITS = Object.freeze({ patient_media: 10 * 1024 * 1024, staff_document: 25 * 1024 * 1024 });
+export { MEDIA_LIMITS } from './mediaLimits';
 export function mediaKindForApp(appId: string): MediaKind | undefined {
   if (['company.dental.patient-record', 'company.dental.work-entry'].includes(appId)) return 'patient_media';
   if (appId === 'company.dental.staff') return 'staff_document';

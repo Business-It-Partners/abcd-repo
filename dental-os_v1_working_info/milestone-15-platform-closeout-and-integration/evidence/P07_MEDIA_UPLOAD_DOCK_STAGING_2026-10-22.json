@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "date": "2026-10-22T10:46:31.986Z",
+  "platform": "linux",
+  "sourceHead": "9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d",
+  "privateFixtureSha256": "fb3c85917dca426527e0ada7c8567be0605dca9f673aa834a7c11ee4d9169a0c",
+  "environment": "cloudfare-staging",
+  "appId": "company.dental.patient-record",
+  "checks": [
+    "real staging clinic admin session is ready",
+    "sign out clears the clinic context and advances the session generation",
+    "a fresh sign-in restores the staging clinic session after logout",
+    "the private signed media test package is present in the Dock",
+    "the test app connects through its signed exact-release host grant",
+    "the app created a uniquely labelled synthetic patient through the Worker API",
+    "the app uploaded the image and verified staging readback size plus SHA-256",
+    "only the synthetic image was withdrawn; no active image remains",
+    "public staging catalogue and update policy are unchanged"
+  ],
+  "authStatus": "ready",
+  "authFailureStage": null,
+  "authFailureOutcome": null,
+  "testImage": {
+    "filename": "dental-os-media-staging-sample.jpg",
+    "bytes": 303866,
+    "sha256": "c1a9aa901d011302ef101c5f8e33e4fba8c57c8993969bc4858c7665fc76637f",
+    "source": "https://commons.wikimedia.org/wiki/File:Dental_Panorama_X-ray.jpg",
+    "author": "Farhang Amini",
+    "license": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "feedUnchanged": true,
+  "syntheticPatientCreated": true,
+  "activeTestMediaAfterCleanup": 0,
+  "syntheticPatientRetainedForAudit": true,
+  "productionRequests": false,
+  "publicMediaGrantPublished": false,
+  "ordinarySessionUploadEnabled": true,
+  "privateJournalRetained": true,
+  "scope": "Locally signed private fixture app launched from the Dock in an isolated Linux runtime; real staging clinic identity with sign-in/sign-out/re-login checks; the standard SessionManager upload gate and exact signed host-broker grant authorize a real public CC BY 4.0 JPEG upload/readback; synthetic patient only. Operator cleanup withdrew any matching active media record; withdrawal retains the private object bytes. This verifies the normal session path for this private fixture but does not publish a public app grant or prove the full 10 MiB patient-image or 25 MiB staff-document boundary, fresh-session recovery, or tenant-negative cases.",
+  "sourceVerification": {
+    "head": "9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d",
+    "worktreeChangesPresent": true,
+    "roots": [
+      "electron/",
+      "src/",
+      "tests/media-staging-dock.mjs",
+      "fixtures/runtime-apps/media-upload/",
+      "dist/",
+      "dist-electron/"
+    ],
+    "fileCount": 142,
+    "filesSha256": "67fbc031a503e33c823adb67530766120298f217869444367e1787739b9830b8"
+  },
+  "normalSessionGateVerified": true
+}

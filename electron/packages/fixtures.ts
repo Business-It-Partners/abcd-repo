@@ -5,18 +5,29 @@ import { generateKeyPairSync } from 'node:crypto';
 import { apiOperations, operations } from '../sdk/contracts';
 import { PackageRegistry } from './registry';
 import { buildPackage, type Manifest, type TrustPolicy } from './format';
-export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2, modulePreviewFixture = false, slowModuleAckFixture = false, launchFeedbackFixture = false) {
+export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2, modulePreviewFixture = false, slowModuleAckFixture = false, launchFeedbackFixture = false, mediaUploadFixture = false) {
   if (!Number.isInteger(appCount) || appCount < 2 || appCount > 16) throw new Error('Invalid runtime fixture app count');
   const publicKey = readFileSync(path.join(fixtureRoot, 'public-key.txt'), 'utf8');
   const keys: Record<string, { publicKey: string; publisher: string }> = { 'test-only-m06': { publicKey, publisher: 'company' } };
+  const mediaCapabilities = ['clinic.app.patient-record', 'clinic.api.request', 'clinic.media.read', 'clinic.media.upload'] as const;
   const policy: TrustPolicy = { keys, apps: {
     'company.sample.alpha': { publisher: 'company', capabilities: operations },
     'company.sample.beta': { publisher: 'company', capabilities: operations.filter(op => op !== 'appointments.setStatus') },
-  }, ...(appCount > 2 || launchFeedbackFixture ? { companyApps: { publisher: 'company', capabilities: [] } } : {}) };
+  }, ...(appCount > 2 || launchFeedbackFixture || mediaUploadFixture ? { companyApps: { publisher: 'company', capabilities: mediaUploadFixture ? mediaCapabilities : [] } } : {}) };
   const registry = new PackageRegistry(root, policy); registry.initialize();
   // This registry is created only by the guarded private UI/CI fixture path.
   registry.setApiGrantResolver(value => apiOperations.filter(operation => value.capabilities.includes(operation)));
   for (const host of ['alpha', 'beta']) registry.install(readFileSync(path.join(fixtureRoot, `${host}.dentalpkg`)));
+  if (mediaUploadFixture) {
+    const pair = generateKeyPairSync('ed25519'), keyId = 'test-media-upload';
+    keys[keyId] = { publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString(), publisher: 'company' };
+    const appId = 'company.dental.patient-record';
+    const mediaRoot = path.resolve(fixtureRoot, '../runtime-apps/media-upload');
+    const metadata = { format: 1, appId, title: 'Media Upload Test', description: 'Private synthetic staging verification only.', icon: 'assets/media-test.svg', anyCapabilities: ['patient_record.access'], excludedRoles: ['reception'], allowedRoles: ['admin'], modules: [{ id: 'media-test', label: 'Media upload test', tab: 'media-test', capability: 'patient_record.access' }] };
+    const files = new Map<string, Buffer>([['app.json', Buffer.from(JSON.stringify(metadata))]]);
+    for (const name of ['index.html', 'app.js', 'app.css', 'assets/media-test.svg']) files.set(name, readFileSync(path.join(mediaRoot, name)));
+    registry.install(buildPackage({ appId, publisher: 'company', version: '1.0.0', entry: 'index.html', sdkMajor: 1, apiMajor: 1, capabilities: [...mediaCapabilities] }, files, keyId, pair.privateKey));
+  }
   if (launchFeedbackFixture) {
     const pair = generateKeyPairSync('ed25519'), keyId = 'test-launch-feedback';
     keys[keyId] = { publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString(), publisher: 'company' };

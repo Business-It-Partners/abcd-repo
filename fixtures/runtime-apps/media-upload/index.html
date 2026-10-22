@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Upload Test</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">PRIVATE STAGING FIXTURE · SYNTHETIC DATA ONLY</p>
+    <h1>Media Upload Test</h1>
+    <p class="notice">This private fixture uses a public sample image and a labelled synthetic patient. It sends the selected file through the Dental OS host, then verifies the bytes from staging.</p>
+    <section aria-labelledby="session-heading">
+      <h2 id="session-heading">1. Connect to the host</h2>
+      <button id="connect">Connect SDK</button>
+      <p id="connection" role="status">Not connected</p>
+    </section>
+    <section aria-labelledby="patient-heading">
+      <h2 id="patient-heading">2. Create a synthetic patient</h2>
+      <label>Capture date <input id="captured-on" type="date" required></label>
+      <button id="create-patient" disabled>Create synthetic patient</button>
+      <p id="patient" role="status">No test patient created</p>
+    </section>
+    <section aria-labelledby="upload-heading">
+      <h2 id="upload-heading">3. Upload and read back a test image</h2>
+      <button id="select-image" disabled>Choose image file</button>
+      <input id="image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <p class="limit">Choose a JPG, PNG, or WebP image up to 10 MiB. After the test, it is marked withdrawn from the synthetic record; the stored copy is retained.</p>
+      <p class="limit">Sample attribution: Dental Panorama X-ray by Farhang Amini, <a href="https://commons.wikimedia.org/wiki/File:Dental_Panorama_X-ray.jpg">Wikimedia Commons</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+      <button id="upload" disabled>Upload test image</button>
+      <button id="reconcile" hidden>Reconcile the same upload</button>
+      <button id="cancel-transfer" hidden>Cancel this test transfer</button>
+      <p id="progress" role="status">No upload started</p>
+    </section>
+    <output id="result" aria-live="polite"></output>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

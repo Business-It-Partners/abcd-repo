@@ -17,7 +17,7 @@ import { RecordsApp } from './RecordsApp';
 import { ManagedWindowFrame } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
-import { WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
+import { statusBarHeightForWidth, WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
 import { dockArtwork } from './dockArtwork';
 import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
@@ -161,6 +161,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const [count, setCount] = useState(0);
   const [note, setNote] = useState('A little space to make something great.');
   const [dockRevealed, setDockRevealed] = useState(false);
+  const [statusbarRevealed, setStatusbarRevealed] = useState(false);
   const [hostActionPending, setHostActionPending] = useState(false);
   const hostActionLock = useRef(false);
   const [hostTransitioning, setHostTransitioning] = useState(false);
@@ -168,9 +169,10 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const activeAppTitle = frontApp === 'finance' || financeExplorer ? 'Finance' : frontApp ? state.windows[frontApp]?.title : undefined;
   const immersive = !!frontApp && state.windows[frontApp].presentation === 'fullscreen';
   const showDock = !state.overview && (!immersive || dockRevealed || anyMotion || !!arrivalId || financeExplorer || !!appExplorer);
+  const showStatusbar = !immersive || statusbarRevealed || anyMotion || hostTransitioning || financeExplorer || !!appExplorer;
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
   useEffect(()=>{const listener=(event:Event)=>{const value=(event as CustomEvent<RuntimeExplorer>).detail;if(!value||typeof value.runtimeId!=='string'||typeof value.title!=='string'||typeof value.iconDataUrl!=='string'||!Array.isArray(value.modules))return;setFinanceExplorer(false);setAppExplorerError('');setAppExplorer(value);};window.addEventListener('runtime:app-explorer',listener);return()=>window.removeEventListener('runtime:app-explorer',listener);},[]);
-  useEffect(() => { setDockRevealed(false); }, [immersive, frontApp]);
+  useEffect(() => { setDockRevealed(false); setStatusbarRevealed(false); }, [immersive, frontApp]);
   function trackChrome(event: React.PointerEvent<HTMLElement>) {
     if (state.overview || financeExplorer || appExplorer) { dock.leave(); return; }
     const { clientX: px, clientY: py } = event;
@@ -184,6 +186,9 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
     if (showDock && insideDock && (!overWindow || overDock)) dock.move(px);
     else dock.leave();
     if (!immersive) return;
+    const statusbar = document.querySelector<HTMLElement>('.desktop-statusbar');
+    const statusbarHasFocus = !!statusbar?.contains(document.activeElement);
+    setStatusbarRevealed(previous => statusbarHasFocus || py <= (previous ? statusBarHeightForWidth(size.width) + 20 : 6));
     const centered = Math.abs(px - size.width / 2) < dock.layout.width / 2 + (DOCK.pad + 50) * dockScale;
     setDockRevealed(previous => centered && py >= size.height - (previous ? 180 : 6) * dockScale);
   }
@@ -269,13 +274,13 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
     else setAppExplorerError('This app could not open that module. Close and reopen the app, or update it from Apps.');
   }
   const explorerOpen=financeExplorer||!!appExplorer;
-  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); dock.leave(); }}>
+  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {!state.overview && <DesktopChrome activeApp={activeAppTitle} session={session} sessionControls={sessionControls}
+    {!state.overview && <DesktopChrome activeApp={activeAppTitle} session={session} sessionControls={sessionControls} statusbarVisible={showStatusbar}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { setFinanceExplorer(false); setAppExplorer(null); dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
-    <div className="window-stage" style={{ bottom: DOCK.bottom + dockHeight }} inert={explorerOpen} aria-hidden={explorerOpen}>
+    <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }} inert={explorerOpen} aria-hidden={explorerOpen}>
     {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={explorerOpen || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
@@ -328,7 +333,10 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
     {appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} title={appExplorer.title} icon={appExplorer.iconDataUrl} modules={appExplorer.modules} error={appExplorerError} onClose={()=>{setAppExplorer(null);setAppExplorerError('');}} onSelect={moduleId=>void selectAppModule(moduleId)}/>}
     {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
     {launchNotice && !appExplorer && !financeExplorer && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}
-    {immersive && !state.overview && <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)}/>}
+    {immersive && !state.overview && <>
+      <div className="statusbar-reveal-edge" onPointerEnter={() => setStatusbarRevealed(true)} aria-hidden="true"/>
+      <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)} aria-hidden="true"/>
+    </>}
     {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
   </main>;
 }

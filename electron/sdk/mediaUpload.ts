@@ -133,7 +133,20 @@ export class MediaUploads {
       const uploaded = await call(path + '/content', 'PUT', t.bytes, undefined, true);
       if (uploaded.status !== 204) {
         void uploaded.body?.cancel();
-        if (uploaded.status === 409 && await knownActive()) { const assetId = t.assetId; return this.complete(owner, t, { committed: true, assetId }); }
+        if (uploaded.status === 409) {
+          if (await knownActive()) { const assetId = t.assetId; return this.complete(owner, t, { committed: true, assetId }); }
+          // A prior session may have completed the R2 PUT and ended before finalise.
+          // The Worker verifies the stored object against the pending record before activation.
+          const recovered = await call(path + '/finalise', 'POST', undefined, 'finalise');
+          if (recovered.status === 200) {
+            const data = await json(recovered), item = data?.[t.kind === 'patient_media' ? 'media' : 'document'];
+            if (item?.[t.kind === 'patient_media' ? 'mediaAssetId' : 'staffDocumentId'] !== t.assetId || item.status !== 'active' || item.checksum !== checksum || item.byteSize !== t.bytes.length || item.mimeType !== t.metadata.mimeType || item[t.kind === 'patient_media' ? 'patientId' : 'staffId'] !== t.recordId) throw new MediaUploadError('UNKNOWN_OUTCOME', 'unknown');
+            context.assertCurrent(); const assetId = t.assetId; return this.complete(owner, t, { committed: true, assetId });
+          }
+          void recovered.body?.cancel();
+          if (recovered.status === 409 && await knownActive()) { const assetId = t.assetId; return this.complete(owner, t, { committed: true, assetId }); }
+          throw new MediaUploadError('UNKNOWN_OUTCOME', 'unknown');
+        }
         throw new MediaUploadError('UNKNOWN_OUTCOME', 'unknown');
       }
       const finalised = await call(path + '/finalise', 'POST', undefined, 'finalise');

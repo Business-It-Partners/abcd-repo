@@ -5,13 +5,15 @@ import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client
 import { loginInput, type ActionResult, type Phase, type SessionView } from './contracts';
 import type { CredentialStore } from './storage';
 import { appAllowed, clinicRequestAllowed, clinicApps } from '../sdk/appPolicy';
+import { uploadKindForApp } from '../sdk/mediaUpload';
+export type LoginDiagnostic = { stage: 'credential-store-clear' | 'firebase-sign-in' | 'clinic-session-resolve' | 'session-install'; outcome: 'started' | 'complete' | 'denied' | 'unavailable' | 'other' | 'timeout' };
 /** One platform-owned clinic session. Only view() crosses shell IPC. */
 export class SessionManager implements Identity {
   private phase:Phase='restoring'; private generation=1; private tokens?:Tokens; private clinic?:Clinic;
   private message=''; private remembered=false; private busy=false; private timer?:ReturnType<typeof setTimeout>;
   private accessCheck?:Promise<void>; private action?:AbortController; private renewal?:Promise<string>; private listeners=new Set<(v:SessionView)=>void>();
   private storageChain:Promise<unknown>=Promise.resolve();
-  constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000){}
+  constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000,private loginDiagnostic?:(value:LoginDiagnostic)=>void){}
   view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,message:this.message,mode:this.mode};}
   snapshot(){return{generation:this.generation,active:this.phase==='ready',userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',...(this.phase==='ready'&&this.clinic?.clinicSession?{clinicSession:this.clinic.clinicSession}:{})};}
   subscribe(listener:(v:SessionView)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
@@ -53,11 +55,15 @@ export class SessionManager implements Identity {
   async login(input:unknown):Promise<ActionResult>{
     if(!loginInput(input))return{ok:false,code:'INVALID_INPUT'};
     if(this.busy)return{ok:false,code:'BUSY'};this.busy=true;this.reset('signing-in');const epoch=this.generation;
+    let stage:LoginDiagnostic['stage']='credential-store-clear';
+    const report=(outcome:LoginDiagnostic['outcome'])=>{try{this.loginDiagnostic?.({stage,outcome});}catch{/* Optional private test observer cannot affect authentication. */}};
+    report('started');
     try{
       await this.persist(()=>this.store.clear());
-      const {tokens,clinic}=await this.bounded(async signal=>{const tokens=await this.client.signIn(input.email,input.password,signal);const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
-      await this.install(tokens,clinic,epoch,input.remember);return{ok:true};
-    }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};const denied=error instanceof AuthFailure&&error.kind==='denied';this.reset(denied?'signed-out':'unavailable',denied?'Sign-in or clinic access denied.':'Staging sign-in is unavailable. Retry when connected.');return{ok:false,code:denied?'DENIED':'UNAVAILABLE'};}
+      const {tokens,clinic}=await this.bounded(async signal=>{signal.addEventListener('abort',()=>report('timeout'),{once:true});stage='firebase-sign-in';report('started');const tokens=await this.client.signIn(input.email,input.password,signal);stage='clinic-session-resolve';report('started');const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
+      stage='session-install';report('started');
+      await this.install(tokens,clinic,epoch,input.remember);report('complete');return{ok:true};
+    }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};const denied=error instanceof AuthFailure&&error.kind==='denied';report(error instanceof AuthFailure?error.kind:'other');this.reset(denied?'signed-out':'unavailable',denied?'Sign-in or clinic access denied.':'Staging sign-in is unavailable. Retry when connected.');return{ok:false,code:denied?'DENIED':'UNAVAILABLE'};}
     finally{this.busy=false;}
   }
   credential(generation:number,_signal:AbortSignal):Promise<string>{
@@ -106,10 +112,10 @@ export class SessionManager implements Identity {
     }
     return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
   }
-  allowedMediaUpload(_appId: string, _kind: MediaKind) {
-    // User-deferred capability: retain experimental code/tests, deny real sessions.
-    // Re-enable only after the staging lifecycle and recovery gate is satisfied.
-    return false;
+  allowedMediaUpload(appId: string, kind: MediaKind) {
+    return this.phase === 'ready' && !!this.clinic
+      && uploadKindForApp(appId) === kind
+      && appAllowed(appId, this.clinic.role, this.clinic.capabilities);
   }
   allowedMediaRead(appId: string, kind: MediaKind) {
     return this.phase === 'ready' && !!this.clinic && mediaKindForApp(appId) === kind

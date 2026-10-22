@@ -15,9 +15,8 @@ describe('Constrained window resizing', () => {
     expect(initialBounds('records', screen)).toEqual(area);
     expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: 59, height: workArea({ width: 580, height: 800 }).height });
   });
-  it('maximizes below the status bar and above the dock while using full width', () => {
-    const area = workArea(screen);
-    expect(maximizedBounds(screen)).toEqual({ x: 0, y: area.y, width: screen.width, height: area.height });
+  it('maximizes across the viewport underneath the floating status bar and dock', () => {
+    expect(maximizedBounds(screen)).toEqual({ x: 0, y: 0, width: screen.width, height: screen.height });
   });
   it('clamps drag hiding to 70 percent on bottom and both sides but never above the status bar', () => {
     const box = { x: 300, y: 200, width: 600, height: 500 };

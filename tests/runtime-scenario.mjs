@@ -144,13 +144,20 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.getByRole('button',{name:'Maximize Records',exact:true}).click();
   await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.presentation==='fullscreen');
   const expected=await shell.locator('[data-runtime="records"]').boundingBox();assert.ok(expected);
-  check('maximized native app begins below the visible title bar with a clear dock hover gap',await shell.evaluate(tolerance=>{const close=(actual,expected)=>Math.abs(actual-expected)<=tolerance,frame=document.querySelector('[data-window-id="records"]'),surface=document.querySelector('[data-runtime="records"]'),status=document.querySelector('.desktop-statusbar').getBoundingClientRect(),dockTop=document.querySelector('.window-stage').getBoundingClientRect().bottom,f=frame.getBoundingClientRect(),s=surface.getBoundingClientRect();return close(f.top,status.bottom)&&close(s.top,f.top+43)&&close(f.bottom,dockTop-12)&&close(s.bottom,f.bottom);},geometryTolerance));
+  check('maximized native app fills the viewport while keeping the app title bar below the Dental OS status-bar row',await shell.evaluate(tolerance=>{const close=(actual,expected)=>Math.abs(actual-expected)<=tolerance,frame=document.querySelector('[data-window-id="records"]'),surface=document.querySelector('[data-runtime="records"]'),status=document.querySelector('.desktop-statusbar').getBoundingClientRect(),title=frame.querySelector('.mac-titlebar').getBoundingClientRect(),f=frame.getBoundingClientRect(),s=surface.getBoundingClientRect();return close(f.top,0)&&close(f.bottom,innerHeight)&&close(f.width,innerWidth)&&close(title.top,status.height)&&close(s.top,title.bottom)&&close(s.bottom,innerHeight);},geometryTolerance));
+  const maximizedNative=await waitExpectedNative('beta');
+  check('fullscreen native content bounds extend to the screen edge underneath the dock',maximizedNative.visible&&geometryMatches(maximizedNative.bounds.y+maximizedNative.bounds.height,(await shell.evaluate(()=>innerHeight))));
+  const fullWindowBeforeChrome=await shell.locator('[data-window-id="records"]').boundingBox();
+  await moveShell((await shell.evaluate(()=>innerWidth))/2,2);
+  await shell.waitForFunction(()=>document.querySelector('.desktop-statusbar')?.classList.contains('chrome-shown'));
+  check('top-edge status bar reveals over a stable fullscreen native window',await shell.locator('[data-window-id="records"]').boundingBox().then(r=>geometryMatches(r.y,fullWindowBeforeChrome.y)&&geometryMatches(r.height,fullWindowBeforeChrome.height)));
   await shot('m12-maximized-window.png');
   // React presentation changes before native layout/guest resize acknowledgement.
   await beta.waitForFunction(({w,h})=>innerWidth===w&&innerHeight===h,{w:Math.round(expected.width),h:Math.round(expected.height)});
   const size=await beta.evaluate(()=>({w:innerWidth,h:innerHeight}));
   await moveGuest(beta,'beta',size.w/2,size.h/2);await moveGuest(beta,'beta',size.w/2,size.h-80);
   await shell.waitForFunction(()=>!document.querySelector('.dock-region').inert);check('native app bottom edge reveals fullscreen dock');
+  check('bottom-edge dock overlays the native app without shrinking its frame',await shell.locator('[data-window-id="records"]').boundingBox().then(r=>geometryMatches(r.y,fullWindowBeforeChrome.y)&&geometryMatches(r.height,fullWindowBeforeChrome.height)));
   await shell.getByRole('button',{name:'Restore Records size',exact:true}).click();
   await moveShell(10,10);
   await shell.getByRole('button',{name:'Minimize Records',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='minimized');

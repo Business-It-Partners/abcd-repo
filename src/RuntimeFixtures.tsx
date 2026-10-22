@@ -119,7 +119,8 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
     const layouts:RuntimeLayout[]=ids.map(id=>{
       const element=surfaces.current.get(id),r=element?.getBoundingClientRect();
       const x=Math.round(r?.x??0),y=Math.max(0,Math.round(r?.y??43)),width=Math.max(1,Math.round(r?.width??1)),fullHeight=Math.max(1,Math.round(r?.height??1));
-      const height=Math.min(fullHeight,Math.floor(dockTop-y));
+      const fullscreen=state.windows[id].presentation==='fullscreen';
+      const height=fullscreen?fullHeight:Math.min(fullHeight,Math.floor(dockTop-y));
       const rect=height>0?{x,y,width,height}:{x:0,y:0,width:1,height:1};
       const launchReady=!managedAppIds.has(id)||!!launchFeedback[id]&&launchFeedback[id].handoff!=='waiting';
       return {id,open:state.windows[id].phase!=='closed',visible:height>0&&front===id&&state.windows[id].phase==='visible'&&!peek&&!confirm&&launchReady,rect};

@@ -28,8 +28,11 @@
     "overview shortcut starts in the visible focused native app",
     "overview contains both isolated snapshots",
     "overview clones have no runtime identities",
-    "maximized native app begins below the visible title bar with a clear dock hover gap",
+    "maximized native app fills the viewport while keeping the app title bar below the Dental OS status-bar row",
+    "fullscreen native content bounds extend to the screen edge underneath the dock",
+    "top-edge status bar reveals over a stable fullscreen native window",
     "native app bottom edge reveals fullscreen dock",
+    "bottom-edge dock overlays the native app without shrinking its frame",
     "Genie thumbnail contains captured native app",
     "minimize/restore retains isolated draft and process",
     "discard destroys the app webContents",
@@ -50,12 +53,12 @@
     "no shell renderer errors"
   ],
   "topology": {
-    "shell": 113343,
+    "shell": 166588,
     "apps": [
       {
         "id": 3,
         "url": "dental-fixture://beta/",
-        "pid": 113559,
+        "pid": 166806,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -65,7 +68,7 @@
       {
         "id": 2,
         "url": "dental-fixture://alpha/",
-        "pid": 113399,
+        "pid": 166651,
         "prefs": {
           "sandbox": true,
           "contextIsolation": true,
@@ -76,5 +79,5 @@
   },
   "errors": [],
   "platform": "linux",
-  "sha": "ff4ed7059f5c50dbccbd1b4eee46b7800a192e97"
+  "sha": null
 }
