@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, RotateCw, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { inspectImageDimensions } from './filesPreview';
 import './ImageViewer.css';
@@ -11,13 +11,16 @@ export function ImageViewer({image,active,busy,error,onStep}:{
   const [message,setMessage]=useState('');
   const [zoom,setZoom]=useState(1);
   const [rotation,setRotation]=useState(0);
+  const [pan,setPan]=useState({x:0,y:0});
+  const [panning,setPanning]=useState(false);
   const canvas=useRef<HTMLCanvasElement>(null);
+  const panStart=useRef<{pointerId:number;clientX:number;clientY:number;x:number;y:number}|null>(null);
   const [ready,setReady]=useState(false);
   const focus=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(active)focus.current?.focus({preventScroll:true});},[active,image?.sessionId]);
   useEffect(()=>{
     let cancelled=false;
-    setReady(false);setMessage('');setZoom(1);setRotation(0);
+    panStart.current=null;setPanning(false);setReady(false);setMessage('');setZoom(1);setRotation(0);setPan({x:0,y:0});
     if(canvas.current){canvas.current.width=0;canvas.current.height=0;}
     if(!image)return;
     // Copy once into an immutable Blob and zero the renderer's IPC byte buffer.
@@ -50,12 +53,49 @@ export function ImageViewer({image,active,busy,error,onStep}:{
     })();
     return()=>{cancelled=true;if(canvas.current){canvas.current.width=0;canvas.current.height=0;}};
   },[image]);
+  const clampPan=useCallback((x:number,y:number,nextZoom=zoom,nextRotation=rotation)=>{
+    const surface=canvas.current,viewport=surface?.parentElement;
+    if(!ready||!surface||!viewport)return{x:0,y:0};
+    const width=surface.offsetWidth,height=surface.offsetHeight,swapped=nextRotation%180!==0;
+    const renderedWidth=(swapped?height:width)*nextZoom;
+    const renderedHeight=(swapped?width:height)*nextZoom;
+    const bounds=viewport.getBoundingClientRect();
+    const centerX=bounds.left+viewport.clientLeft+surface.offsetLeft+width/2;
+    const centerY=bounds.top+viewport.clientTop+surface.offsetTop+height/2;
+    const minX=renderedWidth>viewport.clientWidth?bounds.right-centerX-renderedWidth/2:0;
+    const maxX=renderedWidth>viewport.clientWidth?bounds.left-centerX+renderedWidth/2:0;
+    const minY=renderedHeight>viewport.clientHeight?bounds.bottom-centerY-renderedHeight/2:0;
+    const maxY=renderedHeight>viewport.clientHeight?bounds.top-centerY+renderedHeight/2:0;
+    return{x:Math.max(minX,Math.min(maxX,x)),y:Math.max(minY,Math.min(maxY,y))};
+  },[ready,zoom,rotation]);
+  useEffect(()=>{
+    const viewport=canvas.current?.parentElement;
+    if(!ready||!viewport)return;
+    const reclamp=()=>setPan(current=>clampPan(current.x,current.y));
+    reclamp();
+    const observer=new ResizeObserver(reclamp);observer.observe(viewport);
+    return()=>observer.disconnect();
+  },[clampPan,ready]);
+  const beginPan=(event:PointerEvent<HTMLCanvasElement>)=>{
+    if(event.button!==0||!ready||zoom<=1)return;
+    event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);
+    panStart.current={pointerId:event.pointerId,clientX:event.clientX,clientY:event.clientY,x:pan.x,y:pan.y};setPanning(true);
+  };
+  const movePan=(event:PointerEvent<HTMLCanvasElement>)=>{
+    const start=panStart.current;if(!start||start.pointerId!==event.pointerId)return;
+    event.preventDefault();setPan(clampPan(start.x+event.clientX-start.clientX,start.y+event.clientY-start.clientY));
+  };
+  const endPan=(event:PointerEvent<HTMLCanvasElement>)=>{
+    if(panStart.current?.pointerId!==event.pointerId)return;
+    panStart.current=null;setPanning(false);
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+  };
   const changeZoom=(delta:number)=>setZoom(value=>Math.max(.25,Math.min(4,Math.round((value+delta)*100)/100)));
   const keys=(event:KeyboardEvent<HTMLDivElement>)=>{
     if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();if(!busy)onStep(event.key==='ArrowLeft'?-1:1);}
     else if(event.key==='+'||event.key==='='){event.preventDefault();changeZoom(.25);}
     else if(event.key==='-'){event.preventDefault();changeZoom(-.25);}
-    else if(event.key.toLowerCase()==='r'){event.preventDefault();setRotation(value=>(value+90)%360);}
+    else if(event.key.toLowerCase()==='r'){event.preventDefault();setRotation(value=>(value+90)%360);setPan({x:0,y:0});}
   };
   return <div className="image-viewer" data-testid="image-viewer" data-app-focus tabIndex={-1} ref={focus} onKeyDown={keys}>
     <div className="image-viewer-tools">
@@ -69,13 +109,17 @@ export function ImageViewer({image,active,busy,error,onStep}:{
         <button aria-label="Zoom out" disabled={!ready} onClick={()=>changeZoom(-.25)}><ZoomOut size={17}/></button>
         <span aria-label="Current zoom">{Math.round(zoom*100)}%</span>
         <button aria-label="Zoom in" disabled={!ready} onClick={()=>changeZoom(.25)}><ZoomIn size={17}/></button>
-        <button aria-label="Fit image to window" disabled={!ready} onClick={()=>{setZoom(1);setRotation(0);}}><Maximize size={17}/></button>
-        <button aria-label="Rotate picture left" disabled={!ready} onClick={()=>setRotation(value=>(value+270)%360)}><RotateCcw size={17}/></button>
-        <button aria-label="Rotate picture right" disabled={!ready} onClick={()=>setRotation(value=>(value+90)%360)}><RotateCw size={17}/></button>
+        <button aria-label="Fit image to window" disabled={!ready} onClick={()=>{setZoom(1);setRotation(0);setPan({x:0,y:0});}}><Maximize size={17}/></button>
+        <button aria-label="Rotate picture left" disabled={!ready} onClick={()=>{setRotation(value=>(value+270)%360);setPan({x:0,y:0});}}><RotateCcw size={17}/></button>
+        <button aria-label="Rotate picture right" disabled={!ready} onClick={()=>{setRotation(value=>(value+90)%360);setPan({x:0,y:0});}}><RotateCw size={17}/></button>
       </div>
     </div>
     <div className="image-viewer-canvas">
-      <canvas ref={canvas} aria-label={image?.name??'Picture'} role="img" style={{visibility:ready?'visible':'hidden',transform:`scale(${zoom}) rotate(${rotation}deg)`}}/>
+      <canvas ref={canvas} aria-label={image?.name??'Picture'} role="img"
+        className={ready&&zoom>1?`is-zoomed${panning?' is-panning':''}`:''}
+        onPointerDown={beginPan} onPointerMove={movePan} onPointerUp={endPan} onPointerCancel={endPan}
+        onLostPointerCapture={()=>{panStart.current=null;setPanning(false);}}
+        style={{visibility:ready?'visible':'hidden',transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(${rotation}deg)`}}/>
       {!ready&&<div role="status" className="image-viewer-loading">{error||message||'Opening picture…'}</div>}
       {(error||message)&&ready&&<div role="alert" className="image-viewer-alert">{error||message}</div>}
     </div>

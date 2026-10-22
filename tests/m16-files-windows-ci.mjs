@@ -106,10 +106,26 @@ try{
   await viewer.getByRole('button',{name:'Zoom in'}).click();
   check('Viewer zoom control adjusts percentage',
     await viewer.getByLabel('Current zoom').innerText()==='125%');
+  const panCanvas=viewer.locator('.image-viewer-canvas canvas');
+  await panCanvas.evaluate(canvas=>{canvas.style.width='900px';canvas.style.height='700px';});
+  const panBox=await panCanvas.boundingBox(),viewportBox=await viewer.locator('.image-viewer-canvas').boundingBox();
+  if(!panBox||!viewportBox)throw new Error('Image Viewer pan bounds unavailable');
+  const startX=panBox.x+panBox.width/2,startY=panBox.y+panBox.height/2;
+  await page.mouse.move(startX,startY);await page.mouse.down();
+  await page.mouse.move(startX+900,startY+700,{steps:4});
+  const panStyle=await panCanvas.getAttribute('style'),panning=await panCanvas.evaluate(canvas=>canvas.classList.contains('is-panning'));
+  await page.mouse.up();
+  const movedBox=await panCanvas.boundingBox();
+  check('Dragging zoomed picture pans it while keeping the viewport covered',!!movedBox&&panning
+    &&panStyle?.includes('translate3d(')&&!panStyle.includes('translate3d(0px, 0px, 0)')
+    &&movedBox.x<=viewportBox.x+1&&movedBox.y<=viewportBox.y+1
+    &&movedBox.x+movedBox.width>=viewportBox.x+viewportBox.width-1
+    &&movedBox.y+movedBox.height>=viewportBox.y+viewportBox.height-1);
   await viewer.getByRole('button',{name:'Rotate picture right'}).click();
   check('Viewer rotates image', (await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).getAttribute('style'))?.includes('rotate(90deg)'));
   await viewer.getByRole('button',{name:'Fit image to window'}).click();
-  check('Viewer fits image to window',await viewer.getByLabel('Current zoom').innerText()==='100%');
+  check('Viewer fits image to window and recenters it',await viewer.getByLabel('Current zoom').innerText()==='100%'
+    &&(await panCanvas.getAttribute('style'))?.includes('translate3d(0px, 0px, 0)'));
   await viewer.getByRole('button',{name:'Next picture'}).click();
   await viewer.getByRole('img',{name:'m16-synthetic-xray-alt.png'}).waitFor({timeout:10000});
   await viewer.getByRole('button',{name:'Previous picture'}).click();

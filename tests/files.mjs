@@ -66,9 +66,24 @@ try {
     const context = canvas.getContext('2d');
     return canvas.width === 8 && canvas.height === 8 && !!context && context.getImageData(0, 0, 8, 8).data.some((value, index) => index % 4 === 3 && value > 0);
   }));
+  const panCanvas=viewer.locator('.image-viewer-canvas canvas');
+  await panCanvas.evaluate(canvas=>{canvas.style.width='900px';canvas.style.height='700px';});
   await viewer.getByRole('button', { name: 'Zoom in' }).click();
   check('Image Viewer zoom control updates its displayed scale',
     await viewer.getByLabel('Current zoom').innerText() === '125%');
+  const panBox=await panCanvas.boundingBox(),viewportBox=await viewer.locator('.image-viewer-canvas').boundingBox();
+  if(!panBox||!viewportBox)throw new Error('Image Viewer pan bounds unavailable');
+  const startX=panBox.x+panBox.width/2,startY=panBox.y+panBox.height/2;
+  await page.mouse.move(startX,startY);await page.mouse.down();
+  await page.mouse.move(startX+900,startY+700,{steps:4});
+  const panStyle=await panCanvas.getAttribute('style'),panning=await panCanvas.evaluate(canvas=>canvas.classList.contains('is-panning'));
+  await page.mouse.up();
+  const movedBox=await panCanvas.boundingBox();
+  check('Dragging a zoomed image pans it while keeping the viewport covered',!!movedBox&&panning
+    &&panStyle?.includes('translate3d(')&&!panStyle.includes('translate3d(0px, 0px, 0)')
+    &&movedBox.x<=viewportBox.x+1&&movedBox.y<=viewportBox.y+1
+    &&movedBox.x+movedBox.width>=viewportBox.x+viewportBox.width-1
+    &&movedBox.y+movedBox.height>=viewportBox.y+viewportBox.height-1);
   await viewer.getByRole('button', { name: 'Rotate picture right' }).click();
   check('Image Viewer rotates the displayed picture',
     (await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).getAttribute('style'))?.includes('rotate(90deg)'));
