@@ -15,7 +15,7 @@ def check():
     errors = []
     files = sorted(ARCH.glob('*.md')) + sorted(WORK.glob('*.md'))
     milestones = sorted(WORK.glob('milestone-*'))
-    expected_milestone_ids = list(range(1, 16)) + [20]
+    expected_milestone_ids = list(range(1, 16)) + [17, 20]
     if len(list(ARCH.glob('*.md'))) != 24:
         errors.append('Expected 24 numbered architecture documents')
     if len(milestones) != len(expected_milestone_ids):

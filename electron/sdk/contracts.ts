@@ -17,6 +17,12 @@ export type ErrorCode = 'INVALID_REQUEST' | 'UNKNOWN_CALLER' | 'INCOMPATIBLE_SDK
 export type Outcome = 'not_sent' | 'rejected' | 'unknown';
 export type Result<T = unknown> = { ok: true; value: T } | { ok: false; error: { code: ErrorCode; message: string; outcome: Outcome; requestId?: string; operationId?: string } };
 export type Connection = { connection: string; generation: number; appId: string; appVersion: string; sdk: typeof SDK; capabilities: Operation[] };
+/** Safe clinic display context serialized by the host; never includes credentials. */
+export type ClinicSessionContext = {
+  clinicUser: { clinicUserId: string; displayName: string; role: 'admin' | 'doctor' | 'reception'; capabilities: string[] };
+  clinic: { tenantId: string; displayName: string; timezone: string; currency: string; defaultBranchId: string | null; hasActiveTrial: boolean };
+  branches: Array<{ branchId: string; branchCode: string; name: string }>;
+};
 export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[] };
 export type Request = { version: 1; connection: string; generation: number; requestId: string; operation: Operation; input: Record<string, unknown> };
 export type Cancel = Pick<Request, 'version' | 'connection' | 'generation' | 'requestId'>;

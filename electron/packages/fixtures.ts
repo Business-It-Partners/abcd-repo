@@ -49,7 +49,9 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
     };
     for(const [appId,title] of apps){
       const sourceRoot=path.join(appRoot,appId);
-      if(existsSync(path.join(sourceRoot,'app.manifest.json'))){
+      // This shell-launch fixture must not accidentally package functional app
+      // source or grant APIs when an app advances beyond its capability-free shell.
+      if(existsSync(path.join(sourceRoot,'app.manifest.json')) && JSON.parse(readFileSync(path.join(sourceRoot,'app.manifest.json'),'utf8')).capabilities.length === 0){
         const manifest=JSON.parse(readFileSync(path.join(sourceRoot,'app.manifest.json'),'utf8')) as Omit<Manifest,'format'|'assets'>;
         const metadata=JSON.parse(readFileSync(path.join(sourceRoot,'app.json'),'utf8')) as {allowedRoles?:string[]};
         // The OS launch-flow fixture tests shell behavior rather than clinic authorization.

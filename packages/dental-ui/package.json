@@ -1,0 +1,1 @@
+{"name":"@dental-os/dental-ui","version":"0.1.0","private":true,"type":"module","description":"Shared clinic presentation imported from the pinned Dental SaaS source; no API or identity authority.","dependencies":{"@sbmdkl/nepali-date-converter":"2.0.5"}}

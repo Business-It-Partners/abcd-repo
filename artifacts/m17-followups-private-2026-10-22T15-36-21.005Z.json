@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "failure": "AssertionError: the registered Follow-ups module selection receives its acknowledgement\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/clinic/staff-references\",\"method\":\"GET\",\"operationId\":null},{\"path\":\"/v1/follow-ups\",\"method\":\"GET\",\"operationId\":null}],\"body\":\"Follow-ups\\nThursday, 05/07/2083 · patient recall tracker\\nRefresh\\nCreate follow-up\\n1\\nDue today\\nto follow up today\\n1\\nThis week\\nremaining till Saturday\\n0\\nUpcoming\\nafter this week\\n0\\nMissed\\nwindow passed\\n05/07/2083\\n#\\tPatient⇅\\tDue⇅\\tDoctor⇅\\tLast visit\\tPhone\\tCall\\tUn-response\\tCaught\\tAction\\n\\n1\\n\\t\\nSynthetic M17 Patient\\n\\t\\nToday\\n10:30 AM\\n\\t\\nSynthetic Doctor\\n\\t\\n\\t\\n9800000000\\n\\t\\n\\t\\n\\t\\n\\t\\nReschedule\\nDetails\\nShowing 1 to 1 of 1 follow-ups\\nPrevious\\n1\\nNext\"}\nPrivate host stderr: [23484:1022/212122.107112:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n[23347:1022/212124.663240:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[23347:1022/212124.663301:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[23347:1022/212124.663361:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[23347:1022/212124.663389:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[23347:1022/212124.972713:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[23347:1022/212124.972800:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[23347:1022/212124.972850:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[23347:1022/212124.972878:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n",
+  "checks": [
+    "ephemeral signed package is the declared app and is below the 2 MiB package asset cap",
+    "app is isolated behind the renderer-safe SDK with no credential getter",
+    "initial business reads use only the registered worklist and staff-reference routes"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.1.0",
+    "packageSha256": "1c5babc6abf19ac62deb84a9ca7551617f986b1b8fb8927ead34b213a8cf3d64",
+    "payloadDigest": "653de9cac5189ffce29d0dcfeef5397c3fac4f4ffac8673daa75866c0f4bc15e",
+    "wireBytes": 1216559,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
+  "screenshot": "m17-followups-private-2026-10-22T15-36-21.005Z.png"
+}

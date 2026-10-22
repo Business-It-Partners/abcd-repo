@@ -1,13 +1,10 @@
 import { staging } from '../sdk/environment';
 import { text } from '../sdk/contracts';
+import type { ClinicSessionContext } from '../sdk/contracts';
+export type { ClinicSessionContext } from '../sdk/contracts';
 // Firebase client API key is public project configuration, not an administrative credential.
 export const firebaseApiKey = 'AIzaSyDA9f3oRA07zV4YdtF7P7ZUVY6iScEku1c';
 export type Tokens = { idToken: string; refreshToken: string; uid: string; expiresAt: number };
-export type ClinicSessionContext = {
-  clinicUser: { clinicUserId: string; displayName: string; role: 'admin' | 'doctor' | 'reception'; capabilities: string[] };
-  clinic: { tenantId: string; displayName: string; timezone: string; currency: string; defaultBranchId: string | null; hasActiveTrial: boolean };
-  branches: Array<{ branchId: string; branchCode: string; name: string }>;
-};
 export type Clinic = { userLabel: string; clinicLabel: string; role: 'admin' | 'doctor' | 'reception'; tenantId: string; clinicUserId: string; capabilities: string[]; clinicSession?: ClinicSessionContext };
 export interface AuthClient {
   signIn(email: string, password: string, signal: AbortSignal): Promise<Tokens>;

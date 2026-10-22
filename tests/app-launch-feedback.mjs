@@ -25,11 +25,12 @@ const shell=await app.firstWindow();shell.setDefaultTimeout(15000);shell.on('pag
 let screenshotsWritten=false;
 async function launchAndVerify(id,title,{capture=false}={}){
  const dock=shell.locator(`[data-dock-app="${id}"]`);await dock.waitFor({state:'visible'});
- const startedAt=Date.now();await dock.click();
+ await dock.click();
  if(id==='company.dental.finance'||id==='company.dental.lab-tracker'){
    const explorer=shell.locator('.app-explorer');await explorer.waitFor({state:'visible'});
    await explorer.locator('.app-explorer-item').first().click();
  }
+ const startedAt=Date.now();
  const surface=shell.locator(`[data-runtime="${id}"]`),splash=surface.getByTestId('app-launch-splash');
  try{await splash.waitFor({state:'visible'});}catch(error){
    const details={phase:await surface.getAttribute('data-runtime-phase'),reason:await surface.getAttribute('data-runtime-reason'),content:await surface.locator('[role="alert"]').innerText().catch(()=>''),pages:app.context().pages().map(item=>item.url())};
