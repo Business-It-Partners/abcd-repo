@@ -39,3 +39,12 @@ The previous doc-check pass is tied to its recorded SHA, **not automatically to 
 - [Run 39756354235](https://github.com/Business-It-Partners/dental-os/actions/runs/39756354235) at `259cd6e393b2e7c3ad6abe56631f0dcc9b790354`: **failed** at Windows unit suite; documentation passed; 434 tests passed, 4 skipped, 10 new `tests/localFiles.test.ts` cases failed because synthetic temporary roots were not discovered.
 - Reproduced root and existing host behavior are distinct: Linux local focused checks passed; Windows `realpathSync.native` may use canonical aliases not textually identical to `path.resolve`. A Windows-specific canonical-root containment correction was prepared without weakening renderer access or signed authorization.
 - Do not count the failed run as acceptance. A single narrower correction and automatic branch validation are required; preserve this failure rather than rewriting history.
+
+## M16.2 corrected-source Windows verification (2026-10-22)
+
+- Commit: `6bcc5b49d4940fe2f78d7bfe4fc2c3c96b18faaa` (host-service correction).
+- [GitHub Actions workflow 39756930135](https://github.com/Business-It-Partners/dental-os/actions/runs/39756930135): documentation **passed**, unit suite **444 passed / 4 skipped / 0 failed** (26 test files), build/typecheck **passed**, first-party app shell package checks **passed**.
+- The full workflow status is **failure**: existing Windows isolated runtime proof `tests/runtime-ci.mjs` failed with `spawnSync powershell.exe ETIMEDOUT` while requesting the OS test pointer position. Subsequent Windows graphical/integration steps were skipped. This is not M16.2 Files UI proof, and G16 remains open.
+- No additional rerun authorized or initiated. The tested host-service source is unchanged by this evidence-only handoff. Linux local smoke results are preliminary only; M16.3+ still own sandboxed shell/UI integration and Windows/Linux interaction acceptance.
+
+**Handoff:** exact implementation source `6bcc5b49`; next M16.3 session starts with source and working tree review. M16.2 provides the main-process foundation only. Do not expose file access directly to dental app JavaScript, bypass signed app policy, restart the user's desktop, or enable Cloudflare uploads.
