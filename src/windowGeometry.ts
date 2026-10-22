@@ -29,6 +29,7 @@ export const WINDOW_IDS = Object.keys(WINDOW_SPECS) as WindowId[];
 export type WindowSpec = { title: string; preferred: Size; minimum: Size };
 const companyAppSpec: WindowSpec = { title: 'Company App', preferred: { width: 980, height: 620 }, minimum: { width: 520, height: 360 } };
 export function windowSpec(id: WindowId): WindowSpec {
+  if(id==='image-viewer')return {title:'Image Viewer',preferred:{width:800,height:570},minimum:{width:420,height:300}};
   return Object.hasOwn(WINDOW_SPECS, id) ? WINDOW_SPECS[id as keyof typeof WINDOW_SPECS] : companyAppSpec;
 }
 

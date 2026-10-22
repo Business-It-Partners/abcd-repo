@@ -1,4 +1,4 @@
-import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
+import { createRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
 import { Check, ChevronRight, FolderOpen, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
@@ -14,11 +14,12 @@ import { packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/co
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
-import { FilesApp } from './FilesApp';
+import { FilesApp, type FilesImageRequest } from './FilesApp';
+import { ImageViewer, type ViewerImage } from './ImageViewer';
 import { FilesPickerModal } from './FilesPickerModal';
 import type { FilePickerPrompt, FilePickerResponse } from '../electron/host/filePickerContract';
 import './FilesApp.css';
-import { ManagedWindowFrame } from './ManagedWindow';
+import { ManagedWindowFrame, useManagedWindow } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
 import { WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
@@ -83,12 +84,56 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups, files } = controllers;
+  const viewerTarget=useMemo(()=>createRef<HTMLButtonElement>(),[]);
+  const viewerController=useManagedWindow('image-viewer',viewerTarget);
+  const [viewerImage,setViewerImage]=useState<ViewerImage|null>(null);
+  const [viewerError,setViewerError]=useState('');
+  const [viewerBusy,setViewerBusy]=useState(false);
+  const viewerRequest=useRef(0);
   const phase = studio.win.phase;
   const [installed, setInstalled] = useState<StaticWindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
   const [dynamicControllerRefs,setDynamicControllerRefs]=useState<Record<string,MutableRefObject<WindowController>>>({});
   const onControllerRef=useCallback((id:string,ref:MutableRefObject<WindowController>|null)=>setDynamicControllerRefs(previous=>{if(ref){if(previous[id]===ref)return previous;return{...previous,[id]:ref};}if(!previous[id])return previous;const next={...previous};delete next[id];return next;}),[]);
   const dynamicControllers:Record<string,WindowController>=Object.fromEntries(Object.entries(dynamicControllerRefs).map(([id,ref])=>[id,ref.current]));
   const allControllers:Record<string,WindowController>={...staticControllers,...dynamicControllers};
+  const closeViewer=()=>{
+    viewerRequest.current++;
+    if(viewerImage)void window.desktop?.files.viewerClose(viewerImage.sessionId,viewerImage.generation).catch(()=>{});
+    setViewerImage(previous=>{previous?.bytes.fill(0);return null;});
+    setViewerError('');setViewerBusy(false);viewerController.close();
+  };
+  const openViewer=async(request:FilesImageRequest)=>{
+    if(!window.desktop?.files)return;
+    const token=++viewerRequest.current;
+    setViewerError('');setViewerBusy(true);
+    if(viewerImage)void window.desktop.files.viewerClose(viewerImage.sessionId,viewerImage.generation).catch(()=>{});
+    try{
+      const image=await window.desktop.files.viewerOpen(request);
+      if(viewerRequest.current!==token){
+        image.bytes.fill(0);void window.desktop.files.viewerClose(image.sessionId,image.generation).catch(()=>{});return;
+      }
+      setViewerImage(previous=>{previous?.bytes.fill(0);return image;});viewerController.open();
+    }catch{if(viewerRequest.current===token)setViewerError('Unable to safely open this picture. Refresh Files and try again.');}
+    finally{if(viewerRequest.current===token)setViewerBusy(false);}
+  };
+  const stepViewer=async(direction:-1|1)=>{
+    if(!viewerImage||viewerBusy||!window.desktop?.files)return;
+    const token=++viewerRequest.current;
+    setViewerBusy(true);setViewerError('');
+    try{
+      const image=await window.desktop.files.viewerStep({sessionId:viewerImage.sessionId,generation:viewerImage.generation,direction});
+      if(token!==viewerRequest.current){image.bytes.fill(0);return;}
+      setViewerImage(previous=>{previous?.bytes.fill(0);return image;});
+    }catch{if(token===viewerRequest.current)setViewerError('This picture is no longer available. Close and refresh Files.');}
+    finally{if(token===viewerRequest.current)setViewerBusy(false);}
+  };
+  useEffect(()=>{
+    // On a clinic/session change, discard decoded images and all in-flight reads.
+    viewerRequest.current++;
+    setViewerImage(previous=>{previous?.bytes.fill(0);return null;});
+    setViewerError('');setViewerBusy(false);
+    dispatch({type:'phase',id:'image-viewer',phase:'closed'});
+  },[session?.generation,dispatch]);
   const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
@@ -298,7 +343,10 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       </div>
     </ManagedWindowFrame>}
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
-    <ManagedWindowFrame controller={files}><FilesApp key={session?.generation ?? 0} visible={files.win.phase === 'visible'} active={frontApp==='files'&&!state.overview&&!explorerOpen&&!pickerPrompt&&!hostTransitioning}/></ManagedWindowFrame>
+    <ManagedWindowFrame controller={files}><FilesApp key={session?.generation ?? 0} visible={files.win.phase === 'visible'} active={frontApp==='files'&&!state.overview&&!explorerOpen&&!pickerPrompt&&!hostTransitioning} onViewImage={request=>void openViewer(request)}/></ManagedWindowFrame>
+    <ManagedWindowFrame controller={viewerController} hideMinimize onClose={closeViewer}>
+      <ImageViewer image={viewerImage} active={viewerController.active} busy={viewerBusy} error={viewerError} onStep={direction=>void stepViewer(direction)}/>
+    </ManagedWindowFrame>
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     {WINDOW_IDS.filter(id => id !== 'files' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{

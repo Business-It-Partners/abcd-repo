@@ -44,7 +44,7 @@ export function WindowOverview({ controllers, onClose }: { controllers: Record<W
   const grid = useRef<HTMLDivElement>(null), close = useRef<HTMLButtonElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ width: 1, height: 1, viewportHeight: 1 });
-  const ids = [...state.order].reverse().filter(id => ['visible', 'minimized'].includes(state.windows[id].phase));
+  const ids = [...state.order].reverse().filter(id => id !== 'image-viewer' && ['visible', 'minimized'].includes(state.windows[id].phase));
   useLayoutEffect(() => {
     const element = stage.current!;
     const measure = () => {

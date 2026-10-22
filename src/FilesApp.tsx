@@ -9,6 +9,7 @@ type DisplaySort = 'name' | 'kind' | 'date' | 'size';
 type DisplayMode = 'grid' | 'list';
 const PAGE_LIMIT = 100;
 const THUMBNAIL_TYPES = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
+const VIEWABLE_TYPES = THUMBNAIL_TYPES;
 const IMAGE_FILE_TYPES = new Set([...THUMBNAIL_TYPES, '.tif', '.tiff', '.dcm', '.dicom']);
 const DOCUMENT_FILE_TYPES = new Set(['.pdf', '.txt', '.csv', '.doc', '.docx', '.xls', '.xlsx', '.rtf', '.odt']);
 let activeThumbnailReads = 0;
@@ -81,7 +82,8 @@ const statusText = (reason: unknown): string => {
   return 'Files are temporarily unavailable. Try refreshing this folder.';
 };
 export type FilesPickerOptions={maxSelections:number;fileTypes:FileFilter;onChoose(ids:string[]):void;onNative():void;onCancel():void};
-export function FilesApp({ visible, active = false, picker }: { visible: boolean; active?:boolean; picker?: FilesPickerOptions }) {
+export type FilesImageRequest = {directoryId:string;fileIds:string[];selectedId:string;generation:number};
+export function FilesApp({ visible, active = false, picker, onViewImage }: { visible: boolean; active?:boolean; picker?: FilesPickerOptions; onViewImage?:(request:FilesImageRequest)=>void }) {
   const generation = useSessionGeneration();
   const [roots, setRoots] = useState<FileRoot[]>([]);
   const [history, setHistory] = useState<Crumb[][]>([]);
@@ -209,6 +211,9 @@ export function FilesApp({ visible, active = false, picker }: { visible: boolean
   const open = (entry: FileEntry) => {
     chooseEntry(entry);
     if (entry.kind === 'directory') navigate([...current, { id: entry.id, name: entry.name }]);
+    else if(!picker&&folderId&&VIEWABLE_TYPES.has(entry.typeHint)) {
+      onViewImage?.({directoryId:folderId,fileIds:list.filter(item=>item.kind==='file'&&VIEWABLE_TYPES.has(item.typeHint)).map(item=>item.id),selectedId:entry.id,generation});
+    }
   };
   const keyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = list.findIndex(item => item.id === selected);

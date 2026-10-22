@@ -149,7 +149,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;
 
-export function ManagedWindowFrame({ controller: c, children }: { controller: WindowController; children: ReactNode }) {
+export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
@@ -161,7 +161,7 @@ export function ManagedWindowFrame({ controller: c, children }: { controller: Wi
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
-        onDrag={event => c.startGesture(event)} onClose={c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen}/>
+        onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}/>
       {children}
       {!fullscreen && !c.anyBusy && !c.win.modal && edges.map(edge => <div key={edge} className={`window-resize-handle resize-${edge}`} data-resize={edge}
         aria-hidden="true" onPointerDown={event => c.startGesture(event, edge)}/>)}
