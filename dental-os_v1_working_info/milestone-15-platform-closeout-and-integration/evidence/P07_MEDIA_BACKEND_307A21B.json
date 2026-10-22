@@ -1,0 +1,48 @@
+{
+  "sourceCommit": "307a21b7c5724e5bd4310fd47a7da1198f38d2a6",
+  "branch": "codex/sys-0009-mediated-media",
+  "base": "1268bb3ea613fadb8e31cd92a6fc45612280e7ea",
+  "acceptedFiles": {
+    "apps/platform-worker/src/clinic/patients/media/patientMedia.controller.ts": "b234cf45e421e1cede8224207367035418009cb9961c096134f3e0832be3fd18",
+    "apps/platform-worker/src/clinic/patients/media/patientMedia.service.ts": "ad2af32361c8b5a6e8802ac2eca667fede2c695b4244e742d6d5c781e9c11f2c",
+    "apps/platform-worker/src/clinic/router.ts": "6b604ce67c12adb5b060777df3800bd477aca5b4249c4b1b7acbd18b9b8b0250",
+    "apps/platform-worker/src/clinic/shared/pendingUpload.ts": "2488eff37084307e2af18a58a35a835f29cc0b778ad06459c227c8c5d3630e0b",
+    "apps/platform-worker/src/clinic/shared/pendingUploads.controller.ts": "1f917aa30e67c0a2e1d318a3f5842e1546659184fe5fd0a6e3664b4f82a73528",
+    "apps/platform-worker/src/clinic/staff/staffDocuments.controller.ts": "a9218db69fcf33138c50faa9fc15703f2a740dd1f4e21fbe516fc4f914f0800a",
+    "apps/platform-worker/src/clinic/staff/staffDocuments.service.ts": "3143e447b47ec1657902938fd3ab1b65ac7bae343ae5502a8488740254de8e40",
+    "apps/platform-worker/test/media/mediaLifecycle.test.ts": "185d0e4d1a3c391a9d2c952a19d41b30198fe366912a070b4a14bf804ec9c49d",
+    "apps/platform-worker/test/media/pendingDiscovery.test.ts": "ef7838b52695c2fdfc9f5ec4da025880b8de8589001ad27ebf3bdc688049b72d",
+    "apps/platform-worker/test/media/pendingUpload.test.ts": "e47254f62f8a87ad9fb114354744335f2dc96ccd440b20562df5c950d868c4c0",
+    "apps/platform-worker/test/route-contract/workerAuthMatrix.test.ts": "310409f5f69c77c27fd434d575d5f4634eda959d647664d04aeff914ff3d6d44",
+    "docs/operations/pending-media-upload-recovery.md": "e0445c6521882130df1d418b95ee1f45b44a831dedc8ef785518114d1e136e4b",
+    "tickets/in-progress/SYS-0009-mediated-media-upload-lifecycle.md": "42bdf13306db6cf87cac8a23a84acf17b9342d2de29a60ee84828a48e9d68f07"
+  },
+  "checks": {
+    "workerTypecheck": "PASS",
+    "fullSerialWorkerSuite": {
+      "passed": 495,
+      "files": 54,
+      "qualification": "Includes five unchanged unrelated SYS-0008 publisher tests; their source is excluded from this branch checkpoint."
+    },
+    "focusedMediaAndAuth": {
+      "passed": 194,
+      "mediaCases": 49,
+      "authRouteCases": 145
+    },
+    "whitespace": "PASS"
+  },
+  "newBehavior": [
+    "Five-minute expiry enforced before upload/finalise and in finalise SQL",
+    "Authenticated owner-scoped bounded discovery of expired/cleanup-pending uploads",
+    "Failed deletion of late cancelled PUT remains discoverable for retry"
+  ],
+  "limitations": [
+    "Synthetic SQLite/R2 tests are not deployed D1/R2 or authenticated staging proof",
+    "Host media adapter and end-to-end recovery remain open",
+    "No scheduled sweeper; creator-never-returns needs support cleanup disposition"
+  ],
+  "preservedUnrelatedInputsUnchanged": true,
+  "deployed": false,
+  "temporaryProcessesRemaining": false,
+  "generatedBuildOutputsCreated": false
+}
