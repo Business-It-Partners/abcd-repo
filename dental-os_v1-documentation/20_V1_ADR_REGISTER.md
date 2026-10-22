@@ -30,6 +30,8 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-026 | Release-scoped first-party API grants in the existing signed update policy | Accepted 2026-10-22; implementation/final verification tracked in M15 | API/broker authority: 11; update-policy schema: 09/10 |
 | ADR-027 | Host-owned clinic JSON contract 1 under exact signed release grants | Accepted technical design in M15; source/runtime verification tracked separately | SDK 1.2; exact app/method/path/query and trusted session capability checks; 11 |
 
+| ADR-030 | OS-owned read-only Files and scoped local file-selection receipts | Product direction accepted 2026-10-22; exact SDK permission schema under M16.1 review | [M16 architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md); G16 |
+
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 
 ## ADR-019 — GitHub Windows CI during milestones; physical device testing after the platform milestone
@@ -109,3 +111,13 @@ The [media contract](../docs/CLINIC_MEDIA_API_CONTRACT.md) declares 10 MiB patie
 **Decision (2026-10-22):** under the user-directed platform capability completion scope, SDK 1.4 adds `clinic.media.upload` with explicit begin/chunk/commit/cancel stages. The host owns bounded transient buffers, SHA-256, fixed intent/content/finalise/abort routes and credentials. Preserve existing signed company exact-release authority, app/session ceilings and authoritative Worker tenancy. The [upload contract](../docs/CLINIC_MEDIA_UPLOAD_CONTRACT.md) defines 8 KiB chunks inside the existing envelope, unchanged 10/25 MiB domain limits, two transfers, bounded receipts and lifecycle/outcome behavior.
 
 Explicit original-key retries and authoritative active-file reconciliation protect unknown outcomes. Cancellation does not undo an already committed clinical record. No local authoritative database, disk-backed transfer queue, background upload retry, general messaging or new trust root is introduced. Full native/staging proof, fresh-session recovery and support cleanup remain required M15 work; no public capability grant, backend deployment, production access or checklist completion is implied by this design checkpoint.
+
+## ADR-030 — OS-owned local file acquisition, Files, and recipient-bound receipts
+
+**Decision direction (2026-10-22):** Dental OS provides a read-only Files core system window, a common OS-owned custom picker and a parented native host picker fallback. Trusted Electron main mediates local host filesystem access. A company dental app may request only an approved user-gesture-controlled selection, receiving an opaque, short-lived, release/window/session-bound receipt and no raw path or Node access.
+
+**Options:** requiring host file explorer alone causes fullscreen friction; each app building its own explorer duplicates privileges and UX; generic fs SDK access is forbidden; OS-owned read-only service and picker is selected. The Files UI is system owned, not a dental package elevated beyond its declared privileges. A drag gesture is preferred but not assumed reliable across WebContentsView; explicit user-directed Send to an eligible app is mandatory fallback.
+
+**Compatibility and safety:** Existing M15 signed format-2 clinic API grants do not authorize local filesystem access. Implement a distinct, versioned local selection contract guarded by verified company package, platform trust ceiling, explicit user action and current session; choose exact signed metadata/release policy representation under M16.1 before implementation. Preserve ADR-013/R13 no general app messaging, sandbox/context isolation, OS path/ACL/symlink safety, revocation and non-persistence of patient content.
+
+**Owner and proof:** M16/G16. [Architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md) and [Plan](../dental-os_v1_working_info/milestone-16-file-acquisition/PLAN.md). New code, local drag semantics, host permission handling, Windows/Linux focus and resource behavior require source-bound acceptance. No Cloudflare upload, business record association, file modification, staging/production deployment or G16 completion is implied by this ADR.
