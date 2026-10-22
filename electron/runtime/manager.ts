@@ -2,6 +2,7 @@ import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMain
 import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/broker';
 import { appOperation } from '../sdk/appPolicy';
 import { FilePickerCoordinator } from '../host/filePicker';
+import { FileTransferCoordinator } from '../host/fileTransfer';
 import type { FilePickInput } from '../host/filePickerContract';
 import type { Result } from '../sdk/contracts';
 import { staging } from '../sdk/environment';
@@ -18,8 +19,50 @@ type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<ty
 export class FixtureRuntime {
   private services = fixtureServices();
   private filePicker?: FilePickerCoordinator;
+  private fileTransfer?: FileTransferCoordinator;
+  private transferSubscribers=new Set<object>();
+  private lastTransferId?:RuntimeId;
+  private filesForeground=false;
   private fileActivation = new Map<object,{frame:object;at:number}>();
   setFilePicker(coordinator:FilePickerCoordinator){this.filePicker=coordinator;}
+  setFileTransfer(coordinator:FileTransferCoordinator){this.fileTransfer=coordinator;}
+  setFilesForeground(active:boolean){this.filesForeground=active;if(!active)this.fileTransfer?.cancel();}
+  private eligibleTransfer(e:Entry|undefined):boolean{
+    if(!e||this.entries.get(e.state.id)!==e||e.state.phase!=='ready'||!e.lease||!e.connected||
+       e.view.webContents.isDestroyed()||e.state.dirty||e.state.modal||this.broker.hasUnsafeWrites(e.lease.manifest.appId)||
+       !this.transferSubscribers.has(e.view.webContents)||this.filePicker?.busy)return false;
+    try{
+      const family=appOperation(e.lease.manifest.appId),current=this.identity.snapshot();
+      return current.active&&!!family&&e.lease.capabilities.includes(family)&&
+        this.identity.allowed?.(family)!==false&&this.packages.authorizeLocalPick(e.lease);
+    }catch{return false;}
+  }
+  transferTarget():{title:string}|null{
+    if(!this.filesForeground||!this.lastTransferId||!this.fileTransfer||this.fileTransfer.busy)return null;
+    const e=this.entries.get(this.lastTransferId);
+    return this.eligibleTransfer(e)?{title:e!.appMetadata?.title??'Dental application'}:null;
+  }
+  async sendFiles(ids:readonly string[],generation:number){
+    const target=this.transferTarget();const e=this.lastTransferId?this.entries.get(this.lastTransferId):undefined;
+    if(!target||!e||!e.lease||this.identity.snapshot().generation!==generation||!this.fileTransfer)throw Error('FORBIDDEN');
+    const wc=e.view.webContents,lease=e.lease;
+    const owner={sender:wc,frame:wc.mainFrame,appId:lease.manifest.appId,appVersion:lease.manifest.version,
+      windowId:e.state.id,generation,requestId:randomUUID(),
+      authorized:()=>this.filesForeground&&this.lastTransferId===e.state.id&&this.eligibleTransfer(e)&&
+        this.identity.snapshot().generation===generation};
+    const receipt=await this.fileTransfer.send(ids,owner,value=>wc.send('runtime:file-transfer',value));
+    return {fileCount:receipt.files.length,expiresAt:receipt.expiresAt,destination:target.title};
+  }
+  fileTransferReady(event:IpcMainEvent,value:unknown){
+    const e=[...this.entries.values()].find(x=>x.view.webContents===event.sender);
+    if(!e||event.senderFrame!==event.sender.mainFrame||typeof value!=='boolean')return;
+    if(value)this.transferSubscribers.add(event.sender);else {this.transferSubscribers.delete(event.sender);this.fileTransfer?.cancelRecipient(event.sender);}
+  }
+  fileTransferAck(event:IpcMainEvent,value:unknown){
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join()!=='accepted,transferId')return;
+    const v=value as {accepted:unknown;transferId:unknown};
+    this.fileTransfer?.acknowledge(event.sender,event.senderFrame,v.transferId,v.accepted);
+  }
   private broker: ApiBroker;
   private identity: Identity;
   private entries = new Map<RuntimeId, Entry>();
@@ -67,6 +110,8 @@ export class FixtureRuntime {
     this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id==='studio'||e.state.id==='records'?e.state.id:'company-app');
     e.image=undefined;e.state.snapshot=undefined;clearTimeout(e.captureTimer);this.resolveModuleAcks(e,false);
     clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
+    this.transferSubscribers.delete(e.view.webContents);this.fileTransfer?.cancelRecipient(e.view.webContents);
+    this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
     if (wasVisible && !this.win.isDestroyed()) this.win.webContents.focus();
@@ -320,6 +365,8 @@ export class FixtureRuntime {
       if (horizontalOverflow > layout.rect.width * .7 + 1 || layout.rect.y + layout.rect.height > height + 1) throw new Error('Outside host');
     }
     const hadNativeInput = [...this.entries.values()].some(e => e.view.getVisible());
+    const active=next.find(layout=>layout.visible&&layout.open);
+    if(active)this.lastTransferId=active.id;
     this.desired = next;
     const retained = new Set(next.map(layout => layout.id));
     for (const id of [...this.entries.keys()]) if (!retained.has(id)) {
@@ -403,6 +450,9 @@ export class FixtureRuntime {
     const e = this.entries.get(id); if (!e) return;
     this.resolveModuleAcks(e,false);
     this.fileActivation.delete(e.view.webContents);
+    this.transferSubscribers.delete(e.view.webContents);
+    this.fileTransfer?.cancelRecipient(e.view.webContents);
+    if(this.lastTransferId===id)this.lastTransferId=undefined;
     this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.lease?.releaseLease();
@@ -418,12 +468,13 @@ export class FixtureRuntime {
   }
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
-    this.fileActivation.clear();this.filePicker?.cancelAll();
+    this.fileActivation.clear();this.transferSubscribers.clear();this.lastTransferId=undefined;
+    this.filesForeground=false;this.fileTransfer?.cancel();this.filePicker?.cancelAll();
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
     // Closing a WebContents does not erase session storage. Never reuse a prior
     // account's in-memory partition, even while asynchronous erasure completes.
     const previous=[...this.sessions.values()];this.sessions.clear();this.instance=randomUUID();
     for(const ses of previous){try{ses.protocol.unhandle('dental-fixture');}catch{}void ses.clearStorageData().catch(()=>{});void ses.clearCache().catch(()=>{});}
   }
-  dispose() { this.fileActivation.clear();this.filePicker?.cancelAll();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
+  dispose() { this.fileActivation.clear();this.transferSubscribers.clear();this.lastTransferId=undefined;this.fileTransfer?.cancel();this.filePicker?.cancelAll();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

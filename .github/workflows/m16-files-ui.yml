@@ -25,7 +25,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Focused Files and picker security tests
-        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
+        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts tests/filePickerSigned.test.ts tests/fileTransfer.test.ts tests/sandboxedPreload.test.ts --maxWorkers=1
       - name: Build and typecheck
         run: npm run build
       - name: Private synthetic Windows Files and picker UI
@@ -63,6 +63,8 @@ jobs:
             timeout 90s sudo apt-get update -qq || echo "Using existing apt lists"
             sudo apt-get install -y --no-install-recommends weston
           fi
+      - name: Focused transfer security tests
+        run: node node_modules/vitest/vitest.mjs run tests/fileTransfer.test.ts tests/filePicker.test.ts --maxWorkers=1
       - name: Build Linux Electron shell
         run: npm run build
       - name: Run Files and signed-app picker on isolated headless Wayland

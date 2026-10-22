@@ -28,6 +28,8 @@ export type AppSdk = {
   getAppInfo(): Promise<Result<RuntimeAppInfo>>;
   openAppExplorer(): Promise<Result>;
   onModuleSelected(listener: (value: { moduleId: string }) => void): () => void;
+  /** Local Files metadata delivered by the trusted OS, never file bytes or paths. */
+  onFilesReceived(listener: (selection: import('../host/localFiles').FileSelection) => void): () => void;
   report(input: { dirty: boolean; modal: boolean }): void;
 };
 export function shape(value: unknown, keys: string[]): value is Record<string, unknown> {

@@ -298,7 +298,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       </div>
     </ManagedWindowFrame>}
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
-    <ManagedWindowFrame controller={files}><FilesApp visible={files.win.phase === 'visible'}/></ManagedWindowFrame>
+    <ManagedWindowFrame controller={files}><FilesApp visible={files.win.phase === 'visible'} active={frontApp==='files'&&!state.overview&&!explorerOpen&&!pickerPrompt&&!hostTransitioning}/></ManagedWindowFrame>
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     {WINDOW_IDS.filter(id => id !== 'files' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{

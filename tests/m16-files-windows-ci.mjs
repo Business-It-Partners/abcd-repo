@@ -135,6 +135,18 @@ try{
   check('Actual Windows native dialog returned synthetic X-ray via signed SDK',
     nativeText.includes('m16-synthetic-xray.png')&&!nativeText.includes(profile));
 
+  // Use the real shell Files button and actual signed isolated SDK subscriber.
+  await filesButton.click();
+  await frame.getByText('X-rays',{exact:true}).dblclick();
+  await frame.getByText('m16-synthetic-xray.png',{exact:true}).click();
+  const send=frame.getByRole('button',{name:'Send to active eligible app'});
+  await send.waitFor({state:'visible'});
+  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  await send.click();
+  await frame.getByText(/Delivered 1 file receipt/).waitFor({timeout:10000});
+  const transfer=await signedApp.locator('#transfer-result').innerText();
+  check('Files explicit Send reaches only the eligible signed SDK app as opaque metadata',
+    transfer.includes('m16-synthetic-xray.png')&&!transfer.includes(profile)&&!transfer.includes('\\\\'));
   console.log('M16 FILES/PICKER UI SUCCESS',checks.length);
 } catch(error) {
   failed=true;

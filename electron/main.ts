@@ -6,6 +6,7 @@ import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
+import { FileTransferCoordinator, parseShellTransfer } from './host/fileTransfer';
 import { parseFilesList } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
@@ -50,6 +51,8 @@ const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.se
 let osStore: OsStateStore;
 let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
+let fileTransfer: FileTransferCoordinator | undefined;
+let shellTransferActivation=0;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -72,9 +75,11 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
   });
   hostWindow = win;
-  if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
+  if(localFiles){filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
+    fileTransfer=new FileTransferCoordinator(localFiles);}
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,filePickerFixture:filePickerAppFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
   if(filePicker)runtime?.setFilePicker(filePicker);
+  if(fileTransfer)runtime?.setFileTransfer(fileTransfer);
   // M16 UI acceptance harness: unavailable on normal desktops, staging sessions
   // and any runner without the three explicit CI-only guards.
   if (process.platform==='win32' && process.env.GITHUB_ACTIONS==='true' &&
@@ -101,7 +106,7 @@ function createWindow() {
     Object.assign(globalThis,{__m16FilesCiFixture:fixture});
     win.once('closed',()=>{delete (globalThis as typeof globalThis & {__m16FilesCiFixture?:unknown}).__m16FilesCiFixture;});
   }
-  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}filePicker?.cancelAll();runtime?.dispose();});
+  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}fileTransfer?.cancel();filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -227,6 +232,25 @@ function requireFilesShell(event: Electron.IpcMainInvokeEvent, generation: unkno
   return localFiles;
 }
 ipcMain.handle('files:roots', (event, generation: unknown) => requireFilesShell(event, generation).roots());
+ipcMain.handle('files:foreground',(event,generation:unknown,active:unknown)=>{
+  requireFilesShell(event,generation);
+  if(typeof active!=='boolean')throw Error('INVALID_REQUEST');
+  shellTransferActivation=0;runtime?.setFilesForeground(active);return true;
+});
+ipcMain.on('files:send-activation',event=>{
+  if(isShell(event)&&canUseWorkspace()&&hostWindow?.isFocused())shellTransferActivation=Date.now();
+});
+ipcMain.handle('files:transfer-target',(event,generation:unknown)=>{
+  requireFilesShell(event,generation);return runtime?.transferTarget()??null;
+});
+ipcMain.handle('files:send',async(event,input:unknown)=>{
+  const v=parseShellTransfer(input);
+  if(!v)throw Error('INVALID_REQUEST');
+  requireFilesShell(event,v.generation);
+  const at=shellTransferActivation;shellTransferActivation=0;
+  if(!at||Date.now()-at>750||!hostWindow?.isFocused()||!runtime||filePicker?.busy)throw Error('FORBIDDEN');
+  return runtime.sendFiles(v.fileIds,v.generation);
+});
 ipcMain.handle('files:pick-response', async(event,input:unknown)=>{
   if(!isShell(event)||!canUseWorkspace()||!filePicker)throw new Error('FORBIDDEN');
   return filePicker.respond(input);
@@ -291,6 +315,8 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:file-activation',event=>runtime?.fileActivated(event));
+ipcMain.on('runtime:file-transfer-ready',(event,value:unknown)=>runtime?.fileTransferReady(event,value));
+ipcMain.on('runtime:file-transfer-ack',(event,value:unknown)=>runtime?.fileTransferAck(event,value));
 ipcMain.on('runtime:edge', (event, value: unknown) => runtime?.edge(event, value));
 if (primary) void app.whenReady().then(async () => {
   diagnostics=new DiagnosticStore(path.join(app.getPath('userData'),'diagnostics'));
@@ -307,7 +333,7 @@ if (primary) void app.whenReady().then(async () => {
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
-      identity.subscribe(view => { filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
+      identity.subscribe(view => { shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
@@ -336,7 +362,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
+  bootPhase = 'exiting'; shellTransferActivation=0;fileTransfer?.cancel();filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

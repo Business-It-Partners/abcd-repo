@@ -16,7 +16,7 @@ const statusText = (reason: unknown): string => {
   return 'Files are temporarily unavailable. Try refreshing this folder.';
 };
 export type FilesPickerOptions={maxSelections:number;fileTypes:FileFilter;onChoose(ids:string[]):void;onNative():void;onCancel():void};
-export function FilesApp({ visible, picker }: { visible: boolean; picker?: FilesPickerOptions }) {
+export function FilesApp({ visible, active = false, picker }: { visible: boolean; active?:boolean; picker?: FilesPickerOptions }) {
   const generation = useSessionGeneration();
   const [roots, setRoots] = useState<FileRoot[]>([]);
   const [history, setHistory] = useState<Crumb[][]>([]);
@@ -29,6 +29,33 @@ export function FilesApp({ visible, picker }: { visible: boolean; picker?: Files
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [destination,setDestination]=useState<{title:string}|null>(null);
+  const [sending,setSending]=useState(false);
+  const [sendMessage,setSendMessage]=useState('');
+  useEffect(()=>{
+    if(picker||!window.desktop?.files)return;
+    let disposed=false;
+    void window.desktop.files.foreground(generation,active).catch(()=>{});
+    if(!active){setDestination(null);setSendMessage('');}
+    return()=>{disposed=true;if(!disposed)return;};
+  },[active,generation,!!picker]);
+  useEffect(()=>{
+    if(!active||picker||!selected||!window.desktop?.files){setDestination(null);return;}
+    let live=true;
+    void window.desktop.files.transferTarget(generation).then(value=>{if(live)setDestination(value);})
+      .catch(()=>{if(live)setDestination(null);});
+    return()=>{live=false;};
+  },[active,generation,selected,!!picker]);
+  const sendSelected=async()=>{
+    if(!active||!destination||!picked.length||sending||picker)return;
+    setSending(true);setSendMessage('');
+    try{
+      const result=await window.desktop?.files.send({generation,fileIds:[...picked]});
+      setSendMessage(result?`Delivered ${result.fileCount} file receipt(s) to ${result.destination}. Not uploaded or saved to a patient record.`:'Transfer unavailable.');
+      setPicked([]);setSelected(null);setDestination(null);
+    }catch{setSendMessage('Transfer denied or recipient unavailable. Reopen the receiving app and try again.');}
+    finally{setSending(false);}
+  };
   const sequence = useRef(0);
   const itemsRef = useRef<HTMLDivElement>(null);
   const current = history[position] ?? [];
@@ -105,7 +132,8 @@ export function FilesApp({ visible, picker }: { visible: boolean; picker?: Files
   const chosen = list.find(item => item.id === selected);
   const chooseEntry=(item:FileEntry,extend=false)=>{
     setSelected(item.id);
-    if(!picker||item.kind!=='file'||!allowedFile(item))return;
+    if(item.kind!=='file'||!allowedFile(item))return;
+    if(!picker){setPicked(previous=>extend?previous.includes(item.id)?previous.filter(id=>id!==item.id):previous.length<10?[...previous,item.id]:previous:[item.id]);setSendMessage('');return;}
     setPicked(previous=>{
       if(!extend||picker.maxSelections===1)return [item.id];
       if(previous.includes(item.id))return previous.filter(id=>id!==item.id);
@@ -187,8 +215,12 @@ export function FilesApp({ visible, picker }: { visible: boolean; picker?: Files
           <button onClick={picker.onCancel}>Cancel</button>
           <button onClick={picker.onNative}>Use native picker</button>
           <button disabled={!picked.length||loading} onClick={()=>picker.onChoose(picked)}>Choose {picked.length||''} file{picked.length===1?'':'s'}</button>
-        </div> : <span className="files-readonly">Read-only · Attach & transfer coming later</span>}
+        </div> : <div className="files-send-actions">
+          <span className="files-readonly">{destination ? 'Recipient: ' + destination.title : 'Open an eligible dental app before Files to enable transfer'}</span>
+          <button disabled={!active||!destination||!picked.length||loading||sending} onClick={()=>void sendSelected()}>Send to active eligible app</button>
+        </div>}
       </footer>
+      {!picker&&sendMessage&&<p className="files-send-status" role="status">{sendMessage}</p>}
     </section>
   </div>;
 }

@@ -49,3 +49,9 @@
 .files-row[aria-disabled="true"]{opacity:.43}.files-row[aria-disabled="true"]:hover{background:transparent}
 .files-picker-pending{position:absolute;bottom:42px;right:18px;background:#e4f0f4;border-radius:7px;padding:7px 12px;color:#345f73;font-size:12px}
 @media(max-width:760px){.files-picker-shade{padding:8px}.files-picker-dialog{height:93vh}.files-picker-dialog .files-sidebar{width:120px;flex-basis:120px}.files-picker-actions{gap:3px}.files-picker-actions button{font-size:11px;padding:7px}}
+
+/* M16.5 single-destination, explicit user-approved transfer. */
+.files-send-actions{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap;justify-content:flex-end}
+.files-send-actions button{padding:7px 11px;border:1px solid #137f94;border-radius:7px;background:#137f94;color:#fff;font:inherit;font-weight:650;cursor:pointer;white-space:nowrap}
+.files-send-actions button:disabled{opacity:.45;cursor:default}
+.files-send-status{padding:8px 14px;margin:0;background:#e6f1f4;color:#275e71;font-size:12px}

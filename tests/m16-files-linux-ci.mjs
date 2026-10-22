@@ -67,6 +67,17 @@ try{
   await modal.waitFor({state:'detached',timeout:10000});
   await guest.locator('#pick-result').filter({hasText:'CANCELLED'}).waitFor({timeout:7000});
   check('Linux custom picker cancel revokes pending request',true);
+  // Send from trusted Files shell into the previously focused signed app.
+  await page.locator('[data-dock-app="files"]').click();
+  await frame.getByText('X-rays',{exact:true}).dblclick();
+  await frame.getByText('m16-synthetic-xray.png',{exact:true}).click();
+  const send=frame.getByRole('button',{name:'Send to active eligible app'});
+  await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  await send.click();
+  await frame.getByText(/Delivered 1 file receipt/).waitFor({timeout:10000});
+  const transferred=await guest.locator('#transfer-result').innerText();
+  check('Linux Files explicit Send delivers metadata only to subscribed signed app',
+    transferred.includes('m16-synthetic-xray.png')&&!transferred.includes(profile)&&!transferred.includes('/tmp/'));
   console.log('M16 PRIVATE WAYLAND SUCCESS',checks.length);
 } catch(error) {
   failed=true;

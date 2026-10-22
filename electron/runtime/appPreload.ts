@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { AppSdk, Result } from '../sdk/contracts';
 import type { DentalAppInfo } from '../packages/appMetadata';
+import type { FileSelection } from '../host/localFiles';
 function acknowledgeAfterPaintOrTimeout(acknowledge: () => void) {
   let completed = false;
   let fallback: number | undefined;
@@ -24,6 +25,23 @@ async function invoke(channel: 'sdk:connect' | 'sdk:request' | 'sdk:cancel', val
   catch { return { ok: false, error: { code: 'INVALID_REQUEST', message: 'Invalid or unavailable SDK request.', outcome: 'not_sent' } }; }
 }
 let modalOpen = false;
+const fileListeners = new Set<(value:FileSelection)=>void>();
+ipcRenderer.on('runtime:file-transfer',(_event,value:unknown)=>{
+  // Sandboxed preload: parse inline; never import executable local modules.
+  const v=value as {transferId?:unknown;selection?:unknown}|null;
+  const uuid=(s:unknown)=>typeof s==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s);
+  const selection=v?.selection as FileSelection|undefined;
+  const valid=!!v&&Object.keys(v).sort().join()==='selection,transferId'&&uuid(v.transferId)&&
+    !!selection&&Object.keys(selection).sort().join()==='expiresAt,files,selectionId'&&uuid(selection.selectionId)&&
+    Number.isSafeInteger(selection.expiresAt)&&Array.isArray(selection.files)&&selection.files.length>0&&selection.files.length<=10&&
+    selection.files.every(f=>!!f&&Object.keys(f).sort().join()==='modifiedAt,name,receiptId,sizeBytes,typeHint'&&
+      uuid(f.receiptId)&&typeof f.name==='string'&&f.name.length>0&&f.name.length<=255&&!/[\u0000-\u001f\u007f]/.test(f.name)&&
+      Number.isSafeInteger(f.sizeBytes)&&f.sizeBytes>=0&&(f.modifiedAt===null||typeof f.modifiedAt==='number'&&Number.isFinite(f.modifiedAt))&&
+      typeof f.typeHint==='string'&&/^\.[a-z0-9]{1,23}$|^$/.test(f.typeHint));
+  let accepted=valid&&fileListeners.size>0;
+  if(accepted)for(const listener of fileListeners){try{listener(selection!);}catch{accepted=false;}}
+  if(uuid(v?.transferId))ipcRenderer.send('runtime:file-transfer-ack',{transferId:v!.transferId,accepted});
+});
 const moduleListeners = new Set<(value:{moduleId:string})=>void>();
 ipcRenderer.on('runtime:module-selected',(_event,value:unknown)=>{
   if(!value||typeof value!=='object'||Array.isArray(value))return;
@@ -51,6 +69,12 @@ contextBridge.exposeInMainWorld('dentalApp', Object.freeze({
   onModuleSelected(listener: (value: { moduleId: string }) => void) {
     moduleListeners.add(listener);
     return () => moduleListeners.delete(listener);
+  },
+  onFilesReceived(listener: (selection:FileSelection)=>void) {
+    if(typeof listener!=='function')throw Error('Invalid file recipient');
+    fileListeners.add(listener);
+    ipcRenderer.send('runtime:file-transfer-ready',true);
+    return ()=>{fileListeners.delete(listener);if(fileListeners.size===0)ipcRenderer.send('runtime:file-transfer-ready',false);};
   },
   report(value: { dirty: boolean; modal: boolean }) {
     if (!value || Object.keys(value).sort().join() !== 'dirty,modal' || typeof value.dirty !== 'boolean' || typeof value.modal !== 'boolean') throw new Error('Invalid report');

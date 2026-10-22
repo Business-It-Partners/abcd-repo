@@ -15,6 +15,7 @@ export class FilePickerCancelled extends Error {
 export class FilePickerCoordinator {
   private pending?: Pending;
   private nativeOpen=false;
+  get busy(){return !!this.pending||this.nativeOpen;}
   constructor(private win: BrowserWindow, private files: LocalFileService, private generation:()=>number, private active:()=>boolean){}
   async pick(input:FilePickInput, owner:FileRecipient, appTitle:string,signal:AbortSignal):Promise<FileSelection>{
     if(this.pending || this.nativeOpen)throw new FilePickerCancelled('BUSY');

@@ -59,6 +59,9 @@ contextBridge.exposeInMainWorld('desktop', {
     pickResponse: (input: unknown)=>ipcRenderer.invoke('files:pick-response',input) as Promise<boolean>,
     roots: (generation: number) => ipcRenderer.invoke('files:roots', generation),
     list: (input: unknown) => ipcRenderer.invoke('files:list', input),
+    foreground: (generation:number,active:boolean)=>ipcRenderer.invoke('files:foreground',generation,active),
+    transferTarget: (generation:number)=>ipcRenderer.invoke('files:transfer-target',generation),
+    send: (input:unknown)=>ipcRenderer.invoke('files:send',input),
   },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),
@@ -77,3 +80,13 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   capture: (rect: { x: number; y: number; width: number; height: number }, generation?: number) => ipcRenderer.invoke('window:capture', rect, generation),
 });
+
+// Genuine host-shell activation, single-use and short-lived in trusted main.
+const markFileSend=(event:Event)=>{
+  if(!event.isTrusted||!document.hasFocus())return;
+  if(event instanceof MouseEvent&&event.button!==0)return;
+  if(event instanceof KeyboardEvent&&(event.repeat||event.ctrlKey||event.altKey||event.metaKey||!['Enter',' '].includes(event.key)))return;
+  ipcRenderer.send('files:send-activation');
+};
+window.addEventListener('pointerdown',markFileSend,true);
+window.addEventListener('keydown',markFileSend,true);
