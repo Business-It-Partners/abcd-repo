@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** M16.4 verification COMPLETE — Windows native picker/signed app and Linux GUI passed in source-bound hosted workflows; **M16.5 planned but NOT STARTED, G16 open.**
+**Status:** M16.5 explicit Files-to-app transfer IMPLEMENTED and source-bound Windows/Linux VERIFIED; OS-native cross-view drag unverified and disabled. **M16.6 not started; G16 OPEN.**
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -141,3 +141,19 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - **Quota discipline:** full historical Windows milestone suite intentionally skipped for targeted pushes; the final Windows-only run explicitly skipped already-passing Linux. No repeat testing requested after both platform jobs became green. Documentation closeout uses `[skip ci]`.
 - **Scope statement:** This closes the three remaining M16.3/M16.4 GUI verification tasks (native Windows dialog, signed app SDK, isolated Linux GUI). It does **not** implement or accept M16.5 Files-to-app drag/send, file-byte read, media upload, backend patient association, production promotion, or physical device certification. **G16 remains OPEN** until its separate remaining phases are implemented and accepted.
 - **Next session:** start M16.5 only, using these contract and signed-file-selection proofs as the baseline. Read current branch SHA and M16 plan; do not start M16.5 as part of this documentation handoff.
+
+
+## M16.5 completion and M16.6 handoff — 2026-10-22
+
+- [x] Inspect current signed package/local permission ceiling, clinic-session and SDK bridge, Files shell, local receipt registry, picker, isolated app lifecycle, and targeted existing GUI scripts before modifying runtime.
+- [x] Define explicit shell-to-one-recipient typed transfer and acknowledgement; no destination selection or absolute paths in app/shell IPC and no generic app-to-app bus.
+- [x] Implement a visible **Send to active eligible app** action from actual local Files (1–10 selected entries), protected by shell user activation, active Files, runtime-bound last eligible receiving app, exact release/grant/session/tenant-role checks and subscribed isolated preload.
+- [x] Reuse M16.2–M16.4 opaque receipt creation and file-identity inspection, implement cancellation/timeout/window-closure/logout/revocation failure cases and re-grant-resistant lease deletion after permission changes.
+- [x] Run focused signed-app picker and transfer security tests, build/typecheck and synthetic GUI on Windows; GUI accepted 18/18, Vitest 32/32.
+- [x] Run private hosted Linux X11 graphical checks including signed app delivery; GUI accepted 8/8, Vitest 13/13 and build/typecheck. Retain prior 7-check private Wayland proof for M16.4; no claim that M16.5 ran on Wayland.
+- [x] Preserve failed infrastructure attempt: `39779773853` Linux setup was cancelled by slow Weston APT downloads without reaching tests; subsequent `39781678031` replaced setup with ephemeral Xvfb and passed both OS jobs. Automated conventional milestone workflow was skipped.
+- [x] Reject claiming a native isolated-view drag implementation; drag not enabled or proven. The explicit user-confirmed fallback is the shipped M16.5 path.
+- [ ] **M16.6 only, next session:** collect final integrated G16 security/failure/resource/accessibility evidence, cross-OS window/focus/session/installation/update behavior, confirm native drag deferment or prove a distinct safe implementation, reconcile all acceptance matrix cases and app handoff. Physical desktop certification and clinical end-to-end upload are **not** established by M16.5.
+- [ ] **G16 CLOSEOUT** is not authorized by this checkpoint.
+
+Verified M16.5 source: `9425e0180088bc76041035a4e539e86ac73ec069`; [focused Windows/Linux GitHub Actions run](https://github.com/Business-It-Partners/dental-os/actions/runs/39781678031). Do not launch M16.6 from this session or treat the documentation-only handoff commit as a new tested source build.

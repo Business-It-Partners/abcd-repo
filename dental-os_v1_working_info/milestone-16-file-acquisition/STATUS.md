@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** M16.4 VERIFIED — Files, custom picker, company-signed app SDK and native Windows dialog have exact-source remote graphical acceptance; 17 Windows graphical checks and 7 private Linux Wayland checks passed. **M16.5 transfer has NOT STARTED and overall G16 remains OPEN.**
+**Status:** M16.5 explicit Files-to-signed-app Send VERIFIED on source-bound Windows/Linux hosted GUI (18 Windows checks; 8 private Linux X11 checks), plus focused tests and builds. Native cross-view drag is not enabled or verified. **G16 OPEN; M16.6 NOT STARTED.**
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -31,11 +31,11 @@ The [Architecture](ARCHITECTURE.md) defines Files, OS picker/native fallback, tr
 - Added temporary native explicit-file receipts to M16.2 host adapter; paths/bytes remain internal to trusted Electron main, and no upload/read consumer is exposed.
 - Added focused parser/broker/coordinator tests. Existing app releases without the newly signed capability remain unable to open the picker.
 
-## Not implemented
+## Not implemented (historical M16.4 checkpoint)
 
 No M16.5 Files-to-app drag/send, no clinical file-byte read, Cloudflare upload, patient attachment or backend deployment. The existing M15 upload denial remains intact. G16 has no implementation acceptance evidence.
 
-## Next
+## Next (historical M16.4 handoff)
 
 M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. Windows source at 69dfaa45339d passed documentation, 456 unit tests (4 skipped), build/typecheck and first-party package checks. The full Windows workflow failed on the existing runtime-scenario Motion Studio launcher lookup; dedicated picker GUI proof did not run. Pending: run the private-display Files/picker UI flow on supported OS devices. Start M16.5 only in a separate session after recording limitations and correcting any M16.4 regression. Never imply the selection receipt uploads a patient file. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.
 
@@ -74,3 +74,16 @@ A tightly scoped native Windows dialog automation correction and bounded Linux W
 - **Quota discipline:** full historical Windows milestone suite intentionally skipped for targeted pushes; the final Windows-only run explicitly skipped already-passing Linux. No repeat testing requested after both platform jobs became green. Documentation closeout uses `[skip ci]`.
 - **Scope statement:** This closes the three remaining M16.3/M16.4 GUI verification tasks (native Windows dialog, signed app SDK, isolated Linux GUI). It does **not** implement or accept M16.5 Files-to-app drag/send, file-byte read, media upload, backend patient association, production promotion, or physical device certification. **G16 remains OPEN** until its separate remaining phases are implemented and accepted.
 - **Next session:** start M16.5 only, using these contract and signed-file-selection proofs as the baseline. Read current branch SHA and M16 plan; do not start M16.5 as part of this documentation handoff.
+
+
+## M16.5 current accepted checkpoint — 2026-10-22
+
+**Implementation:** `9425e0180088bc76041035a4e539e86ac73ec069` on `codex/milestone-16`; typed `electron/host/fileTransfer.ts` one-recipient handoff, active/signed/app-role session checks in runtime, shell-only Files Send with trusted activation, isolated app `dentalApp.onFilesReceived` metadata subscription and bounded ACK, typed IPC, cancellation and revoke-on-permission-loss. Existing Files browsing, M16.4 custom/native pickers, app sandboxing and media-upload denial remain intact. This is **metadata receipt delivery**, not a clinical file import, file-byte read or upload.
+
+**Windows:** [focused run `39781678031`](https://github.com/Business-It-Partners/dental-os/actions/runs/39781678031) `files-ui` passed 32/32 focused tests, build/typecheck and 18/18 private synthetic graphical checks including actual host Windows native picker, company-signed fixture, and Files explicit Send to that app.
+
+**Linux:** same run `linux-files-ui` passed 13/13 focused tests, build/typecheck and 8/8 private Xvfb X11 graphical checks including isolated signed receiving app and Files explicit Send. M16.4 retains its separate 7-check Linux Wayland baseline. The first M16.5 Linux attempt, `39779773853`, was **cancelled during Weston APT package downloads** (no GUI test executed); replaced with private X11 setup to conserve Actions minutes.
+
+**Known limits:** OS-native drag-and-drop between isolated `WebContentsView` windows was **not proven safe or implemented**; no physical Windows/Linux device claim, no file-byte consumption, no full milestone matrix, no Cloudflare/backend work or patient association. Focused successful runner evidence only; **G16 remains OPEN**.
+
+**Next phase, separate session:** M16.6 final integration/acceptance/evidence review and G16 closure decision. Do not start it automatically.

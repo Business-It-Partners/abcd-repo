@@ -144,3 +144,25 @@ Corrective fixture now provides a dedicated `Connect SDK` button activated only 
 - **Quota discipline:** full historical Windows milestone suite intentionally skipped for targeted pushes; the final Windows-only run explicitly skipped already-passing Linux. No repeat testing requested after both platform jobs became green. Documentation closeout uses `[skip ci]`.
 - **Scope statement:** This closes the three remaining M16.3/M16.4 GUI verification tasks (native Windows dialog, signed app SDK, isolated Linux GUI). It does **not** implement or accept M16.5 Files-to-app drag/send, file-byte read, media upload, backend patient association, production promotion, or physical device certification. **G16 remains OPEN** until its separate remaining phases are implemented and accepted.
 - **Next session:** start M16.5 only, using these contract and signed-file-selection proofs as the baseline. Read current branch SHA and M16 plan; do not start M16.5 as part of this documentation handoff.
+
+
+## M16.5 exact-source targeted acceptance — 2026-10-22
+
+**Source commit:** `9425e0180088bc76041035a4e539e86ac73ec069` on `codex/milestone-16`.
+**Targeted Actions:** [run `39781678031`](https://github.com/Business-It-Partners/dental-os/actions/runs/39781678031) — **success**, both `files-ui` (Windows 2022) and `linux-files-ui` (Ubuntu 24.04, private Xvfb X11) jobs. Regular full Windows milestone job of run `39781677759` was **skipped**, not duplicated. No historical full suite rerun.
+
+| Gate | Windows exact-source | Linux exact-source |
+| --- | --- | --- |
+| Focused Vitest | 6 files, **32 tests passed**, including 5 new Files-transfer contract/security tests | 2 files, **13 tests passed**, includes same 5 new transfer tests and existing 8 picker checks |
+| Build | `npm run build` (includes frontend and Electron typecheck) passed | `npm run build` passed |
+| Synthetic GUI | **18/18 checks passed** | **8/8 checks passed** |
+| Recipient positive case | Files UI clicked, synthetic X-ray selected, **Send to active eligible app** delivered opaque receipt to running company-signed SDK receiver in isolated WebContentsView | Same end-to-end Files → subscribed, isolated signed app flow |
+| Paths/clinical data | Synthetic temporary file and opaque metadata only; no absolute file path delivered to app | Synthetic temporary file and opaque metadata only |
+| Existing picker regressions | Actual parented Windows native dialog and synthetic signed app, custom picker and cancel still passed | Custom picker, cancellation, signed SDK access and delayed non-gesture refusal still passed |
+| Physical device/Wayland M16.5 | **Not run** on a physical Windows PC | **Not run** on physical device or Wayland for M16.5; earlier M16.4 private Wayland 7/7 remains separate evidence |
+
+**Tests actually exercised:** exact-owner and main-frame ACK; forged receiver, extra request keys/path injection and duplicate IDs refused; changed file refused at ACK; cancellation, window/recipient revocation, revoked permission and later re-grant cannot resurrect pending lease; timeout and missing ACK. These are focused host tests. Not every permission/session/app-update permutation was demonstrated graphically; full G16 matrix belongs to M16.6.
+
+**Unsuccessful infrastructure attempt retained:** first M16.5 source `9f0930aaea186a606478a04348a2f4c2724ae133`, [run `39779773853`](https://github.com/Business-It-Partners/dental-os/actions/runs/39779773853), Windows passed 32 focused tests, build and 18 GUI checks. The Linux job was **cancelled before any tests**, waiting for 94 Weston-related APT packages through `azure.archive.ubuntu.com` (slow downloads exhausted job time); cannot be counted as Linux verification. Correction switched only the synthetic Linux test environment to preinstalled private X11 and strengthened receipt revocation. No redundant Weston rerun was launched.
+
+**Excluded/unverified:** native drag-and-drop across isolated Electron views (not enabled or proven), raw file-byte consumption, file mutation, Cloudflare/R2 uploads, patient-file association, production promotion, all G16 integrated acceptance/resource/focus/physical-device cases. A delivered selection is only an in-memory metadata-only scoped receipt. **M16.5 explicit Send is accepted; G16 remains OPEN for M16.6.**
