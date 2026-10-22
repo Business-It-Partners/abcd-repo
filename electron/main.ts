@@ -226,7 +226,7 @@ ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknow
   if (x < 0 || y < 0 || width < 1 || height < 1 || x + width > w || y + height > h) throw new Error('Capture outside window');
   let image = await event.sender.capturePage({ x, y, width, height });
   if (runtime) image = await runtime.capture({x,y,width,height}, image);
-  if (!canUseWorkspace() || captureGeneration !== identityView().generation) throw new Error('Stale capture');
+  if (!canUseWorkspace() || captureGeneration !== identityView().generation || viewerSession) throw new Error('Stale or private capture');
   if (image.isEmpty()) throw new Error('Empty snapshot');
   return image.toDataURL();
 });

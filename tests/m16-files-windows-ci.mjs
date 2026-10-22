@@ -89,6 +89,12 @@ try{
   await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).waitFor({timeout:10000});
   check('Double-click opens separate managed Image Viewer above persistent Files',
     await frame.isVisible() && await viewer.getAttribute('data-phase')==='visible');
+  check('Viewer never appears in dock launcher inventory',
+    await page.locator('[data-dock-app="image-viewer"]').count()===0);
+  await viewer.getByRole('button',{name:'Maximize Image Viewer'}).click();
+  check('Viewer uses shared maximize window lifecycle',
+    await viewer.getAttribute('data-presentation')==='fullscreen');
+  await viewer.getByRole('button',{name:'Restore Image Viewer size'}).click();
   await viewer.getByRole('button',{name:'Zoom in'}).click();
   check('Viewer zoom control adjusts percentage',
     await viewer.getByLabel('Current zoom').innerText()==='125%');

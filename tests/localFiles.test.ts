@@ -249,6 +249,7 @@ describe('M16 trusted image viewer listing snapshots',()=>{
     expectCode(()=>svc.viewerListing(id,[image.id]),'NOT_FOUND');
   });
   it('rejects linked image entries without granting native paths',()=>{
+    if(process.platform==='win32')return; // unprivileged Windows CI cannot create symbolic links
     const {root,svc,id}=fixture();
     const external=path.join(root,'source.png');
     writeFileSync(external,'fixture');
