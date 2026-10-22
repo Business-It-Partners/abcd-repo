@@ -3,7 +3,7 @@
 **Date:** 2026-10-22. **Status:** Codex continuation in progress after M16.6; native drag feasibility reviewed and formally deferred for the current runtime; physical-device walkthrough NOT RUN. **Milestone:** M16/G16 still OPEN.
 **Branch:** `codex/milestone-16`.
 **Exact latest runtime-tested implementation:** `772a739ed3af3be4fd678f7ebd68baeceef2f954`; [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605), Windows/Linux success.
-**Current Image Viewer follow-up:** source `1ae45df4` has a passing local Linux build, 25 focused unit tests, 19 Files UI assertions and 11 signed-app/transfer UI assertions. The first Windows-only run found a stale thumbnail selector before viewer assertions; both Windows/Linux test drivers are corrected and the final tagged Windows check is pending. See the latest Image Viewer section in [verification evidence](VERIFICATION_EVIDENCE.md).
+**Current Image Viewer follow-up:** source `1ae45df4` has a passing local Linux build, 25 focused unit tests, 19 Files UI assertions and 11 signed-app/transfer UI assertions. Corrected test drivers passed targeted Windows Actions 39821015828: 47 focused security tests, build/typecheck and 32/32 private GUI assertions. Physical-device acceptance remains NOT RUN. See the latest Image Viewer section in [verification evidence](VERIFICATION_EVIDENCE.md).
 **Evidence:** [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). **Contract:** [ARCHITECTURE.md](ARCHITECTURE.md). **Scope:** [PLAN.md](PLAN.md).
 
 ## 1. Do not assume this is already certified
@@ -54,7 +54,7 @@ All physical cases in sections 3.A–3.C remain **NOT RUN / pending**, including
 
 **Work pattern:** Understand → Implement → Validate → Push → Verify → Record evidence → Decide gate. One bounded task at a time; never use production patient data or promote Cloudflare production in this local-files milestone.
 
-**M16 preview relaunch (2026-10-22):** after the gallery follow-up checks and Windows hosted verification, the user-requested preview was started from `/home/master-x/.codex/worktrees/milestone-16/fewa_business_os` at source/test commit `36c45cc7962088fde4e27f351e723311f29ff7c9` with `npm start -- --user-data-dir=/tmp/dental-os-m16-preview.KC7vex`. It uses normal app mode without `--files-fixtures`, a separate temporary profile, and no test-clinic credentials or real files. The M16 window is running for the user to inspect; an existing Dental OS instance from another worktree was left untouched. This visual restart is not the physical walkthrough: no login, safe-file browsing, picker, Send, physical device matrix or G16 case was performed. Physical acceptance remains NOT RUN and G16 remains OPEN.
+**M16 preview stop/relaunch (2026-10-22):** the M16 preview at `/home/master-x/.codex/worktrees/milestone-16/fewa_business_os` had used the separate profile `/tmp/dental-os-m16-preview.KC7vex` in normal mode, without `--files-fixtures`, test-clinic credentials or real files. After the latest hosted checks, its main Electron process received `SIGTERM`; the M16 process tree exited and the separate platform-closeout Dental OS instance remained untouched. Relaunch the M16 preview after this documentation closeout using the same profile to display the latest tested source. This visual restart is not the physical walkthrough: no login, safe-file browsing, picker, Send, physical device matrix or G16 case was performed. Physical acceptance remains NOT RUN and G16 remains OPEN.
 
 ## 4. Additional Image Viewer acceptance — new after theme commit
 
