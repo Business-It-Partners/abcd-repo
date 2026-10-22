@@ -79,6 +79,9 @@ export class ClinicClient {
       throw new ClinicError('INVALID_RESPONSE', 'The save receipt is invalid. Check the original save.', 'unknown', command.operationId);
     }
     if (result.status === 409) throw new ClinicError('CONFLICT', 'This record changed. Refresh it and try again.', 'rejected', command.operationId);
+    if (result.status === 401) throw new ClinicError('AUTH_REQUIRED', 'Your clinic session no longer permits this save.', 'rejected', command.operationId);
+    if (result.status === 403) throw new ClinicError('FORBIDDEN', 'Your clinic role does not permit this save.', 'rejected', command.operationId);
+    if (result.status >= 400 && result.status < 500 && result.status !== 408) throw new ClinicError('VALIDATION', 'The clinic rejected this save. Review the details and refresh before trying again.', 'rejected', command.operationId);
     if (result.status < 200 || result.status >= 300) {
       throw new ClinicError('INVALID_RESPONSE', 'The save receipt is invalid. Check the original save.', 'unknown', command.operationId);
     }

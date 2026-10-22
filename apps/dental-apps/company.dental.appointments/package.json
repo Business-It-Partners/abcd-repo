@@ -1,9 +1,12 @@
 {
   "name": "company.dental.appointments",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Static Appointments staging preview for Dental OS.",
+  "description": "Appointments app package for Dental OS.",
+  "type": "module",
   "scripts": {
+    "build": "node ../../../tools/app-packages/build-appointments.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test tests/*.test.mjs"
   }
 }

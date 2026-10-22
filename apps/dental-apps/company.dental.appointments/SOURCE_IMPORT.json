@@ -1,0 +1,63 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "revision": "f0d059d36540b4b6907cace089085ce0df62d454",
+  "m14OsRevision": "6fd362ec51b3f4c256750202a10c16d4ece05518",
+  "m15PlatformBaseRevision": "edc621420fd36f7a073bb61365afbb1ce3f90f7f",
+  "method": "Reviewed pinned SaaS behavior and selectively adapted the workflow to the current Dental OS SDK. The active M14 Appointments directory is still the static 1.0.0 shell; no functional M14 implementation or platform code was imported.",
+  "imports": [
+    {
+      "source": "apps/clinic-web/src/features/appointments/api.ts",
+      "gitBlob": "d2d373ea823e7ad3d8c232fe758dc14d7601a8a5",
+      "sha256": "5084633940117146a25e92520f6a4beedcc3af865c5ae5a49a500180a9dccaca",
+      "destination": "src/appointments.ts",
+      "disposition": "Routes, methods, query parameters and payload contract reviewed; Firebase/HTTP wrapper replaced by ClinicClient."
+    },
+    {
+      "source": "apps/clinic-web/src/features/appointments/types.ts",
+      "gitBlob": "ff33d9c9844dcf37d187f3ef133e2989a906eb20",
+      "sha256": "af19741516d7e5ae784dc360e91d73cea10a6674ea484ef8a413252e49568016",
+      "destination": "src/appointments.ts",
+      "disposition": "Appointment, status, bucket, summary and staff reference fields adapted; no patientId added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/appointments/model/appointmentData.ts",
+      "gitBlob": "561ecd4d93fe72e17ba234e193671cacd8e6f325",
+      "sha256": "56a8fef4c01d986d8017c398c32f6e60e0d0df74a26db94d1ba1cc8a7739b7d0",
+      "destination": "src/appointments.ts and src/main.tsx",
+      "disposition": "Date-only storage, minute-of-day time, open statuses, local overlap warning and 09:00–19:00 clinic-day validation reviewed and adapted."
+    },
+    {
+      "source": "apps/clinic-web/src/features/appointments/components/AppointmentsView.tsx",
+      "gitBlob": "32b818b01098d3ba5cc2903b92744de5fc545dae",
+      "sha256": "2bd04484a7e1e9c80f11075b83d95da4641c4b5f63b90a32eac162f137a71d15",
+      "destination": "src/main.tsx and src/styles.css",
+      "disposition": "Summary, day/range, doctor, status and responsive list behavior adapted to the managed app shell."
+    },
+    {
+      "source": "apps/clinic-web/src/features/appointments/components/BookAppointmentModal.tsx",
+      "gitBlob": "e77ddf03e1a8912109a6027f72b9b24806901e0b",
+      "sha256": "5ce0f92f2d2da3da7d00ff361512e7fbf2c0e2791fc0d83cbc23d3666459ee1d",
+      "destination": "src/main.tsx and src/draftSafety.tsx",
+      "disposition": "Typed booking name, optional contact, date/time, doctor, reason, overlap warning and discard safety adapted; patient search/stub creation explicitly excluded."
+    },
+    {
+      "source": "apps/clinic-web/src/features/appointments/appointments.module.css",
+      "gitBlob": "43fd756eea1f2b3e99c9168ff98b50245f847cbb",
+      "sha256": "7dffac76c8d37b771b76f93627e0e4898ce5375ac7a581c185819554d65aa9e7",
+      "destination": "src/styles.css",
+      "disposition": "Visual behavior reviewed; styles rebuilt for the Dental OS shared clinic UI."
+    }
+  ],
+  "contractSources": [
+    { "source": "apps/platform-worker/src/clinic/appointments/appointments.controller.ts", "gitBlob": "866fbf3e0ddece903de03894c050962a55889434" },
+    { "source": "apps/platform-worker/src/clinic/appointments/appointments.service.ts", "gitBlob": "e7b41e446ac944159385a380856e03d230082c60" },
+    { "source": "apps/platform-worker/src/clinic/appointments/appointments.types.ts", "gitBlob": "9b606432083aded4ac3bea195ce322d27596a111" },
+    { "source": "apps/platform-worker/src/clinic/staff/staff.controller.ts", "gitBlob": "f4ed09084d4e2d72f0912e9a75fe2b015cdbf70f" }
+  ],
+  "excluded": [
+    "Firebase identity and token access",
+    "Direct HTTP transport and API base URL",
+    "Patient search, patient record creation and patientId linkage",
+    "M14 Electron, preload, broker enforcement and runtime code"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "passed": false,
+  "date": "2026-10-22",
+  "sourceHead": "edc621420fd36f7a073bb61365afbb1ce3f90f7f",
+  "environment": "cloudfare-staging",
+  "appId": "company.dental.appointments",
+  "preflight": {
+    "pinnedSigner": {
+      "path": "/home/master-x/.local/share/dental-os-release-keys/m08-staging-ed25519.pem",
+      "mode": "0600",
+      "bytes": 119,
+      "regularFile": true,
+      "singleLink": true,
+      "matchesPinnedKeyId": "company-staging-m08-20261016"
+    },
+    "catalogue": {
+      "signatureVerified": true,
+      "sequence": 23,
+      "issuedAt": 1792684342674,
+      "expiresAt": 1792770742674,
+      "releaseCount": 14,
+      "appointmentsVersion": "1.0.0",
+      "appointmentsPackageSha256": "be60668d772e8b4ab077daa2daf4e571d90233af83537c2bd46ff0f9ed7b4ae4"
+    },
+    "updatePolicy": {
+      "signatureVerified": true,
+      "sequence": 23,
+      "appCount": 14,
+      "appointmentsCapabilities": [],
+      "appointmentsReleases": []
+    },
+    "wrangler": {
+      "whoamiExitCode": 0,
+      "stagingAccountMatched": true,
+      "deploymentPerformed": false
+    },
+    "clinicCredential": {
+      "requiredEnvironmentVariable": "DENTAL_OS_STAGING_CREDENTIAL_FILE",
+      "configured": false,
+      "existingProtectedProfileFound": false,
+      "noCredentialContentsReadOrRecorded": true,
+      "noCredentialCopiedToNewFile": true
+    }
+  },
+  "outcome": "Stopped before signing or publishing an Appointments package and before Store acceptance. The authenticated staging runner requires an existing protected clinic credential file, and none was configured or found in the checked local configuration locations.",
+  "stagingWrites": 0,
+  "productionTouched": false,
+  "githubActionsRun": false,
+  "nextRequiredInput": "Path to the existing mode-0600 staging credential JSON file; do not send the secret contents."
+}

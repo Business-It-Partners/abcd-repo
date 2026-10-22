@@ -2,7 +2,7 @@
   "format": 1,
   "appId": "company.dental.appointments",
   "title": "Appointments",
-  "description": "Appointments staging preview",
+  "description": "Book and manage the clinic appointment diary.",
   "icon": "assets/appointments.png",
   "anyCapabilities": ["appointments.access"],
   "excludedRoles": [],
