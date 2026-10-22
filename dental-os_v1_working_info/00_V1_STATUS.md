@@ -1,5 +1,7 @@
 # Dental OS V1 — Global Status
 
+**M16 started (2026-10-22):** codex/milestone-16 branched from M15 at 9f6aab8d. [M16 architecture](milestone-16-file-acquisition/ARCHITECTURE.md) and [M16 plan](milestone-16-file-acquisition/PLAN.md) define read-only Files, custom/native file picker and scoped OS-mediated local file selection. **Documentation-only Phase M16.1; no filesystem runtime implementation or G16 acceptance.** Existing media-upload deferral is unchanged.
+
 **Latest M15 (2026-10-22):** declared non-upload implementation and automated verification pass on `8a0b07a2`, including the full Windows workflow, Linux build/437 units and scoped real staging JSON proof. Independent source/evidence review is pending; user manual review follows technical verification. Uploads are explicitly deferred/denied; M14 functional/public-release and M20/G21 gates remain separate. [Current M15 status](milestone-15-platform-closeout-and-integration/STATUS.md).
 
 
