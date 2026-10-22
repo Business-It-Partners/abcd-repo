@@ -22,3 +22,14 @@ GitHub Actions run [39751236251](https://github.com/Business-It-Partners/dental-
 M16.1 source analysis additionally examined the existing SDK, signed package and signed update-policy authority, session access, WebContentsView lifecycle, shell preload and Electron native dialog contracts. The architecture resolves the local selection grant/wire without changing backend contracts.
 
 The previous doc-check pass is tied to its recorded SHA, **not automatically to subsequent design-document edits**. Following final commit, verify exact modified file links, milestone structure and source diff; record that result separately. No live patient files, network credentials, uploads or deployments were used.
+
+## M16.1 final baseline and M16.2 focused evidence — 2026-10-22
+
+- The later M16.1 documentation checkpoint [Windows run 39753231638](https://github.com/Business-It-Partners/dental-os/actions/runs/39753231638), commit `5790893b2c227957be7260e8e190e8c621c13af6`, completed **successfully**. This supersedes the older failed/cancelled documentation runs; neither run tests M16.2 code.
+- M16.2 development used isolated **synthetic host directories**, not real clinic data. Strict TypeScript check of the prototype new host service completed successfully with Node 22 / tsc 5.8:
+  `tsc --strict --noEmit --target ES2022 --module Node16 --moduleResolution Node16 --esModuleInterop --skipLibCheck --types node --typeRoots /usr/local/slides_js/node_modules/@types /mnt/data/m16_work/electron/host/localFiles.ts`
+- Five independent Node-native smoke/security checks on the locally developed equivalent adapter passed: nested opaque listings and no path leakage, one-use sorted pagination, per-recipient receipts/expiry/change denial, symlink refusal, and bounded large-directory refusal. Local development tests are **not** a claim of exact final remote source validation.
+- A Vitest-based host-only test suite was added to the branch for exact-source regression: malformed/path input, unauthorized recipient, frame/version/window/session mismatch, expiry and revocation, changed file, symbolic links, directory mutation, cursor replay, resource cap and disappearing root.
+- No browser, Electron GUI, Firebase, Cloudflare or staging backend was accessed for M16.2 implementation. No upload/write API became available.
+
+**Pending exact-source checks:** TypeScript/build, Vitest, Windows CI and any security gaps seen there must be inspected at the final commit. Full G16 remains open; custom picker/Files UI/native drag and remote upload are not verified. One consolidated branch push is used to minimize GitHub Actions consumption.
