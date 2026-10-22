@@ -87,6 +87,10 @@ try {
   await viewer.getByRole('button', { name: 'Rotate picture right' }).click();
   check('Image Viewer rotates the displayed picture',
     (await viewer.getByRole('img', { name: 'm16-synthetic-xray.png' }).getAttribute('style'))?.includes('rotate(90deg)'));
+  await viewer.getByRole('button', { name: 'Fit image to window' }).click();
+  const fitStyle=await panCanvas.getAttribute('style');
+  check('Fitting the image recenters it and restores 100% zoom',await viewer.getByLabel('Current zoom').innerText()==='100%'
+    &&/translate3d\(0px, 0px, 0(?:px)?\)/.test(fitStyle??''));
   const viewerCaptureDenied = await page.evaluate(async generation => {
     try { await window.desktop.capture({ x: 0, y: 40, width: 160, height: 160 }, generation); return false; }
     catch { return true; }

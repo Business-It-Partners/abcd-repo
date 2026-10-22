@@ -4,6 +4,8 @@
 **Branch:** `codex/milestone-16`.
 **Exact latest runtime-tested implementation:** `772a739ed3af3be4fd678f7ebd68baeceef2f954`; [Actions 39785068605](https://github.com/Business-It-Partners/dental-os/actions/runs/39785068605), Windows/Linux success.
 **Current Image Viewer follow-up:** the earlier object-URL renderer showed a broken image in the user's live screenshot. That defect was reproduced with a synthetic PNG and corrected by drawing the bounded decoded frame directly to canvas. Exact source `1151d58f8048bafeb78f876b80676c6ed121f8ce` passes local build, 38 focused file/picker tests and 20/20 private Linux Files UI assertions; Windows-only Actions 39823039280 passed 47 focused security tests, build/typecheck and 33/33 private Windows GUI assertions. Physical-device acceptance remains NOT RUN. See [verification evidence](VERIFICATION_EVIDENCE.md).
+
+**Zoomed-image pan follow-up:** source `78fcc9226e1d8f1ac5c1c4f235f8bef5699836d1` adds bounded mouse-drag panning, preserves image coverage at the viewport edges, and recenters/reclamps after fit, rotation, image changes and viewer resize. Local build passed. Windows-only Actions `39825484949` passed the pan assertion but failed the following fit assertion because it compared CSS `0` with Chromium's `0px`; the implementation build and focused security checks passed. The test now accepts either serialization, and the private Linux Files UI check passes 22/22. Corrected Windows-only verification is pending; physical pan inspection remains NOT RUN; G16 remains OPEN.
 **Evidence:** [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md). **Contract:** [ARCHITECTURE.md](ARCHITECTURE.md). **Scope:** [PLAN.md](PLAN.md).
 
 ## 1. Do not assume this is already certified
@@ -59,6 +61,6 @@ All physical cases in sections 3.A–3.C remain **NOT RUN / pending**, including
 ## 4. Additional Image Viewer acceptance — new after theme commit
 
 - [ ] On the physical Dental OS build, single-click supported/unsupported files: selection only; double-click folders: navigate; double-click PNG/JPEG/WebP/GIF/BMP: dedicated OS-managed Image Viewer above persistent Files. Check unsupported TIFF/DICOM/document icons and prior behavior remain.
-- [ ] Fit landscape and EXIF-rotated portrait images; zoom (+/–), reset, rotate both directions, next/previous within current sorted/paged listing, toolbar focus and keyboard handling. Test at narrow/maximized window size.
+- [ ] Fit landscape and EXIF-rotated portrait images; zoom (+/–), drag-pan while zoomed, verify viewport edges stay covered, reset/recenter, rotate both directions, next/previous within current sorted/paged listing, toolbar focus and keyboard handling. Test pan bounds after resize and at narrow/maximized window size.
 - [ ] Close viewer then continue Files, relaunch a different image, change clinic generation/sign out while open, alter/remove file during display, and verify fail-closed behavior. No viewer picture in dock, overview, minimized previews, shell screenshots or diagnostics; no viewer API exposed in signed Dental-app renderer.
 - [ ] Test corrupt, multi-frame, oversized, linked/junction and replacement-race cases with safe nonclinical fixtures. Record source SHA, supported OS and privacy-safe PASS/FAIL evidence. The hosted Windows viewer job alone will not complete these device checks or G16.

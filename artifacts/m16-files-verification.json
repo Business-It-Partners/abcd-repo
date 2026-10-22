@@ -13,6 +13,7 @@
     "Image Viewer zoom control updates its displayed scale",
     "Dragging a zoomed image pans it while keeping the viewport covered",
     "Image Viewer rotates the displayed picture",
+    "Fitting the image recenters it and restores 100% zoom",
     "Private Image Viewer blocks shell screenshot capture while its picture is visible",
     "Closing Image Viewer releases its session while Files stays open",
     "Back and forward navigation reuse bounded file listings",

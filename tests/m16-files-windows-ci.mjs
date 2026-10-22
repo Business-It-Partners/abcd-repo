@@ -124,8 +124,9 @@ try{
   await viewer.getByRole('button',{name:'Rotate picture right'}).click();
   check('Viewer rotates image', (await viewer.getByRole('img',{name:'m16-synthetic-xray.png'}).getAttribute('style'))?.includes('rotate(90deg)'));
   await viewer.getByRole('button',{name:'Fit image to window'}).click();
+  const fitStyle=await panCanvas.getAttribute('style');
   check('Viewer fits image to window and recenters it',await viewer.getByLabel('Current zoom').innerText()==='100%'
-    &&(await panCanvas.getAttribute('style'))?.includes('translate3d(0px, 0px, 0)'));
+    &&/translate3d\(0px, 0px, 0(?:px)?\)/.test(fitStyle??''));
   await viewer.getByRole('button',{name:'Next picture'}).click();
   await viewer.getByRole('img',{name:'m16-synthetic-xray-alt.png'}).waitFor({timeout:10000});
   await viewer.getByRole('button',{name:'Previous picture'}).click();

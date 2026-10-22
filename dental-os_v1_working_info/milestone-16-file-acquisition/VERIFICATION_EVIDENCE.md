@@ -270,3 +270,14 @@ The user-provided live screenshot showed a broken image in the Image Viewer. A l
 - `python3 tools/check-dental-docs.py` — **PASS**. No further runtime suite or Actions rerun was needed.
 
 This closes the reported viewer rendering defect on the tested synthetic displays. It does not certify a physical workstation: device walkthrough remains **NOT RUN**, native cross-view drag is formally deferred, and **G16 remains OPEN** until the agreed physical-device evidence and drag disposition are accepted. No merge to `main` was made.
+
+### Zoomed-image drag-pan follow-up — 2026-10-22
+
+- **Exact pushed source:** `78fcc9226e1d8f1ac5c1c4f235f8bef5699836d1` on `codex/milestone-16`.
+- `npm run build` — **PASS**, including renderer and Electron TypeScript checks.
+- `npm run test:files` — **PASS**, private headless GNOME display, **21/21 assertions**, `errors: []`. The new assertion drags the synthetic picture at 125% zoom and confirms the moved image still covers all four viewport edges. The generated evidence is `artifacts/m16-files-verification.json`.
+- `node --check tests/m16-files-windows-ci.mjs` and `git diff --check` — **PASS**.
+- The first pan attempt exposed that an oversized grid item is aligned to the viewport's top edge rather than centered. The pan clamp now uses the canvas's actual untransformed layout position and constrains each axis against the real viewport bounds; the final private UI run passed.
+- Windows-only Actions `39825484949` on this exact pushed source passed the focused security tests and build/typecheck. The image drag-pan assertion passed; the following fit/recenter assertion failed because it expected a CSS transform z component written as `0`, while Chromium serialized the same zero as `0px`. The code behavior was not implicated. The existing M16 Linux job and ordinary broad Windows workflow were skipped.
+- The fit assertion now accepts either CSS serialization, and the local private Linux Files scenario passes **22/22** including drag coverage and fit/recenter. A single corrected Windows-only run is pending; no source runtime change was needed.
+- Physical-device image panning remains **NOT RUN**; no clinical image or patient data was used. This UI fix does not implement Files-to-app native drag. **G16 remains OPEN** pending the separate physical-device walkthrough and agreed drag disposition.

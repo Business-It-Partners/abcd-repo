@@ -19,6 +19,8 @@ Latest verified follow-up commit is `36c45cc7962088fde4e27f351e723311f29ff7c9`; 
 
 After the requested graceful stop, the M16 preview was relaunched from its separate worktree at documentation commit `65585535b60fcfa7cb04b27b7a77a642f086ee02` using the existing temporary profile, with no test-fixture mode. Its Electron window process tree is running for visual review; the other active worktree/OS instance remains untouched. This preview is not physical-device acceptance.
 
+**Zoomed-image drag-pan follow-up:** implementation `78fcc9226e1d8f1ac5c1c4f235f8bef5699836d1` is pushed to `codex/milestone-16`. Local build passed and private Linux Files UI now passes 22/22 assertions, including drag-pan, viewport-edge coverage and fit/recenter. Windows-only Actions `39825484949` passed security/build and drag assertions, but a test expectation for CSS zero formatting failed (`0` versus `0px`); the driver fix is queued for one Windows-only retry. Linux and broad Windows jobs are skipped for quota. Physical-device panning and G16 acceptance remain open.
+
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
 
 ## Staged app-update contract — 2026-10-21

@@ -195,3 +195,12 @@ This is a UI follow-up within M16, not a new acquisition capability. The Files g
 - [x] Record exact SHA and CI results; keep G16 OPEN because physical-device acceptance remains NOT RUN and native cross-view drag remains deferred. Windows-only Actions 39821015828 passed on `72967aa4e7c721088725b018f929d113052e317a`; hosted Linux was skipped to conserve quota, while the private local Linux scenario passed 11/11.
 
 No test-clinic data or staging/production services are involved. Research notes are retained in [Finder UI/UX research](FINDER_UI_UX_RESEARCH.md). The user explicitly asked to see the updated OS after the work; restart only the separate M16 preview after checks, without touching the primary checkout or any other worktree.
+
+## Image Viewer zoomed-image panning — 2026-10-22
+
+- [x] Add primary-mouse drag panning only while zoomed, with pointer capture, cursor feedback, and bounds based on the image's actual layout position so dragging cannot uncover blank margins.
+- [x] Recenter when fitting, rotating, or changing images; reclamp when the viewer viewport changes size.
+- [x] Local Linux build and private Files UI verification passed; the exact synthetic panning assertion is recorded with the follow-up commit.
+- [x] Run the quota-conscious Windows-only Actions job on source `78fcc9226e1d8f1ac5c1c4f235f8bef5699836d1`; focused security tests and build passed, and the new drag-pan assertion passed. The run failed only because its fit/recenter assertion expected CSS `0` instead of Chromium's equivalent `0px` serialization.
+- [x] Correct the assertion to accept either zero serialization and add local fit/recenter coverage; the private Linux Files scenario now passes 22/22. A single corrected Windows-only run is pending; Linux and broad historical Windows workflows remain intentionally skipped.
+- [ ] Repeat the viewer pan interaction during the physical-device handoff using safe non-clinical images. Device acceptance remains NOT RUN and **G16 remains OPEN**.
