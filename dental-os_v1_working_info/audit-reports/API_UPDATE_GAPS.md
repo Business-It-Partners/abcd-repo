@@ -3,11 +3,15 @@
 **Date:** 2026-10-21. **Source:** M13 `963633620d9fa620979bd33fc292949ab1a6c2e6` plus the local inputs identified in [SOURCE_BASELINE.json](SOURCE_BASELINE.json).
 **Method:** source/contract inspection only. No tests, live API calls, signing or runtime changes were performed for this report.
 
+## Follow-up disposition — 2026-10-23
+
+The per-ID clinic API registration gap identified below was resolved in the M15 worktree's 2026-10-23 local follow-up. A verified first-party package selects exactly one existing `clinic.app.*` family capability; the host resolves its existing role, media-kind and closed JSON-route policy from that family rather than from the app ID. New company IDs can therefore use an already-shipped family and route contract through the existing company-signed package/catalogue/update-policy flow. The exact format-2 release grant, current clinic session permissions, additional Worker capabilities, tenant checks and closed route validation remain required. Multi-family packages are refused. The build and 458 unit tests pass; see M15 status/evidence. This does not add arbitrary route manifests or authorize new host capabilities. Staging publication and a M17 live install are still unverified.
+
 ## Independent permission evolution
 
 The existing broker is a substantial foundation. `electron/sdk/broker.ts` binds caller/frame/origin, connection and session generation; obtains credentials in the host; bounds requests/responses; denies redirects and forbidden returned credential/upload-handle fields; and tracks in-flight/unknown writes and original idempotency keys. M04/M05/M09/M10 evidence remains relevant for those recorded contracts.
 
-`electron/sdk/appPolicy.ts` still contains the eleven named clinic app IDs, family capability mapping and API path grants. Most app grants are route-prefix families, without per-route method restrictions. Follow-ups has a narrower special handler with method/query rules. `allowedClinicApiPath` and `appOperation` are consulted by the broker, so signing a new package does not independently teach the unchanged desktop a new clinic API app identity or route contract.
+At the time of this 2026-10-21 audit, `electron/sdk/appPolicy.ts` contained the eleven named clinic app IDs, family capability mapping and API path grants. That per-ID host lookup is the issue addressed by the 2026-10-23 follow-up above. The route contract itself remains host-owned and closed; a new family or route contract still needs a platform change.
 
 This does not contradict M11's generic installation proof: M11 permits generic package onboarding/runtime identity, while this clinic API policy remains separately compiled. The two capabilities need separate acceptance labels.
 
@@ -15,7 +19,7 @@ This does not contradict M11's generic installation proof: M11 permits generic p
 | --- | --- | --- |
 | Trusted app/API permission contract | Signed package capabilities alone do not define independently evolving clinic routes; current policy is host source | Choose a versioned, bounded first-party approval mechanism, with explicit host enforcement and Worker authority. Record who may approve/change a grant and its compatibility rules. No arbitrary app self-authorization. |
 | Precise route/method authority | Most app families use prefixes; Follow-ups is special-cased | Prove exact approved route/method/parameter behavior, plus undeclared, encoded/traversal, role/session and compatibility negatives. Preserve credential secrecy. |
-| Actual independence | New generic installable app IDs can still lack compiled clinic API policy | A genuinely new approved signed API-enabled sample and a compatible API extension must run on the same unchanged desktop source. An existing pre-registered sample alone is insufficient. New native powers may still legitimately require a platform update. |
+| Actual independence | Generic package onboarding was independent, while clinic API identity still had a per-ID host map | Prove a genuinely new approved signed API-enabled sample is mapped by its signed existing-family capability on unchanged host source. New host powers or route contracts still require a platform update. |
 | Material write outcome propagation | Broker preserves outcome/key metadata; external app adapters are unfinished | Demonstrate the SDK contract and representative adapter preserve original operation identity and pending/unknown outcomes across timeout, close, lock and update transitions. App coordinator owns app adapter fixes. |
 
 No route-list manifest format or remote permission-control design is selected by this audit. Those require a concrete architecture decision before implementation.

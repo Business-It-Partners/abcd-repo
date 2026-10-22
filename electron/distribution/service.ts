@@ -3,7 +3,7 @@ import { PackageRegistry } from '../packages/registry';
 import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
 import { verifyUpdatePolicy, allowUpdatedPackage, apiReleaseGrantForPackage, apiOperationsForPackage, apiReleaseGrantMatchesCatalogue, type UpdatePolicy } from './updatePolicy';
-import { appOperation } from '../sdk/appPolicy';
+import { clinicAppFamily } from '../sdk/appPolicy';
 import { apiOperations as apiOperationIds, type Operation } from '../sdk/contracts';
 import { parseDentalAppMetadata } from '../packages/appMetadata';
 import type { StoreResult, StoreView } from './contracts';
@@ -31,15 +31,19 @@ export class DistributionService {
  subscribe(fn: (v: StoreView) => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
  view(): StoreView {
   const releases = (this.catalogue?.releases ?? []).filter(r => {
-   const family = r.capabilities.filter(capability => capability.startsWith('clinic.app.'));
-   return !family.length || family.some(capability => this.identity.allowed?.(capability) !== false);
+   const family = clinicAppFamily(r.capabilities);
+   return !family || this.identity.allowed?.(family) !== false;
   });
   const apps = releases.map(r => {
    const pendingVersion=this.pendingVersions.get(r.id)??null;
    return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
   });
-  for (const [id, version] of this.installed) if (!apps.some(a => a.id === id) && (!appOperation(id) || this.identity.allowed?.(appOperation(id)!) !== false)) {
-   let title=id;try{title=parseDentalAppMetadata(this.registry.inspectPackage(id))?.title??id;}catch{/* Keep the safe ID fallback if verified metadata is unavailable. */}
+  for (const [id, version] of this.installed) {
+   if (apps.some(a => a.id === id)) continue;
+   let title=id;
+   let family: ReturnType<typeof clinicAppFamily>;
+   try{const verified=this.registry.inspectPackage(id);title=parseDentalAppMetadata(verified)?.title??id;family=clinicAppFamily(verified.capabilities);}catch{/* Keep the safe ID fallback if verified metadata is unavailable. */}
+   if(family && this.identity.allowed?.(family)===false) continue;
    const pendingVersion=this.pendingVersions.get(id)??null;
    apps.push({ id, title, description: 'Installed company app.', version, notes: 'Catalogue currently unavailable.', capabilities: [], installedVersion: version, activeVersion: version, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(id), trialVersion: this.trialVersions.get(id)??null, knownGoodVersion: this.knownGoodVersions.get(id)??null, available: false, reason: 'Refresh the catalogue to manage this app.' });
   }

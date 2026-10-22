@@ -11,16 +11,17 @@ import { noWatermark, type Catalogue } from '../electron/distribution/catalogue'
 import { staging } from '../electron/sdk/environment';
 import { sampleAppointment } from '../electron/sdk/fixtures';
 import type { ApiOperationId, Operation } from '../electron/sdk/contracts';
-import { appOperation } from '../electron/sdk/appPolicy';
+import { clinicAppFamily } from '../electron/sdk/appPolicy';
 
 const now = 1_800_000_000_000;
 const appId = 'company.dental.p04-probe'; // Deliberately absent from the compiled clinic app map.
 const pair = generateKeyPairSync('ed25519');
 const keyId = 'company';
-const caps: Operation[] = ['clinic.api.request', 'appointments.list', 'appointments.setStatus'];
+const caps: Operation[] = ['clinic.api.request', 'clinic.app.appointments', 'appointments.list', 'appointments.setStatus'];
 const trust: TrustPolicy = {
   keys: { [keyId]: { publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString(), publisher: 'company' } },
-  apps: { [appId]: { publisher: 'company', capabilities: caps } },
+  apps: {},
+  companyApps: { publisher: 'company', capabilities: caps },
 };
 let root = '';
 let registry: PackageRegistry;
@@ -77,6 +78,7 @@ function client(lease: Lease) {
   const sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://p04/index.html' };
   const identity: Identity = {
     allowed: () => true,
+    allowedClinicRequest: () => true,
     snapshot: () => ({ generation: 1, active: true, userLabel: 'Synthetic clinician', clinicLabel: 'Synthetic clinic' }),
     credential: async () => { credentialCalls++; return 'synthetic-token'; },
   };
@@ -123,10 +125,11 @@ afterEach(() => {
 describe('release-scoped first-party API authority', () => {
   it('grants a new first-party app only its exact signed API and does not treat generic transport as authority', async () => {
     const { first } = setup();
-    expect(appOperation(appId)).toBeUndefined();
     expect(registry.install(first)).toBeTruthy();
     const lease = registry.launch(appId), app = client(lease);
     try {
+      expect(lease.manifest.appId).toBe(appId);
+      expect(clinicAppFamily(lease.capabilities)).toBe('clinic.app.appointments');
       expect(app.capabilities).toContain('appointments.list');
       expect(app.capabilities).not.toContain('appointments.setStatus');
       expect(app.capabilities).not.toContain('clinic.api.request');

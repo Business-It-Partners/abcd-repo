@@ -8,9 +8,11 @@ import { clinicRequestAllowed } from '../electron/sdk/appPolicy';
 import { ApiBroker, type Identity, type Transport } from '../electron/sdk/broker';
 import { staging } from '../electron/sdk/environment';
 import type { ApiOperationId, Operation } from '../electron/sdk/contracts';
+import type { ClinicAppFamily } from '../electron/sdk/appPolicy';
 
 const id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const app = (name: string) => 'company.dental.' + name;
+const app = (name: string) => `clinic.app.${name}` as ClinicAppFamily;
+const dynamicAppId = 'company.dental.m17-finance-suite';
 describe('closed clinic JSON route contract', () => {
   it.each([
     ['followups', 'GET', '/v1/follow-ups?date=2026-10-22'],
@@ -56,7 +58,7 @@ describe('closed clinic JSON route contract', () => {
     ['finance', 'GET', '/v1/clinic/transaction-record?month=2026-10'],
     ['unknown', 'GET', '/v1/follow-ups'],
   ])('denies %s %s %s', (name, method, path) => {
-    expect(resolveClinicJsonRoute(app(name), path, method)).toBeUndefined();
+    expect(resolveClinicJsonRoute(name === 'unknown' ? undefined : app(name), path, method)).toBeUndefined();
   });
 
   it('requires the Worker capability for sensitive reference reads in addition to app access', () => {
@@ -76,7 +78,7 @@ function client(granted = true, authorize?: (operation: ApiOperationId) => boole
   const identity: Identity = {
     snapshot: () => ({ generation: 1, active, userLabel: 'Synthetic', clinicLabel: 'Synthetic' }),
     allowed: () => true,
-    allowedClinicRequest: (appId, path, method) => clinicRequestAllowed(appId, 'admin', capabilities, path, method),
+    allowedClinicRequest: (family, path, method) => clinicRequestAllowed(family, 'admin', capabilities, path, method),
     credential: async () => { credentials++; return 'synthetic-secret'; },
   };
   const sent: RequestInit[] = [];
@@ -85,7 +87,7 @@ function client(granted = true, authorize?: (operation: ApiOperationId) => boole
     return transport ? transport(url, init) : Response.json({ staff: [] });
   });
   const packageCapabilities: Operation[] = ['clinic.api.request', 'clinic.app.finance'];
-  broker.register({ sender, frame, origin: caller.url, appId: app('finance'), appVersion: '1.0.0', capabilities: packageCapabilities,
+  broker.register({ sender, frame, origin: caller.url, appId: dynamicAppId, appVersion: '1.0.0', capabilities: packageCapabilities,
     authorizeApiOperation: operation => granted && operation === 'clinic.api.request' && (authorize?.(operation) ?? true), report: () => {} });
   const connected = broker.connect(caller, { major: 1, minor: 2 }); if (!connected.ok) throw Error('Fixture handshake');
   let requestId = 0;
@@ -101,12 +103,12 @@ describe('signed clinic JSON entry point dispatch', () => {
     const pair = generateKeyPairSync('ed25519'), keyId = 'company', now = Date.now();
     const caps: Operation[] = ['clinic.api.request', 'clinic.app.finance'];
     const trust: TrustPolicy = { keys: { [keyId]: { publisher: 'company', publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString() } },
-      apps: { [app('finance')]: { publisher: 'company', capabilities: caps } } };
-    const bytes = (body: string) => buildPackage({ appId: app('finance'), publisher: 'company', version: '1.0.0', entry: 'index.html',
+      apps: {}, companyApps: { publisher: 'company', capabilities: caps } };
+    const bytes = (body: string) => buildPackage({ appId: dynamicAppId, publisher: 'company', version: '1.0.0', entry: 'index.html',
       sdkMajor: 1, apiMajor: 1, capabilities: caps }, new Map([['index.html', Buffer.from(body)]]), keyId, pair.privateKey);
     const original = bytes('<h1>Synthetic finance</h1>'), verified = verifyPackage(original, trust);
     const policy = { format: 2, environment: 'cloudfare-staging', channel: 'staging', sequence: 1, issuedAt: now, expiresAt: now + 60_000,
-      revokedKeys: [], apps: [{ id: app('finance'), capabilities: caps, minimumVersion: '1.0.0', revokedDigests: [], rollback: null,
+      revokedKeys: [], apps: [{ id: dynamicAppId, capabilities: caps, minimumVersion: '1.0.0', revokedDigests: [], rollback: null,
         releases: [{ version: '1.0.0', packageSha256: sha256(original), payloadDigest: verified.release.digest, apiOperations: ['clinic.api.request'] }] }] };
     const signed = Buffer.from(canonical({ policy, keyId, signature: sign(null, Buffer.from(canonical({ purpose: 'dental-os-update-policy', keyId, policy })), pair.privateKey).toString('base64') }));
     const approved = verifyUpdatePolicy(signed, trust, noWatermark, now).policy;
@@ -169,14 +171,14 @@ describe('signed clinic JSON entry point dispatch', () => {
     try {
       expect(await h.request('/v1/clinic/operating-expenses', 'POST', body)).toMatchObject({ ok: false,
         error: { code: 'UNKNOWN_OUTCOME', outcome: 'unknown', operationId: 'stable_write_key_01' } });
-      expect(h.broker.hasUnsafeWrites(app('finance'))).toBe(true);
+      expect(h.broker.hasUnsafeWrites(dynamicAppId)).toBe(true);
       expect(await h.request('/v1/clinic/operating-expenses', 'POST', JSON.stringify({ amount: 2 })))
         .toMatchObject({ ok: false, error: { code: 'CONFLICT', outcome: 'not_sent' } });
-      expect(h.broker.hasUnsafeWrites(app('finance'))).toBe(true);
+      expect(h.broker.hasUnsafeWrites(dynamicAppId)).toBe(true);
       loseResponse = false;
       expect((await h.request('/v1/clinic/operating-expenses', 'POST', body)).ok).toBe(true);
       expect(mutations).toBe(1); expect(keys).toEqual(['stable_write_key_01', 'stable_write_key_01']);
-      expect(h.broker.hasUnsafeWrites(app('finance'))).toBe(false);
+      expect(h.broker.hasUnsafeWrites(dynamicAppId)).toBe(false);
     } finally { h.broker.dispose(); }
   });
 });

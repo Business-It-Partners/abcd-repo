@@ -205,11 +205,32 @@ describe('broker unknown outcome and exact upload authority', () => {
       expect(await request({ action: 'commit', transferId, idempotencyKey: key })).toMatchObject({ ok: true, value: { committed: true, assetId } });
     } finally { broker.dispose(); f.manager.dispose(); }
   });
-  it('denies unsupported apps and unsigned transfers before allocation or credentials', async () => {
-    for (const appId of ['company.dental.patient-record', 'company.dental.work-entry', 'company.dental.followups', 'company.sample.future']) {
+  it('allows a new company ID through its signed media family contract', async () => {
+    const appId = 'company.dental.m17-patient-record', sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://new-patient-record/index.html' };
+    let credentials = 0;
+    const broker = new ApiBroker(staging, { snapshot: () => ({ generation: 1, active: true, userLabel: '', clinicLabel: '' }), allowed: () => true,
+      allowedMediaUpload: (family, kind) => family === 'clinic.app.patient-record' && kind === 'patient_media', credential: async () => { credentials++; return 'never'; } });
+    try {
+      broker.register({ sender, frame, origin: caller.url, appId, appVersion: '1.0.0', capabilities: ['clinic.app.patient-record', 'clinic.media.upload'], authorizeApiOperation: () => true, report() {} });
+      const connected = broker.connect(caller, SDK); if (!connected.ok) throw Error('connect');
+      expect(connected.value.capabilities).toContain('clinic.media.upload');
+      const result = await broker.request(caller, { version: 1, connection: connected.value.connection, generation: 1, requestId: 'new-upload-0001', operation: 'clinic.media.upload', input: { action: 'begin', kind: 'patient_media', recordId, metadata: metadata('patient_media'), idempotencyKey: key } });
+      expect(result).toMatchObject({ ok: true, value: { received: 0 } });
+      expect(credentials).toBe(0);
+      expect(broker.hasUnsafeWrites(appId)).toBe(true);
+    } finally { broker.dispose(); }
+  });
+  it('denies unsupported families and unsigned transfers before allocation or credentials', async () => {
+    const cases = [
+      { appId: 'company.dental.patient-record', family: 'clinic.app.patient-record', granted: false },
+      { appId: 'company.dental.work-entry', family: 'clinic.app.work-entry', granted: true },
+      { appId: 'company.dental.followups', family: 'clinic.app.followups', granted: true },
+      { appId: 'company.sample.future', family: 'clinic.app.patient-record', granted: false },
+    ] as const;
+    for (const { appId, family, granted } of cases) {
       let credentials = 0; const sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://denied/index.html' };
       const broker = new ApiBroker(staging, { snapshot: () => ({ generation: 1, active: true, userLabel: '', clinicLabel: '' }), allowed: () => true, allowedMediaUpload: () => true, credential: async () => { credentials++; return 'never'; } });
-      try { broker.register({ sender, frame, origin: caller.url, appId, appVersion: '1.0.0', capabilities: ['clinic.app.patient-record', 'clinic.media.upload'], authorizeApiOperation: () => appId !== 'company.dental.patient-record', report() {} }); const connected = broker.connect(caller, SDK); if (!connected.ok) throw Error('connect'); const result = await broker.request(caller, { version: 1, connection: connected.value.connection, generation: 1, requestId: 'denied-upload-0001', operation: 'clinic.media.upload', input: { action: 'begin', kind: 'patient_media', recordId, metadata: metadata('patient_media'), idempotencyKey: key } }); expect(result).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } }); expect(credentials).toBe(0); expect(broker.hasUnsafeWrites(appId)).toBe(false); } finally { broker.dispose(); }
+      try { broker.register({ sender, frame, origin: caller.url, appId, appVersion: '1.0.0', capabilities: [family, 'clinic.media.upload'], authorizeApiOperation: () => granted, report() {} }); const connected = broker.connect(caller, SDK); if (!connected.ok) throw Error('connect'); const result = await broker.request(caller, { version: 1, connection: connected.value.connection, generation: 1, requestId: 'denied-upload-0001', operation: 'clinic.media.upload', input: { action: 'begin', kind: 'patient_media', recordId, metadata: metadata('patient_media'), idempotencyKey: key } }); expect(result).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } }); expect(credentials).toBe(0); expect(broker.hasUnsafeWrites(appId)).toBe(false); } finally { broker.dispose(); }
     }
   });
 });

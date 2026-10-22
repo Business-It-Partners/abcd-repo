@@ -1,6 +1,6 @@
 import { createPublicKey, verify } from 'node:crypto';
 import { apiOperations, operations, type ApiOperationId, type Operation } from '../sdk/contracts';
-import { parseCanonical, canonical, sha256, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from '../packages/format';
+import { parseCanonical, canonical, maxCompanyAppCount, sha256, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from '../packages/format';
 import { compareVersion, type Catalogue, type Watermark } from './catalogue';
 
 type AppUpdatePolicyBase = {
@@ -117,7 +117,7 @@ export function verifyUpdatePolicy(bytes: Buffer, trust: TrustPolicy, watermark:
     || policy.revokedKeys.includes(envelope.keyId)) {
     throw Error('Update policy revocation');
   }
-  if (!Array.isArray(policy.apps) || policy.apps.length < 1 || policy.apps.length > 16) throw Error('Update policy app count');
+  if (!Array.isArray(policy.apps) || policy.apps.length < 1 || policy.apps.length > maxCompanyAppCount) throw Error('Update policy app count');
 
   const seenApps = new Set<string>();
   for (const app of policy.apps) {

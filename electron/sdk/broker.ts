@@ -1,21 +1,21 @@
-import { MediaUploads, MediaUploadError, uploadKindForApp } from './mediaUpload';
-import { readClinicMedia, mediaKindForApp, MediaReadError, type MediaKind } from './mediaRead';
+import { MediaUploads, MediaUploadError, uploadKindForFamily } from './mediaUpload';
+import { readClinicMedia, mediaKindForFamily, MediaReadError, type MediaKind } from './mediaRead';
 import { randomUUID, createHash } from 'node:crypto';
 import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
-import { allowedClinicApiPath, appOperation, containsPresignedHandle } from './appPolicy';
+import { allowedClinicApiPath, clinicAppFamily, containsPresignedHandle, type ClinicAppFamily } from './appPolicy';
 
 export type Caller = { sender: object; frame: object | null; url: string };
 export type Identity = {
   allowed?(operation: Operation): boolean;
-  allowedClinicRequest?(appId: string, path: string, method: string): boolean;
-  allowedMediaUpload?(appId: string, kind: MediaKind): boolean;
-  allowedMediaRead?(appId: string, kind: MediaKind): boolean;
+  allowedClinicRequest?(family: ClinicAppFamily, path: string, method: string): boolean;
+  allowedMediaUpload?(family: ClinicAppFamily, kind: MediaKind): boolean;
+  allowedMediaRead?(family: ClinicAppFamily, kind: MediaKind): boolean;
   rejected?(status: 401 | 403): void;
   snapshot(): { generation: number; active: boolean; userLabel: string; clinicLabel: string; clinicSession?: unknown };
   credential(generation: number, signal: AbortSignal): Promise<string>;
 };
-type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
+type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; family?: ClinicAppFamily; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
 const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
 type Pending = { controller: AbortController; write: boolean; media?: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
@@ -51,7 +51,8 @@ export class ApiBroker {
   }
   register(input: Omit<Registration, 'preferences' | 'connection' | 'generation'>) {
     this.unregister(input.sender);
-    this.registrations.set(input.sender, { ...input, capabilities: [...input.capabilities], preferences: { textScale: 1 } });
+    const capabilities = [...input.capabilities];
+    this.registrations.set(input.sender, { ...input, capabilities, family: clinicAppFamily(capabilities), preferences: { textScale: 1 } });
   }
   private caller(caller: Caller) {
     const r = this.registrations.get(caller.sender);
@@ -73,28 +74,27 @@ export class ApiBroker {
       if (this.identity.allowed?.(op) === false) return false;
       if (!apiEntryPoints.includes(op)) return true;
       return apiOperations.includes(op as ApiOperationId) && r.authorizeApiOperation?.(op as ApiOperationId) === true
-        && (op !== 'clinic.media.upload' || !!uploadKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaUpload?.(r.appId, uploadKindForApp(r.appId)!) === true)
-        && (op !== 'clinic.media.read' || !!mediaKindForApp(r.appId) && !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!) && this.identity.allowed?.(appOperation(r.appId)!) !== false && this.identity.allowedMediaRead?.(r.appId, mediaKindForApp(r.appId)!) === true)
-        && (op !== 'clinic.api.request' || !!appOperation(r.appId) && r.capabilities.includes(appOperation(r.appId)!)
-          && this.identity.allowed?.(appOperation(r.appId)!) !== false && !!this.identity.allowedClinicRequest);
+        && (op !== 'clinic.media.upload' || !!r.family && !!uploadKindForFamily(r.family) && this.identity.allowed?.(r.family) !== false && this.identity.allowedMediaUpload?.(r.family, uploadKindForFamily(r.family)!) === true)
+        && (op !== 'clinic.media.read' || !!r.family && !!mediaKindForFamily(r.family) && this.identity.allowed?.(r.family) !== false && this.identity.allowedMediaRead?.(r.family, mediaKindForFamily(r.family)!) === true)
+        && (op !== 'clinic.api.request' || !!r.family && this.identity.allowed?.(r.family) !== false && !!this.identity.allowedClinicRequest);
     }) });
   }
   private apiAllowed(r: Registration, v: Request): boolean {
     if (!apiEntryPoints.includes(v.operation)) return true;
     if (!apiOperations.includes(v.operation as ApiOperationId) || r.authorizeApiOperation?.(v.operation as ApiOperationId) !== true) return false;
     if (v.operation === 'clinic.media.upload') {
-      const kind = v.input.action === 'begin' ? v.input.kind : this.uploads.kind(r, v.input.transferId), family = appOperation(r.appId);
-      return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false && !!kind && uploadKindForApp(r.appId) === kind && this.identity.allowedMediaUpload?.(r.appId, kind as MediaKind) === true;
+      const kind = v.input.action === 'begin' ? v.input.kind : this.uploads.kind(r, v.input.transferId), family = r.family;
+      return !!family && this.identity.allowed?.(family) !== false && !!kind && uploadKindForFamily(family) === kind && this.identity.allowedMediaUpload?.(family, kind as MediaKind) === true;
     }
     if (v.operation === 'clinic.media.read') {
-      const family = appOperation(r.appId);
-      return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false && mediaKindForApp(r.appId) === v.input.kind && this.identity.allowedMediaRead?.(r.appId, v.input.kind as MediaKind) === true;
+      const family = r.family;
+      return !!family && this.identity.allowed?.(family) !== false && mediaKindForFamily(family) === v.input.kind && this.identity.allowedMediaRead?.(family, v.input.kind as MediaKind) === true;
     }
     if (v.operation !== 'clinic.api.request') return true;
-    const family = appOperation(r.appId);
-    return !!family && r.capabilities.includes(family) && this.identity.allowed?.(family) !== false
-      && allowedClinicApiPath(r.appId, v.input.path as string, v.input.method as string)
-      && this.identity.allowedClinicRequest?.(r.appId, v.input.path as string, v.input.method as string) === true;
+    const family = r.family;
+    return !!family && this.identity.allowed?.(family) !== false
+      && allowedClinicApiPath(family, v.input.path as string, v.input.method as string)
+      && this.identity.allowedClinicRequest?.(family, v.input.path as string, v.input.method as string) === true;
   }
   private connected(r: Registration, v: Cancel) {
     const s = this.current();
@@ -191,9 +191,8 @@ export class ApiBroker {
         if (v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
           const rawPath = path.split('?', 1)[0];
           const requestMethod = v.operation === 'clinic.api.request' ? v.input.method as string : v.operation === 'clinic.api.blob.read' ? 'POST' : 'GET';
-          if (rawPath.split('/').some(part => part === '.' || part === '..') || /%(?:2f|5c|2e)/i.test(rawPath) || !allowedClinicApiPath(r.appId, path, requestMethod)) return failure('FORBIDDEN', 'not_sent', v);
-          const family = appOperation(r.appId);
-          if (!family || !r.capabilities.includes(family) || this.identity.allowed?.(family) === false) return failure('FORBIDDEN', 'not_sent', v);
+          if (rawPath.split('/').some(part => part === '.' || part === '..') || /%(?:2f|5c|2e)/i.test(rawPath) || !allowedClinicApiPath(r.family, path, requestMethod)) return failure('FORBIDDEN', 'not_sent', v);
+          if (!r.family || this.identity.allowed?.(r.family) === false) return failure('FORBIDDEN', 'not_sent', v);
         }
         const url = new URL(path, this.environment.apiBase);
         if (url.origin !== this.environment.apiBase || url.username || url.password || url.hash || !url.pathname.startsWith('/v1/')) return failure('FORBIDDEN', 'not_sent', v);

@@ -2,7 +2,7 @@
 import { mkdirSync, lstatSync, openSync, closeSync, readFileSync, writeFileSync, fsyncSync, renameSync, unlinkSync, readdirSync, rmdirSync, statfsSync, readSync, fstatSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { canonical, limits, sha256, verifyPackage, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from './format';
+import { canonical, limits, maxCompanyAppCount, sha256, verifyPackage, appTrust, isCompanyAppId, type TrustPolicy, type VerifiedPackage } from './format';
 import { apiOperations, type ApiOperationId } from '../sdk/contracts';
 type Installed = { active: string; versions: string[]; pending: string | null; knownGood: string | null; trial: string | null; failed: string[] };
 type State = { format: 2; apps: Record<string, Installed> };
@@ -124,7 +124,7 @@ export class PackageRegistry {
   private state(): State {
     const raw = this.optional(path.join(this.root, 'registry.json'), 65536); if (!raw) return { format: 2, apps: {} };
     const s = JSON.parse(raw.toString());
-    if (!s || Object.keys(s).sort().join() !== 'apps,format' || ![1, 2].includes(s.format) || !s.apps || typeof s.apps !== 'object' || Array.isArray(s.apps) || Object.keys(s.apps).length > 16) throw new Error('Registry recovery required');
+    if (!s || Object.keys(s).sort().join() !== 'apps,format' || ![1, 2].includes(s.format) || !s.apps || typeof s.apps !== 'object' || Array.isArray(s.apps) || Object.keys(s.apps).length > maxCompanyAppCount) throw new Error('Registry recovery required');
     for (const [id, v] of Object.entries(s.apps) as [string, Installed][]) {
       this.app(id);
       if (!v || Object.keys(v).sort().join() !== (s.format === 1 ? 'active,versions' : 'active,failed,knownGood,pending,trial,versions') || !Array.isArray(v.versions) || !v.versions.length || v.versions.length > 3 || new Set(v.versions).size !== v.versions.length || !v.versions.every(d => typeof d === 'string' && digestPattern.test(d)) || !v.versions.includes(v.active)) throw new Error('Registry recovery required');
@@ -218,7 +218,7 @@ export class PackageRegistry {
         if (!stageUpdate || !this.rollbackGuard(this.verified(id,previous.active),verified) || previous.trial || previous.pending) throw new Error('Historical activation requires rollback policy');
         previous.pending=digest; this.writeState(s); this.checkpoint('staged'); return digest;
       }
-      if (!previous && Object.keys(s.apps).length >= 16) throw new Error('Installed app limit');
+      if (!previous && Object.keys(s.apps).length >= maxCompanyAppCount) throw new Error('Installed app limit');
       if (stageUpdate && previous && (previous.pending || previous.trial)) throw new Error('Update already pending or awaiting health');
       if (stageUpdate && previous) this.trim(s,id);
       if (previous && previous.versions.length >= 3) throw new Error('Retention limit; explicit eviction policy required');

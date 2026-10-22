@@ -1,3 +1,5 @@
+import type { ClinicAppFamily } from './appPolicy';
+
 /** Host-owned clinic JSON contract v1. Paths never authorize credentials by themselves. */
 export const clinicJsonContractVersion = 1;
 type Query = Readonly<Record<string, (value: string) => boolean>>;
@@ -98,7 +100,8 @@ route(['calendar'], ['POST'], '/v1/calendar-tasks');
 route(['calendar'], ['PATCH'], '/v1/calendar-tasks/:id');
 route(['calendar'], ['POST'], '/v1/calendar-tasks/:id/archive');
 
-export function resolveClinicJsonRoute(appId: string, path: string, method: string): Readonly<Pick<Rule, 'path' | 'method' | 'capabilities'>> | undefined {
+export function resolveClinicJsonRoute(family: ClinicAppFamily | undefined, path: string, method: string): Readonly<Pick<Rule, 'path' | 'method' | 'capabilities'>> | undefined {
+  if (!family) return;
   if (!path.startsWith('/v1/') || path.length > 1024 || /[\\#\u0000-\u001f\u007f]/.test(path)) return;
   const rawPath = path.split('?', 1)[0];
   if (rawPath.includes('%') || rawPath.includes('//') || rawPath.split('/').some(part => part === '.' || part === '..')) return;
@@ -107,7 +110,7 @@ export function resolveClinicJsonRoute(appId: string, path: string, method: stri
   const entries = [...url.searchParams.entries()];
   if (new Set(entries.map(([key]) => key)).size !== entries.length) return;
   for (const rule of rules) {
-    if (!rule.apps.some(app => appId === 'company.dental.' + app) || method !== rule.method || !rule.pattern.test(rawPath)) continue;
+    if (!rule.apps.some(app => family === `clinic.app.${app}`) || method !== rule.method || !rule.pattern.test(rawPath)) continue;
     if (entries.some(([name, value]) => !Object.hasOwn(rule.query, name) || !rule.query[name](value))
       || rule.requiredQuery.some(name => !url.searchParams.has(name)) || rule.check?.(url) === false) continue;
     let valid = true;

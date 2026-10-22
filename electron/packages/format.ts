@@ -2,6 +2,7 @@
 import { createHash, createPublicKey, sign, verify, type KeyObject } from 'node:crypto';
 import { operations, type Operation } from '../sdk/contracts';
 export const limits = Object.freeze({ wire: 16 * 1024 * 1024, expanded: 8 * 1024 * 1024, file: 2 * 1024 * 1024, count: 128, path: 160 });
+export const maxCompanyAppCount = 64;
 export type Manifest = { format: 1; appId: string; publisher: string; version: string; entry: string; sdkMajor: 1; apiMajor: 1; capabilities: Operation[]; assets: { path: string; size: number; sha256: string }[] };
 export type Release = { format: 1; appId: string; publisher: string; version: string; digest: string; keyId: string };
 export type AppTrust = Readonly<{ publisher: string; capabilities: readonly Operation[] }>;
@@ -61,6 +62,8 @@ function manifest(value: unknown): asserts value is Manifest {
   if (value.format !== 1 || typeof value.appId !== 'string' || !/^company\.[a-z][a-z0-9.-]{1,70}$/.test(value.appId) || value.publisher !== 'company' || typeof value.version !== 'string' || !/^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/.test(value.version) || value.sdkMajor !== 1 || value.apiMajor !== 1) throw new Error('Incompatible manifest');
   validPath(value.entry); if (!value.entry.endsWith('.html')) throw new Error('Invalid entry');
   if (!Array.isArray(value.capabilities) || value.capabilities.length > operations.length || new Set(value.capabilities).size !== value.capabilities.length || value.capabilities.some((v: Operation) => !operations.includes(v))) throw new Error('Invalid capabilities');
+  // A signed company package may select one existing clinic app contract, never combine app families.
+  if (value.capabilities.filter((v: Operation) => v.startsWith('clinic.app.')).length > 1) throw new Error('Multiple clinic app families');
   if (!Array.isArray(value.assets) || !value.assets.length || value.assets.length > limits.count) throw new Error('Asset count');
   let total = 0, previous = '';
   for (const asset of value.assets) {

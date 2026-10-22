@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 import { MEDIA_LIMITS } from './mediaLimits';
+import type { ClinicAppFamily } from './appPolicy';
 
 export type MediaKind = 'patient_media' | 'staff_document';
 export { MEDIA_LIMITS } from './mediaLimits';
-export function mediaKindForApp(appId: string): MediaKind | undefined {
-  if (['company.dental.patient-record', 'company.dental.work-entry'].includes(appId)) return 'patient_media';
-  if (appId === 'company.dental.staff') return 'staff_document';
+export function mediaKindForFamily(family: ClinicAppFamily | undefined): MediaKind | undefined {
+  if (family === 'clinic.app.patient-record' || family === 'clinic.app.work-entry') return 'patient_media';
+  if (family === 'clinic.app.staff') return 'staff_document';
 }
 export class MediaReadError extends Error {
   constructor(readonly code: 'INVALID_RESPONSE' | 'REDIRECT_DENIED' | 'AUTH_REQUIRED' | 'ACCESS_DENIED' | 'CONFLICT' | 'MAINTENANCE') { super(code); }

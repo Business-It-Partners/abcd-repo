@@ -4,7 +4,7 @@
 
 `clinic.media.upload` is an explicit signed format-2 exact-release operation. Patient Record may upload patient media and Staff may upload Staff documents, subject to package, app-family and trusted session access. Worker authorization and tenant selection remain authoritative. Read permission does not imply upload permission; Work Entry's read scope is unchanged.
 
-The standard host session gate permits only `company.dental.patient-record` with `patient_media` under `patient_record.access`, or `company.dental.staff` with `staff_document` under `staff.manage`. It denies uploads before sign-in, while locked, after sign-out, for mismatched app/kind pairs, and for other apps. The broker checks the exact signed operation grant and app-family capability as well; credentials stay in the host and the Worker derives clinic tenancy from the authenticated token. No public package grant is included in this local source change.
+The standard host session gate permits the `clinic.app.patient-record` family to upload `patient_media` under `patient_record.access`, or the `clinic.app.staff` family to upload `staff_document` under `staff.manage`. Any approved company ID can select one of those existing families through its signed package capability; no per-ID upload rule is compiled. The host denies uploads before sign-in, while locked, after sign-out, for mismatched family/kind pairs, and for unsupported families. The broker checks the exact signed operation grant as well; credentials stay in the host and the Worker derives clinic tenancy from the authenticated token. No public package grant is included in this local source change.
 
 ## Wire protocol
 

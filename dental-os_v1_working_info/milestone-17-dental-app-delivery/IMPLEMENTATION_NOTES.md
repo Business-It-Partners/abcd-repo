@@ -8,11 +8,16 @@ This file records current M17 decisions, source pins, implementation deltas, and
 - Reuse the Follow-ups and Appointments app source already present in this M17 worktree. Keep those workflows; update their package identities for the M17 release line rather than restarting UI implementation.
 - Build the other nine apps from scratch against each maintained Dental SaaS UI/workflow/API module. Pin the exact source revision per app before implementation.
 - Assign all eleven apps their own new unique M17 app IDs. Each app's first M17 package is version 1.0.0. Existing preview identities/releases remain unchanged.
-- Create one brand-new M17 staging signing key for the suite. Do not search for or reuse an earlier milestone key. Pin its public identity before signing; protect and Git-ignore the private key.
+- Use one new M17 staging signing key for the suite. Its public identity is pinned in the source staging trust configuration; the private key stays protected outside the checkout.
 - Keep the current M15 SDK/shared UI as the platform boundary. App code does not own identity, HTTP/media transport, or business data authority.
+- Give each M17 package exactly one supported `clinic.app.*` family capability. Its new M17 app ID is authorized through the existing signed company package/catalogue/update-policy flow; the host resolves the existing family, role, route and media policy without an ID-specific code entry. New host capabilities or route contracts remain platform work.
 - Use focused local Linux checks. Do not run GitHub Actions. Staging only; production is excluded.
 
 ## App baseline and release ledger
+
+### 2026-10-22 — M17 suite signing key prepared
+
+A fresh Ed25519 key pair was generated for M17 staging. Key ID: `company-staging-m17-20261022`. Public-key SHA-256 fingerprint: `e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709`. The public key is pinned in `electron/distribution/staging.ts`. The private key is held outside the repository in a protected local directory; repository history contains no private key material. No app package, catalogue, or update policy has been signed with this key, and the source trust update has not been deployed. The existing M17 Follow-ups release-preparation helper still expects the previous signer and must be deliberately adapted before it can prepare an M17 release.
 
 | Submilestone | Existing M17 app source | SaaS behavior source | New M17 release ID/version | Current state |
 | --- | --- | --- | --- | --- |
@@ -43,6 +48,6 @@ The existing Appointments package source was implemented in this M17 worktree fr
 ### Platform and staging dependencies
 
 - The current M15 SDK and shared UI are the platform dependencies. Patient Record X-rays and Staff documents must use the existing host-mediated media APIs.
-- Pin the new M17 suite public key in the staging verifier before signing. Do not place private key material in Git.
+- Confirm the M17 public-key trust update is included in the host build used for staging verification. Do not place private key material in Git.
 - A protected authorized clinic credential is separately required for live synthetic staging acceptance. Never substitute chat-provided values.
 - M15/G15, independent review, Windows verification, integrated acceptance, and device acceptance remain separately owned gates.

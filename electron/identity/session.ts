@@ -1,11 +1,11 @@
-import { mediaKindForApp, type MediaKind } from '../sdk/mediaRead';
+import { mediaKindForFamily, type MediaKind } from '../sdk/mediaRead';
 import type { Operation } from '../sdk/contracts';
 import type { Identity } from '../sdk/broker';
 import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client';
 import { loginInput, type ActionResult, type Phase, type SessionView } from './contracts';
 import type { CredentialStore } from './storage';
-import { appAllowed, clinicRequestAllowed, clinicApps } from '../sdk/appPolicy';
-import { uploadKindForApp } from '../sdk/mediaUpload';
+import { appAllowed, clinicRequestAllowed, clinicAppPolicies, type ClinicAppFamily } from '../sdk/appPolicy';
+import { uploadKindForFamily } from '../sdk/mediaUpload';
 export type LoginDiagnostic = { stage: 'credential-store-clear' | 'firebase-sign-in' | 'clinic-session-resolve' | 'session-install'; outcome: 'started' | 'complete' | 'denied' | 'unavailable' | 'other' | 'timeout' };
 /** One platform-owned clinic session. Only view() crosses shell IPC. */
 export class SessionManager implements Identity {
@@ -106,24 +106,21 @@ export class SessionManager implements Identity {
   allowed(operation:Operation){
     if(this.phase!=='ready'||!this.clinic)return false;
     if(operation==='clinic.api.request')return true;
-    if(operation.startsWith('clinic.app.')){
-      const appId=Object.keys(clinicApps).find(id=>clinicApps[id].operation===operation);
-      return !!appId&&appAllowed(appId,this.clinic.role,this.clinic.capabilities);
-    }
+    if(Object.hasOwn(clinicAppPolicies, operation))return appAllowed(operation as ClinicAppFamily,this.clinic.role,this.clinic.capabilities);
     return !operation.startsWith('appointments.')||this.clinic.capabilities.includes('appointments.access');
   }
-  allowedMediaUpload(appId: string, kind: MediaKind) {
+  allowedMediaUpload(family: ClinicAppFamily, kind: MediaKind) {
     return this.phase === 'ready' && !!this.clinic
-      && uploadKindForApp(appId) === kind
-      && appAllowed(appId, this.clinic.role, this.clinic.capabilities);
+      && uploadKindForFamily(family) === kind
+      && appAllowed(family, this.clinic.role, this.clinic.capabilities);
   }
-  allowedMediaRead(appId: string, kind: MediaKind) {
-    return this.phase === 'ready' && !!this.clinic && mediaKindForApp(appId) === kind
-      && appAllowed(appId, this.clinic.role, this.clinic.capabilities);
+  allowedMediaRead(family: ClinicAppFamily, kind: MediaKind) {
+    return this.phase === 'ready' && !!this.clinic && mediaKindForFamily(family) === kind
+      && appAllowed(family, this.clinic.role, this.clinic.capabilities);
   }
-  allowedClinicRequest(appId: string, path: string, method: string) {
+  allowedClinicRequest(family: ClinicAppFamily, path: string, method: string) {
     return this.phase === 'ready' && !!this.clinic
-      && clinicRequestAllowed(appId, this.clinic.role, this.clinic.capabilities, path, method);
+      && clinicRequestAllowed(family, this.clinic.role, this.clinic.capabilities, path, method);
   }
   flush(){return this.storageChain;}
   dispose(){this.generation++;this.phase='signed-out';clearTimeout(this.timer);this.action?.abort();this.tokens=undefined;this.clinic=undefined;this.listeners.clear();}
