@@ -10,7 +10,9 @@
   "build": {
     "preliminary": "PASS for renewal library before the final publisher test import was added",
     "exactToolingCheckpoint": "Later full source check found TS7016: missing declaration for metadata-renewal-worker.mjs imported by its test",
-    "correction": "Added metadata-renewal-worker.d.mts; full build passes in the subsequent clinic JSON candidate. No publisher behavior changed and no staging rerun was needed."
+    "correction": "Added metadata-renewal-worker.d.mts; full build passes in the subsequent clinic JSON candidate. No publisher behavior changed and no staging rerun was needed.",
+    "verifiedCorrectionSource": "7420a898",
+    "verifiedCorrectionResult": "PASS full build and 367/367 unit suite, plus private SDK 15 and identity 44 checks"
   },
   "baseline": {
     "environment": "cloudfare-staging",

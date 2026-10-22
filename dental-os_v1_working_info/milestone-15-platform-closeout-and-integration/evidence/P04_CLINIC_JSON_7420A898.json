@@ -1,0 +1,26 @@
+{
+  "source": "7420a898",
+  "contract": "ADR-027 / clinic JSON contract 1 / SDK 1.2",
+  "reviewInputs": {
+    "M14": "a8caea6e",
+    "SaaS": "a3b116c64df826cbb5b66bc09305f81bf06cd463"
+  },
+  "checks": {
+    "build": "PASS",
+    "fullSerialUnit": {
+      "passed": 367,
+      "files": 22
+    },
+    "clinicContractCases": 43,
+    "privateSdkAssertions": 15,
+    "privateIdentityAssertions": 44,
+    "docs": "PASS",
+    "gitWhitespace": "PASS"
+  },
+  "scope": "Exact signed release identity; eleven app route/method/query contracts; trusted role/capability checks before credentials and after mediation; malformed/tenant/query/method negatives; unknown-write original-key reconciliation. Private SDK/identity runners only; no live desktop access.",
+  "remaining": [
+    "Live Worker/actual M14 adapter compatibility",
+    "Media upload/read and pending-object cleanup",
+    "Separate OS navigation/print requirements and final integrated/Windows checks"
+  ]
+}

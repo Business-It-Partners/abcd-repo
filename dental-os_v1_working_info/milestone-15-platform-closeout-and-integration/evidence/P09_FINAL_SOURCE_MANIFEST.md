@@ -77,3 +77,8 @@ Operational tooling source checkpoint `d5504845` adds `electron/distribution/ren
 ADR-027/SDK 1.2 adds the signed `clinic.api.request` contract with explicit app/method/path/query and trusted-session capability checks before credentials and at dispatch. The clinic-route suite passes 43 cases and build passes; full unit/private checks are pending at this source checkpoint. The earlier statement that only two host API operations exist describes `11cb1bc8`, not this candidate. No signed staging API grant was published by the sequence-22 renewal.
 
 The earlier P08 build label applied to a preliminary build before the last test import. A subsequent exact build found TS7016 for that JavaScript test-module import; the new `.d.mts` declaration fixes it and the full build passes. The operation report retains the qualification. No staging behavior changed or repeated publication occurred.
+
+
+## Current API/source verification checkpoint — `7420a898`
+
+Build and full serial unit suite pass (367/367, 22 files). The private SDK/identity runner passes 15/44 assertions on this source. [P04 manifest](P04_CLINIC_JSON_7420A898.json) retains scope and source pins; its accompanying copied reports preserve exact results. The publisher-test declaration correction is included and typecheck/build pass. P08 is verified for real signed-feed continuity. Live Worker/M14 adapter, mediated media/cleanup and final platform/Windows verification remain open. User manual acceptance follows technical completion.

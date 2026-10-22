@@ -45,3 +45,8 @@ The lead combined both sidebar worker outputs and aligned the central checklist,
 ## Current lead-only completion checkpoint — 2026-10-22
 
 The user directed all remaining implementation and automated verification to continue in this chat/worktree, with manual acceptance afterward. P08 is now verified for staging-feed continuity: actual expired sequence-21 controls were renewed to sequence 22 using unchanged signed authority; all 14 package objects and the disposable synthetic known-good registry remained unchanged. Anonymous/replay denial and deletion of the temporary publisher were verified; staging API and existing web clients remain reachable. See [retained operation evidence](evidence/P08_METADATA_RENEWAL_2026-10-22.json) and [runbook](../../docs/STAGING_METADATA_RENEWAL.md). Source checkpoint `d5504845` passes build and 324/324 unit tests. Historical unassigned-operator/no-tool/no-drill statements below earlier checkpoints no longer describe this P08 state. P04 exact M14 routes, media/navigation contracts and P07 integration remain the next technical work.
+
+
+## API contract checkpoint — `7420a898`
+
+P04 now has exact app/method/path/query rules and trusted capability checks under ADR-027/SDK 1.2, with exact signed package authority. Build, 367/367 full unit tests, 43 clinic-contract cases, private SDK 15 and identity 44 assertions pass. Real Worker/M14 adapter proof and media remain open. The user assigned further implementation/verification here; no parallel chat/worktree is active.
