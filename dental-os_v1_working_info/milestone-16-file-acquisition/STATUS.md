@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.1–M16.6 hosted engineering closeout is COMPLETE on `772a739ed3af` (Windows/Linux success). The original Image Viewer source `1ae45df4` and corrected test drivers on `72967aa4` passed their stated CI checks, but the user then found the viewer's preview broken in the live UI. The viewer now draws the bounded decoded frame directly to canvas; local build, 38 focused file/picker security tests, and 20/20 private Linux Files UI assertions pass. Exact-source Windows-only Actions verification is pending. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device checks are NOT RUN. **G16 OPEN; overall M16 not yet accepted.**
+**Status:** IMPLEMENTING — M16.1–M16.6 hosted engineering closeout is COMPLETE on `772a739ed3af` (Windows/Linux success). The user found a broken Image Viewer preview in the live UI; the bounded direct-canvas correction is now verified on `1151d58f8048bafeb78f876b80676c6ed121f8ce`: local build, 38 focused file/picker tests, 20/20 private Linux Files UI assertions, and Windows-only Actions 39823039280 with 47 focused tests, build/typecheck and 33/33 private Windows GUI assertions all pass. Native cross-view drag remains formally deferred after source/API feasibility review; physical-device checks are NOT RUN. **G16 OPEN; overall M16 not yet accepted.**
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 
@@ -98,7 +98,7 @@ A tightly scoped native Windows dialog automation correction and bounded Linux W
 - **Result:** M16.6 **hosted engineering integration complete**. This does **not** mean physical host/device certification or full G16 closeout. Native cross-`WebContentsView` OS drag is unimplemented and deliberately deferred; existing Send fallback remains the accepted transfer mode. No read bytes, uploads, clinical association, real patient data, staging/production operation, or app release publication occurred.
 - **Next controlled work, in Codex on user's machine:** [device and remaining-gesture handoff](DEVICE_ACCEPTANCE_HANDOFF.md). Test native drag separately, then Windows/Linux appropriate physical-device end-to-end and deliberate G16 acceptance decision. **Do not merge M16 to main as accepted while G16 remains open.**
 
-## M16 Image Viewer follow-up — Windows hosted verification complete; rendering fix under verification (2026-10-22)
+## M16 Image Viewer follow-up — Windows hosted verification complete; physical checks pending (2026-10-22)
 
 New scope requested after the M16.6 hosted acceptance: a separate OS-managed raster Image Viewer window launched by Files double-click, with fit, zoom, rotate, prev/next, ordinary window close/maximize, private capture suppression, strict opaque-ID/session binding, bounded decode and safe close. The source implementation is `1ae45df4`; its explicit non-null trusted-main-frame guard preserves the existing sender/frame authorization. Local Linux verification is complete. The pre-existing theme run `39814916144` must not be redundantly restarted.
 
@@ -115,5 +115,5 @@ The user-provided screenshot showed the viewer window opening with Chromium's br
 - `npm run build` — **PASS** after the canvas change.
 - Focused M16 file/picker security set (five Vitest files) — **38/38 passed**.
 - `npm run test:files` — **20/20 private Linux GNOME assertions passed**, including decoded canvas dimensions and pixel data, viewer controls, screenshot suppression, and Files/viewer lifecycle. The assertions are recorded in `artifacts/m16-files-verification.json`.
-- Windows-only tagged exact-source Actions — **pending**. The earlier 32/32 GUI result does not verify this canvas change.
+- [Windows-only tagged exact-source Actions 39823039280](https://github.com/Business-It-Partners/dental-os/actions/runs/39823039280) on `1151d58f8048bafeb78f876b80676c6ed121f8ce` — **SUCCESS**, 47 focused security tests, build/typecheck, and **33/33 private Windows GUI assertions**. The Linux and full historical Windows jobs were skipped by the existing gates. Artifact: [12445826032](https://github.com/Business-It-Partners/dental-os/actions/runs/39823039280/artifacts/12445826032).
 - Physical-device walkthrough remains **NOT RUN**. Native cross-view drag remains formally deferred. **G16 stays OPEN.** Do not merge to `main` from this work.
