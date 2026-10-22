@@ -49,6 +49,8 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-runtime="company.dental.patient-record"]')?.dataset.runtimePhase==='ready',null,{timeout:15000});
   const guest=app.context().pages().find(v=>v.url().startsWith('dental-fixture://company.dental.patient-record/'));
   check('Ephemeral signed dental app runs in separate Linux WebContentsView',!!guest);
+  check('Linux isolated dental app has no privileged shell Files bridge',
+    await guest.evaluate(()=>typeof window.desktop==='undefined'));
   await guest.getByRole('button',{name:'Connect SDK'}).click();
   await guest.locator('#pick-result').filter({hasText:'SDK connected'}).waitFor({timeout:12000});
   await guest.getByRole('button',{name:'Programmatic picker request'}).click();
@@ -77,6 +79,20 @@ try{
   await frame.getByText('m16-synthetic-xray.png',{exact:true}).click();
   const send=frame.getByRole('button',{name:'Send to active eligible app'});
   await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  const unsolicited=await page.evaluate(async()=>{
+    const gen=(await window.desktop.identity.view()).generation;
+    const roots=await window.desktop.files.roots(gen);
+    const folder=(await window.desktop.files.list({directoryId:roots[0].id,cursor:null,limit:100,generation:gen}))
+      .entries.find(v=>v.name==='X-rays');
+    if(!folder)return 'missing-folder';
+    const file=(await window.desktop.files.list({directoryId:folder.id,cursor:null,limit:100,generation:gen}))
+      .entries.find(v=>v.name==='m16-synthetic-xray.png');
+    if(!file)return 'missing-file';
+    await new Promise(resolve=>setTimeout(resolve,950));
+    try{await window.desktop.files.send({generation:gen,fileIds:[file.id]});return 'accepted';}
+    catch{return 'denied';}
+  });
+  check('Linux direct script Send without a fresh trusted activation is denied',unsolicited==='denied');
   await send.click();
   await frame.getByText(/Delivered 1 file receipt/).waitFor({timeout:10000});
   const transferred=await guest.locator('#transfer-result').innerText();

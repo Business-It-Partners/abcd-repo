@@ -110,6 +110,8 @@ try{
   await signedApp.getByRole('button',{name:'Connect SDK'}).click();
   await signedApp.locator('#pick-result').filter({hasText:'SDK connected'}).waitFor({timeout:12000});
   check('Signed app SDK is connected and ready',true);
+  check('Isolated dental-app renderer has no privileged shell Files bridge',
+    await signedApp.evaluate(()=>typeof window.desktop==='undefined'));
   await signedApp.getByRole('button',{name:'Programmatic picker request'}).click();
   await signedApp.locator('#pick-result').filter({hasText:'FORBIDDEN'}).waitFor({timeout:6000});
   check('Delayed script request cannot reuse a trusted click ticket',true);
@@ -142,6 +144,21 @@ try{
   const send=frame.getByRole('button',{name:'Send to active eligible app'});
   await send.waitFor({state:'visible'});
   await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent?.includes('Send to active eligible app'));return b&&!b.disabled;},null,{timeout:10000});
+  // An arbitrary shell script must not transfer even a valid selected token.
+  // Wait beyond the main-process one-use trusted activation window.
+  const unsolicited=await page.evaluate(async gen=>{
+    const roots=await window.desktop.files.roots(gen);
+    const folder=(await window.desktop.files.list({directoryId:roots[0].id,cursor:null,limit:100,generation:gen}))
+      .entries.find(v=>v.name==='X-rays');
+    if(!folder)return 'missing-folder';
+    const file=(await window.desktop.files.list({directoryId:folder.id,cursor:null,limit:100,generation:gen}))
+      .entries.find(v=>v.name==='m16-synthetic-xray.png');
+    if(!file)return 'missing-file';
+    await new Promise(resolve=>setTimeout(resolve,950));
+    try{await window.desktop.files.send({generation:gen,fileIds:[file.id]});return 'accepted';}
+    catch{return 'denied';}
+  },generation);
+  check('Direct script Send without a fresh trusted user gesture is denied',unsolicited==='denied');
   await send.click();
   await frame.getByText(/Delivered 1 file receipt/).waitFor({timeout:10000});
   const transfer=await signedApp.locator('#transfer-result').innerText();

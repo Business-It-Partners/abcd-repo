@@ -150,6 +150,37 @@ describe('M16.2 trusted read-only host files', () => {
     svc.dispose();
     expectCode(() => svc.roots(), 'FORBIDDEN');
   });
+  it('invalidates nested handles and receipts after a session-generation change, then browses with fresh handles', () => {
+    const { root, svc, id } = fixture();
+    mkdirSync(path.join(root, 'X-rays'));
+    writeFileSync(path.join(root, 'X-rays', 'synthetic-xray.png'), 'fake');
+    const oldFolder = svc.list(id).entries[0];
+    const oldFile = svc.list(oldFolder.id).entries[0];
+    const oldOwner = recipient();
+    const receipt = svc.select([oldFile.id], oldOwner);
+    svc.invalidateGeneration(2);
+    expectCode(() => svc.list(oldFolder.id), 'NOT_FOUND');
+    expectCode(() => svc.select([oldFile.id], oldOwner), 'NOT_FOUND');
+    expectCode(() => svc.inspect(receipt.selectionId, receipt.files[0].receiptId, oldOwner), 'STALE_SELECTION');
+    const newFolder = svc.list(id).entries[0];
+    expect(newFolder.id).not.toBe(oldFolder.id);
+    const newFile = svc.list(newFolder.id).entries[0];
+    const newOwner = recipient({ generation: 2 });
+    const fresh = svc.select([newFile.id], newOwner);
+    expect(svc.inspect(fresh.selectionId, fresh.files[0].receiptId, newOwner).name).toBe('synthetic-xray.png');
+  });
+  it('bounds outstanding file receipts and regains capacity on cancellation and expiry', () => {
+    let clock = 1_000_000;
+    const { root, svc, id } = fixture(() => clock);
+    const file = selected(root, svc, id), owner = recipient();
+    const leases = Array.from({ length: 64 }, () => svc.select([file.id], owner));
+    expectCode(() => svc.select([file.id], owner), 'RESOURCE_LIMIT');
+    svc.cancel(leases[0].selectionId, owner);
+    expect(svc.select([file.id], owner).files).toHaveLength(1);
+    clock += 600_001;
+    expect(svc.select([file.id], owner).files).toHaveLength(1);
+    expect(JSON.stringify(svc.roots())).not.toContain(root);
+  });
   it('stops at a bounded directory scan instead of reading unlimited entries', () => {
     const { root, svc, id } = fixture();
     for (let i = 0; i < 2050; i++) writeFileSync(path.join(root, 'f' + i + '.txt'), '');

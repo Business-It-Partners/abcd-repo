@@ -70,6 +70,20 @@ describe('M16.5 shell-to-signed-recipient handoff',()=>{
   await expect(p).rejects.toMatchObject({code:'STALE_SELECTION'});
   expect(()=>c.send([file.id],{...owner,generation:2,authorized:()=>false},()=>{})).toThrow();
  });
+ it('enforces one in-flight delivery and refuses acknowledgment once recipient becomes unsafe',async()=>{
+  const {file,owner,files,setAllowed}=setup(),c=new FileTransferCoordinator(files,100);
+  let notice:any;
+  const p=c.send([file.id],owner,value=>{notice=value;});
+  expect(()=>c.send([file.id],owner,()=>{})).toThrowError('BUSY');
+  setAllowed(false);
+  expect(c.acknowledge(owner.sender,owner.frame,notice.transferId,true)).toBe(false);
+  await expect(p).rejects.toMatchObject({code:'STALE_SELECTION'});
+  setAllowed(true);
+  expect(()=>files.inspect(notice.selection.selectionId,notice.selection.files[0].receiptId,owner)).toThrow();
+  const next=c.send([file.id],owner,value=>{notice=value;});
+  expect(c.acknowledge(owner.sender,owner.frame,notice.transferId,true)).toBe(true);
+  await expect(next).resolves.toMatchObject({selectionId:notice.selection.selectionId});
+ });
  it('times out without an app acknowledgement; no stale lease remains',async()=>{
   const {files,file,owner}=setup(),c=new FileTransferCoordinator(files,8);
   let notice:any;

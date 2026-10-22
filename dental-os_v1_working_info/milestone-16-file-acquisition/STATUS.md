@@ -1,6 +1,6 @@
 # M16 Status — Files and Local Acquisition
 
-**Status:** M16.5 explicit Files-to-signed-app Send VERIFIED on source-bound Windows/Linux hosted GUI (18 Windows checks; 8 private Linux X11 checks), plus focused tests and builds. Native cross-view drag is not enabled or verified. **G16 OPEN; M16.6 NOT STARTED.**
+**Status:** M16.6 integrated closeout IN PROGRESS. M16.5 Send remains source-verified; native cross-view drag and physical-device verification deferred by user. **G16 OPEN** until all scoped acceptance evidence is reviewed.
 **Updated:** 2026-10-22. **Branch:** codex/milestone-16.
 **M15 source parent:** 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 

@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** M16.5 explicit Files-to-app transfer IMPLEMENTED and source-bound Windows/Linux VERIFIED; OS-native cross-view drag unverified and disabled. **M16.6 not started; G16 OPEN.**
+**Status:** M16.6 integrated closeout IN PROGRESS; M16.5 explicit transfer accepted. Native cross-view drag and physical-device acceptance deferred by user; **G16 OPEN** until final acceptance.
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -157,3 +157,13 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [ ] **G16 CLOSEOUT** is not authorized by this checkpoint.
 
 Verified M16.5 source: `9425e0180088bc76041035a4e539e86ac73ec069`; [focused Windows/Linux GitHub Actions run](https://github.com/Business-It-Partners/dental-os/actions/runs/39781678031). Do not launch M16.6 from this session or treat the documentation-only handoff commit as a new tested source build.
+
+
+## M16.6 closeout verification plan — 2026-10-22
+
+- [x] Inspect exact current M16.5 tested source and G16 matrix, without expanding into upload, production, M20 or native drag.
+- [x] Identify and correct a session-switch UI lifecycle issue: remount the trusted Files browser when clinic generation changes so obsolete folder-history IDs are not reused.
+- [ ] Run host tests for nested-folder invalidation and fresh handles after session change, outstanding receipt resource cap/expiry, and cancellation on late authorization loss; test no-gesture Send and app-shell bridge absence on both private graphical hosts.
+- [ ] Run a single exact-source focused Windows Actions job and private-X11 Linux graphical job, with a full integrated Vitest pass only on Linux to conserve Windows minutes.
+- [ ] Reconcile G16 scope line by line, mark hosted automated M16.6 closeout appropriately, hand off native drag and physical-device/complete milestone acceptance to Codex on user's device.
+- **Explicit deferral decision:** native isolated-view drag/drop is not a working feature and is not a G16 pass; the verified explicit Send remains the supported fallback. Physical-device certification is reserved for the user's Codex/device round. **G16 remains OPEN.**

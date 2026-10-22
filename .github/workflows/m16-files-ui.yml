@@ -59,8 +59,8 @@ jobs:
       - name: Require preinstalled private X11 tooling
         shell: bash
         run: command -v xvfb-run && command -v Xvfb
-      - name: Focused transfer security tests
-        run: node node_modules/vitest/vitest.mjs run tests/fileTransfer.test.ts tests/filePicker.test.ts --maxWorkers=1
+      - name: M16.6 integrated Linux Vitest regression suite
+        run: node node_modules/vitest/vitest.mjs run --exclude "apps/dental-apps/**" --maxWorkers=2
       - name: Build Linux Electron shell
         run: npm run build
       - name: Run Files and signed-app transfer on isolated headless X11
