@@ -1,0 +1,235 @@
+{
+  "source": "d5504845e93f6db2bcda8abd62989ee01380ec5b",
+  "executor": "M15 lead Codex, acting under user staging execution instruction on 2026-10-22",
+  "environment": "cloudfare-staging",
+  "unitTests": {
+    "passed": 324,
+    "files": 21,
+    "focusedRenewalAndPublication": 13
+  },
+  "build": "PASS",
+  "baseline": {
+    "environment": "cloudfare-staging",
+    "capturedAt": 1792635734765,
+    "controls": {
+      "catalogue": {
+        "sequence": 21,
+        "issuedAt": 1792507211838,
+        "expiresAt": 1792593611838,
+        "keyId": "company-staging-m08-20261016",
+        "sha256": "70004f942302e1cab8ab6b8ee02fa034e751334a4e943e73fc7b9a9a907ef5ba",
+        "etag": "\"593977f45c48221702057f924233c1c4\"",
+        "date": "Thu, 22 Oct 2026 02:22:16 GMT",
+        "format": 1
+      },
+      "updatePolicy": {
+        "sequence": 21,
+        "issuedAt": 1792507211838,
+        "expiresAt": 1792593611838,
+        "keyId": "company-staging-m08-20261016",
+        "sha256": "3af49fc013332d888dc9799d42fe8dc8e142c3e55e1361ba6c9ce7479d46388f",
+        "etag": "\"e877ad4be904bb81900e8f70dfda2fee\"",
+        "date": "Thu, 22 Oct 2026 02:22:16 GMT",
+        "format": 1
+      }
+    }
+  },
+  "review": {
+    "environment": "cloudfare-staging",
+    "metadataOnly": true,
+    "packageWrites": 0,
+    "catalogue": {
+      "keyId": "company-staging-m08-20261016",
+      "previousSha256": "70004f942302e1cab8ab6b8ee02fa034e751334a4e943e73fc7b9a9a907ef5ba",
+      "renewedSha256": "8216f366597d12dba9831457a5f298f42a2530f2427058564ec157ebc4b41ebe",
+      "semanticSha256": "8bed7fb561783e8fcbd2ba062ab4939e61ca5c393ab8ac81d162758b281a37f8",
+      "previousSequence": 21,
+      "recordedSequence": 21,
+      "sequence": 22,
+      "previousExpiresAt": 1792593611838,
+      "issuedAt": 1792635936749,
+      "expiresAt": 1792722336749
+    },
+    "updatePolicy": {
+      "keyId": "company-staging-m08-20261016",
+      "previousSha256": "3af49fc013332d888dc9799d42fe8dc8e142c3e55e1361ba6c9ce7479d46388f",
+      "renewedSha256": "e650897e0e8ab50a271257deb8c39eb73f79ea2c26eb560ba684f7ca4010e710",
+      "semanticSha256": "44f4b19370a003831092f3498b64ba2ef926e88ffb77678763970be725960dcd",
+      "previousSequence": 21,
+      "recordedSequence": 21,
+      "sequence": 22,
+      "previousExpiresAt": 1792593611838,
+      "issuedAt": 1792635936749,
+      "expiresAt": 1792722336749
+    }
+  },
+  "publication": {
+    "environment": "cloudfare-staging",
+    "bucket": "dentmitra-dental-os-releases-cloudfare-staging",
+    "worker": "dental-os-renew-staging-ae9e85b54609",
+    "packageWrites": 0,
+    "published": true,
+    "cleanedUp": true,
+    "anonymousDenied": true,
+    "result": {
+      "published": true,
+      "advanced": [
+        {
+          "key": "catalogue/staging.json",
+          "sequence": 22
+        },
+        {
+          "key": "update-policy/staging.json",
+          "sequence": 22
+        }
+      ],
+      "packageWrites": 0
+    },
+    "replayDenied": true
+  },
+  "recovery": {
+    "passed": true,
+    "environment": "cloudfare-staging",
+    "checks": {
+      "expiredBaselineBlocked": true,
+      "freshSignedControlsAccepted": true,
+      "semanticAuthorityUnchanged": true,
+      "immutablePackagesUnchanged": 14,
+      "registryPointersUnchanged": true,
+      "sameKnownGoodPackageAuthorized": true,
+      "oldMetadataRejected": true,
+      "packageWrites": 0,
+      "clinicalWrites": 0
+    },
+    "source": "d5504845e93f6db2bcda8abd62989ee01380ec5b",
+    "catalogueSequence": 22,
+    "policySequence": 22,
+    "expiresAt": 1792722336749,
+    "catalogueSha256": "8216f366597d12dba9831457a5f298f42a2530f2427058564ec157ebc4b41ebe",
+    "policySha256": "e650897e0e8ab50a271257deb8c39eb73f79ea2c26eb560ba684f7ca4010e710",
+    "packages": [
+      {
+        "id": "company.sample.alpha",
+        "version": "1.2.3",
+        "objectKey": "releases/company.sample.alpha/1.2.3/e23701f9c9bb9916eb9efaee22339bedcc987e5454e3a6a7c3b5c04f4491da0a.dentalpkg",
+        "sha256": "e23701f9c9bb9916eb9efaee22339bedcc987e5454e3a6a7c3b5c04f4491da0a",
+        "bytes": 15358
+      },
+      {
+        "id": "company.sample.beta",
+        "version": "1.2.3",
+        "objectKey": "releases/company.sample.beta/1.2.3/767942696b7fdb1d7ec4e1f20c99122af55b931c6dcc309e37c1ee3ab889257a.dentalpkg",
+        "sha256": "767942696b7fdb1d7ec4e1f20c99122af55b931c6dcc309e37c1ee3ab889257a",
+        "bytes": 15325
+      },
+      {
+        "id": "company.sample.preview",
+        "version": "1.3.0",
+        "objectKey": "releases/company.sample.preview/1.3.0/38715026e4f24fcca78cbea78589f72eced4ce29b9c88467e9e175725dfc5578.dentalpkg",
+        "sha256": "38715026e4f24fcca78cbea78589f72eced4ce29b9c88467e9e175725dfc5578",
+        "bytes": 4224
+      },
+      {
+        "id": "company.dental.followups",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.followups/1.0.0/e49fe8f93bfe80f0acaa85d85bd7b42ea9e75d05f6bfe5a8cc5adf1a0858e2c5.dentalpkg",
+        "sha256": "e49fe8f93bfe80f0acaa85d85bd7b42ea9e75d05f6bfe5a8cc5adf1a0858e2c5",
+        "bytes": 2192114
+      },
+      {
+        "id": "company.dental.appointments",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.appointments/1.0.0/be60668d772e8b4ab077daa2daf4e571d90233af83537c2bd46ff0f9ed7b4ae4.dentalpkg",
+        "sha256": "be60668d772e8b4ab077daa2daf4e571d90233af83537c2bd46ff0f9ed7b4ae4",
+        "bytes": 694505
+      },
+      {
+        "id": "company.dental.work-entry",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.work-entry/1.0.0/4d6b81ef93278c97c42362789c5c0ac9caeb05fdaaa97de1a9e689e40a74f546.dentalpkg",
+        "sha256": "4d6b81ef93278c97c42362789c5c0ac9caeb05fdaaa97de1a9e689e40a74f546",
+        "bytes": 565391
+      },
+      {
+        "id": "company.dental.patient-record",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.patient-record/1.0.0/2d378f771bc4c8ebd8f3e44455caecdfe8462de7d55757e06437337e7a7d04da.dentalpkg",
+        "sha256": "2d378f771bc4c8ebd8f3e44455caecdfe8462de7d55757e06437337e7a7d04da",
+        "bytes": 532431
+      },
+      {
+        "id": "company.dental.treatment-progress",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.treatment-progress/1.0.0/942b1bcce9a663c7143257ec1dd8283f655eae1c8a60762624922af58b00cab9.dentalpkg",
+        "sha256": "942b1bcce9a663c7143257ec1dd8283f655eae1c8a60762624922af58b00cab9",
+        "bytes": 609607
+      },
+      {
+        "id": "company.dental.lab-tracker",
+        "version": "1.0.1",
+        "objectKey": "releases/company.dental.lab-tracker/1.0.1/3b17d56f25f71c3573cac3e11700aa0e8ea47546e7abbcfb1ba3cb3dc47c89ab.dentalpkg",
+        "sha256": "3b17d56f25f71c3573cac3e11700aa0e8ea47546e7abbcfb1ba3cb3dc47c89ab",
+        "bytes": 647196
+      },
+      {
+        "id": "company.dental.finance",
+        "version": "1.0.1",
+        "objectKey": "releases/company.dental.finance/1.0.1/7276714bfd844a06576a1ef5e8c916de47fff4d3c447ced2b1df8a9f765afc0d.dentalpkg",
+        "sha256": "7276714bfd844a06576a1ef5e8c916de47fff4d3c447ced2b1df8a9f765afc0d",
+        "bytes": 602980
+      },
+      {
+        "id": "company.dental.patient-payments",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.patient-payments/1.0.0/dc979f1a16d5bb5b07b04e64481e44f81c7c913bb446f147adefedb45fdc108c.dentalpkg",
+        "sha256": "dc979f1a16d5bb5b07b04e64481e44f81c7c913bb446f147adefedb45fdc108c",
+        "bytes": 595341
+      },
+      {
+        "id": "company.dental.staff",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.staff/1.0.0/5b81ef90a40ed04db91374c1c281609384aa8983aff59b1ec563f3b23309e4c6.dentalpkg",
+        "sha256": "5b81ef90a40ed04db91374c1c281609384aa8983aff59b1ec563f3b23309e4c6",
+        "bytes": 693190
+      },
+      {
+        "id": "company.dental.treatment-protocols",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.treatment-protocols/1.0.0/6e66a2d4a1b3e16db8ce1600fab8240236bced03344ebd1ca102a66cc2bffb7d.dentalpkg",
+        "sha256": "6e66a2d4a1b3e16db8ce1600fab8240236bced03344ebd1ca102a66cc2bffb7d",
+        "bytes": 883364
+      },
+      {
+        "id": "company.dental.calendar",
+        "version": "1.0.0",
+        "objectKey": "releases/company.dental.calendar/1.0.0/aaace6bcb1ce43bbd243f4c0db9f0797bd02f094f94c70ecf61b317226267aa4.dentalpkg",
+        "sha256": "aaace6bcb1ce43bbd243f4c0db9f0797bd02f094f94c70ecf61b317226267aa4",
+        "bytes": 610049
+      }
+    ],
+    "limits": "Public signed staging control and core registry authorization proof. No authenticated Store entitlement, clinical API or native window UI acceptance."
+  },
+  "resources": {
+    "environment": "cloudfare-staging",
+    "accountVerified": true,
+    "taskRenewalWorkersRemaining": 0,
+    "temporaryPublisherRemoved": true,
+    "existingClients": [
+      {
+        "host": "dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev",
+        "status": 200,
+        "reachable": true
+      },
+      {
+        "host": "cloudfare-dental-saas-staging.web.app",
+        "status": 200,
+        "reachable": true
+      },
+      {
+        "host": "cloudfare-dental-super-admin-staging.web.app",
+        "status": 200,
+        "reachable": true
+      }
+    ]
+  }
+}

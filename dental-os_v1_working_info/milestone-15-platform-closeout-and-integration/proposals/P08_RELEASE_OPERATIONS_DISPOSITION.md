@@ -93,3 +93,8 @@ Unresolved before M15.5 can claim completion:
 ## Current execution addendum — 2026-10-22
 
 The user assigned the remaining work, including staging renewal preparation/execution, to the lead in the existing chat/worktree. The earlier two-human assignment proposal remains historical and is not a request for the user to nominate people before technical progress. The lead records actual access, source review and guarded staging execution; independent human/production custody acceptance is not claimed. Metadata-only tooling and the operating procedure now exist in [the runbook](../../../docs/STAGING_METADATA_RENEWAL.md). Preparation/publication regressions pass 13/13 and the full serial unit suite passes 324/324. The actual staging drill is underway, not complete at this tooling checkpoint.
+
+
+## Actual execution result — 2026-10-22
+
+The lead completed the scoped real staging renewal and expiry/core-registry recovery on `d5504845`. Both metadata sequences advanced 21→22, semantic authority and all 14 packages stayed unchanged, and package-registry pointers remained identical. Anonymous/replay refusal, temporary publisher deletion and staging client reachability passed. See [the operation report](../evidence/P08_METADATA_RENEWAL_2026-10-22.json). The original missing-tool/unperformed-drill findings above are historical; authenticated Store, native-window, clinical API and production/device evidence remain separately scoped.

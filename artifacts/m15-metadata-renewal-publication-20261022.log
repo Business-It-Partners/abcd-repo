@@ -1,0 +1,2 @@
+PASS staging targets, signatures, current baseline, sequence, expiry and unchanged authority. Package writes: 0.
+{"environment":"cloudfare-staging","bucket":"dentmitra-dental-os-releases-cloudfare-staging","worker":"dental-os-renew-staging-ae9e85b54609","packageWrites":0,"published":true,"cleanedUp":true,"anonymousDenied":true,"result":{"published":true,"advanced":[{"key":"catalogue/staging.json","sequence":22},{"key":"update-policy/staging.json","sequence":22}],"packageWrites":0},"replayDenied":true}
