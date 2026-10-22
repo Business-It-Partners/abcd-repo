@@ -1,0 +1,42 @@
+name: M16 targeted Windows Files UI
+on:
+  push:
+    branches: ['codex/milestone-16']
+permissions:
+  contents: read
+concurrency:
+  group: m16-files-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  files-ui:
+    # Only intentionally tagged M16 verification changes run this job.
+    if: ${{ contains(github.event.head_commit.message, '[m16-gui]') }}
+    runs-on: windows-2022
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused Files and picker security tests
+        run: node node_modules/vitest/vitest.mjs run tests/localFiles.test.ts tests/filesShell.test.ts tests/filePicker.test.ts --maxWorkers=1
+      - name: Build and typecheck
+        run: npm run build
+      - name: Private synthetic Windows Files and picker UI
+        run: node tests/m16-files-windows-ci.mjs
+      - name: Retain bounded Files UI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m16-files-ui-${{ github.sha }}
+          if-no-files-found: warn
+          path: |
+            artifacts/m16-windows-files-ui.json
+            artifacts/m16-windows-files-ui.png
+          retention-days: 7

@@ -38,3 +38,7 @@ No M16.5 Files-to-app drag/send, no clinical file-byte read, Cloudflare upload, 
 ## Next
 
 M16.1 design review is documented. Previous M16 Windows job passed documentation, unit and build/typecheck before an unrelated graphical runtime timeout; full runtime CI is not claimed. The M16.2 source-bound Windows unit/build evidence is recorded. Windows source at 69dfaa45339d passed documentation, 456 unit tests (4 skipped), build/typecheck and first-party package checks. The full Windows workflow failed on the existing runtime-scenario Motion Studio launcher lookup; dedicated picker GUI proof did not run. Pending: run the private-display Files/picker UI flow on supported OS devices. Start M16.5 only in a separate session after recording limitations and correcting any M16.4 regression. Never imply the selection receipt uploads a patient file. Before wiring the service to shell IPC, review safe file navigation, session binding and host-specific race/volume limitations. Do not bundle picker, drag or Cloudflare upload work. Preserve evidence and avoid changing M15 branch.
+
+## Focused remote GUI verification pending
+
+A single tagged push will run the bounded hosted Windows Files/picker graphical job rather than the full suite. Root cause of old runtime launcher timeout unconfirmed; no new visual acceptance yet.

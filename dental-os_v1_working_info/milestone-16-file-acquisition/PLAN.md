@@ -110,3 +110,11 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [ ] Validate a company-signed dental application release explicitly declaring local.files.pick; older already-deployed app releases cannot gain authority retroactively. No staging deployment is part of this task.
 
 **Stop:** M16.5 drag-and-drop and Files-to-app explicit transfer, Cloudflare uploads and patient-record association remain excluded. A receipt does not permit reading local file bytes.
+
+## M16.3/M16.4 remote GUI verification follow-up
+
+- [x] Isolate prior Windows runtime failure: Motion Studio launcher not found before graphical test body proceeded.
+- [x] Prepare one tagged, bounded hosted Windows focused Files/picker verification job and skip costly full suite.
+- [ ] Observe exact focused graphical result and archive synthetic-only evidence.
+- [ ] Verify native host OS dialogs and private Linux GUI separately.
+- [ ] Verify company-signed first-party dental app permission and trusted gesture before claiming G16 verified.

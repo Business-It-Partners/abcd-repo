@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session, dialog, shell } from 'electron';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
@@ -73,6 +74,32 @@ function createWindow() {
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
   if(filePicker)runtime?.setFilePicker(filePicker);
+  // M16 UI acceptance harness: unavailable on normal desktops, staging sessions
+  // and any runner without the three explicit CI-only guards.
+  if (process.platform==='win32' && process.env.GITHUB_ACTIONS==='true' &&
+      process.env.RUNNER_OS==='Windows' && app.commandLine.hasSwitch('files-fixtures') &&
+      app.commandLine.hasSwitch('files-picker-verify') && identityBypass && filePicker) {
+    let outcome: { status:'idle'|'pending'|'selected'|'cancelled'|'denied'; files?: string[] } = {status:'idle'};
+    const fixture = {
+      start(){
+        if(outcome.status==='pending' || !filePicker || !win.webContents || !canUseWorkspace())return false;
+        outcome={status:'pending'};
+        const sender=win.webContents;
+        void filePicker.pick(
+          {purpose:'patient-attachment',fileTypes:'medical-images',maxSelections:1},
+          {sender,frame:sender.mainFrame,appId:'company.dental.patient-record',
+           appVersion:'synthetic-test',windowId:'fixture-only',generation:identityView().generation,
+           requestId:randomUUID(),authorized:()=>!sender.isDestroyed()&&canUseWorkspace()},
+          'Synthetic Picker Test',new AbortController().signal
+        ).then(result=>{outcome={status:'selected',files:result.files.map(file=>file.name)};})
+         .catch(error=>{outcome={status:(error as {code?:string})?.code==='CANCELLED'?'cancelled':'denied'};});
+        return true;
+      },
+      outcome(){return {...outcome};},
+    };
+    Object.assign(globalThis,{__m16FilesCiFixture:fixture});
+    win.once('closed',()=>{delete (globalThis as typeof globalThis & {__m16FilesCiFixture?:unknown}).__m16FilesCiFixture;});
+  }
   win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
