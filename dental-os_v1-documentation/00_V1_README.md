@@ -18,6 +18,7 @@ The [canonical repository structure](../dental-os_v1_working_info/00_REPOSITORY_
 - [V1 Product Definition — compatibility pointer](02_V1_PRODUCT_DEFINITION.md)
 - [Principles and Invariants](03_V1_PRINCIPLES_AND_INVARIANTS.md)
 - [System Architecture](04_V1_SYSTEM_ARCHITECTURE.md)
+- [M16 Files and local file acquisition — scoped architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md)
 - [Boot and Workspace Lifecycle](05_V1_BOOT_AND_WORKSPACE_LIFECYCLE.md)
 - [Shell and Desktop](06_V1_SHELL_AND_DESKTOP.md)
 - [App Runtime and Isolation](07_V1_APP_RUNTIME_AND_ISOLATION.md)
