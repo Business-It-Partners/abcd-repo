@@ -8,6 +8,10 @@ import { WindowTitleBar } from './WindowTitleBar';
 import type { Rect } from './motion';
 
 const edges: ResizeEdge[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
+const privateFilesSnapshot = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="630"><rect width="1040" height="630" rx="18" fill="#e7f2f4"/><rect x="54" y="54" width="930" height="520" rx="22" fill="#ffffff" stroke="#c1dce3"/><path d="M427 285h75l29 25h93v86H427z" fill="#4b9ab2"/><text x="520" y="443" font-size="28" text-anchor="middle" font-family="sans-serif" fill="#376378">Files</text></svg>'
+);
+
 const rectOf = (el: HTMLElement): Rect => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
 type Gesture = { pointerId: number; element: HTMLElement; bounds: Rect; size: Size; px: number; py: number; edge?: ResizeEdge; cursor: string; selection: string };
 
@@ -102,7 +106,8 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     try {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const source = rectOf(windowRef.current), destination = rectOf(target.current);
-      const data = minimizing ? await window.desktop?.capture(source, sessionGeneration) : snapshotRef.current;
+      // Files preview never captures local filenames or thumbnails into persisted snapshots.
+      const data = minimizing ? id === 'files' ? privateFilesSnapshot : await window.desktop?.capture(source, sessionGeneration) : snapshotRef.current;
       if (!data) return;
       const image = new Image(); image.src = data; await image.decode();
       if (generation.current !== token) return;

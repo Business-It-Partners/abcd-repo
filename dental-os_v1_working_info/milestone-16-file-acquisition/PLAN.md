@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.1 design/documentation; runtime NOT STARTED.
+**Status:** IMPLEMENTING — M16.3 Files core window implementation drafted on the M16 branch; exact-source CI and private UI evidence tracked separately.
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -83,3 +83,14 @@ The source review resolved the core pre-implementation choices, now codified in 
 - **Cross-view transfer:** OS-shell mediated receipt; explicit Send is mandatory. Native cross-WebContentsView drag remains implementation/acceptance risk, not an open contract decision.
 
 M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working session. Do not bundle Files UI, picker or drag in that session. Use local focused validation before a consolidated push and reserve costly Windows CI for a justified platform behavior gate.
+
+## M16.3 bounded execution / acceptance
+
+- [x] Reuse static shared managed-window controller, dock, focus, minimize/restore, overview and keyboard shortcuts for **Files**.
+- [x] Implement read-only Files application with root sidebar, folder breadcrumbs, back/forward/up, refresh, deterministic paged listings, visible selection, loaded-page sort and meaningful permission/error states.
+- [x] Enforce trusted main-frame **shell-only** IPC for `files:roots` and `files:list` with exact generation and closed payload schema. No app-preload, business SDK, or raw path/bytes operations.
+- [x] Add a synthetic private-display fixture and targeted security, window-lifecycle and UI regression scripts.
+- [x] Protect file names in OS overview and minimized previews with static sanitized artwork.
+- [ ] Complete source-bound Windows unit/build CI check and run private Linux UI script `npm run test:files` when a private GNOME environment is available. Do not use the user's display or real clinic files.
+
+**Stop before M16.4:** no OS-owned modal picker, native host file dialog, app SDK activation, file receipt transfer, drag/drop, or Cloudflare upload is enabled in M16.3.

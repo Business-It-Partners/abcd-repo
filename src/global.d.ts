@@ -21,6 +21,10 @@ declare global {
         }>;
         subscribe(callback: (kind: string, value: unknown) => void): () => void;
       };
+      files: {
+        roots(generation: number): Promise<import('../electron/host/localFiles').FileRoot[]>;
+        list(input: import('../electron/host/filesShell').ShellFilesList): Promise<import('../electron/host/localFiles').FilePage>;
+      };
       preferences(value?: { overviewShortcutEnabled: boolean }): Promise<{ overviewShortcutEnabled: boolean }>;
       status(): Promise<{ phase: string }>;
       onHostTransition(listener: (transitioning: boolean) => void): () => void;

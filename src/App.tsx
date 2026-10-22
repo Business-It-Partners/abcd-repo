@@ -1,5 +1,5 @@
 import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
-import { Check, ChevronRight, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
+import { Check, ChevronRight, FolderOpen, Layers, Minus, Power, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
 import { FinanceApp, FINANCE_MODULES } from './FinanceApp';
@@ -14,6 +14,8 @@ import { packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/co
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
+import { FilesApp } from './FilesApp';
+import './FilesApp.css';
 import { ManagedWindowFrame } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
@@ -78,7 +80,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
-  const { studio, records, followups } = controllers;
+  const { studio, records, followups, files } = controllers;
   const phase = studio.win.phase;
   const [installed, setInstalled] = useState<StaticWindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
   const [dynamicControllerRefs,setDynamicControllerRefs]=useState<Record<string,MutableRefObject<WindowController>>>({});
@@ -108,7 +110,7 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
   const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
   const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
   const deliveredIds = delivery.installedOrder.map(runtimeIdForPackage);
-  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['store', ...deliveredIds])], titleByWindow);
+  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['files', 'store', ...deliveredIds])], titleByWindow);
   const pendingArrivalId=delivery.installingId?runtimeIdForPackage(delivery.installingId):undefined;
   function startStoreJob(id:StaticWindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
   useEffect(() => {
@@ -288,8 +290,9 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
       </div>
     </ManagedWindowFrame>}
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
+    <ManagedWindowFrame controller={files}><FilesApp visible={files.win.phase === 'visible'}/></ManagedWindowFrame>
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
-    {WINDOW_IDS.filter(id => !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
+    {WINDOW_IDS.filter(id => id !== 'files' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
@@ -314,17 +317,17 @@ function Desktop({ session, sessionControls }: { session?: SessionView; sessionC
         if (previewApp) {
           const controller = allControllers[previewApp], title = state.windows[previewApp]?.title ?? titleByWindow[previewApp] ?? previewApp;
           return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostActionPending || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${title}` : `Open ${title} preview`}>
-            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{title}</span>
+            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'files' ? <FolderOpen size={21}/> : previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{title}</span>
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
-        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={event=>icon.id==='finance'?openFinanceExplorer(event.currentTarget):icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
-          {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
+        return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' || icon.id === 'files' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostActionPending || hostTransitioning} onClick={event=>icon.id==='finance'?openFinanceExplorer(event.currentTarget):icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
+          {icon.id === 'files' ? <FolderOpen size={23}/> : icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
           {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;
       })}
     </nav>
-    {readyId && !state.overview && !hostTransitioning && !financeExplorer && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
+    {readyId && !state.overview && !hostTransitioning && !financeExplorer && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId === 'files' ? <FolderOpen size={24}/> : readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
     {appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} title={appExplorer.title} icon={appExplorer.iconDataUrl} modules={appExplorer.modules} error={appExplorerError} onClose={()=>{setAppExplorer(null);setAppExplorerError('');}} onSelect={moduleId=>void selectAppModule(moduleId)}/>}
     {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
     {launchNotice && !appExplorer && !financeExplorer && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}

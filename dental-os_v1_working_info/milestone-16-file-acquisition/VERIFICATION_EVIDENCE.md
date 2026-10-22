@@ -48,3 +48,12 @@ The previous doc-check pass is tied to its recorded SHA, **not automatically to 
 - No additional rerun authorized or initiated. The tested host-service source is unchanged by this evidence-only handoff. Linux local smoke results are preliminary only; M16.3+ still own sandboxed shell/UI integration and Windows/Linux interaction acceptance.
 
 **Handoff:** exact implementation source `6bcc5b49`; next M16.3 session starts with source and working tree review. M16.2 provides the main-process foundation only. Do not expose file access directly to dental app JavaScript, bypass signed app policy, restart the user's desktop, or enable Cloudflare uploads.
+
+## M16.3 implementation validation record (2026-10-22)
+
+- Added strict host parser regressions for bounded shell file-list requests and Files static window manager lifecycle (`tests/filesShell.test.ts`).
+- Added a private-display UI scenario (`tests/files.mjs`) using `--files-fixtures`, verifying navigation, selectable metadata, shell-only root discovery, preview privacy, and managed minimize/restore/close behavior. The script is available as `npm run test:files`; do not run against a live user desktop.
+- Source review confirmed no `files:*` channels in isolated application preload, no changes to SaaS/Cloudflare or `clinic.media.upload`, no file bytes exposed to apps, and no general-purpose file editing.
+- Exact-source Windows unit/build validation and private Linux display UI **not yet claimed** by authoring these tests. Record their actual results before accepting M16.3 as verified. In this tooling session private GNOME compositor and full repository node_modules are unavailable; avoid claiming that static inspection constitutes UI proof.
+
+Existing M16.2 Windows evidence and its unrelated pointer timeout remain recorded above. Do not spend quota repeatedly rerunning graphical CI without a changed, targeted reason.

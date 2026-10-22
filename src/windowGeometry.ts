@@ -8,6 +8,7 @@ export const dockWindowGap = 12;
 export const statusBarHeightForWidth = (width: number) => width <= 760 ? 59 : 31;
 const comingSoon = (title: string) => ({ title, preferred: { width: 760, height: 480 }, minimum: { width: 480, height: 300 } });
 export const WINDOW_SPECS = {
+  files: { title: 'Files', preferred: { width: 1040, height: 630 }, minimum: { width: 590, height: 390 } },
   store: { title: 'App Store', preferred: { width: 1060, height: 660 }, minimum: { width: 560, height: 400 } },
   studio: { title: 'Motion Studio', preferred: { width: 760, height: 480 }, minimum: { width: 540, height: 340 } },
   followups: { title: 'Follow-ups', preferred: { width: 1200, height: 680 }, minimum: { width: 760, height: 420 } },

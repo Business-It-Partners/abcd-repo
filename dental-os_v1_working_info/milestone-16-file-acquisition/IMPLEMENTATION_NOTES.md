@@ -44,3 +44,13 @@ The narrow fix retains per-component `lstat` link checks and replaces Windows re
 ## M16.2 verified host-code checkpoint (2026-10-22)
 
 The Windows canonical-root alias correction was committed at `6bcc5b49d4940fe2f78d7bfe4fc2c3c96b18faaa`. Its [Windows run 39756930135](https://github.com/Business-It-Partners/dental-os/actions/runs/39756930135) passed M16.2 host regression cases, documentation validation, build/typecheck, and first-party package checks. The whole workflow remained **failed** because existing `tests/runtime-ci.mjs` later timed out spawning PowerShell for a synthetic pointer position. No new file-access UI is present, so this runtime-stage failure is not evidence of file-service failure or success. Do not rerun Windows solely to force a green workflow at the cost of remaining quota. Track this existing graphical runner issue separately from the next M16.3 implementation.
+
+## M16.3 — Files core window implementation (2026-10-22)
+
+This session touches only the OS shell window, read-only trusted browsing IPC and its synthetic tests. Source: `src/FilesApp.tsx`, `src/FilesApp.css`, `src/windowGeometry.ts`, `src/useAppWindows.ts`, `src/App.tsx`, `src/ManagedWindow.tsx`, `src/WindowOverview.tsx`, `src/global.d.ts`, `electron/main.ts`, `electron/preload.ts`, `electron/host/filesShell.ts`, `tests/filesShell.test.ts`, `tests/files.mjs`, and `package.json`.
+
+The app is always dock-accessible in normal runtime and reuses the static managed-window controller. The trusted main frame is the only accepted caller for `files:roots` and `files:list`; the contract accepts opaque UUIDs, a single page cursor, page limit <=200 and session generation. Files is read-only; no direct arbitrary paths or bytes travel to React or dental apps. Old M16.2 receipt primitives remain internal and unused by the Files UI.
+
+A privacy review revealed that generic minimized/overview captures could include host filenames. For `files` only, M16.3 provides sanitized icon artwork for Genie minimization and a generic privacy card in overview. Other app snapshot paths are unchanged.
+
+Implementation deliberately avoids any M16.4 picker or M16.5 transfer, and adds a private-display synthetic test root under isolated user-data only when `--files-fixtures` is supplied in a trusted private test environment. Files are never uploaded, persisted in OS state, or logged to diagnostics. Browser UI/file-dialog cross-platform proof remains an explicit M16.3 acceptance limitation until private Linux and Windows UI tests execute.

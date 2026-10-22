@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session, dialog, shell } from 'electron';
 import path from 'node:path';
-import {writeFileSync} from 'node:fs';
+import {mkdirSync, writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
+import { LocalFileService } from './host/localFiles';
+import { parseFilesList } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
 import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
@@ -43,6 +45,7 @@ const canUseWorkspace = () => identityBypass || identity?.view().phase === 'read
 const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
 const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
+let localFiles: LocalFileService | undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -183,6 +186,20 @@ ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknow
   if (image.isEmpty()) throw new Error('Empty snapshot');
   return image.toDataURL();
 });
+// OS-only file browsing. Never expose arbitrary paths, file bytes or these channels to app preloads.
+function requireFilesShell(event: Electron.IpcMainInvokeEvent, generation: unknown): LocalFileService {
+  if (!isShell(event) || bootPhase !== 'ready' || !canUseWorkspace()
+    || !Number.isSafeInteger(generation) || generation !== identityView().generation || !localFiles) {
+    throw new Error('FORBIDDEN');
+  }
+  return localFiles;
+}
+ipcMain.handle('files:roots', (event, generation: unknown) => requireFilesShell(event, generation).roots());
+ipcMain.handle('files:list', (event, input: unknown) => {
+  const request = parseFilesList(input);
+  if (!request) throw new Error('INVALID_REQUEST');
+  return requireFilesShell(event, request.generation).list(request.directoryId, request.cursor, request.limit);
+});
 ipcMain.handle('os:preferences', (event, input: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (bootPhase !== 'ready' || !win || !isShell(event)) throw new Error('Unavailable');
@@ -253,12 +270,21 @@ if (primary) void app.whenReady().then(async () => {
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging');
-      identity.subscribe(view => { if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
+      identity.subscribe(view => { localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
     distribution = new DistributionService(runtimeFixtures ? {...stagingDistribution,updates:false} : storeFixture?.config ?? stagingDistribution, packages, identity ?? fixtureServices().identity, catalogueStore, storeFixture?.transport);
     if(!trustedTest)distribution.startUpdates();
     distribution.subscribe(view => { if(view.phase==='unavailable')diagnostics?.record('store-unavailable');if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
+    // Synthetic, non-clinical roots are available only on a private UI test display
+    // or an explicitly trusted hosted runner. Normal users see real accessible roots.
+    if (trustedTest && app.commandLine.hasSwitch('files-fixtures')) {
+      const fixtureRoot = path.join(app.getPath('userData'), 'm16-files-fixture');
+      mkdirSync(path.join(fixtureRoot, 'X-rays'), { recursive: true });
+      writeFileSync(path.join(fixtureRoot, 'X-rays', 'm16-synthetic-xray.png'), 'synthetic-only');
+      writeFileSync(path.join(fixtureRoot, 'notes-synthetic.pdf'), 'synthetic-only');
+      localFiles = new LocalFileService([{ label: 'Test Files', path: fixtureRoot, kind: 'folder' }]);
+    } else localFiles = new LocalFileService();
     bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); if (identity) void identity.restore();
   } catch {
     bootPhase = 'recovery';diagnostics?.record('boot-recovery');
@@ -273,7 +299,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; distribution?.dispose();
+  bootPhase = 'exiting'; localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

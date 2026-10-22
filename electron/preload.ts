@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld('desktop', {
       return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); ipcRenderer.removeListener('runtime:app-explorer',appExplorer); };
     },
   },
+  files: {
+    roots: (generation: number) => ipcRenderer.invoke('files:roots', generation),
+    list: (input: unknown) => ipcRenderer.invoke('files:list', input),
+  },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),
   control: (action: 'close' | 'minimize') => {

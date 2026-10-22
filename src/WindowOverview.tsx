@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { X } from 'lucide-react';
+import { FolderOpen, X } from 'lucide-react';
 import type { WindowController } from './ManagedWindow';
 import { useWindowManager } from './windowManager';
 import type { WindowId } from './windowGeometry';
@@ -14,7 +14,7 @@ function WindowPreview({ controller }: { controller: WindowController }) {
   useEffect(()=>{const update=()=>setRevision(n=>n+1);window.addEventListener('runtime:snapshot',update);return()=>window.removeEventListener('runtime:snapshot',update);},[]);
   useLayoutEffect(() => {
     const source = controller.windowRef.current, container = host.current;
-    if (!source || !container) return;
+    if (!source || !container || controller.id === 'files') return;
     const clone = source.cloneNode(true) as HTMLElement;
     const fields = source.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input,textarea,select');
     clone.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input,textarea,select').forEach((field, index) => {
@@ -35,7 +35,8 @@ function WindowPreview({ controller }: { controller: WindowController }) {
     fit(); const observer = new ResizeObserver(fit); observer.observe(container);
     return () => { observer.disconnect(); container.replaceChildren(); };
   }, [controller.id, controller.windowRef, controller.bounds.width, controller.bounds.height, revision]);
-  return <div className="overview-preview" ref={host} aria-hidden="true" inert/>;
+  return controller.id === 'files' ? <div className="overview-preview overview-private" aria-hidden="true"><FolderOpen size={28}/><span>Private file preview</span></div>
+    : <div className="overview-preview" ref={host} aria-hidden="true" inert/>;
 }
 
 export function WindowOverview({ controllers, onClose }: { controllers: Record<WindowId, WindowController>; onClose(): void }) {
@@ -93,7 +94,7 @@ export function WindowOverview({ controllers, onClose }: { controllers: Record<W
         <div className="overview-window" style={{ height: layout[index].height }}>
         {state.windows[id].phase === 'minimized' ? <div className="overview-preview"><img className={controllers[id].snapshot ? 'overview-snapshot' : 'overview-fallback'} src={controllers[id].snapshot ?? dockArtwork(id)} alt=""/></div> : <WindowPreview controller={controllers[id]}/>}
         </div>
-        <span className="overview-caption"><img src={dockArtwork(id)} alt=""/><span>{state.windows[id].title}</span>{state.windows[id].phase === 'minimized' && <small>Minimized</small>}</span>
+        <span className="overview-caption">{id === 'files' ? <FolderOpen size={19}/> : <img src={dockArtwork(id)} alt=""/>}<span>{state.windows[id].title}</span>{state.windows[id].phase === 'minimized' && <small>Minimized</small>}</span>
       </button>)}
       {!ids.length && <div className="overview-empty"><h3>No open windows</h3><p>Close this overview and open an app from the dock.</p></div>}
     </div></div>
