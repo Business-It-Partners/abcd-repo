@@ -30,7 +30,7 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-026 | Release-scoped first-party API grants in the existing signed update policy | Accepted 2026-10-22; implementation/final verification tracked in M15 | API/broker authority: 11; update-policy schema: 09/10 |
 | ADR-027 | Host-owned clinic JSON contract 1 under exact signed release grants | Accepted technical design in M15; source/runtime verification tracked separately | SDK 1.2; exact app/method/path/query and trusted session capability checks; 11 |
 
-| ADR-030 | OS-owned read-only Files and scoped local file-selection receipts | Product direction accepted 2026-10-22; exact SDK permission schema under M16.1 review | [M16 architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md); G16 |
+| ADR-030 | OS-owned read-only Files and scoped local file-selection receipts | M16.1 contract selected 2026-10-22; implementation and G16 runtime proof remain open | [M16 architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md); G16 |
 
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 
@@ -121,3 +121,11 @@ Explicit original-key retries and authoritative active-file reconciliation prote
 **Compatibility and safety:** Existing M15 signed format-2 clinic API grants do not authorize local filesystem access. Implement a distinct, versioned local selection contract guarded by verified company package, platform trust ceiling, explicit user action and current session; choose exact signed metadata/release policy representation under M16.1 before implementation. Preserve ADR-013/R13 no general app messaging, sandbox/context isolation, OS path/ACL/symlink safety, revocation and non-persistence of patient content.
 
 **Owner and proof:** M16/G16. [Architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md) and [Plan](../dental-os_v1_working_info/milestone-16-file-acquisition/PLAN.md). New code, local drag semantics, host permission handling, Windows/Linux focus and resource behavior require source-bound acceptance. No Cloudflare upload, business record association, file modification, staging/production deployment or G16 completion is implied by this ADR.
+
+### M16.1 contract resolution (2026-10-22)
+
+After inspecting the M15 source, M16 selects a distinct SDK local operation `local.files.pick` (candidate minor 1.5). A current signed app manifest, fresh company-signed **app-level capability** in existing update-policy metadata, platform company ceiling, approved clinic app-family session and exact registered WebContents/frame/release are all required. The existing format-2 **clinic API** release-grant list is unchanged and cannot grant local host file permissions. In particular, the current default local-operation authorization path in SessionManager must never be sufficient to open files.
+
+The trusted app preload observes genuine `isTrusted` pointer/keyboard activation and registers a short-lived, single-use, main-process activation ticket (750 ms). Caller-provided gesture booleans/nonces are refused. Actual file access additionally requires explicit user choice in the **OS-owned picker** or parented native open dialog. The app gets only a short-lived, one-recipient metadata receipt; no host path, file bytes, generic read/write/execute permission or media upload.
+
+Read-only OS Files uses main-process rooted, opaque folder IDs and paged listings; the shell owns the Files window and eligible drop/Send destination. Files-to-app is a platform-mediated selection receipt, not a general app-to-app messaging bus. Native cross-WebContentsView drag remains a runtime proof risk, so explicit Send is mandatory. Review and validation criteria are in [M16 architecture §11](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md). This ADR resolves **design direction only**; SDK code, native FS safety, Linux/Windows dialogs and G16 remain unimplemented.

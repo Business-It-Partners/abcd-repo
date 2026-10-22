@@ -130,3 +130,91 @@ Error classes planned for review: CANCELLED, FORBIDDEN, STALE_SESSION, STALE_SEL
 Before coding, M16.1 must settle the exact typed SDK/grant encoding and user-gesture evidence, host service ownership, path/lease policy, fullscreen native picker behavior and the precise isolation-preserving Files-to-app transfer path. Record architectural changes in [ADR register](../../dental-os_v1-documentation/20_V1_ADR_REGISTER.md), never as unnoticed patches. Then follow [M16 implementation plan](PLAN.md).
 
 Governing requirements: [V1 architecture](../../dental-os_v1-documentation/00_V1_README.md), [invariants](../../dental-os_v1-documentation/03_V1_PRINCIPLES_AND_INVARIANTS.md), [SDK security](../../dental-os_v1-documentation/11_V1_SDK_AND_API_BROKER.md), [host/runtime isolation](../../dental-os_v1-documentation/07_V1_APP_RUNTIME_AND_ISOLATION.md). This document is the **scoped M16 technical source of truth**; when it conflicts with an established invariant, stop and resolve the ADR before implementing.
+
+## 11. M16.1 resolved host/SDK contract — implementation authority (2026-10-22)
+
+This section settles the previously open M16.1 contract choices after reviewing the actual M15 Electron source and package/security policy. It is **approved design**, not implemented functionality; SDK version, local filesystem I/O and UI code are unchanged on this branch.
+
+### 11.1 Permission encoding and version compatibility
+
+**Choose a new named operation** `local.files.pick` (SDK 1.5 candidate, major version remains 1). It is a **local OS operation**, not an entry in `apiOperations`, not a SaaS request, and not a `native.intent` print/export variant.
+
+A dental app is eligible only if all these checks succeed at request time, at picker completion and before any later receipt consumption:
+
+1. Active verified `company.*` package manifest explicitly declares `local.files.pick` in its signed `capabilities`.
+2. Current **company-signed, fresh** update-policy app entry permits that same capability; the shipped `appTrust` capability ceiling also permits it. No unsigned per-app self-grant or generic local FS capability is accepted.
+3. `PackageRegistry.assertAllowed(lease)` still succeeds for the exact running package; current release, policy and revocation remain applicable. A newly signed app-only package can opt into the already shipped operation only with company approval and an eligible installed host.
+4. Current clinic session is active, app-family access passes the existing `appAllowed`/role/capability policy, generation matches and the verified foreground recipient window is eligible. Add **explicit** local-files authorization; `SessionManager.allowed`'s general local-operation default must never be used as the entire grant.
+5. Main-process caller, main frame, expected verified origin, connection, version and request ID all match the registered app and platform SDK. No handoff on stale or hidden/unavailable app surfaces.
+
+**Signing clarification:** The update policy already contains a signed *app-level capability list* in both supported formats; that list plus the signed package manifest and shipped company ceiling are the selected local grant mechanism. Release-specific `format: 2` `apiOperations` grants remain **solely for clinic APIs**, unchanged. Because a package must already have declared the new capability and pass the registry guard, an update to company policy cannot endow an older package that never declared it. No policy schema v3, extra signing root or backend deployment is required merely for selection. A local grant does not enable deferred `clinic.media.upload`.
+
+SDK compatibility: add `local.files.pick` to the closed `operations` set, update strict request/response validators and bump SDK minor only during implementation. Older hosts reject unrecognized operations; existing app-only releases continue to work without requesting the capability. Do not add `files.read`, `files.write`, `filesystem.path`, or a generic URL adapter.
+
+### 11.2 Candidate typed wire, now fixed for M16 implementation
+
+An isolated dental app requests through **existing** `dentalApp.request` → `sdk:request` → registered `ApiBroker` routing. Do not introduce a second app-visible IPC bridge or permit the renderer to invoke `files:*` channels directly.
+
+```ts
+// App-to-host local operation (proposed SDK 1.5 shape).
+operation: 'local.files.pick'
+input: {
+  purpose: 'patient-attachment' | 'lab-attachment' | 'staff-document' | 'general';
+  fileTypes: 'images' | 'medical-images' | 'documents' | 'all';
+  maxSelections: number; // integer 1..10
+}
+
+// Successful result: bounded metadata ONLY.
+value: {
+  selectionId: string;       // opaque request/recipient-bound ID
+  files: Array<{
+    receiptId: string;       // individually opaque, never a host path
+    name: string;            // display only; never diagnostic output
+    sizeBytes: number;
+    modifiedAt: number | null;
+    typeHint: string;        // untrusted extension/MIME hint
+  }>;
+  expiresAt: number;         // <= 10 minutes after selection
+}
+```
+
+The app cannot set directory paths, destination app/window ID, opaque handle, OS dialog flags or authorization claims in the request. `purpose` and `fileTypes` choose UX filters, **not** clinic upload permission or trusted content classification. The OS retains authority over picker type, selected count and native fallback. An empty/cancelled selection returns `CANCELLED`; no receipt exists.
+
+`ApiBroker.execute` currently treats non-network local operations synchronously. Implementation must route `local.files.pick` to an **awaited, abortable, injected trusted FileSelectionCoordinator**, keeping normal session/pending-request accounting. It must not route via existing web `Transport`, send credentials, or create a network write. Recheck registered caller and current policy both before displaying and before issuing results.
+
+### 11.3 User gesture, focus, and OS-owned consent
+
+Do **not** trust `{gesture:true}`, a renderer timestamp, `appId`, an invented button selector or any renderer-provided nonce. The platform-owned **isolated application preload** observes genuine DOM pointer or keyboard activation in capture phase (only `event.isTrusted`, active/focused main frame). It notifies main on a narrow private channel; main records a single-use, receiver-bound recent-activation ticket. A pick request requires such a ticket within **750 ms**, consumes it atomically, and is rate-limited to one live picker per receiving managed window. App script may request the public SDK operation, but cannot mint a trusted activation ticket directly.
+
+Activation freshness **does not replace explicit OS-level choice**: the selected path is granted only after the user confirms the platform-owned custom modal or the native dialog. Malicious first-party renderer scripts must not silently select/open/scan local files. Main controls the picker window/shell request; it must not take unrestricted requests for file listings from dental renderers.
+
+For a shell-owned Files **Send to active eligible app** action, the shell asks trusted main to validate the exact currently designated receiving app/window. Never use app-supplied destination IDs. Files and picker can use private shell-only `files:roots`, `files:list`, `files:choose` IPC with `isShell(event)`, current generation and strict bounded schemas. This is **not** an app-facing file API.
+
+### 11.4 Read-only host adapter and native fallback
+
+Use a single trusted main-process `LocalFileService` for both custom Files and picker. Root listing returns **opaque directory IDs**, user-facing labels and page cursors; React sees no absolute canonical path. Main maps IDs to internally canonicalized locations and bounded `lstat`/opened-handle metadata. Initial custom browsing roots are existing accessible user folders and permitted mounted volumes. All listing results are capped (200/page), sorted deterministically, and do not traverse directories recursively.
+
+Main validates component-by-component path traversal, symlink/junction/reparse-point, device file and directory escape; when a safe race-free open cannot be established on a host, **deny** rather than infer safety from string prefixes. Revalidate file identity/ACLs on selection and again on any future read; OS access may change. Use worker/bounded I/O if real large directories block the Electron event loop.
+
+The native fallback calls **`dialog.showOpenDialog(hostWindow, {properties:['openFile', ...]})`** in Electron main, without `openDirectory` mixed with `openFile` on Windows/Linux, and without renderer-chosen paths. The actual human-approved native selection may originate outside the custom browser's roots (e.g. removable drive or network share). Treat it as an **explicit one-file grant only**, never authorization for recursive browsing of its parent. Revalidate type/ACL/link safety before making a receipt; fail closed if portable path/handle safety cannot be achieved. Parent to Dental OS's real BrowserWindow and verify native dialog remains above fullscreen under Windows/Linux/Wayland/portal modes.
+
+### 11.5 File receipt lifecycle and drag integration
+
+Trusted main holds one in-memory selection registry. Receipt binds: original host-resolved file identity, exact verified running release, recipient `WebContents` + main frame, managed-window ID, session generation, request ID, selection purpose and maximum 10-minute expiry. Return only display metadata to the app, keep host absolute paths private. Deny copying a receipt to another frame/app/version/window. Explicit cancel, app crash/close, lock/logout, generation change, update/uninstall, timeout, file replacement/rename or OS exit **revokes** the handle.
+
+Selected receipts are not a new clinical file cache or general-purpose read capability. File bytes cannot be consumed until a **separate later authorized consumer contract** exists; no upload transition is performed in M16. OS Files-to-app transfer uses the same receipt generator, and requires shell hit-test/recipient eligibility plus a user-controlled drop or **Send** confirmation. Generic app-to-app messaging remains disallowed.
+
+Because native `WebContentsView` stacking and input behavior are not equivalent to a single DOM tree, M16.5 must prototype trusted shell drag hit-testing and restore native view visibility after cancel/drop. Treat `webContents.startDrag` as an OS-native drag primitive, **not** proof of safe drag between two isolated app views. The explicit Send fallback is a required passing feature even if cross-view drag cannot be made safe.
+
+### 11.6 Source ownership and verification map
+
+| Contract | Implement where | Focused gate |
+| --- | --- | --- |
+| Closed operation/SDK minor and payload schema | `electron/sdk/contracts.ts`, `electron/runtime/appPreload.ts` | forged/non-gesture request rejected; unknown input rejected; older host compatibility |
+| Signed capability and active-session authorization | `electron/packages/registry.ts`, signed policy resolver, `electron/identity/session.ts`, `electron/sdk/broker.ts` | manifest/policy/ceiling/clinic/session negatives |
+| Native read-only filesystem and receipts | new `electron/host/localFiles.ts` and a small main IPC integration | traversal/link/race/mount/expiry/privacy/bounds |
+| Picker routing and lifecycle | `electron/runtime/manager.ts` and trusted shell/preload | cancellation, close, logout, update, stale result, fullscreen parent |
+| Files UI and shell-owned drag/send | `src/` window/dock integrations, reuse `ManagedWindow` | keyboard/focus/overview/Genie and explicit Send fallback |
+| CI regression | focused host/security tests, private UI and applicable Windows suite | exact-source proof; no automatic backend or media-upload test |
+
+**Architecture review result:** the listed encoding, request envelope, consent flow, host-only path model and fallback are selected for M16.2–M16.5 implementation. This resolves the contract-choice checkbox in the plan; it is not a claim that any of these mechanisms were implemented or tested.

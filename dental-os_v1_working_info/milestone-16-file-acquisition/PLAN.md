@@ -67,6 +67,19 @@ Each verification record contains exact SHA, command, environment, result, faile
 - [x] Author architecture and implementation plan.
 - [x] Separate local acquisition from deferred upload.
 - [ ] Run committed-source documentation checker and record actual result.
-- [ ] Approve concrete local selection permission/SDK and native drag fallback mechanics before runtime code.
+- [x] Finalize the local selection permission/SDK and native drag **fallback contract** before runtime code; actual drag mechanics remain a later runtime acceptance case.
 
-Current state remains **documentation/design only**. G16 runtime acceptance is not claimed.
+Current state remains **documentation/design only**, with the M16.1 contract decisions recorded. G16 runtime acceptance is not claimed.
+
+## M16.1 design review closeout — 2026-10-22
+
+The source review resolved the core pre-implementation choices, now codified in [Architecture §11](ARCHITECTURE.md):
+
+- **Grant mechanism:** signed package manifest + fresh company-signed app-level policy capabilities + shipped platform trust ceiling; **not** M15 per-release clinic API grants or a generic IPC filesystem route.
+- **SDK:** explicit `local.files.pick` local operation through the existing broker with an awaited trusted coordinator; SDK minor 1.5 only when implemented.
+- **Consent:** platform-preload trusted activation (one-use main-held 750 ms ticket), recipient/window/session checks, and actual OS-owned picker confirmation.
+- **Result:** opaque, bounded, recipient- and version-bound metadata-only receipts. No raw paths or bytes to dental app JavaScript and no upload.
+- **Files/fallback:** read-only trusted root IDs/page enumeration, modal custom picker, human-approved native dialog (including selected files outside standard browsing roots), no general path access.
+- **Cross-view transfer:** OS-shell mediated receipt; explicit Send is mandatory. Native cross-WebContentsView drag remains implementation/acceptance risk, not an open contract decision.
+
+M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working session. Do not bundle Files UI, picker or drag in that session. Use local focused validation before a consolidated push and reserve costly Windows CI for a justified platform behavior gate.
