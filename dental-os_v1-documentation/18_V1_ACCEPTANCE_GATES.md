@@ -2,7 +2,7 @@
 
 **Baseline:** V1, 2026-10-15; milestone ownership updated 2026-10-21. Target architecture; implementation status is tracked separately.
 
-Final product release requires applicable G01–G15, G20 and G21 evidence for the explicitly supported Windows/Linux matrix. M14 app implementation may proceed in parallel with M15, but final functional G14 integration and acceptance require a verified M15/G15 platform baseline. G21 is a separate post-M20 physical-device and user/product acceptance gate. Documentation completion is not production acceptance.
+Final product release requires applicable G01–G16, G20 and G21 evidence for the explicitly supported Windows/Linux matrix. M14 app implementation may proceed in parallel with M15, but final functional G14 integration and acceptance require a verified M15/G15 platform baseline. G21 is a separate post-M20 physical-device and user/product acceptance gate. Documentation completion is not production acceptance.
 
 | Gate | Invariants | Minimum evidence | Owner |
 | --- | --- | --- | --- |
@@ -21,6 +21,7 @@ Final product release requires applicable G01–G15, G20 and G21 evidence for th
 | G13 First-party app-shell releases | INV-02,04,06,09,12 | one signed staging 1.0.0 shell per approved Dental OS app; correct app/module discovery labels; install/open evidence | M13 |
 | G14 Functional Dental OS apps | INV-03,05,07,08,10,11 | app-level UI/workflows, capability-scoped brokered APIs, staging acceptance and safe app-only updates on the verified M15/G15 platform baseline | M14, after M15/G15 |
 | G15 Platform Closeout and Integration | INV-01..14 | exact combined source and required checks; explicitly approved, independently evolving API authority with positive/negative enforcement; ADR-025 staged/next-full-launch app updates and eligible recovery; required bounded host contracts and payload limits; G12/G13 residual evidence or explicit reviewed scope decisions; representative workload/failure/resource evidence; named metadata-renewal operator and higher-sequence metadata-only renewal/expiry-recovery drill; M14 handoff and remaining M20/G20/G21 gates | M15 |
+| G16 Dental OS Files / host file acquisition | INV-01,02,05,07,09,11,13,14 | read-only actual host Files browse; fullscreen custom/native modal choice; scoped per-window/session temporary receipts; eligible drag with mandatory explicit Send fallback; privilege/path traversal/revocation denials and Linux/Windows focus/resource proof, with no remote-upload claim | M16 |
 | G20 Windows/Linux release and operations | INV-01,04,12..14 | named support matrix, signed installers, clean install/upgrade/uninstall, platform update/recovery, host CI/evidence and runbooks | M20 |
 | G21 Final device/user acceptance | INV-01,05,09,13,14 | physical Windows-device interaction/visual checks, supported-device review, user acceptance, remaining-risk decision after M20 | Final release decision, post-M20 |
 
