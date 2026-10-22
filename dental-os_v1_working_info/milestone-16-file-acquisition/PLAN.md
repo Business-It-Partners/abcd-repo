@@ -1,6 +1,6 @@
 # M16 Plan — Dental OS Files and Local Acquisition
 
-**Status:** IMPLEMENTING — M16.4 custom and native file picker implementation; exact-source security/unit/build CI and private UI evidence must be tracked separately.
+**Status:** M16.4 verification COMPLETE — Windows native picker/signed app and Linux GUI passed in source-bound hosted workflows; **M16.5 planned but NOT STARTED, G16 open.**
 **Date:** 2026-10-22. **Branch:** codex/milestone-16.
 **Base:** M15 at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d.
 **Requirement:** R16. **Gate:** G16.
@@ -124,12 +124,20 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [x] Inspect exact b552f18 Windows/Linux logs and classify native dialog versus Linux teardown separately.
 - [x] Prepare bounded Win32 HWND/UIAutomation native dialog selection and error-preserving test cleanup.
 - [x] Prepare bounded Wayland private CI exit after synthetic GUI checks and avoid a repeat full-suite Windows run.
-- [ ] Observe one exact-source tagged Windows + Linux verification result and update evidence.
-- [ ] Confirm the native host dialog and signed app receipt on Windows, all Linux UI checks and clean runner completion before declaring these three M16.4 tasks finished.
+- [x] Observe one exact-source tagged Windows + Linux verification result and update evidence.
+- [x] Confirm the native host dialog and signed app receipt on Windows, all Linux UI checks and clean runner completion before declaring these three M16.4 tasks finished.
 
 ## M16.4 exact-source cross-platform checkpoint
 
 - [x] Windows 17 real GUI assertions passed on ef7acba, including company-signed SDK and actual native file-dialog selection; full Windows CI job timed out during teardown.
 - [x] Linux isolated Wayland: **completed success** with seven graphical checks on ef7acba.
-- [ ] Confirm one Windows-only bounded teardown correction completes with a green focused CI job; retain failing/cancelled prior evidence and avoid rerunning Linux.
-- [ ] Once confirmed, mark M16.4 picker verification complete (not overall G16, which still needs M16.5 transfer work).
+- [x] Confirm one Windows-only bounded teardown correction completes with a green focused CI job; retain failing/cancelled prior evidence and avoid rerunning Linux.
+- [x] Once confirmed, mark M16.4 picker verification complete (not overall G16, which still needs M16.5 transfer work).
+
+## M16.4 final cross-platform verification — accepted 2026-10-22
+
+- **Windows fully green:** exact code SHA `76a3e418f80fc8b5bc0770306a0d3a157176dda6`, [targeted Actions 39777077788](https://github.com/Business-It-Partners/dental-os/actions/runs/39777077788) **conclusion SUCCESS**, focused security/unit tests and TypeScript/build passed, plus **17 automated graphical checks passed**. Native Win32 common dialog was actually located, selected `m16-synthetic-xray.png`, returned the metadata-only receipt through an ephemeral signed dental app SDK, and the test script exited successfully (`M16 WINDOWS VERIFIED EXIT SUCCESS 17`). No filesystem paths were returned to the app.
+- **Linux fully green:** exact code SHA `ef7acba596c2ec98e51ec019b1b5013f7510c74b`, [targeted Actions 39775866409](https://github.com/Business-It-Partners/dental-os/actions/runs/39775866409) **linux-files-ui job conclusion SUCCESS** after **7 Wayland graphical checks**: Files browse/back, ephemeral company-signed app in isolated view, delayed-gesture forbidden, accepted custom picker metadata, cancellation, and clean CI exit. Windows in that older combined run was cancelled after 17 functional checks because of runner teardown; this was corrected and fully verified in the later Windows-only run.
+- **Quota discipline:** full historical Windows milestone suite intentionally skipped for targeted pushes; the final Windows-only run explicitly skipped already-passing Linux. No repeat testing requested after both platform jobs became green. Documentation closeout uses `[skip ci]`.
+- **Scope statement:** This closes the three remaining M16.3/M16.4 GUI verification tasks (native Windows dialog, signed app SDK, isolated Linux GUI). It does **not** implement or accept M16.5 Files-to-app drag/send, file-byte read, media upload, backend patient association, production promotion, or physical device certification. **G16 remains OPEN** until its separate remaining phases are implemented and accepted.
+- **Next session:** start M16.5 only, using these contract and signed-file-selection proofs as the baseline. Read current branch SHA and M16 plan; do not start M16.5 as part of this documentation handoff.

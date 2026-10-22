@@ -1,6 +1,6 @@
 # M16 Implementation Notes
 
-**Date:** 2026-10-22. **Disposition:** documentation-only architecture/plan; no runtime change.
+**Date:** 2026-10-22. **Disposition:** historical M16.1 design plus implemented M16.2/M16.3/M16.4 and completed cross-platform M16.4 verification. M16.5 not started.
 
 M16 was based on the exact M15 branch source at 9f6aab8dfb20ce296a93b5d65e3c2f7dcf9ac50d. Source surveyed includes electron/main.ts, electron/runtime/manager.ts, electron/runtime/appPreload.ts, electron/sdk/contracts.ts, electron/sdk/broker.ts and src/windowManager.tsx.
 
@@ -136,3 +136,11 @@ Corrective fixture now provides a dedicated `Connect SDK` button activated only 
 - At the *same exact SHA*, the isolated **Linux headless Wayland job completed successfully**, including seven graphical assertions for Files browsing, signed SDK selection, denied delayed gesture, metadata-only receipt and cancellation. The Linux teardown now exits cleanly.
 - The Windows harness is being tightened in a **Windows-only tagged follow-up**: output the actual test result, bound Electron closure and synthetic profile cleanup, and terminate the disposable CI Node process with the recorded exit code. The previously passing Linux job will be skipped, and the full Windows milestone suite remains skipped to conserve Actions quota.
 - No local device, production credentials, patient data, clinic backend, app upload capability, M16.5 drag/send or remote deployment was involved. Full G16 includes M16.5 and remains open independently of these M16.4 checks.
+
+## M16.4 final cross-platform verification — accepted 2026-10-22
+
+- **Windows fully green:** exact code SHA `76a3e418f80fc8b5bc0770306a0d3a157176dda6`, [targeted Actions 39777077788](https://github.com/Business-It-Partners/dental-os/actions/runs/39777077788) **conclusion SUCCESS**, focused security/unit tests and TypeScript/build passed, plus **17 automated graphical checks passed**. Native Win32 common dialog was actually located, selected `m16-synthetic-xray.png`, returned the metadata-only receipt through an ephemeral signed dental app SDK, and the test script exited successfully (`M16 WINDOWS VERIFIED EXIT SUCCESS 17`). No filesystem paths were returned to the app.
+- **Linux fully green:** exact code SHA `ef7acba596c2ec98e51ec019b1b5013f7510c74b`, [targeted Actions 39775866409](https://github.com/Business-It-Partners/dental-os/actions/runs/39775866409) **linux-files-ui job conclusion SUCCESS** after **7 Wayland graphical checks**: Files browse/back, ephemeral company-signed app in isolated view, delayed-gesture forbidden, accepted custom picker metadata, cancellation, and clean CI exit. Windows in that older combined run was cancelled after 17 functional checks because of runner teardown; this was corrected and fully verified in the later Windows-only run.
+- **Quota discipline:** full historical Windows milestone suite intentionally skipped for targeted pushes; the final Windows-only run explicitly skipped already-passing Linux. No repeat testing requested after both platform jobs became green. Documentation closeout uses `[skip ci]`.
+- **Scope statement:** This closes the three remaining M16.3/M16.4 GUI verification tasks (native Windows dialog, signed app SDK, isolated Linux GUI). It does **not** implement or accept M16.5 Files-to-app drag/send, file-byte read, media upload, backend patient association, production promotion, or physical device certification. **G16 remains OPEN** until its separate remaining phases are implemented and accepted.
+- **Next session:** start M16.5 only, using these contract and signed-file-selection proofs as the baseline. Read current branch SHA and M16 plan; do not start M16.5 as part of this documentation handoff.
