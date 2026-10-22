@@ -17,6 +17,7 @@
 | --- | --- | --- |
 | `npm run build` | PASS after the source commit: typecheck, Vite renderer build and Electron TypeScript build | Build command output in the lead task; generated `dist/` and `dist-electron/` are temporary and are removed after verification. |
 | `npm test -- --maxWorkers=1 --no-file-parallelism --testTimeout=15000` | PASS after the source commit: 19 files, 310/310 tests | Full serial unit run; includes `tests/apiAuthority.test.ts`, `tests/updatePolicyV2.test.ts`, update/fallback/race and package-bound cases. |
+| `npm test -- tests/updates.test.ts tests/updatePolicyV2.test.ts --maxWorkers=1 --no-file-parallelism --testTimeout=15000` | PASS on documentation-only checkout `7237173d`: 77/77 tests | Focused local synthetic expiry/recovery rerun. Runtime/test source is unchanged from `11cb1bc8`; the user will name actual staging operators later. Details in [M15 verification evidence](../VERIFICATION_EVIDENCE.md). |
 | `npm run test:sdk` | PASS after the source commit: 15 private UI assertions | [SDK report](../../../artifacts/sdk-verification.json). |
 | `npm run test:updates` | PASS after the source commit: 17 private UI assertions | [Update report](../../../artifacts/updates-verification.json). |
 | `npm run test:store-arrival` | PASS after the source commit: 25 private UI assertions | [Store-arrival report](../../../artifacts/delivery-arrival-verification.json). |
