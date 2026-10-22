@@ -42,3 +42,7 @@ M16.1 design review is documented. Previous M16 Windows job passed documentation
 ## Focused remote GUI verification pending
 
 A single tagged push will run the bounded hosted Windows Files/picker graphical job rather than the full suite. Root cause of old runtime launcher timeout unconfirmed; no new visual acceptance yet.
+
+## Graphical startup regression diagnosis
+
+The first bounded Windows GUI run passed focused security tests and build but failed before the Files window because Electron's sandboxed shell preload did not initialize. The M16.4 runtime import of the file-picker contract is being corrected with an inline self-contained validator and a permanent preload import regression test. A second **focused** run is required; overall GUI acceptance remains pending.

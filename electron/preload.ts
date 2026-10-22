@@ -1,5 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { validPickerPrompt } from './host/filePickerContract';
+// Sandboxed Electron preloads may import only Electron's limited built-ins.
+// Keep this defensive wire check self-contained, never require a local module.
+function validShellPickerPrompt(input: unknown): boolean {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return false;
+  const v = input as Record<string, unknown>;
+  if (Object.keys(v).sort().join(',') !== 'appTitle,fileTypes,generation,maxSelections,purpose,requestId') return false;
+  if (typeof v.requestId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v.requestId)) return false;
+  if (!Number.isSafeInteger(v.generation) || (v.generation as number) < 1 ||
+      !Number.isSafeInteger(v.maxSelections) || (v.maxSelections as number) < 1 || (v.maxSelections as number) > 10) return false;
+  if (typeof v.appTitle !== 'string' || v.appTitle.length < 1 || v.appTitle.length > 80 || /[\u0000-\u001f<>]/.test(v.appTitle)) return false;
+  return ['patient-attachment','lab-attachment','staff-document','general'].includes(v.purpose as string) &&
+    ['images','medical-images','documents','all'].includes(v.fileTypes as string);
+}
 const hostListeners = new Set<(transitioning: boolean) => void>();
 let hostTransitioning = false;
 function publishHostTransition(transitioning: boolean) {
@@ -38,7 +50,7 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   files: {
     subscribePicker: (listener: (value: import('./host/filePickerContract').FilePickerPrompt|null)=>void) => {
-      const start=(_event:unknown,value:unknown)=>{if(validPickerPrompt(value))listener(value);};
+      const start=(_event:unknown,value:unknown)=>{if(validShellPickerPrompt(value))listener(value as import('./host/filePickerContract').FilePickerPrompt);};
       const end=(_event:unknown,id:unknown)=>{if(typeof id==='string')listener(null);};
       ipcRenderer.on('files:picker-open',start);
       ipcRenderer.on('files:picker-close',end);
