@@ -71,6 +71,12 @@ export function initialBounds(id: WindowId, size: Size): Rect {
   const spec = windowSpec(id), area = workArea(size);
   if (id === 'records' || id === 'followups') return { ...area };
   const width = Math.min(spec.preferred.width, area.width);
+  // The private image viewer floats over Files rather than covering the whole
+  // work area; shared maximize/resize still use the normal window geometry.
+  if(id==='image-viewer'){
+    const height=Math.min(spec.preferred.height,area.height);
+    return fitBounds({x:area.x+(area.width-width)/2,y:area.y+(area.height-height)/2,width,height},size,spec.minimum);
+  }
   return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y, width, height: area.height }, size, spec.minimum);
 }
 
