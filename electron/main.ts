@@ -35,7 +35,7 @@ const runtimeFixtureAppCount = runtimeFixtures && app.commandLine.hasSwitch('run
 const modulePreviewFixtures = runtimeFixtures && app.commandLine.hasSwitch('module-preview-fixtures');
 const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch('slow-module-ack-fixtures');
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
-const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture);
+const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture || app.commandLine.hasSwitch('files-picker-app-fixtures'));
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
 const filePickerAppFixture = runtimeFixtures && trustedTest && app.commandLine.hasSwitch('files-picker-app-fixtures') && app.commandLine.hasSwitch('files-fixtures') && app.commandLine.hasSwitch('files-picker-verify');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
