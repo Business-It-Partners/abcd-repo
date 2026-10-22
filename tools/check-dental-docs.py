@@ -79,6 +79,8 @@ def check():
         errors.append('Missing permanent first-party policy')
     # Stable content identity excludes evolving progress/evidence files.
     contract_files = sorted(ARCH.glob('*.md')) + [p / 'PLAN.md' for p in milestones]
+    # M16 file-access architecture is a stable contract, not mutable evidence.
+    contract_files.append(WORK / 'milestone-16-file-acquisition' / 'ARCHITECTURE.md')
     digest = hashlib.sha256()
     for path in contract_files:
         digest.update(str(path.relative_to(ROOT)).encode())
