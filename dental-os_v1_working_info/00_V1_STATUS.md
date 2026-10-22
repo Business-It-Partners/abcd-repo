@@ -4,6 +4,8 @@
 
 **M16 Files gallery follow-up (2026-10-22):** continuing on `codex/milestone-16` with a grid-first source-browser UI, type-specific icons, small supported-picture thumbnails, a detail-list option and hidden-entry filtering. Preview bytes are bounded and isolated to the trusted shell; this adds no dental-app file-read capability. Final exact-source validation and evidence are being recorded in the M16 plan/evidence; physical acceptance and G16 remain open.
 
+**Follow-up verification:** test commit `36c45cc7962088fde4e27f351e723311f29ff7c9` passed the Windows-only tagged workflow [39810891440](https://github.com/Business-It-Partners/dental-os/actions/runs/39810891440): security/unit checks, build/typecheck and 21/21 private GUI checks, including thumbnails, native dialog and authorized Send. The corrected Linux private Wayland integrated scenario passed 11/11 locally; Actions Linux was skipped after the initial combined run identified only stale Send selectors. The user-requested M16 preview is running from its separate worktree/profile for visual review; the other active OS was left untouched. Physical acceptance remains NOT RUN, native drag deferred, G16 OPEN. See [M16 evidence](milestone-16-file-acquisition/VERIFICATION_EVIDENCE.md).
+
 **Latest M15 (2026-10-22):** declared non-upload implementation and automated verification pass on `8a0b07a2`, including the full Windows workflow, Linux build/437 units and scoped real staging JSON proof. Independent source/evidence review is pending; user manual review follows technical verification. Uploads are explicitly deferred/denied; M14 functional/public-release and M20/G21 gates remain separate. [Current M15 status](milestone-15-platform-closeout-and-integration/STATUS.md).
 
 

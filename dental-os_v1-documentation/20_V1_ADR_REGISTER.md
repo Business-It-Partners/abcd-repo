@@ -30,7 +30,7 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-026 | Release-scoped first-party API grants in the existing signed update policy | Accepted 2026-10-22; implementation/final verification tracked in M15 | API/broker authority: 11; update-policy schema: 09/10 |
 | ADR-027 | Host-owned clinic JSON contract 1 under exact signed release grants | Accepted technical design in M15; source/runtime verification tracked separately | SDK 1.2; exact app/method/path/query and trusted session capability checks; 11 |
 
-| ADR-030 | OS-owned read-only Files and scoped local file-selection receipts | M16.6 hosted closeout at 772a739ed3af; post-closeout icon/grid and shell-only bounded picture thumbnails tracked on current M16 branch; native drag deferred; physical-device verification NOT RUN; G16 OPEN | [M16 architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md); G16 |
+| ADR-030 | OS-owned read-only Files and scoped local file-selection receipts | M16.6 hosted closeout at 772a739ed3af; Files grid/icons and shell-only bounded picture thumbnails verified on `36c45cc` (Windows 21 GUI; Linux private Wayland 11); native drag deferred; physical-device verification NOT RUN; G16 OPEN | [M16 architecture](../dental-os_v1_working_info/milestone-16-file-acquisition/ARCHITECTURE.md); G16 |
 
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 

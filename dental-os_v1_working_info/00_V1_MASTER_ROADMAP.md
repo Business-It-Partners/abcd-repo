@@ -43,7 +43,7 @@ Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOV
 
 The user authorized codex/milestone-16 directly from codex/milestone-15 to add Dental OS local Files acquisition. [M16 architecture](milestone-16-file-acquisition/ARCHITECTURE.md) and [plan](milestone-16-file-acquisition/PLAN.md) govern this scope. Hosted M16.1–M16.6 engineering is complete on the recorded source. Follow-up source/API review formally defers native cross-view drag in the current one-visible-native-input-surface runtime; explicit Send remains. Physical-device walkthrough is NOT RUN, so G16 is OPEN pending the device matrix and agreement on the drag disposition. Media upload remains deferred, business backend unchanged and M20/G21 remain distinct.
 
-Post-M16.6, the same branch is receiving a narrowly scoped Files gallery UI follow-up: standard folder/type icons, bounded supported-picture thumbnails in grid view, optional detail list and hidden-entry filtering. It adds no app file-byte capability, drag behavior, backend route or G16 acceptance; exact-source validation is tracked in M16 evidence.
+Post-M16.6, the same branch received a narrowly scoped Files gallery UI follow-up: standard folder/type icons, bounded supported-picture thumbnails in grid view, optional detail list and hidden-entry filtering. Windows hosted verification passed on `36c45cc` (Actions 39810891440, 21/21 UI); corrected private Linux/Wayland interaction passed 11/11. It adds no app file-byte capability, drag behavior, backend route or G16 acceptance. Physical acceptance is NOT RUN and G16 remains OPEN.
 
 ## Integration order and evidence
 

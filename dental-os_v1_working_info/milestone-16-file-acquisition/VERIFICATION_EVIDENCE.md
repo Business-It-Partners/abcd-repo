@@ -228,3 +228,11 @@ The GUI run used only guarded synthetic fixtures and a private display. It does 
 - **Next exact-source gate:** push the selector-only correction as `[m16-gui] [m16-win-only]`; Windows hosted verification will rerun on the corrected source. Linux CI is skipped because its first nine checks passed and the corrected full Linux scenario has now passed privately. This protects Actions quota while retaining a source-bound Windows gate.
 
 G16 remains **OPEN**. The corrected test assertion does not implement native drag or establish physical-device evidence.
+
+### Corrected selector verification — Windows hosted and Linux private display
+
+**Verified test commit:** `36c45cc7962088fde4e27f351e723311f29ff7c9` (branch `codex/milestone-16`). Product UI implementation remains the parent source `5da11f620e9fe49feeda79c95661d350b829e002`; the child commit updates only hosted test selectors and evidence. **GitHub Actions:** [39810891440](https://github.com/Business-It-Partners/dental-os/actions/runs/39810891440), conclusion **SUCCESS**. The Windows focused security/unit step and build/typecheck passed; the private Windows UI artifact records **21/21 checks with no errors**, including 8 × 8 PNG rendering, signed-app isolation, real parented native Windows dialog selection, denial without fresh user activation, and metadata-only explicit Send to the eligible app. The Linux Actions job was intentionally skipped by `[m16-win-only]`.
+
+The corrected full Files/picker/transfer scenario was also run locally with `node tools/run-ui-test.mjs tests/m16-files-linux-ci.mjs` on the private GNOME/Wayland display: **11/11 assertions passed, exit 0**, including thumbnail rendering, no privileged Files bridge in the app, picker selection/cancel, denial of direct script Send, and authorized metadata-only Send. The committed result is `artifacts/m16-linux-files-ui.json`; the separate Files window scenario remains `artifacts/m16-files-verification.json` with 14 assertions.
+
+This follow-up verifies the Files gallery and existing Send behavior using synthetic files. It does not establish actual clinic sign-in, physical Windows/Linux behavior, removable-drive acceptance or G16 completion. Physical-device cases remain NOT RUN. Native cross-view drag remains deferred, explicit Send remains the supported route, and **G16 stays OPEN**.

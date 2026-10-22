@@ -13,6 +13,10 @@
 
 **M16 Files gallery UI follow-up:** continuing on the same isolated branch after M16.6. The grid now uses folder/type icons, supported picture thumbnails, a detail-list option and hidden-entry filtering; no item opens a full preview, and app transfer remains the existing authorized picker/Send path. Bounded shell-only thumbnail source reads are limited to 16 MiB and never enter app IPC or receipts. Local validation is in progress; the follow-up does not accept G16, change the drag deferral, or merge to `main`.
 
+Latest verified follow-up commit is `36c45cc7962088fde4e27f351e723311f29ff7c9`; [Windows Actions 39810891440](https://github.com/Business-It-Partners/dental-os/actions/runs/39810891440) passed security/unit checks, build/typecheck and 21/21 private GUI assertions. Corrected private Linux/Wayland Files, picker and transfer UI passed 11/11. The first combined attempt `39810071174` failed only at stale selectors for the renamed Send control; both test scripts now use its accessible label. Physical-device verification remains NOT RUN; **G16 remains OPEN**.
+
+The user-requested M16 preview was relaunched from the separate worktree using its own temporary profile and no test-fixture flag. It is running for visual review; no device acceptance actions were performed. The other active worktree/OS instance was left untouched.
+
 This file is the single source of truth for this prototype's scope, implementation progress, decisions, and acceptance evidence. Update it as work proceeds. A checked implementation item requires actual verification; existing FEWA behavior is a reference, not proof that this prototype works.
 
 ## Staged app-update contract — 2026-10-21
