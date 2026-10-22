@@ -105,7 +105,7 @@ M16.1 handoff: implement **M16.2 trusted host adapter only** in the next working
 - [x] Display an OS-owned custom picker using the shared Files browser, with explicit confirmation, keyboard Escape/cancel, and native Electron open dialog fallback parented to the fullscreen host window.
 - [x] Return only short-lived, single-recipient opaque metadata receipts. The trusted main process alone holds canonical host paths.
 - [x] Add unit tests for unauthorized/forged/invalid requests, recipient binding, cancellation, native-file consent, symlink denial and no host paths in replies.
-- [ ] Run exact-source unit/build checks and inspect failure evidence before marking verified.
+- [x] Exact-source M16.4 Windows checks at 69dfaa45339d: documentation, 456 unit tests (4 skipped), TypeScript/build, and first-party package checks passed; graphical OS runtime remains unverified.
 - [ ] Run the M16.3 Files and M16.4 modal/native picker **private-display** graphical scenarios on actual supported Windows/Linux hosts. No acceptance claims from an unavailable compositor.
 - [ ] Validate a company-signed dental application release explicitly declaring local.files.pick; older already-deployed app releases cannot gain authority retroactively. No staging deployment is part of this task.
 
