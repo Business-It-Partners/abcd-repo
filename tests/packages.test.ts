@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSy
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { generateKeyPairSync, sign, verify } from 'node:crypto';
-import { buildPackage, canonical, verifyPackage, sha256, limits, productionTrust, type TrustPolicy, type Manifest } from '../electron/packages/format';
+import { buildPackage, canonical, verifyPackage, sha256, limits, maxCompanyAppCount, productionTrust, type TrustPolicy, type Manifest } from '../electron/packages/format';
 import { PackageRegistry, type Checkpoint } from '../electron/packages/registry';
 const keys = generateKeyPairSync('ed25519'), publicKey = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
 const policy: TrustPolicy = { keys: { test: { publicKey, publisher: 'company' } }, apps: { 'company.sample.alpha': { publisher: 'company', capabilities: ['platform.status'] }, 'company.sample.beta': { publisher: 'company', capabilities: [] } } };
@@ -14,15 +14,18 @@ function resign(change: (body: any, release: any) => void) {
  const envelope = JSON.parse(bundle().toString()), body = JSON.parse(Buffer.from(envelope.payload, 'base64').toString()); change(body, envelope.release);
  const payload = Buffer.from(canonical(body)); envelope.payload = payload.toString('base64'); envelope.release.digest = sha256(payload); envelope.signature = sign(null, Buffer.from(canonical(envelope.release)), keys.privateKey).toString('base64'); return Buffer.from(canonical(envelope));
 }
-function harness(checkpoint?: (phase: Checkpoint) => void, capacity?: () => number) {
+function harness(checkpoint?: (phase: Checkpoint) => void, capacity?: () => number, trust: TrustPolicy = policy) {
  const base = mkdtempSync(path.join(tmpdir(), 'dental-package-unit-')), root = path.join(base, 'packages');
- const registry = new PackageRegistry(root, policy, capacity, checkpoint); registry.initialize();
+ const registry = new PackageRegistry(root, trust, capacity, checkpoint); registry.initialize();
  return { base, root, registry, close: () => rmSync(base, { recursive: true, force: true }) };
 }
 describe('dentalpkg/1 signature and portable inventory', () => {
  it('is deterministic, binds identity and approves only platform-granted capabilities', () => {
   expect(bundle().equals(bundle())).toBe(true); const verified = verifyPackage(bundle(), policy);
   expect(verified.manifest.appId).toBe('company.sample.alpha'); expect(verified.files.get('sub/app.js')).toEqual(files.get('sub/app.js')); expect(verified.capabilities).toEqual(['platform.status']);
+ });
+ it('refuses a package that combines multiple clinic app families', () => {
+  expect(() => buildPackage({ ...meta(), capabilities: ['clinic.app.finance', 'clinic.app.staff'] }, files, 'test', keys.privateKey)).toThrow('Multiple clinic app families');
  });
  it('verifies a large signed web bundle without overflowing the base64 validator', () => {
   const appFiles = new Map([['index.html', Buffer.from('<h1>Large signed app</h1>')], ['large.js', Buffer.alloc(1_200_000, 97)]]);
@@ -114,6 +117,18 @@ describe('dentalpkg/1 signature and portable inventory', () => {
  });
 });
 describe('local immutable registry and transactions', () => {
+ it('installs company apps beyond the former sixteen app limit', () => {
+  expect(maxCompanyAppCount).toBe(64);
+  const trust: TrustPolicy = { ...policy, companyApps: { publisher: 'company', capabilities: [] } };
+  const h = harness(undefined, undefined, trust);
+  try {
+   for (let index = 0; index < 25; index++) {
+    const appId = `company.future.app-${index}`;
+    h.registry.install(buildPackage({ ...meta('1.0.0', appId), capabilities: [] }, files, 'test', keys.privateKey));
+   }
+   expect(Object.keys(h.registry.inspect().apps)).toHaveLength(25);
+  } finally { h.close(); }
+ });
  it('installs, launches verified memory bytes, retains old version and pins running lease', () => {
   const h = harness(); try {
    const one = h.registry.install(bundle()), lease = h.registry.launch('company.sample.alpha');

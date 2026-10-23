@@ -1,0 +1,58 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "revision": "f0d059d36540b4b6907cace089085ce0df62d454",
+  "method": "Fresh Dental OS implementation of the pinned Treatment Progress workflow and API contract. The SaaS presentation and business transport are not copied; rendering, filtering, and refresh are adapted to the Dental OS shared UI and ClinicClient.",
+  "imports": [
+    {
+      "source": "apps/clinic-web/src/features/treatment-progress/internal/TreatmentProgressWorkspace.tsx",
+      "gitBlob": "220527c4865a723e88d1cbb05d37f8318df7e353",
+      "sha256": "d1421ce9065ff8db13d452a77d516d08abebe182ca346be94a8b3c70d275d4f2",
+      "destination": "src/main.tsx",
+      "disposition": "Workflow and visible fields adapted: clinic-wide incomplete-treatment worklist, patient and doctor filters, progress counts, balance, next return, and refresh. Patient-detail navigation is omitted because the OS has no approved cross-app navigation contract."
+    },
+    {
+      "source": "apps/clinic-web/src/features/treatment-progress/api.ts",
+      "gitBlob": "46ad1664f6de05898daaef91a56a34434d6ad280",
+      "sha256": "e5209e1efde07ad2c55c6e2982db5868df32a3d0bb085c7b6e50453e567b4340",
+      "destination": "src/main.tsx",
+      "disposition": "GET /v1/treatment-progress retained through the Dental OS ClinicClient; no direct HTTP or credential handling."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/types.ts",
+      "gitBlob": "e1baa4c1dad3ac768e6dd5e0f9d2da633a31f73a",
+      "sha256": "7a1bc72c0606ece0c73eaeb23f649a5ea723aaa38d6209901cad4345f5ae7ad8",
+      "destination": "src/main.tsx",
+      "disposition": "TreatmentProgressRow fields adapted with runtime response validation."
+    }
+  ],
+  "contractSources": [
+    {
+      "source": "apps/platform-worker/src/clinic/patients/internal/patientCare.repository.ts",
+      "gitBlob": "5d020bae3d3347a8297da083d997f450c3ba94c6",
+      "sha256": "f2898177dc87914652d9a63b9743a09403a9b6605b547dc384d0c58ba0fad5d8",
+      "disposition": "Projection returns active patients with open cases and incomplete non-cancelled stages, including worker-calculated completed/total counts, doctor names, current balance, and next pending return date."
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/patients/internal/patientCare.service.ts",
+      "gitBlob": "a2bb6fb7750f985ae5d0431424bf1f7f290c7283",
+      "sha256": "98a53fed5ff85943317bca82b95fc0e999c49f9404dffacfb83a2bcbba63bc3f"
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/treatment-progress/treatmentProgress.routes.ts",
+      "gitBlob": "5720b09df90e894d777dd8ee9daf6c8ac77cc2ea",
+      "sha256": "cb21cbe4cb2779e415f48b388228909aa827ca72d1cabc703cddc4f0770133ed"
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/patients/internal/patientCare.types.ts",
+      "gitBlob": "853cdc49f6757697de6e886222c2419af391eb0f",
+      "sha256": "899d5a6de0314945629f4e372cf40d1f5af9026c0516d821e1059705b7a7dfed"
+    }
+  ],
+  "excluded": [
+    "Firebase identity and token access",
+    "Direct HTTP transport and API base URL",
+    "Local clinical or financial database",
+    "Patient record creation or cross-app navigation",
+    "Platform runtime, preload, broker implementation, and host code"
+  ]
+}

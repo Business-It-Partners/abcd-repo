@@ -14,7 +14,7 @@ function fixture(kind: MediaKind = 'patient_media') {
   let stalled = false;
   let afterMetadata: (() => void) | undefined;
   const urls: string[] = [], sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://media/index.html' };
-  const appId = kind === 'patient_media' ? 'company.dental.patient-record' : 'company.dental.staff';
+  const appId = kind === 'patient_media' ? 'company.dental.m17-patient-record' : 'company.dental.m17-staff';
   const family: Operation = kind === 'patient_media' ? 'clinic.app.patient-record' : 'clinic.app.staff';
   const identity: Identity = { snapshot: () => ({ generation: 1, active, userLabel: 'Synthetic', clinicLabel: 'Synthetic' }), allowed: () => true,
     allowedMediaRead: (_, requested) => granted && requested === kind, credential: async () => { credentials++; return 'synthetic-only'; } };

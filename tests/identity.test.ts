@@ -88,25 +88,25 @@ describe('session-scoped media upload gate',()=>{
  it('authorizes only the matching first-party app and media kind from trusted clinic claims',async()=>{
   const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access','staff.manage']})});
   try{
-   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(false);
    expect((await h.session.login(input)).ok).toBe(true);
-   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(true);
-   expect(h.session.allowedMediaUpload('company.dental.patient-record','staff_document')).toBe(false);
-   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(true);
-   expect(h.session.allowedMediaUpload('company.dental.staff','patient_media')).toBe(false);
-   expect(h.session.allowedMediaUpload('company.dental.work-entry','patient_media')).toBe(false);
-   expect(h.session.allowedMediaUpload('company.sample.future','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(true);
+   expect(h.session.allowedMediaUpload('clinic.app.patient-record','staff_document')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.staff','staff_document')).toBe(true);
+   expect(h.session.allowedMediaUpload('clinic.app.staff','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.work-entry','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.calendar','patient_media')).toBe(false);
    h.session.lock();
-   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
-   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.staff','staff_document')).toBe(false);
   }finally{await h.close();}
  });
  it('denies uploads when the clinic session lacks the owning app capability',async()=>{
   const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['appointments.access']})});
   try{
    expect((await h.session.login(input)).ok).toBe(true);
-   expect(h.session.allowedMediaUpload('company.dental.patient-record','patient_media')).toBe(false);
-   expect(h.session.allowedMediaUpload('company.dental.staff','staff_document')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.staff','staff_document')).toBe(false);
   }finally{await h.close();}
  });
  it('advertises upload to the host broker only for an authorized session and exact signed operation grant',async()=>{

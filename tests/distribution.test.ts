@@ -11,12 +11,14 @@ import { stagingDistribution } from '../electron/distribution/staging';
 import { verifyPackage } from '../electron/packages/format';
 import { readFileSync } from 'node:fs';
 import { CatalogueStore } from '../electron/distribution/storage';
+import { verifyUpdatePolicy } from '../electron/distribution/updatePolicy';
 const pair = generateKeyPairSync('ed25519'), now = 1800000000000, api = 'https://api.fixture.invalid', origin = 'https://releases.fixture.invalid/';
 const policy: TrustPolicy = { keys: { test: { publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString(), publisher: 'company' } }, apps: { 'company.sample.alpha': { publisher: 'company', capabilities: [] } } };
 const pkg = buildPackage({ appId: 'company.sample.alpha', publisher: 'company', version: '1.0.0', entry: 'index.html', sdkMajor: 1, apiMajor: 1, capabilities: [] }, new Map([['index.html', Buffer.from('<h1>Company sample</h1>')]]), 'test', pair.privateKey);
 const p = JSON.parse(pkg.toString()), hash = sha256(pkg);
 const base: Catalogue = { format: 1, environment: 'cloudfare-staging', channel: 'staging', sequence: 1, issuedAt: now, expiresAt: now + 3600000, releases: [{ id: 'company.sample.alpha', title: 'Motion Studio', description: 'Signed sample', version: '1.0.0', notes: 'Synthetic package fixture', capabilities: [], platforms: ['linux','win32'], sdkMajor: 1, apiMajor: 1, objectKey: `releases/company.sample.alpha/1.0.0/${hash}.dentalpkg`, packageSha256: hash, packageBytes: pkg.length, payloadDigest: p.release.digest, status: 'approved', minimumVersion: '1.0.0' }] };
 function signed(c: any = base) { return Buffer.from(canonical({ catalogue: c, keyId: 'test', signature: sign(null, Buffer.from(canonical({ purpose: 'dental-os-catalogue', keyId: 'test', catalogue: c })), pair.privateKey).toString('base64') })); }
+function signedPolicy(value: any) { return Buffer.from(canonical({ policy: value, keyId: 'test', signature: sign(null, Buffer.from(canonical({ purpose: 'dental-os-update-policy', keyId: 'test', policy: value })), pair.privateKey).toString('base64') })); }
 function harness(extra?: (url: string, init: RequestInit, fallback: () => Response) => Promise<Response> | Response) {
  const root = mkdtempSync(path.join(tmpdir(), 'dental-distribution-unit-')), registry = new PackageRegistry(path.join(root, 'packages'), policy); registry.initialize();
  const freshness = new CatalogueStore(path.join(root, 'distribution')); let generation = 1, allowed = true;
@@ -35,6 +37,14 @@ describe('signed catalogue authenticity/freshness and exact destination binding'
   expect(stagingDistribution.policy.apps['company.sample.alpha'].capabilities).toContain('appointments.setStatus');expect(stagingDistribution.policy.apps['company.sample.beta'].capabilities).not.toContain('appointments.setStatus');
  });
  it('accepts current company metadata and same-byte sequence replay only within expiry', () => { const a = verifyCatalogue(signed(), policy, noWatermark, now); expect(a.catalogue.sequence).toBe(1); expect(verifyCatalogue(signed(), policy, a.watermark, now + 1000).catalogue.releases).toHaveLength(1); });
+ it('accepts 25 signed company apps in both catalogue and update policy', () => {
+  const count = 25, ids = Array.from({ length: count }, (_, index) => `company.future.app-${index}`);
+  const dynamicTrust: TrustPolicy = { ...policy, companyApps: { publisher: 'company', capabilities: [] } };
+  const catalogue = { ...base, releases: ids.map(id => ({ ...base.releases[0], id, title: id, objectKey: `releases/${id}/1.0.0/${hash}.dentalpkg` })) };
+  expect(verifyCatalogue(signed(catalogue), dynamicTrust, noWatermark, now).catalogue.releases).toHaveLength(count);
+  const updatePolicy = { format: 1, environment: 'cloudfare-staging', channel: 'staging', sequence: 1, issuedAt: now, expiresAt: now + 3_600_000, revokedKeys: [], apps: ids.map(id => ({ id, capabilities: [], minimumVersion: '1.0.0', revokedDigests: [], rollback: null })) };
+  expect(verifyUpdatePolicy(signedPolicy(updatePolicy), dynamicTrust, noWatermark, now).policy.apps).toHaveLength(count);
+ });
  it.each(['signature','unsigned','key','altered','encoding','oversize'])('refuses %s metadata', kind => {
   const e = JSON.parse(signed().toString()); if(kind==='signature')e.signature=Buffer.alloc(64).toString('base64');if(kind==='unsigned')delete e.signature;if(kind==='key')e.keyId='other';if(kind==='altered')e.catalogue.sequence=2;
   const bytes=kind==='oversize'?Buffer.alloc(65537):Buffer.from(canonical(e)+(kind==='encoding'?'\n':''));expect(()=>verifyCatalogue(bytes,policy,noWatermark,now)).toThrow();
