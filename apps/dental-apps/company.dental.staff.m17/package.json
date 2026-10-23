@@ -1,0 +1,11 @@
+{
+  "name": "company.dental.staff.m17",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "M17.9 Dental OS Staff app.",
+  "scripts": {
+    "build": "node ../../../tools/app-packages/build-m17-staff.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
