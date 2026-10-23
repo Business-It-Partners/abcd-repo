@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "phase": "isolated-local-install",
+  "checks": [
+    "public catalogue and update policy signatures and freshness verify",
+    "three current M17 app identities are present once at their exact versions",
+    "Appointments policy retains the signed 1.0.0 grant and adds the 1.0.1 grant",
+    "public package bytes and signer verify: company.dental.followups.m17",
+    "isolated local registry installs and launches signed package: company.dental.followups.m17",
+    "isolated install removed after verification: company.dental.followups.m17",
+    "public package bytes and signer verify: company.dental.appointments.m17",
+    "isolated local registry installs and launches signed package: company.dental.appointments.m17",
+    "isolated install removed after verification: company.dental.appointments.m17",
+    "public package bytes and signer verify: company.dental.calendar.m17",
+    "isolated local registry installs and launches signed package: company.dental.calendar.m17",
+    "isolated install removed after verification: company.dental.calendar.m17"
+  ],
+  "sequence": 28,
+  "keyId": "company-staging-m17-20261022",
+  "scope": "Read-only public staging metadata/package reads plus isolated local PackageRegistry install/launch/uninstall. No authenticated Store install or business API writes."
+}

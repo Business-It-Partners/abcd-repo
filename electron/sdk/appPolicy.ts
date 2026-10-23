@@ -7,7 +7,9 @@ export type ClinicAppPolicy = Readonly<{ operation: Operation; anyCapabilities: 
 /** App IDs are stable first-party identities; endpoint scopes stay platform-owned. */
 export const clinicApps: Readonly<Record<string, ClinicAppPolicy>> = Object.freeze({
   'company.dental.followups': { operation: 'clinic.app.followups', anyCapabilities: ['followups.access'] },
+  'company.dental.followups.m17': { operation: 'clinic.app.followups', anyCapabilities: ['followups.access'] },
   'company.dental.appointments': { operation: 'clinic.app.appointments', anyCapabilities: ['appointments.access'] },
+  'company.dental.appointments.m17': { operation: 'clinic.app.appointments', anyCapabilities: ['appointments.access'] },
   'company.dental.work-entry': { operation: 'clinic.app.work-entry', anyCapabilities: ['work_entry.access'] },
   'company.dental.patient-record': { operation: 'clinic.app.patient-record', anyCapabilities: ['patient_record.access'] },
   'company.dental.treatment-progress': { operation: 'clinic.app.treatment-progress', anyCapabilities: ['treatment_progress.access'] },
@@ -17,6 +19,7 @@ export const clinicApps: Readonly<Record<string, ClinicAppPolicy>> = Object.free
   'company.dental.staff': { operation: 'clinic.app.staff', anyCapabilities: ['staff.manage'] },
   'company.dental.treatment-protocols': { operation: 'clinic.app.treatment-protocols', anyCapabilities: ['treatment_protocols.manage'] },
   'company.dental.calendar': { operation: 'clinic.app.calendar', anyCapabilities: ['calendar.access'] },
+  'company.dental.calendar.m17': { operation: 'clinic.app.calendar', anyCapabilities: ['calendar.access'] },
 });
 
 export function appOperation(appId: string): Operation | undefined { return clinicApps[appId]?.operation; }

@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { appInfo, parseDentalAppMetadata } = require('../../dist-electron/packages/appMetadata.js');
 const { buildPackage, canonical, parseCanonical, sha256, verifyPackage, limits } = require('../../dist-electron/packages/format.js');
-const { noWatermark, verifyCatalogue } = require('../../dist-electron/distribution/catalogue.js');
+const { maxStagingAppEntries, noWatermark, verifyCatalogue } = require('../../dist-electron/distribution/catalogue.js');
 const { verifyUpdatePolicy } = require('../../dist-electron/distribution/updatePolicy.js');
 const { stagingDistribution } = require('../../dist-electron/distribution/staging.js');
 
@@ -84,7 +84,7 @@ if (previousCatalogue.sequence !== previousPolicy.sequence || previousCatalogue.
 if (previousCatalogue.releases.length !== previousPolicy.apps.length || previousCatalogue.releases.some(release => !previousPolicy.apps.some(app => app.id === release.id))) {
   throw new Error('Prior catalogue and update-policy identities differ');
 }
-if (previousCatalogue.releases.length + APPS.length > 16 || previousPolicy.apps.length + APPS.length > 16) throw new Error('Staging app limit would be exceeded');
+if (previousCatalogue.releases.length + APPS.length > maxStagingAppEntries || previousPolicy.apps.length + APPS.length > maxStagingAppEntries) throw new Error('Staging app limit would be exceeded');
 for (const app of APPS) {
   if (previousCatalogue.releases.some(release => release.id === app.id) || previousPolicy.apps.some(entry => entry.id === app.id)) {
     throw new Error(`App is already in staging; refusing to replace ${app.id}`);

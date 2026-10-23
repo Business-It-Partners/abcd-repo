@@ -1,0 +1,391 @@
+{
+  "passed": true,
+  "date": "2026-10-22T20:02:08.508Z",
+  "platform": "linux",
+  "sourceHead": "2fc30a849677e889ef248d40595aad233c260ba5",
+  "environment": "cloudfare-staging",
+  "apps": [
+    {
+      "id": "company.dental.followups.m17",
+      "version": "1.0.0",
+      "payloadDigest": "d587da409ad4e528cfe4485f22d6f17027b72f39c5e1fa80d6723e1d81d9eb35"
+    },
+    {
+      "id": "company.dental.appointments.m17",
+      "version": "1.0.1",
+      "payloadDigest": "6e58bc374902f99710b4293385ffac5feb317b3849d67533dff9312b51b4b291"
+    },
+    {
+      "id": "company.dental.calendar.m17",
+      "version": "1.0.0",
+      "payloadDigest": "428b90a0f970ff5ca29f245fc00e172bd7965b645615e9848ddb243d0b911c02"
+    }
+  ],
+  "phase": "complete",
+  "checks": [
+    "authorized staging clinic session is ready without persistent credential storage",
+    "live signed Store catalogue is ready",
+    "live signed Store view contains available company.dental.followups.m17 1.0.0",
+    "signed Store lists company.dental.followups.m17 1.0.0 as not installed",
+    "authenticated Store started package arrival for company.dental.followups.m17",
+    "verified Follow-ups icon landed in the dock",
+    "company.dental.followups.m17 opened its renderer and recorded health for the exact published payload",
+    "live signed Store catalogue is ready",
+    "live signed Store view contains available company.dental.appointments.m17 1.0.1",
+    "signed Store lists company.dental.appointments.m17 1.0.1 as not installed",
+    "authenticated Store started package arrival for company.dental.appointments.m17",
+    "verified Appointments icon landed in the dock",
+    "company.dental.appointments.m17 opened its renderer and recorded health for the exact published payload",
+    "live signed Store catalogue is ready",
+    "live signed Store view contains available company.dental.calendar.m17 1.0.0",
+    "signed Store lists company.dental.calendar.m17 1.0.0 as not installed",
+    "authenticated Store started package arrival for company.dental.calendar.m17",
+    "verified Calendar icon landed in the dock",
+    "company.dental.calendar.m17 opened its renderer and recorded health for the exact published payload"
+  ],
+  "observedStore": [
+    {
+      "phase": "ready",
+      "canInstall": true,
+      "apps": [
+        {
+          "id": "company.sample.alpha",
+          "title": "Motion Studio",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.beta",
+          "title": "Records",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.preview",
+          "title": "Dental Workspace Preview",
+          "version": "1.3.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments",
+          "title": "Appointments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.work-entry",
+          "title": "Work Entry",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-record",
+          "title": "Patient Record",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.lab-tracker",
+          "title": "Lab Tracker",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.finance",
+          "title": "Finance",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-payments",
+          "title": "Patient payments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.staff",
+          "title": "Staff",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-protocols",
+          "title": "Treatment Protocols",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups",
+          "title": "Follow-ups",
+          "version": "1.1.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups.m17",
+          "title": "Follow-ups",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments.m17",
+          "title": "Appointments",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress.m17",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar.m17",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        }
+      ]
+    },
+    {
+      "phase": "ready",
+      "canInstall": true,
+      "apps": [
+        {
+          "id": "company.sample.alpha",
+          "title": "Motion Studio",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.beta",
+          "title": "Records",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.preview",
+          "title": "Dental Workspace Preview",
+          "version": "1.3.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments",
+          "title": "Appointments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.work-entry",
+          "title": "Work Entry",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-record",
+          "title": "Patient Record",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.lab-tracker",
+          "title": "Lab Tracker",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.finance",
+          "title": "Finance",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-payments",
+          "title": "Patient payments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.staff",
+          "title": "Staff",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-protocols",
+          "title": "Treatment Protocols",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups",
+          "title": "Follow-ups",
+          "version": "1.1.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups.m17",
+          "title": "Follow-ups",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments.m17",
+          "title": "Appointments",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress.m17",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar.m17",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        }
+      ]
+    },
+    {
+      "phase": "ready",
+      "canInstall": true,
+      "apps": [
+        {
+          "id": "company.sample.alpha",
+          "title": "Motion Studio",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.beta",
+          "title": "Records",
+          "version": "1.2.3",
+          "available": true
+        },
+        {
+          "id": "company.sample.preview",
+          "title": "Dental Workspace Preview",
+          "version": "1.3.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments",
+          "title": "Appointments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.work-entry",
+          "title": "Work Entry",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-record",
+          "title": "Patient Record",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.lab-tracker",
+          "title": "Lab Tracker",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.finance",
+          "title": "Finance",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.patient-payments",
+          "title": "Patient payments",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.staff",
+          "title": "Staff",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-protocols",
+          "title": "Treatment Protocols",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups",
+          "title": "Follow-ups",
+          "version": "1.1.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.followups.m17",
+          "title": "Follow-ups",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.appointments.m17",
+          "title": "Appointments",
+          "version": "1.0.1",
+          "available": true
+        },
+        {
+          "id": "company.dental.treatment-progress.m17",
+          "title": "Treatment Progress",
+          "version": "1.0.0",
+          "available": true
+        },
+        {
+          "id": "company.dental.calendar.m17",
+          "title": "Calendar",
+          "version": "1.0.0",
+          "available": true
+        }
+      ]
+    }
+  ],
+  "scope": "Private isolated Linux desktop; authenticated staging Store installs; all three exact signed packages opened in Dental OS-managed renderers and reached automatic runtime health. App launch reads staging business data; no business writes were performed. Temporary profile and credentials were removed; not physical Windows or production acceptance."
+}

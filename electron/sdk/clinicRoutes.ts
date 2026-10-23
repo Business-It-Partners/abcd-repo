@@ -13,6 +13,11 @@ const patientQuery: Query = { q: short(120), cursor: short(512), limit: value =>
 const period: Query = { from: date, to: date };
 const ledgerQuery: Query = { month: value => /^\d{4}-(?:0[1-9]|1[0-2])$/.test(value), cursor: short(512) };
 const rules: Rule[] = [];
+const m17RouteModules: Readonly<Record<string, string>> = Object.freeze({
+  'company.dental.followups.m17': 'followups',
+  'company.dental.appointments.m17': 'appointments',
+  'company.dental.calendar.m17': 'calendar',
+});
 function route(apps: string[], methods: string[], path: string, query: Query = {}, capabilities: string[] = [], requiredQuery: string[] = [], check?: Rule['check']) {
   const pattern = new RegExp('^' + path.split('/').map(segment => segment.startsWith(':') ? uuidPart
     : segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('/') + '$');
@@ -107,7 +112,8 @@ export function resolveClinicJsonRoute(appId: string, path: string, method: stri
   const entries = [...url.searchParams.entries()];
   if (new Set(entries.map(([key]) => key)).size !== entries.length) return;
   for (const rule of rules) {
-    if (!rule.apps.some(app => appId === 'company.dental.' + app) || method !== rule.method || !rule.pattern.test(rawPath)) continue;
+    if (!rule.apps.some(app => appId === 'company.dental.' + app || m17RouteModules[appId] === app)
+      || method !== rule.method || !rule.pattern.test(rawPath)) continue;
     if (entries.some(([name, value]) => !Object.hasOwn(rule.query, name) || !rule.query[name](value))
       || rule.requiredQuery.some(name => !url.searchParams.has(name)) || rule.check?.(url) === false) continue;
     let valid = true;

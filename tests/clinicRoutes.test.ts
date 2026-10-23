@@ -27,8 +27,12 @@ describe('closed clinic JSON route contract', () => {
     ['staff', 'GET', '/v1/clinic/salary-payouts'],
     ['treatment-protocols', 'PUT', `/v1/treatment-protocols/${id}`],
     ['calendar', 'GET', '/v1/calendar-tasks?from=2026-10-01&to=2026-10-31'],
+    ['calendar.m17', 'GET', '/v1/calendar-tasks?from=2026-10-01&to=2026-10-31'],
+    ['calendar.m17', 'POST', '/v1/calendar-tasks'],
+    ['calendar.m17', 'PATCH', `/v1/calendar-tasks/${id}`],
+    ['calendar.m17', 'POST', `/v1/calendar-tasks/${id}/archive`],
   ])('resolves %s %s %s within its declared app contract', (name, method, path) => {
-    expect(resolveClinicJsonRoute(app(name), path, method)).toBeTruthy();
+    expect(resolveClinicJsonRoute(name.endsWith('.m17') ? `company.dental.${name}` : app(name), path, method)).toBeTruthy();
   });
 
   it.each([

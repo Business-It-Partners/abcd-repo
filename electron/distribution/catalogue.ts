@@ -4,6 +4,8 @@ import { operations, type Operation } from '../sdk/contracts';
 export type Release = { id: string; title: string; description: string; version: string; notes: string; capabilities: Operation[]; platforms: ('linux' | 'win32')[]; sdkMajor: 1; apiMajor: 1; objectKey: string; packageSha256: string; packageBytes: number; payloadDigest: string; status: 'approved' | 'withdrawn'; minimumVersion: string };
 export type Catalogue = { format: 1; environment: 'cloudfare-staging'; channel: 'staging'; sequence: number; issuedAt: number; expiresAt: number; releases: Release[] };
 export type Watermark = { sequence: number; digest: string; observedAt: number };
+/** Signed app feeds need room for the M17 family alongside retained preview and current catalogue entries. */
+export const maxStagingAppEntries = 32;
 export const noWatermark: Watermark = { sequence: 0, digest: '', observedAt: 0 };
 const hash = (s: unknown): s is string => typeof s === 'string' && /^[a-f0-9]{64}$/.test(s);
 const text = (s: unknown, max: number): s is string => typeof s === 'string' && s.length > 0 && s.length <= max && !/[\x00-\x1f\x7f]/.test(s);
@@ -21,7 +23,7 @@ export function verifyCatalogue(bytes: Buffer, policy: TrustPolicy, watermark: W
   if (c.format !== 1 || c.environment !== 'cloudfare-staging' || c.channel !== 'staging' || !Number.isSafeInteger(c.sequence) || c.sequence < 1 || !Number.isSafeInteger(c.issuedAt) || !Number.isSafeInteger(c.expiresAt) || c.issuedAt < 1 || c.issuedAt > now + 300000 || c.expiresAt <= now || c.expiresAt <= c.issuedAt || c.expiresAt - c.issuedAt > 86400000 || now < watermark.observedAt - 300000) throw new Error('Catalogue freshness');
   const digest = sha256(bytes);
   if (c.sequence < watermark.sequence || c.sequence === watermark.sequence && digest !== watermark.digest) throw new Error('Catalogue replay');
-  if (!Array.isArray(c.releases) || c.releases.length > 16) throw new Error('Catalogue count');
+  if (!Array.isArray(c.releases) || c.releases.length > maxStagingAppEntries) throw new Error('Catalogue count');
   const seen = new Set<string>();
   for (const r of c.releases) {
     shape(r, ['id', 'title', 'description', 'version', 'notes', 'capabilities', 'platforms', 'sdkMajor', 'apiMajor', 'objectKey', 'packageSha256', 'packageBytes', 'payloadDigest', 'status', 'minimumVersion']);

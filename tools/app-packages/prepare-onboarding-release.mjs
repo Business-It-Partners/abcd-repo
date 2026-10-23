@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { buildPackage, canonical, parseCanonical, sha256, verifyPackage } = require('../../dist-electron/packages/format.js');
-const { compareVersion, verifyCatalogue, noWatermark } = require('../../dist-electron/distribution/catalogue.js');
+const { compareVersion, maxStagingAppEntries, verifyCatalogue, noWatermark } = require('../../dist-electron/distribution/catalogue.js');
 const { verifyUpdatePolicy } = require('../../dist-electron/distribution/updatePolicy.js');
 const { stagingDistribution } = require('../../dist-electron/distribution/staging.js');
 
@@ -53,7 +53,7 @@ try {
   const signer = createPublicKey(stagingDistribution.policy.keys[keyId].publicKey);
   if (!verifySignature(null, Buffer.from(canonical({ purpose: 'dental-os-update-policy', keyId, policy: legacy })), signer, Buffer.from(envelope.signature, 'base64'))) throw Error('Prior update policy signature');
   const oldPolicyKeys = ['channel', 'environment', 'expiresAt', 'format', 'issuedAt', 'revokedKeys', 'sequence', 'apps'];
-  if (!legacy || Object.keys(legacy).sort().join() !== oldPolicyKeys.sort().join() || legacy.format !== 1 || legacy.environment !== 'cloudfare-staging' || legacy.channel !== 'staging' || legacy.sequence !== previousCatalogueEnvelope.catalogue.sequence || legacy.issuedAt !== priorPolicyTime || legacy.expiresAt !== previousCatalogueEnvelope.catalogue.expiresAt || !Array.isArray(legacy.revokedKeys) || !Array.isArray(legacy.apps) || legacy.apps.length < 1 || legacy.apps.length > 16) throw Error('Prior update policy schema');
+  if (!legacy || Object.keys(legacy).sort().join() !== oldPolicyKeys.sort().join() || legacy.format !== 1 || legacy.environment !== 'cloudfare-staging' || legacy.channel !== 'staging' || legacy.sequence !== previousCatalogueEnvelope.catalogue.sequence || legacy.issuedAt !== priorPolicyTime || legacy.expiresAt !== previousCatalogueEnvelope.catalogue.expiresAt || !Array.isArray(legacy.revokedKeys) || !Array.isArray(legacy.apps) || legacy.apps.length < 1 || legacy.apps.length > maxStagingAppEntries) throw Error('Prior update policy schema');
   const releases = new Map(priorCatalogue.releases.map(release => [release.id, release]));
   const seen = new Set();
   const migratedApps = legacy.apps.map(app => {
@@ -111,7 +111,7 @@ const catalogue = {
   expiresAt,
   releases: [...priorCatalogue.releases.filter(item => item.id !== appId), release],
 };
-if (catalogue.releases.length > 16) throw Error('Catalogue app limit');
+if (catalogue.releases.length > maxStagingAppEntries) throw Error('Catalogue app limit');
 const catalogueBytes = Buffer.from(canonical({
   catalogue,
   keyId,

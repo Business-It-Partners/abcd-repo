@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: /Daily work plan/i }) to be visible\u001b[22m\n\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/calendar-tasks?from=2026-10-18&to=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"CLINIC WORKFLOW\\n\\nCalendar\\n\\nPlan, share, and complete the operational work that keeps the clinic ready.\\n\\n1 open this month\\nRefresh\\nKartik 2083\\nBikram Sambat calendar · tasks are saved for your clinic\\nBaisakh\\nJestha\\nAshadh\\nShrawan\\nBhadra\\nAshwin\\nKartik\\nMangsir\\nPoush\\nMagh\\nFalgun\\nChaitra\\n2070\\n2071\\n2072\\n2073\\n2074\\n2075\\n2076\\n2077\\n2078\\n2079\\n2080\\n2081\\n2082\\n2083\\n2084\\n2085\\n2086\\n2087\\n2088\\n2089\\n2090\\n2091\\n2092\\n2093\\n2094\\n2095\\n2096\\nToday\\nSun\\nMon\\nTue\\nWed\\nThu\\nFri\\nSat\\n1\\n2\\n3\\n4\\n5\\n6\\n1\\n7\\n8\\n9\\n10\\n11\\n12\\n13\\n14\\n15\\n16\\n17\\n18\\n19\\n20\\n21\\n22\\n23\\n24\\n25\\n26\\n27\\n28\\n29\\n30\\nOpen tasks\\nOverdue\\nAll complete\\n\\nDAILY WORK PLAN\\n\\n6 Kartik 2083\\nToday\\n0 complete\\n1 open\\nSynthetic clinic task\\nClinical\\nAdd a task\\nClinical\\nLab\\nAdministration\\nAdd\\n\\nTasks are visible to everyone in this clinic workspace.\"}\nPrivate host stderr: [20925:1023/013836.576194:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
+  "checks": [
+    "ephemeral package has the new Calendar 1.0.0 identity and stays under the package cap",
+    "calendar reads only through the SDK with a bounded BS month range"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.0",
+    "packageSha256": "d6a24996d28d7dfb7ea6e9c0eaa59b99a9af080b40a17a144f721d87af9dfe1e",
+    "payloadDigest": "0b0a33ba2066855daf7392ee0c0f019b1cec4ff100e99594c25660662454a2b2",
+    "wireBytes": 1083895,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and an in-memory synthetic Calendar service; no live staging reads/writes or publication.",
+  "screenshot": null
+}

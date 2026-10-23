@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "ephemeral signed package has the declared identity and stays below the package asset cap",
+    "renderer receives only the SDK bridge surface and no credential getter",
+    "initial reads use only the registered appointment and staff-reference routes",
+    "the active-doctor filter excludes inactive doctors and non-doctor staff",
+    "registered Appointments module selection is acknowledged after app readiness",
+    "dirty booking draft can be kept without losing entered synthetic details",
+    "discard confirmation closes the booking form without creating a server row",
+    "same-doctor overlap warning blocks a locally visible conflicting slot",
+    "booking uses the SDK command with standalone diary fields and no patient-record ID",
+    "half-open adjacent appointment slot is accepted and reflected in the refreshed schedule",
+    "permitted status change saves through the idempotent status route",
+    "reschedule sends expected row version and refreshed data contains the new time",
+    "409 conflict refreshes canonical row version without applying the rejected status",
+    "unresolved booking keeps the modal open, disables edits, and offers only original-save reconciliation",
+    "response-loss fixture committed exactly one row before returning an uncertain receipt",
+    "original retry reuses the operation identity and returns one receipt without a duplicate",
+    "revocation clears rendered appointment data and blocks any further route calls",
+    "all renderer errors stayed clear during synthetic workflow acceptance",
+    "host session-capability policy denies the app before any clinic business route is called",
+    "role-denied page has no business data or renderer error"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.0",
+    "packageSha256": "8900fd8efc9fd40b9d6b7e89722b8f189172610622a86744b62d109b179d4e3d",
+    "payloadDigest": "1f58d8d787e9722c2359389171320b939179ee9e1d998bef116bf4c97e2cb410",
+    "wireBytes": 1204735,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic clinic service; no live staging data or publication. The pinned SaaS route role-guard gap is not established by this fixture.",
+  "screenshot": "m17-appointments-private-2026-10-22T18-26-30.689Z.png"
+}

@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-23",
+  "objective": "Publish the M17 Follow-ups and Appointments first releases to Cloudflare staging and verify public delivery plus authenticated Store service installation.",
+  "executionWorktree": {
+    "path": "/home/master-x/.codex/worktrees/m17-followups-appointments/fewa_business_os",
+    "branch": "codex/m17-followups-appointments",
+    "base": "2fc30a849677e889ef248d40595aad233c260ba5"
+  },
+  "signer": {
+    "keyId": "company-staging-m17-20261022",
+    "publicKeySha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709",
+    "privateKeyStoredOutsideRepository": true
+  },
+  "publication": [
+    {
+      "appId": "company.dental.followups.m17",
+      "version": "1.0.0",
+      "sequence": 24,
+      "previousSequence": 23,
+      "packageSha256": "48e0bc95de7003abe701fc6b6be5c87ab4643dbb7a1caed98c6858a03e44f197",
+      "packageBytes": 1219918,
+      "catalogueSha256": "b0efae1eeb90be636a749408e6dc0e007c4c8cd7c4ed4d1e0417fb38ce70496a",
+      "updatePolicySha256": "7a45d122e94e6cf315fbf56f2ea7f409a6052c5a3a4cf2de399d07c3b541851e",
+      "result": "Published; catalogue and update policy advanced to sequence 24; HTTP 200; anonymous and replay requests denied; temporary publisher Worker removed."
+    },
+    {
+      "appId": "company.dental.appointments.m17",
+      "version": "1.0.0",
+      "sequence": 25,
+      "previousSequence": 24,
+      "packageSha256": "35ac80e60e34f1c9e2487c80052278e8978e5997d014eade7fa3d96b9ccfea16",
+      "packageBytes": 1204737,
+      "catalogueSha256": "8a86485c3b9b1260c265e6d28ecde5fa4d8e48f20009f13e3df864ef6c16ab61",
+      "updatePolicySha256": "8b957a5d25455c53660bda0fa923056a546a9013ffc29dcf893d749c6434a8be",
+      "result": "Published; catalogue and update policy advanced to sequence 25; HTTP 200; anonymous and replay requests denied; temporary publisher Worker removed."
+    }
+  ],
+  "verification": {
+    "publicFeed": {
+      "result": "Passed read-only public checks: catalogue and update-policy signatures/freshness at sequence 25; each exact app ID and version appears once; package bytes, digest, signer, and package-bound API grant verify.",
+      "artifact": "../../../artifacts/m17-staging-packages-readonly.json"
+    },
+    "authenticatedStoreService": {
+      "result": "Passed: authorized staging login, live signed catalogue and policy refresh, clinic install permission, both published package downloads and installs into a disposable local profile, exact ID/version/key/digest checks, and PackageRegistry launch-lease/API-grant checks.",
+      "artifact": "../../../artifacts/m17-staging-store-install.json",
+      "profileRemoved": true,
+      "clinicBusinessApiReadsOrWrites": false,
+      "rendererWorkflowRun": false,
+      "runtimeHealthReceiptClaimed": false,
+      "credentialsRecorded": false
+    },
+    "authenticatedStoreRenderer": {
+      "result": "Passed in the private isolated Linux display: the signed staging Store listed each exact M17 ID/version, downloaded and installed both packages into a disposable desktop profile, opened each Dental OS-managed renderer, and observed automatic known-good health for the exact payload digest.",
+      "artifact": "../../../artifacts/m17-staging-live-desktop.json",
+      "appBusinessReads": "Initial app load read staging data through the approved broker.",
+      "clinicBusinessWrites": false,
+      "fullFeatureWorkflowAcceptance": false,
+      "runtimeHealthReceiptClaimed": true,
+      "profileRemoved": true,
+      "credentialsRecorded": false
+    },
+    "packageSmoke": {
+      "result": "Passed: both public package signatures and hashes verified; each package installed, obtained a local launch lease, and was removed in an isolated local registry.",
+      "artifact": "../../../artifacts/m17-staging-packages-readonly.json"
+    }
+  },
+  "boundaries": {
+    "environment": "Cloudflare staging only",
+    "production": "Untouched",
+    "githubActions": "Not run",
+    "desktopClientDeployment": "Not performed; the M17 trust pin is in this isolated checkout. The authenticated private UI acceptance used the M17-aware build in this worktree; the user's running desktop was not updated.",
+    "persistentUserProfile": "Not modified",
+    "rendererAcceptance": "Initial authenticated Store install/open and exact-payload runtime health passed. Full live role/tenant/workflow acceptance under the new IDs remains open; prior app-specific private synthetic workflows passed separately.",
+    "credentials": "Used only from a mode-600 temporary file in /dev/shm, removed after verification; not included in repository artifacts."
+  },
+  "priorLocalPreparation": "The initial local preparation record remains a time-of-preparation snapshot. This report supersedes its then-current no-publication/no-Store-install status.",
+  "githubActions": "Not run"
+}
