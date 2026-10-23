@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-23",
+  "environment": "cloudfare-staging",
+  "source": {
+    "worktree": "/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os",
+    "branch": "codex/milestone-15",
+    "head": "8e4f1b4ea0475d190a795e5a294a3abe01c4d4c6",
+    "workingTreeChangesIncluded": true,
+    "saasRepository": "Business-It-Partners/dental-saas",
+    "saasBranch": "production",
+    "saasRevision": "f44d3e30ca6f79cba61e32601c53d58826500201"
+  },
+  "app": {
+    "id": "company.dental.patient-record.m17",
+    "version": "1.0.0",
+    "releaseKind": "new",
+    "packageSha256": "6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4",
+    "packageBytes": 1182547,
+    "payloadDigest": "47a2f796a1b55d4ecfd06850064463107f220bfd95cbe9b930cc3220c1e5be73",
+    "objectKey": "releases/company.dental.patient-record.m17/1.0.0/6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4.dentalpkg",
+    "capabilities": [
+      "clinic.app.patient-record",
+      "clinic.api.request",
+      "session.context",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ],
+    "exactApiOperations": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ]
+  },
+  "signer": {
+    "keyId": "company-staging-m17-20261022",
+    "publicKeySha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709"
+  },
+  "stagingFeed": {
+    "priorSequence": 31,
+    "priorCatalogueSha256": "00a0fc70b6c6e6db48a5e599d3468f33461693a033b106dd3154db408655585d",
+    "priorUpdatePolicySha256": "126cd5381c745316dfb05a8243844ebf32b7fc946fab45d05407dee35a4b0d63",
+    "sequence": 32,
+    "catalogueSha256": "111bbbd25b7742d34892079415a99bd4a0a486b4b5bf2cf5358515e3c27d1c35",
+    "updatePolicySha256": "8590995912b5efec12bb8a0673d4146940d6226b582cfca36f4ab0afd5517540",
+    "preservedExistingReleases": true
+  },
+  "publication": {
+    "result": "passed",
+    "httpStatus": 200,
+    "packageWritten": true,
+    "advanced": [
+      { "key": "catalogue/staging.json", "sequence": 32 },
+      { "key": "update-policy/staging.json", "sequence": 32 }
+    ],
+    "anonymousPublishDenied": true,
+    "replayDenied": true,
+    "temporaryWorkerRemoved": true
+  },
+  "supersededAttempt": {
+    "httpStatus": 409,
+    "packageWritten": false,
+    "metadataAdvanced": [],
+    "temporaryWorkerRemoved": true,
+    "reason": "The temporary worker still assumed the earlier single clinic.api.request grant. It was corrected to validate the signed release's exact operation list; the retry passed."
+  },
+  "publicReadback": {
+    "result": "passed",
+    "artifact": "../../../artifacts/m17-staging-packages-readonly-2026-10-23T07-05-15.310Z.json",
+    "sequence": 32,
+    "verifiedM17Apps": 7,
+    "patientRecordSignatureBytesGrantAndIdentityVerified": true,
+    "isolatedLocalPackageRegistryInstallLaunchAndUninstall": true
+  },
+  "privateAcceptance": {
+    "result": "passed",
+    "artifact": "../../../artifacts/m17-patient-record-private-2026-10-23T07-03-34.264Z.json",
+    "checks": 18,
+    "liveClinicDataUsed": false
+  },
+  "authenticatedStoreInstall": {
+    "result": "not-run",
+    "reason": "Live clinic credential and user-profile installation were outside this synthetic release verification."
+  },
+  "githubActions": "not-run",
+  "production": "untouched",
+  "branchCommitOrPush": "not-performed"
+}

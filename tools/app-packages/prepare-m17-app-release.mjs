@@ -19,6 +19,8 @@ const { stagingDistribution, m17StagingKeyId } = require('../../dist-electron/di
 const M17_FINGERPRINT = 'e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709';
 const definitions = {
   'company.dental.followups.m17': { title: 'Follow-ups', moduleId: 'followups', family: 'clinic.app.followups' },
+  'company.dental.work-entry.m17': { title: 'Work Entry', moduleId: 'work-entry', family: 'clinic.app.work-entry' },
+  'company.dental.patient-record.m17': { title: 'Patient Record', moduleId: 'patient-record', family: 'clinic.app.patient-record' },
   'company.dental.appointments.m17': { title: 'Appointments', moduleId: 'appointments', family: 'clinic.app.appointments' },
   'company.dental.calendar.m17': { title: 'Calendar', moduleId: 'calendar', family: 'clinic.app.calendar' },
   'company.dental.treatment-progress.m17': { title: 'Treatment Progress', moduleId: 'treatment-progress', family: 'clinic.app.treatment-progress' },

@@ -15,6 +15,12 @@
     "test:files": "node tools/run-ui-test.mjs tests/files.mjs",
     "test:native-session": "node tools/run-ui-test.mjs tests/native-session.mjs",
     "test:followups": "node tools/run-ui-test.mjs tests/followups.mjs",
+    "test:work-entry": "node tools/run-ui-test.mjs tests/m17-work-entry.mjs",
+    "test:lab-tracker": "node tools/run-ui-test.mjs tests/m17-lab-tracker.mjs",
+    "test:lab-tracker:contract": "node --test apps/dental-apps/company.dental.lab-tracker.m17/tests/*.test.mjs",
+    "build:lab-tracker": "npm --prefix apps/dental-apps/company.dental.lab-tracker.m17 run build",
+    "test:patient-record": "node tools/run-ui-test.mjs tests/m17-patient-record.mjs",
+    "build:patient-record": "npm --prefix apps/dental-apps/company.dental.patient-record.m17 run build",
     "test:treatment-protocols": "node tools/run-ui-test.mjs tests/m17-treatment-protocols.mjs",
     "test:ui": "node tools/run-ui-test.mjs tests/store.mjs tests/labs.mjs tests/staff.mjs tests/overview.mjs tests/finance.mjs tests/dockapps.mjs tests/followups.mjs tests/records.mjs tests/windows.mjs tests/electron.mjs tests/native-session.mjs tests/scaling.mjs",
     "test:dockapps": "node tools/run-ui-test.mjs tests/dockapps.mjs",
@@ -53,6 +59,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@sbmdkl/nepali-date-converter": "2.0.5",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

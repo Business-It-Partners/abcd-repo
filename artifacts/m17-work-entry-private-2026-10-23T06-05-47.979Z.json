@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "private signed package has Work Entry identity, version 1.0.0, and packaged assets",
+    "renderer receives the SDK bridge without a credential getter",
+    "initial worklist reads use only its registered case, treatment-protocol, and staff-reference routes",
+    "worklist preserves the SaaS patient, complaint, protocol-count, and in-progress state",
+    "Work Entry module selection is acknowledged after the package opens",
+    "opening an in-progress case reads its clinical context through the approved SDK routes",
+    "X-ray upload is visibly unavailable while this host release has no Work Entry upload grant",
+    "opening the patient case performs no clinic writes",
+    "renderer errors stayed clear through worklist and clinical context views",
+    "role without work_entry.access is denied before business routes execute",
+    "role-denied view contains no clinic data or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.work-entry.m17",
+    "version": "1.0.0",
+    "packageSha256": "3b137f89320665ab23cb5313539bec0ce12f187bc19da19bd2389a4bf195394f",
+    "payloadDigest": "c56aab83cd9700ce305888a0c67a243ea247ee7355c8adde9e542c4afab07336",
+    "wireBytes": 1756603,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.",
+  "screenshot": "m17-work-entry-private-2026-10-23T06-05-47.979Z.png"
+}

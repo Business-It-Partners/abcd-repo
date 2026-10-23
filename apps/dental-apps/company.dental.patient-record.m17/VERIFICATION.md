@@ -1,31 +1,20 @@
-# M17.2 Patient Record — implementation handoff, not an acceptance result
+# Patient Record — verification record
 
-**Source-only state.** Created using `dental-saas/production` at `f44d3e30ca6f79cba61e32601c53d58826500201`. Target M15 starting commit: `327ae15db757d4dc2f8eef83894e825084bb6722`. App ID: `company.dental.patient-record.m17` / `1.0.0`.
+**Current candidate:** `company.dental.patient-record.m17` / `1.0.1`
+**Pinned SaaS source:** production `f44d3e30ca6f79cba61e32601c53d58826500201`
+**State:** local build and private synthetic UI acceptance pass. The 1.0.1 staging update is the next release step; the earlier 1.0.0 release at sequence 32 is preserved as historical evidence.
 
-User restriction for this work: **No builds, tests, typechecks, runtime checks, CI, signing, package assembly, publication, Store changes, staging tests, or deployments.** None of these are represented as completed. The source is not yet verified as buildable, installable, or live-worker compatible.
+## UI parity and local checks
 
-## App-local source prepared
+- The patient directory, registration view, patient details and visible tabs use the pinned Dental SaaS view components and CSS. The app wrapper now uses the same `clinicApp`, `clinicWorkspaceCanvas` and `clinicCareWorkspace` classes as the production workspace.
+- File comparison: 121 of 128 vendored files are byte-identical to the pinned source. The remaining seven are SDK/session/routing/media adapters documented in [`SOURCE_IMPORT.json`](SOURCE_IMPORT.json); they do not replace the source view markup or styles.
+- `npm --prefix apps/dental-apps/company.dental.patient-record.m17 run build` — passed after the production shell wrapper change.
+- `npm run test:patient-record` — **17/17** private synthetic checks passed against the rebuilt 1.0.1 app. The flow covers the directory, source intake controls and patient number, profile read/edit retry using the original operation identity, timeline, private image read/upload, lab dispatch, SDK isolation and role denial.
+- Latest private artifacts: [report](../../../artifacts/m17-patient-record-private-2026-10-23T09-43-57.467Z.json), [directory](../../../artifacts/m17-patient-record-private-2026-10-23T09-43-57.467Z.png), [registration](../../../artifacts/m17-patient-record-intake-private-2026-10-23T09-43-57.467Z.png), [patient detail](../../../artifacts/m17-patient-record-detail-private-2026-10-23T09-43-57.467Z.png), [lab tab](../../../artifacts/m17-patient-record-lab-private-2026-10-23T09-43-57.467Z.png).
+- The private fixture uses synthetic records and ephemeral test signing keys. It does not use clinic credentials or real patient data.
 
-- [x] New isolated first-party app identity and metadata without editing M13 or other apps.
-- [x] Source provenance and exact production commit pinned in `SOURCE_IMPORT.json`.
-- [x] Patient search by name/number/phone through the clinic-scoped directory, cursor paging, cohort/month filters and error/empty states.
-- [x] Multi-step standalone intake with demographics, emergency contacts, medical summary, allergy entries, registration ID preview and draft safety.
-- [x] Patient detail profile and optimistic row-version correction.
-- [x] Chief complaint / case history and case status changes subject to `work_entry.access`.
-- [x] Treatment-plan/stage history, timeline, clinical notes and withdrawals.
-- [x] Prescription history, new prescription, correction and withdrawal using row-version handling.
-- [x] Follow-up history and creation, ledger/payment/correction/reversal subject to separate role capabilities.
-- [x] Odontogram view and edit; periodontal/canal history reads; patient lab orders, requests and role-gated status updates.
-- [x] Patient X-ray metadata list, private host-broker image viewer, bounded mediated upload and replacement, original-key resume/cancel controls.
-- [x] API error display, original-command reconciliation, session reset, reported dirty/modal state and no app-owned backend networking.
-- [x] App-local styles and standalone Vite package configuration.
+## Staging and remaining acceptance
 
-## Deliberately unverified / still required before claiming completion
+The signed `1.0.0` package published at sequence 32 remains intact. It predates the UI parity correction. The corrected `1.0.1` package must be built, signed with the pinned M17 staging identity, published as a staging-only update and publicly read back before the corrected package is marked staging-published.
 
-1. **Build/type validity, imports, packaging compatibility, UI rendering and cross-platform runtime:** untested by user instruction.
-2. **Authenticated clinical workflows:** no staging account, clinic/role, backend write, concurrent edit, tenant isolation or audit tests performed here.
-3. **X-ray transfer path:** no signed media read/upload grant issued; normal host transfer and image display unverified. Media proof depends on M15/G15 closeout.
-4. **Full SaaS feature/UI parity:** the production module has richer odontogram/periodontal editing, canal-session entry, treatment protocol/stage editing, lab supplier dispatch/assignment, old visit correction/removal and specialized presentation. These are not fully reproduced. Native print/export and app-to-app navigation are explicitly unsupported platform capabilities.
-5. **Release:** no signed package, release grant, Store entry, publication or deployment. G17 remains open.
-
-Do not mark M17.2 accepted from this commit alone. Have the next executor perform app-local typecheck/build/private-profile UI, request denial and original-key conflict/unknown-outcome checks, X-ray signed-grant tests and authenticated staging workflow evidence **only after the user permits validation**.
+Authenticated Store installation, live clinic reads/writes, current-source Windows verification, independent review, M15/G15 media-platform closure and final user acceptance remain separate gates. No production publication or GitHub Actions run is part of this app update.

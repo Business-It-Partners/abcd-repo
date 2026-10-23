@@ -17,6 +17,7 @@ const { canonical, sha256, verifyPackage, parseCanonical } = require('../../dist
 const { verifyCatalogue, noWatermark } = require('../../dist-electron/distribution/catalogue.js');
 const { verifyUpdatePolicy, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue } = require('../../dist-electron/distribution/updatePolicy.js');
 const { stagingDistribution, m17StagingKeyId } = require('../../dist-electron/distribution/staging.js');
+const { apiOperations } = require('../../dist-electron/sdk/contracts.js');
 const root = path.resolve(inputDir);
 const backendRoot = path.resolve(backendRootInput);
 const checkout = path.resolve(import.meta.dirname, '../..');
@@ -31,6 +32,8 @@ if (stagingDistribution.apiBase !== 'https://dentmitra-api-cloudfare-staging.tiw
 
 const definitions = {
   'company.dental.followups.m17': 'Follow-ups',
+  'company.dental.work-entry.m17': 'Work Entry',
+  'company.dental.patient-record.m17': 'Patient Record',
   'company.dental.appointments.m17': 'Appointments',
   'company.dental.calendar.m17': 'Calendar',
   'company.dental.treatment-progress.m17': 'Treatment Progress',
@@ -126,12 +129,14 @@ if (priorCatalogue.sequence !== release.priorSequence || priorPolicy.sequence !=
   || verifiedPackage.release.digest !== release.payloadDigest || !releaseRow || releaseRow.version !== release.version
   || releaseRow.packageSha256 !== release.packageSha256 || releaseRow.objectKey !== release.objectKey
   || releaseRow.payloadDigest !== release.payloadDigest || !grant || grant.packageSha256 !== release.packageSha256
-  || grant.payloadDigest !== release.payloadDigest || grant.apiOperations.length !== 1 || grant.apiOperations[0] !== 'clinic.api.request'
+  || grant.payloadDigest !== release.payloadDigest || canonical(grant.apiOperations) !== canonical(verifiedPackage.manifest.capabilities.filter(operation => apiOperations.includes(operation)))
   || !apiReleaseGrantForPackage(verifiedPackage, policy, now) || !apiReleaseGrantMatchesCatalogue(appId, grant, catalogue)) {
   throw Error('Signed M17 package, sequence, catalogue, update policy, or exact API grant did not verify');
 }
-if (release.packageBytes !== packageBytes.length || release.exactApiOperations?.length !== 1
-  || release.exactApiOperations[0] !== 'clinic.api.request') throw Error('Unexpected package object key or release scope');
+const exactApiOperations = verifiedPackage.manifest.capabilities.filter(operation => apiOperations.includes(operation));
+if (release.packageBytes !== packageBytes.length || canonical(release.exactApiOperations) !== canonical(exactApiOperations)) {
+  throw Error('Unexpected package object key or release scope');
+}
 
 // Re-read public feed bytes immediately before publishing so we do not publish against a stale snapshot.
 for (const [key, expected] of [
@@ -147,6 +152,7 @@ const publication = {
   environment: 'cloudfare-staging', bucket: 'dentmitra-dental-os-releases-cloudfare-staging', appId,
   version: release.version, sequence: release.sequence, priorSequence: release.priorSequence, keyId: m17StagingKeyId,
   packageSha256: release.packageSha256, packageBytes: release.packageBytes, payloadDigest: release.payloadDigest,
+  apiOperations: [...release.exactApiOperations],
   objectKey: release.objectKey, catalogueSha256: release.catalogueSha256, updatePolicySha256: release.updatePolicySha256,
   priorCatalogueSha256: release.priorCatalogueSha256, priorUpdatePolicySha256: release.priorUpdatePolicySha256,
   baseline: { 'catalogue/staging.json': release.priorCatalogueSha256, 'update-policy/staging.json': release.priorUpdatePolicySha256 },

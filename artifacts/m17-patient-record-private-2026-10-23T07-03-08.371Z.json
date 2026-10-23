@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "private signed package has Patient Record identity, version 1.0.0, app assets, and JSON/media grants",
+    "renderer receives the SDK bridge without credential or direct-network accessors",
+    "directory startup uses the scoped patient search route and validated date/cohort filters",
+    "patient detail loads the profile from the clinic API and displays medical history",
+    "billing controls remain hidden when the clinic role lacks patient_billing_ledger.read",
+    "unknown profile-write result is surfaced for reconciliation without a new operation",
+    "profile retry replays the exact original payload/key and expected patient/profile row versions",
+    "clinical timeline follows SaaS case/visit grouping and excludes notes and unscoped work",
+    "timeline reads both the clinic event feed and case treatment plans",
+    "private image viewing requests verified bytes through clinic.media.read, not a renderer URL",
+    "X-ray upload uses SDK grants for intent, binary transfer and finalisation with an idempotent original key",
+    "periodontal site entry saves a dated tooth snapshot with probing depth and case scope through the SDK",
+    "canal session records case, tooth-specific source protocol and measured canals with an idempotent command",
+    "patient record can attach the selected clinic treatment protocol to an open complaint",
+    "patient lab request dispatch binds the chosen active clinic supplier and expected row version",
+    "renderer completed patient and image workflows without errors or unkeyed clinic mutations",
+    "role without patient_record.access is denied before patient or media routes execute",
+    "role-denied view contains no patient information or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.patient-record.m17",
+    "version": "1.0.0",
+    "packageSha256": "8b94500e3daed117796f9ad7a6244f29325c5d478c96bfe9fddad9902e126d7f",
+    "payloadDigest": "47a2f796a1b55d4ecfd06850064463107f220bfd95cbe9b930cc3220c1e5be73",
+    "wireBytes": 1182547,
+    "assetCount": 5,
+    "grants": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ]
+  },
+  "scope": "Private headless Electron acceptance using a test-only ephemeral signing key and synthetic clinic/media API. No live patient data, staging publication or clinic credential was used.",
+  "screenshot": "m17-patient-record-private-2026-10-23T07-03-08.371Z.png"
+}

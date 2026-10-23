@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Synthetic Work Entry Patient', { exact: true }) to be visible\u001b[22m\n\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/work-entry/cases\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"CLINICAL WORKLIST\\n\\nWork Entry\\n\\nOpen a case to record its work, or create a new chief complaint for a registered patient.\\n\\nRefresh\\n＋ New case\\nAll\\nActive\\nCompleted\\nClosed\\n0 cases\\nOperation is not granted to this app.\\nTry refreshing the page or check the clinic connection.\"}\nPrivate host stderr: [63364:1023/114623.508147:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
+  "checks": [],
+  "errors": [],
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.",
+  "screenshot": null
+}

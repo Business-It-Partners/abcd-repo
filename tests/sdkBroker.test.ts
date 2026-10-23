@@ -29,6 +29,15 @@ describe('SDK registration and request boundary',()=>{
    expect(code(h.broker.connect(caller,{major:1,minor:0}))).toBe('UNKNOWN_CALLER');expect(code(await h.broker.request(caller,h.request()))).toBe('UNKNOWN_CALLER');expect(code(h.broker.cancel(caller,{}))).toBe('UNKNOWN_CALLER');
   }h.broker.dispose();
  });
+ it('keeps the registered app frame bound when it changes only its local route query',async()=>{
+  const h=harness();
+  const routed={...h.caller,url:h.caller.url+'?tab=work-entry&caseId=11111111-1111-4111-8111-111111111111'};
+  expect(await h.broker.request(routed,h.request('preferences.read',{}))).toEqual({ok:true,value:{textScale:1}});
+  for(const url of ['dental-fixture://beta/index.html?tab=work-entry','dental-fixture://alpha/other.html?tab=work-entry','dental-fixture://alpha/index.html#external']){
+   expect(code(await h.broker.request({...h.caller,url},h.request('preferences.read',{})))).toBe('UNKNOWN_CALLER');
+  }
+  h.broker.dispose();
+ });
  it('rejects arbitrary URLs, headers, channels, operation names and malformed/oversized input',async()=>{
   const h=harness();const good=h.request();const cycle:Record<string,unknown>={};cycle.self=cycle;
   for(const input of [{...good,url:'https://evil.test'},{...good,headers:{Authorization:'fake'}},{...good,channel:'window:control'},{...good,appId:'beta'},{...good,operation:'fetch'},{...good,version:2},{...good,input:{date:'2026-02-30'}},{...good,input:{date:'x'.repeat(20000)}},{...good,requestId:'bad\n'},cycle,null])expect(code(await h.broker.request(h.caller,input))).toBe('INVALID_REQUEST');

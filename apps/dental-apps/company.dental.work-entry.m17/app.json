@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "appId": "company.dental.work-entry.m17",
+  "title": "Work Entry",
+  "description": "Create and continue clinical cases, record treatment, and commit today's work.",
+  "icon": "assets/workentry.png",
+  "anyCapabilities": [
+    "work_entry.access"
+  ],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "work-entry",
+      "label": "Work Entry",
+      "tab": "work-entry",
+      "capability": "work_entry.access"
+    }
+  ]
+}

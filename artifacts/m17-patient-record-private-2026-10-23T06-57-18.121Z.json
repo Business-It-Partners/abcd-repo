@@ -1,0 +1,25 @@
+{
+  "passed": false,
+  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Synthetic Patient', exact: true }) to be visible\u001b[22m\n\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/patients?limit=10&monthStart=2026-10-18&monthEnd=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients?limit=10&monthStart=2026-10-18&monthEnd=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/core\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"SYNTHETIC CLINIC\\nPatient Record\\n\\nRegistration, clinical history and patient care\\n\\nSigned in as Synthetic user · admin\\nPatient directory\\nS\\nSynthetic Patient\\n\\nRecord SYN-PR-001 · Registered Oct 23, 2026 · active\\n\\nRefresh\\nProfile\\nChief complaints\\nNotes\\nTimeline\\nDental charts\\nTreatment plans\\nLab orders\\nX-rays\\nPrescriptions\\nFollow-ups\\nDemographics & contact\\nEdit profile\\nFull name\\nSynthetic Patient\\nRecord ID\\nSYN-PR-001\\nAge\\n34\\nDate of birth\\n—\\nSex\\nfemale\\nPreferred language\\nEnglish\\nPhone\\n+977-9800000000\\nAddress\\nSynthetic address\\nEmergency contact\\nSynthetic Contact\\nEmergency phone\\n+977-9800000001\\nClinical safety profile\\nConditions\\nSynthetic condition\\nMedication\\nNot recorded\\nHabits\\nNot recorded\\nMedical notes\\nNot recorded\\nLast verified\\nOct 23, 2026\\nAllergies\\n\\nSynthetic pollen · mild · Sneezing\"}\nPrivate host stderr: [100011:1023/124218.894228:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n[99881:1023/124219.625890:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.625939:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[99881:1023/124219.625964:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.625980:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[99881:1023/124219.665313:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.665343:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[99881:1023/124219.665372:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.665379:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[99881:1023/124219.859383:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.859503:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[99881:1023/124219.859536:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[99881:1023/124219.859553:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n",
+  "checks": [
+    "private signed package has Patient Record identity, version 1.0.0, app assets, and JSON/media grants",
+    "renderer receives the SDK bridge without credential or direct-network accessors",
+    "directory startup uses the scoped patient search route and validated date/cohort filters"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.patient-record.m17",
+    "version": "1.0.0",
+    "packageSha256": "5231240741a9ff99614a0e51e26809dda48505749930d8f2e325a8da36512473",
+    "payloadDigest": "ce496e1a5ad4725e316e1c0ab9690d80f2c556b0b6e63cd0af321292d02db46f",
+    "wireBytes": 1176811,
+    "assetCount": 5,
+    "grants": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ]
+  },
+  "scope": "Private headless Electron acceptance using a test-only ephemeral signing key and synthetic clinic/media API. No live patient data, staging publication or clinic credential was used.",
+  "screenshot": "m17-patient-record-private-2026-10-23T06-57-18.121Z.png"
+}

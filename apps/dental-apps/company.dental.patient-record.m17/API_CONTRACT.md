@@ -47,6 +47,10 @@ Reference: `dental-saas/production` @ `f44d3e30ca6f79cba61e32601c53d58826500201`
 - A replacement routes through host-owned `replacement:{assetId,reason}`, preserving the original clinical asset until successful finalization.
 - No file withdrawal, retention, deletion, native export/print or new host file system functionality is implemented by this app.
 
-## Differences and limitations
+## UI source and platform limits
 
-The production web module is substantially larger than this from-scratch M17 implementation. Detail tabs cover the documented route set, but the visual structure is a Dental OS recreation, not a bit-for-bit clone. Full periodontal-site and canal-measurement edit forms, protocol/stage work editing, complete lab supplier assignment, legacy visit amendment/removal, and native print/export are **not** asserted complete. See `VERIFICATION.md`.
+The visible Patient Record views are the pinned SaaS components and styles, not a Dental OS redesign. The app renders `PatientRecordView`, `CaseEntryView`, `PatientDrawer` and the source detail tabs from the production revision. Its outer layout follows the same `clinicApp` → `clinicWorkspaceCanvas` → `clinicCareWorkspace` structure. A file-by-file comparison found 121 of 128 vendored files byte-identical; the seven adapter files and their SDK-boundary changes are listed in `SOURCE_IMPORT.json`. Visible markup and styles are unchanged.
+
+The adapter maps the existing Dental OS SDK routes and capabilities to the source component callbacks. The Worker remains the business authority and may reject a write based on its current clinic role or record version.
+
+The Dental OS media SDK exposes patient-image read and upload, but not image withdrawal or deletion, so the app does not expose the SaaS-only withdrawal action. The source's legacy `TimelineByCase` / `VisitDay` amendment and removal callbacks are not part of the active Patient Record route, and the pinned API has no corresponding write route. The app does not add unsupported native print/export or app-to-app navigation. These are platform/API boundaries; they do not justify changing the source screens or inventing replacement UI.

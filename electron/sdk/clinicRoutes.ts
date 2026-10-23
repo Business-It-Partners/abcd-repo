@@ -22,7 +22,7 @@ function route(apps: string[], methods: string[], path: string, query: Query = {
 }
 const patient = ['patient-record'], work = ['work-entry'], finance = ['finance'], staff = ['staff'];
 const care = ['patient-record', 'work-entry'];
-route(['followups'], ['GET'], '/v1/follow-ups', { date });
+route(['followups', 'work-entry'], ['GET'], '/v1/follow-ups', { date }, ['followups.access']);
 route(['followups', ...patient], ['POST'], '/v1/follow-ups');
 route(['followups'], ['PATCH'], '/v1/follow-ups/:id/toggle');
 route(['followups'], ['PATCH'], '/v1/follow-ups/:id/schedule');
@@ -46,7 +46,7 @@ route(patient, ['POST'], '/v1/patient-notes');
 route(patient, ['POST'], '/v1/patient-notes/:id/withdraw');
 route(patient, ['POST'], '/v1/prescriptions');
 for (const action of ['correct', 'withdraw']) route(patient, ['POST'], '/v1/prescriptions/:id/' + action);
-route(['patient-record', 'finance', 'patient-payments'], ['GET'], '/v1/patients/:id/ledger', ledgerQuery, ['patient_billing_ledger.read']);
+route(['patient-record', 'work-entry', 'finance', 'patient-payments'], ['GET'], '/v1/patients/:id/ledger', ledgerQuery, ['patient_billing_ledger.read']);
 route(['patient-record', 'finance', 'patient-payments'], ['POST'], '/v1/patients/:id/payments', {}, ['patient_payments.collect']);
 route(['finance', 'patient-payments'], ['GET'], '/v1/patient-payments', period, ['patient_payments.outstanding.read']);
 for (const action of ['correct', 'reverse']) route(['patient-record', 'finance'], ['POST'], '/v1/patient-ledger/:id/' + action, {}, ['finance.manage']);

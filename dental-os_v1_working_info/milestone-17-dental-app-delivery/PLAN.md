@@ -1,6 +1,6 @@
 # M17 Plan — First-party Dental App Delivery
 
-**Status:** IMPLEMENTING — Follow-ups, Appointments, Calendar, Treatment Progress and Treatment Protocols source is integrated in the current M15 worktree. Follow-ups 1.0.0 (sequence 24), Appointments 1.0.1 (sequence 26), and Calendar 1.0.0 (sequence 28) each passed signed staging verification and authenticated Store install/open with exact-payload runtime health in private Linux profiles. Treatment Progress 1.0.0 is published at sequence 27 and passed app/private UI checks; Store install/runtime remains open. Treatment Protocols 1.0.0 is published at sequence 29; its Store install/runtime check remains open. Full live role/tenant/workflow acceptance and G17 remain open.
+**Status:** IMPLEMENTING — seven M17 app packages are signed and present in the verified staging feed at sequence 33. Patient Record 1.0.1 is the corrected SaaS-source UI package, with 17 private synthetic checks and public signature/package/grant/readback verification passed; the previous 1.0.0 grant remains preserved. M17.6 Lab Tracker `company.dental.lab-tracker.m17` / 1.0.0 is locally complete from pinned SaaS production source `f44d3e30`; its app checks, private UI, root build/tests and documentation check pass, but it is not yet signed or published. Follow-ups, Appointments and Calendar also passed authenticated Store install/open with exact-payload runtime health in private Linux profiles. Treatment Progress, Treatment Protocols, Work Entry and Patient Record Store/runtime checks remain open. Full live role/tenant/workflow acceptance and G17 remain open.
 **Updated:** 2026-10-23.
 **Execution home:** Existing M15 worktree on branch codex/milestone-15. Follow-ups, Appointments and Calendar were imported from commit `5306b80161542b7a9480b4bb2bc49df6b1218d84`; no separate M17 worktree or branch is an ongoing source dependency.
 **Requirements:** R02–R12 and R15, as mapped to G14/G17.
@@ -11,7 +11,7 @@
 
 Deliver eleven first-party Dental OS apps as independently signed packages through the existing Cloudflare staging Store. M17 uses the app code in this worktree, the maintained Dental SaaS UI/workflow/API modules, and the current M15 platform SDK/UI. Dental SaaS is the authority for business behavior; Dental OS is the authority for app identity, package signing, host capabilities, and Store delivery.
 
-Follow-ups, Appointments, Calendar and Treatment Progress code is integrated in the existing M15 worktree; their user-facing workflows are retained. Signed M17 packages are present in the staging feed for Follow-ups, Appointments, Treatment Progress, Calendar and Treatment Protocols. The sequence 30 cleanup removed every earlier non-M17 dental identity and its package objects; historical preview IDs and evidence remain in the repository. Follow-ups, Appointments and Calendar have private-profile Store install/open and exact-payload health evidence. Treatment Progress passed local app and private UI checks; Store/runtime acceptance remains open. Treatment Protocols Store/runtime acceptance remains open. The other apps continue from their planned SaaS modules.
+Follow-ups, Appointments, Calendar and Treatment Progress code is integrated in the existing M15 worktree; their user-facing workflows are retained. Signed M17 packages are present in the staging feed for those four apps, Treatment Protocols, Work Entry and Patient Record. Work Entry was added at sequence 31, Patient Record 1.0.0 at sequence 32, and the corrected Patient Record 1.0.1 update at sequence 33; public readback verifies all seven current M17 package identities and retains the original Patient Record grant. The sequence 30 cleanup removed every earlier non-M17 dental identity and its package objects; historical preview IDs and evidence remain in the repository. Follow-ups, Appointments and Calendar have private-profile Store install/open and exact-payload health evidence. Treatment Progress, Treatment Protocols, Work Entry and Patient Record Store/runtime acceptance remains open. Lab Tracker's local implementation is complete; its release remains pending. The other apps continue from their planned SaaS modules.
 
 No other Dental OS app branch or worktree is an M17 source input. The active M17 app source is this worktree; app behavior is reviewed against the pinned Dental SaaS source for each app.
 
@@ -30,11 +30,11 @@ M17 app code does not implement capabilities that belong to Dental OS. The platf
 | Submilestone | App | New M17 ID | Main focus |
 | --- | --- | --- | --- |
 | [M17.1](M17.1_FOLLOWUPS_PLAN.md) | Follow-ups | `company.dental.followups.m17` / 1.0.0 | Search, schedule, reschedule, status, safe writes |
-| [M17.2](M17.2_PATIENT_RECORD_PLAN.md) | Patient Record | TBD before release | Patient workflow and host-mediated X-ray use |
+| [M17.2](M17.2_PATIENT_RECORD_PLAN.md) | Patient Record | `company.dental.patient-record.m17` / first 1.0.0, current 1.0.1 | Pinned SaaS UI/workflows and host-mediated X-ray use; corrected staging update sequence 33 |
 | [M17.3](M17.3_APPOINTMENTS_PLAN.md) | Appointments | `company.dental.appointments.m17` / 1.0.0 first package; 1.0.1 current | Date/doctor views, booking, conflicts |
-| [M17.4](M17.4_WORK_ENTRY_PLAN.md) | Work Entry | TBD before release | Clinical encounter and reconciled commit |
+| [M17.4](M17.4_WORK_ENTRY_PLAN.md) | Work Entry | `company.dental.work-entry.m17` / 1.0.0 | Clinical encounter and reconciled commit; staging sequence 31 |
 | [M17.5](M17.5_TREATMENT_PROGRESS_PLAN.md) | Treatment Progress | `company.dental.treatment-progress.m17` / 1.0.0 | Patient-scoped stage aggregation |
-| [M17.6](M17.6_LAB_TRACKER_PLAN.md) | Lab Tracker | TBD before release | Lab Tracker and Lab Supplier Record |
+| [M17.6](M17.6_LAB_TRACKER_PLAN.md) | Lab Tracker | `company.dental.lab-tracker.m17` / 1.0.0 | Lab Tracker and Lab Supplier Record; local implementation underway from SaaS `f44d3e30` |
 | [M17.7](M17.7_FINANCE_PLAN.md) | Finance | TBD before release | Eight finance modules, ledger integrity |
 | [M17.8](M17.8_PATIENT_PAYMENTS_PLAN.md) | Patient Payments | TBD before release | Receptionist-scoped collection workflow |
 | [M17.9](M17.9_STAFF_PLAN.md) | Staff | TBD before release | Staff directory/profile and host-mediated documents |
@@ -45,7 +45,7 @@ Assign a new unique first-party ID to every M17 package, including Follow-ups an
 
 ## Execution order and implementation method
 
-Complete one app at a time. Follow-ups and Appointments remain existing M17 implementation checkpoints, and Patient Record remains next in the planned sequence after those checkpoints. Treatment Protocols is being implemented early at the user's direction because it is independent; this does not change the planned order for the other apps. Submilestone numbers and scopes do not change.
+Complete one app at a time. Follow-ups and Appointments remain existing M17 implementation checkpoints. Patient Record was next after those checkpoints and is now staging-published. On 2026-10-23 the user directed early implementation starts on Work Entry and Patient Record in the same M15 worktree. Treatment Protocols also began early at the user's direction because it is independent. These user-directed starts do not change submilestone numbers or scopes.
 
 1. Continue from the Follow-ups, Appointments and Calendar source integrated into this M15 worktree. Confirm the current SaaS contract and M15 SDK boundary; do not restart the UI implementation.
 2. For each remaining app, inspect its maintained Dental SaaS UI/workflow/API behavior, write a short route/role/payload/write-recovery contract note, pin the exact source, and build a Dental OS package from scratch using the current shared UI and SDK.

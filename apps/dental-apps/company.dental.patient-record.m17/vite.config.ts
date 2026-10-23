@@ -8,7 +8,9 @@ export default defineConfig({
   base: "./",
   plugins: [react()],
   resolve: { alias: [
-    { find: /^@\/shared\//, replacement: path.resolve(here, "../../../packages/dental-ui/src/shared") + "/" },
+    { find: /^@\/shared\//, replacement: path.resolve(here, "vendor/dental-saas/apps/clinic-web/src/shared") + "/" },
+    { find: /^@\/features\//, replacement: path.resolve(here, "vendor/dental-saas/apps/clinic-web/src/features") + "/" },
+    { find: /^@\/shell\//, replacement: path.resolve(here, "vendor/dental-saas/apps/clinic-web/src/shell") + "/" },
     { find: /^@\//, replacement: path.resolve(here, "src") + "/" },
   ] },
   build: { outDir: "dist", emptyOutDir: true, assetsDir: "assets" },

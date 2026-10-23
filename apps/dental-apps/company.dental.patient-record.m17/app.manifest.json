@@ -1,7 +1,7 @@
 {
   "appId": "company.dental.patient-record.m17",
   "publisher": "company",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "index.html",
   "sdkMajor": 1,
   "apiMajor": 1,

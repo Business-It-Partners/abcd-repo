@@ -43,7 +43,7 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
       || release?.version !== expected.version || release?.packageSha256 !== expected.packageSha256
       || release?.packageBytes !== expected.packageBytes || release?.payloadDigest !== expected.payloadDigest
       || release?.objectKey !== expected.objectKey || grant?.packageSha256 !== expected.packageSha256
-      || grant?.payloadDigest !== expected.payloadDigest || JSON.stringify(grant?.apiOperations) !== '["clinic.api.request"]') {
+      || grant?.payloadDigest !== expected.payloadDigest || JSON.stringify(grant?.apiOperations) !== JSON.stringify(expected.apiOperations)) {
       throw Error('Prepared signed release contract');
     }
 

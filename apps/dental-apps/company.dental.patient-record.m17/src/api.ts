@@ -31,11 +31,24 @@ const isArray = (v: unknown): v is unknown[] => Array.isArray(v);
 const isPatient = (v: unknown): v is PatientSummary => isObject(v) &&
   typeof v.patientId === "string" && typeof v.patientNumber === "string" &&
   typeof v.fullName === "string" && Number.isInteger(v.rowVersion as number);
-const isCore = (v: unknown): v is PatientCore => isPatient(v) && isObject(v.medicalProfile) &&
-  Number.isInteger(v.medicalProfile.rowVersion as number) && Array.isArray(v.allergies);
+const isCore = (v: unknown): v is PatientCore => {
+  if (!isObject(v) || !isPatient(v)) return false;
+  const record = v as unknown as Record<string, unknown>;
+  const medicalProfile = record.medicalProfile;
+  return isObject(medicalProfile) && Number.isInteger(medicalProfile.rowVersion as number)
+    && Array.isArray(record.allergies);
+};
 const isReceipt = (key: string) => (v: unknown) => isObject(v) && isObject(v[key]);
 const isList = (v: unknown) => Array.isArray(v);
 export type Cohort = "all" | "new" | "regular";
+export type PatientTreatmentProtocolReference = {
+  id: string;
+  name: string;
+  recordCanals?: boolean;
+  stages: Array<{ sourceProtocolStageId?: string; label: string; defaultCost?: number; toothScope?: string }>;
+  grades?: Array<{ id: string; label: string; stages: Array<{ sourceProtocolStageId?: string; label: string; defaultCost?: number; toothScope?: string }> }>;
+};
+export type PatientLabSupplier = { supplierId: string; name: string; supplierType?: "lab" | "both" | "goods"; active: boolean };
 
 export class PatientApi {
   constructor(private readonly sdk: ClinicClient) {}
@@ -77,11 +90,32 @@ export class PatientApi {
       .then(v => field<PatientLedger>(v, "ledger", x => isObject(x) && isObject(x.summary) && Array.isArray(x.entries)));
   }
   media(id: string) { return this.sdk.read("/v1/patients/" + id + "/media").then(v => field<PatientMediaAsset[]>(v, "media", isArray)); }
+  withdrawMedia(id: string, reason: string) {
+    return this.sdk.command<unknown>("POST", "/v1/patient-media/" + id + "/withdraw", { reason }, isObject);
+  }
   odontogram(id: string) { return this.sdk.read("/v1/patients/" + id + "/odontogram"); }
   periodontal(id: string) { return this.sdk.read("/v1/patients/" + id + "/periodontal-chart"); }
   canals(id: string) { return this.sdk.read("/v1/patients/" + id + "/canal-measurements"); }
   labOrders(id: string) { return this.sdk.read("/v1/patients/" + id + "/lab-orders"); }
   staffReferences() { return this.sdk.read("/v1/clinic/staff-references"); }
+  workEntryCase(id: string) { return this.sdk.read<{ case: import("./types").WorkEntryCase }>("/v1/chief-complaints/" + id + "/work-entry").then(v => field<import("./types").WorkEntryCase>(v, "case", isObject)); }
+  treatmentProtocols() { return this.sdk.read<{ treatmentProtocols: PatientTreatmentProtocolReference[] }>("/v1/treatment-protocols").then(v => field<PatientTreatmentProtocolReference[]>(v, "treatmentProtocols", isArray)); }
+  addWorkEntryProtocol(id: string, input: import("./types").WorkEntryProtocolAddInput) {
+    return this.sdk.command<{ case: import("./types").WorkEntryCase }>("POST", "/v1/chief-complaints/" + id + "/treatment-protocols", input, x => isObject(x) && isObject(x.case));
+  }
+  cancelWorkEntryProtocol(id: string, protocolId: string, input: import("./types").WorkEntryProtocolCancelInput) {
+    return this.sdk.command<{ case: import("./types").WorkEntryCase }>("POST", "/v1/chief-complaints/" + id + "/treatment-protocols/" + protocolId + "/cancel", input, x => isObject(x) && isObject(x.case));
+  }
+  addWorkEntryStage(id: string, protocolId: string, input: import("./types").WorkEntryStageAddInput) {
+    return this.sdk.command<{ case: import("./types").WorkEntryCase }>("POST", "/v1/chief-complaints/" + id + "/treatment-protocols/" + protocolId + "/stages", input, x => isObject(x) && isObject(x.case));
+  }
+  cancelWorkEntryStage(id: string, protocolId: string, stageId: string, input: import("./types").WorkEntryStageCancelInput) {
+    return this.sdk.command<{ case: import("./types").WorkEntryCase }>("POST", "/v1/chief-complaints/" + id + "/treatment-protocols/" + protocolId + "/stages/" + stageId + "/cancel", input, x => isObject(x) && isObject(x.case));
+  }
+  labSuppliers() { return this.sdk.read<{ suppliers: PatientLabSupplier[] }>("/v1/clinic/suppliers?scope=lab").then(v => field<PatientLabSupplier[]>(v, "suppliers", isArray)); }
+  assignLabOrder(id: string, input: { supplierId: string; labWorkName: string; toothScope: string | null; shade: string | null; sentOn: string; receptionNote: string | null; expectedRowVersion: number }) {
+    return this.sdk.command<{ labOrder: unknown }>("POST", "/v1/lab-orders/" + id + "/assign", input, isReceipt("labOrder"));
+  }
   createIntake(input: PatientIntakeInput) {
     return this.sdk.command<{patient: PatientCore}>("POST", "/v1/patient-intakes", input, isReceipt("patient"));
   }

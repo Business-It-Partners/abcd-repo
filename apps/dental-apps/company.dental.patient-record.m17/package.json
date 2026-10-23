@@ -1,10 +1,10 @@
 {
   "name": "company.dental.patient-record.m17",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build --config vite.config.ts",
+    "build": "node ../../../tools/app-packages/build-m17-patient-record.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

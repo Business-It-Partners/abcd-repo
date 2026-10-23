@@ -3,11 +3,15 @@ import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
 import type { ClinicSessionContext, AppSdk } from "../../../../electron/sdk/contracts";
 import { APP_ID, PatientApi, PatientMediaSdk, readable, isUnknown } from "./api";
-import { PatientDirectory } from "./directory";
-import { PatientIntake } from "./intake";
-import { PatientDetail } from "./patient";
-import "@/shared/clinic.css";
-import "./styles.css";
+import { SaaSPatientDirectory } from "./saasDirectory";
+import { SaaSPatientDetail } from "./saasPatientDetail";
+import { SaaSPatientIntake } from "./saasPatientIntake";
+import { ClinicPageRefreshAction, ClinicPageRefreshProvider } from "@/shared/ui/ClinicPageRefresh";
+import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
+import { ClinicLoadingProvider } from "@/shared/ui/ClinicLoadingOverlay";
+import { SnackbarProvider } from "@/shared/ui/SnackbarProvider";
+import "../vendor/dental-saas/apps/clinic-web/src/app/globals.css";
+import "./saasAdapter.css";
 
 type Screen = {mode:"directory"} | {mode:"intake"} | {mode:"detail";patientId:string};
 type Pending = {label:string; retry:()=>Promise<void>};
@@ -114,26 +118,29 @@ function Main() {
     api,media,session,busy,pending:!!pending,capabilities:new Set(session.clinicUser.capabilities),
     run,dirty,go,refreshDirectory:()=>setRevision(v=>v+1)
   }:null,[api,media,session,busy,pending,run,dirty,go]);
-  if(openingError)return <main className="prMessage" role="alert"><h1>Patient Record unavailable</h1><p>{openingError}</p></main>;
-  if(!ready||!store)return <main className="prMessage" role="status">Opening Patient Record…</main>;
-  return <Context.Provider value={store}>
-    <main data-dental-os-app={APP_ID} className="prApp">
-      <header className="prTop"><div><span className="prEyebrow">{session?.clinic.displayName}</span>
-        <h1>Patient Record</h1><p>Registration, clinical history and patient care</p></div>
-        <div className="prUser">Signed in as {session?.clinicUser.displayName} · {session?.clinicUser.role}</div></header>
-      {pending&&<section className="prWarning" role="alert"><strong>Uncertain save: {pending.label}</strong>
-        <p>The clinic may have received this change. Do not submit it again as a new action. Only retry the original operation.</p>
-        {reconcileError&&<Alert>{reconcileError}</Alert>}
-        <button type="button" onClick={()=>void retry()} disabled={!!busy}>Retry original save</button></section>}
-      {busy&&<p className="prBusy" role="status">{busy}…</p>}
-      {screen.mode==="directory"&&<PatientDirectory key={revision} onSelect={patientId=>go({mode:"detail",patientId})}
-        onCreate={()=>go({mode:"intake"})}/>}
-      {screen.mode==="intake"&&<PatientIntake onBack={()=>go({mode:"directory"})}
-        onCreated={patientId=>{setRevision(v=>v+1);setScreen({mode:"detail",patientId});}}/>}
-      {screen.mode==="detail"&&<PatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId}
-        onBack={()=>go({mode:"directory"})}/>}
+  if(openingError)return <main className="saasAdapterMessage" role="alert"><h1>Patient Record unavailable</h1><p>{openingError}</p></main>;
+  if(!ready||!store)return <main className="saasAdapterMessage" role="status">Opening Patient Record…</main>;
+  return <ClinicSnackbarProvider><SnackbarProvider><ClinicLoadingProvider><ClinicPageRefreshProvider><Context.Provider value={store}>
+    <main className="clinicApp">
+      <section className="clinicWorkspaceCanvas" data-dental-os-app={APP_ID}>
+        <ClinicPageRefreshAction />
+        <div className="clinicCareWorkspace">
+          {pending&&<section className="prWarning" role="alert"><strong>Uncertain save: {pending.label}</strong>
+            <p>The clinic may have received this change. Do not submit it again as a new action. Only retry the original operation.</p>
+            {reconcileError&&<Alert>{reconcileError}</Alert>}
+            <button type="button" onClick={()=>void retry()} disabled={!!busy}>Retry original save</button></section>}
+          {busy&&<p className="prBusy" role="status">{busy}…</p>}
+          {screen.mode==="directory"&&<SaaSPatientDirectory key={revision} onOpenPatient={patientId=>go({mode:"detail",patientId})}
+            onAddPatient={()=>go({mode:"intake"})}/>}
+          {screen.mode==="intake"&&<SaaSPatientIntake onBack={()=>go({mode:"directory"})}
+            onSaved={()=>setRevision(v=>v+1)}/>}
+          {screen.mode==="detail"&&<SaaSPatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId}
+            onBack={()=>{go({mode:"directory"});}}/>}
+        </div>
+        <ClinicPageRefreshAction placement="page-bottom" />
+      </section>
     </main>
-  </Context.Provider>;
+  </Context.Provider></ClinicPageRefreshProvider></ClinicLoadingProvider></SnackbarProvider></ClinicSnackbarProvider>;
 }
 declare global {interface Window {dentalApp?:AppSdk}}
 createRoot(document.getElementById("root")!).render(<Main/>);

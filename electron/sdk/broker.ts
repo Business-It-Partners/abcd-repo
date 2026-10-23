@@ -57,7 +57,15 @@ export class ApiBroker {
   }
   private caller(caller: Caller) {
     const r = this.registrations.get(caller.sender);
-    return r && r.frame === caller.frame && caller.url === r.origin ? r : undefined;
+    if (!r || r.frame !== caller.frame) return;
+    try {
+      const actual = new URL(caller.url), expected = new URL(r.origin);
+      // Apps may put non-sensitive view state in their own query string. Keep
+      // the verified scheme, host and entry path bound to the registration.
+      return actual.protocol === expected.protocol && actual.host === expected.host
+        && actual.username === '' && actual.password === ''
+        && actual.pathname === expected.pathname && actual.hash === '' ? r : undefined;
+    } catch { return; }
   }
   private current() {
     const s = this.identity.snapshot();

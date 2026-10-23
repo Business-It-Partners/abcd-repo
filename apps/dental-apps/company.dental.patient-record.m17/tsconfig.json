@@ -3,7 +3,13 @@
   "compilerOptions": {
     "paths": {
       "@/shared/*": [
-        "../../../packages/dental-ui/src/shared/*"
+        "./vendor/dental-saas/apps/clinic-web/src/shared/*"
+      ],
+      "@/features/*": [
+        "./vendor/dental-saas/apps/clinic-web/src/features/*"
+      ],
+      "@/shell/*": [
+        "./vendor/dental-saas/apps/clinic-web/src/shell/*"
       ],
       "@/*": [
         "./src/*"

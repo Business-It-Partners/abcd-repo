@@ -1,30 +1,20 @@
 # Patient Record — M17.2
 
-New first-party Dental OS app; **not** the former M13 preview `company.dental.patient-record`.
+First-party Dental OS app using the pinned Dental SaaS Patient Record screens.
 
 - App ID: `company.dental.patient-record.m17`
-- Initial release identity: `1.0.0`
-- SaaS behavior reference: `Business-It-Partners/dental-saas`, **`production`** at `f44d3e30ca6f79cba61e32601c53d58826500201`. Reference repository is read-only.
-- Dental OS integration base: `327ae15db757d4dc2f8eef83894e825084bb6722`.
-- Runtime: isolated managed Dental OS app. All business data is Worker-authoritative via `ClinicClient` and the platform SDK. No Firebase token access, direct HTTP, Worker endpoint selection, R2 URLs, local business database, or hidden queue.
+- Current package version: `1.0.1`
+- UI and business-flow source: `Business-It-Partners/dental-saas`, `production` at `f44d3e30ca6f79cba61e32601c53d58826500201`
+- Dental OS integration base: `327ae15db757d4dc2f8eef83894e825084bb6722`
 
-## App-local organization
+## UI parity
 
-- `src/main.tsx` — strict signed-app/session initialization, lifecycle/dirty reporting, single pending original-key write reconciliation, module selection.
-- `src/api.ts` — Worker response adapters, stable commands and media SDK read/upload operations.
-- `src/directory.tsx` — clinic-scoped search, BS-month cohort filters, counts, cursor pagination.
-- `src/intake.tsx` — registration number preview and multi-step patient/safety intake.
-- `src/patient.tsx` — record detail, versioned profile correction, complaint/case and plan histories.
-- `src/clinical.tsx` — clinical notes/timeline and prescriptions with correction/withdrawal.
-- `src/operations.tsx` — patient follow-ups, billing ledger, odontogram and clinical-chart reads, lab orders.
-- `src/media.tsx` — host-mediated X-ray metadata, private image viewer, bounded image upload/replacement, original-transfer retry/cancel.
-- `src/types.ts` — unchanged production patient types pinned in `SOURCE_IMPORT.json`.
-- `src/styles.css` — clinic-style cards, tables, tabbed detail, responsive forms and modal overlays.
+Patient Record does not have a custom replacement UI. It renders the pinned SaaS `PatientRecordView`, `CaseEntryView`, `PatientDrawer` and its production detail tabs, with their source CSS, shared workspace primitives, icons and date controls. The app shell uses the production `clinicApp`, `clinicWorkspaceCanvas` and `clinicCareWorkspace` layout classes. This preserves the source margins, backgrounds, page sheets, typography, controls, tables, dialogs, responsive behavior and tab structure.
 
-## Important boundaries
+Of the 128 vendored source files, 121 are byte-identical to the pinned production revision. Seven files are adapted at the Dental OS boundary for SDK-mediated requests, private image transfer, in-memory app routing, platform role context, or patient-scoped chart media. Those adapters do not replace the production view markup or CSS. File-level provenance and adapter scope are recorded in [`SOURCE_IMPORT.json`](SOURCE_IMPORT.json).
 
-Each first-party app requires a signed release and matching exact update-policy format-2 operation grants. This source does not sign, package, publish, install, or grant itself API/media authority. `clinic.media.read` and `clinic.media.upload` must be granted independently. Session access and patient scope remain enforced by the Dental OS host and the SaaS Worker.
+## Runtime boundary
 
-For exact route/capability mapping and implementation limitations see `API_CONTRACT.md` and `VERIFICATION.md`.
+Business data remains authoritative in the Dental SaaS Worker. The renderer uses Dental OS `ClinicClient` commands and the host media SDK; it does not read credentials or make direct network requests. Session, role, operation grants and media transfer remain controlled by Dental OS. No local business database or offline write queue is introduced.
 
-**This code is an untested implementation handoff**, not a staging-accepted, signed, live or production release.
+Use [`API_CONTRACT.md`](API_CONTRACT.md) for the clinic routes and platform constraints. Local checks and staging status are tracked in the M17.2 milestone records.
