@@ -6,7 +6,7 @@ import { createPrivateKey, createPublicKey, sign } from 'node:crypto';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { buildPackage, canonical, parseCanonical, sha256, verifyPackage, limits } = require('../../dist-electron/packages/format.js');
+const { buildPackage, canonical, parseCanonical, sha256, verifyPackage, limits, maxCompanyAppCount } = require('../../dist-electron/packages/format.js');
 const { noWatermark, verifyCatalogue, compareVersion } = require('../../dist-electron/distribution/catalogue.js');
 const { verifyUpdatePolicy, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue } = require('../../dist-electron/distribution/updatePolicy.js');
 const { apiOperations } = require('../../dist-electron/sdk/contracts.js');
@@ -80,7 +80,7 @@ if (appMetadata.appId !== appId || appMetadata.title !== 'Follow-ups' || appMeta
 const oldCatalogueRow = priorCatalogue.releases.find(release => release.id === appId);
 const oldPolicyRow = priorPolicy.apps.find(app => app.id === appId);
 if (!oldCatalogueRow || !oldPolicyRow || compareVersion(manifest.version, oldCatalogueRow.version) <= 0) throw Error('Follow-ups release must strictly increase its installed catalogue version');
-if (priorCatalogue.releases.length > 16 || priorPolicy.apps.length > 16) throw Error('Signed staging app limit would be exceeded');
+if (priorCatalogue.releases.length > maxCompanyAppCount || priorPolicy.apps.length > maxCompanyAppCount) throw Error('Signed staging app limit would be exceeded');
 
 const files = collectFiles(path.join(appRoot, 'dist'));
 if (!files.has(manifest.entry) || !files.has('app.json') || !files.has(appMetadata.icon)) throw Error('Follow-ups package is missing its entry, metadata, or icon');

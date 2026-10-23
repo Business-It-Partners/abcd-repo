@@ -1,17 +1,17 @@
 # M17 Plan — First-party Dental App Delivery
 
-**Status:** IMPLEMENTING — signed staging packages are present for Follow-ups, Appointments, Treatment Progress and Calendar; Treatment Protocols was added at sequence 29. These feed entries do not imply Store installation/runtime acceptance. Treatment Protocols started early at the user's direction; the planned app order is unchanged. G17 remains open.
+**Status:** IMPLEMENTING — Follow-ups, Appointments, Calendar and Treatment Protocols source is integrated in the current M15 worktree. Follow-ups 1.0.0 (sequence 24), Appointments 1.0.1 (sequence 26), and Calendar 1.0.0 (sequence 28) each passed signed staging verification and authenticated Store install/open with exact-payload runtime health in private Linux profiles. Treatment Protocols 1.0.0 is published at sequence 29; its Store install/runtime check remains open. Full live role/tenant/workflow acceptance and G17 remain open.
 **Updated:** 2026-10-23.
-**Execution home:** Existing M15 worktree on branch codex/milestone-15. No separate M17 worktree or branch is used.
+**Execution home:** Existing M15 worktree on branch codex/milestone-15. Follow-ups, Appointments and Calendar were imported from commit `5306b80161542b7a9480b4bb2bc49df6b1218d84`; no separate M17 worktree or branch is an ongoing source dependency.
 **Requirements:** R02–R12 and R15, as mapped to G14/G17.
 **Exit gate:** G17 for app-by-app staging delivery. Final integrated acceptance is governed by the verified M15/G15 baseline.
 **Architecture:** [SDK and API Broker](../../dental-os_v1-documentation/11_V1_SDK_AND_API_BROKER.md), [Store and Cloudflare Distribution](../../dental-os_v1-documentation/09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md), [Install, Update and Uninstall](../../dental-os_v1-documentation/10_V1_INSTALL_UPDATE_AND_UNINSTALL.md), [package format](../../dental-os_v1-documentation/23_V1_PACKAGE_FORMAT.md).
 
 ## Purpose and source of truth
 
-Deliver eleven first-party Dental OS apps as independently signed packages through the existing Cloudflare staging Store. M17 uses the app code already in this worktree, the maintained Dental SaaS UI/workflow/API modules, and the current M15 platform SDK/UI. Dental SaaS is the authority for business behavior; Dental OS is the authority for app identity, package signing, host capabilities, and Store delivery.
+Deliver eleven first-party Dental OS apps as independently signed packages through the existing Cloudflare staging Store. M17 uses the app code in this worktree, the maintained Dental SaaS UI/workflow/API modules, and the current M15 platform SDK/UI. Dental SaaS is the authority for business behavior; Dental OS is the authority for app identity, package signing, host capabilities, and Store delivery.
 
-The current M17 Follow-ups and Appointments packages are retained as implementation checkpoints. Their user-facing workflows are not restarted. Signed M17 IDs/packages are present in the staging feed for Follow-ups, Appointments, Treatment Progress and Calendar; Treatment Protocols is now published as well. Individual source and runtime acceptance remain tracked separately. The other apps continue from their planned SaaS modules. Existing preview packages and previously published package bytes remain unchanged and are not M17 release identities.
+Follow-ups, Appointments and Calendar code was integrated from the completed M17 feature commit into the existing M15 worktree; their user-facing workflows are retained. Signed M17 packages are present in the staging feed for Follow-ups, Appointments, Treatment Progress and Calendar; Treatment Protocols is also published. The three imported apps have private-profile Store install/open and exact-payload health evidence; Treatment Protocols Store/runtime acceptance remains open. The other apps continue from their planned SaaS modules. Existing preview packages and previously published package bytes remain unchanged and are not M17 release identities.
 
 No other Dental OS app branch or worktree is an M17 source input. The active M17 app source is this worktree; app behavior is reviewed against the pinned Dental SaaS source for each app.
 
@@ -20,7 +20,7 @@ No other Dental OS app branch or worktree is an M17 source input. The active M17
 M17 app code does not implement capabilities that belong to Dental OS. The platform owns the isolated runtime, identity/session mediation, networking and API broker, host-enforced permissions, private media transfer, package verification, Store, and update lifecycle. Each app uses the supported SDK to call those capabilities. App code owns its clinical/business UI and maps user actions to approved SaaS API operations. Dental SaaS remains the business authority.
 
 - Review the corresponding maintained Dental SaaS module and pin its exact revision and relevant file hashes before each fresh implementation.
-- For Follow-ups and Appointments, retain the current M17 app source and verify its UI/API behavior against the pinned SaaS contract and current M15 SDK before repackaging.
+- For Follow-ups, Appointments and Calendar, retain the imported app source and verify its UI/API behavior against the pinned SaaS contract and current M15 SDK before any later repackaging.
 - Use only SDK-mediated business APIs and platform media capabilities. Do not add app-owned HTTP, credentials, direct Worker/R2 access, a local authoritative business database, or a hidden offline write queue.
 - Preserve stable operation identity and reconcile conflicts, session changes, and unknown outcomes through the existing SDK/Worker contract.
 - Keep the shared window, module, session, and dirty-form lifecycle. Apps do not create their own window manager or general cross-app navigation.
@@ -47,7 +47,7 @@ Assign a new unique first-party ID to every M17 package, including Follow-ups an
 
 Complete one app at a time. Follow-ups and Appointments remain existing M17 implementation checkpoints, and Patient Record remains next in the planned sequence after those checkpoints. Treatment Protocols is being implemented early at the user's direction because it is independent; this does not change the planned order for the other apps. Submilestone numbers and scopes do not change.
 
-1. For Follow-ups and Appointments, continue from the app source already present in this M17 worktree. Confirm the current SaaS contract and M15 SDK boundary; do not restart the UI implementation.
+1. Continue from the Follow-ups, Appointments and Calendar source integrated into this M15 worktree. Confirm the current SaaS contract and M15 SDK boundary; do not restart the UI implementation.
 2. For each remaining app, inspect its maintained Dental SaaS UI/workflow/API behavior, write a short route/role/payload/write-recovery contract note, pin the exact source, and build a Dental OS package from scratch using the current shared UI and SDK.
 3. Run focused local Linux checks for the app. Do not run GitHub Actions for this M17 work. Current-source Windows verification and independent review remain separate gates.
 4. Keep local implementation status separate from authenticated staging acceptance, signed publication, Store installation, and runtime-health evidence.

@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "appId": "company.dental.appointments.m17",
+  "title": "Appointments",
+  "description": "Book and manage the clinic appointment diary.",
+  "icon": "assets/appointments.png",
+  "anyCapabilities": [
+    "appointments.access"
+  ],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "appointments",
+      "label": "Appointments",
+      "tab": "appointments",
+      "capability": "appointments.access"
+    }
+  ]
+}

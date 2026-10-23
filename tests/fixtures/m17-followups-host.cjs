@@ -14,7 +14,7 @@ const { verifyUpdatePolicy, apiOperationsForPackage, apiReleaseGrantForPackage, 
 const { verifyCatalogue, noWatermark } = require(path.join(root, 'dist-electron/distribution/catalogue.js'));
 const { clinicRequestAllowed } = require(path.join(root, 'dist-electron/sdk/appPolicy.js'));
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
-const appId = 'company.dental.followups', id = '11111111-1111-4111-8111-111111111111', doctor = '22222222-2222-4222-8222-222222222222';
+const appId = 'company.dental.followups.m17', id = '11111111-1111-4111-8111-111111111111', doctor = '22222222-2222-4222-8222-222222222222';
 const dateParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
 const today = ['year', 'month', 'day'].map(key => dateParts.find(row => row.type === key).value).join('-');
 const calls = [], receipts = new Map();

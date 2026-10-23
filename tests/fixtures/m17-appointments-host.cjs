@@ -15,7 +15,7 @@ const { verifyCatalogue, noWatermark } = require(path.join(root, 'dist-electron/
 const { clinicRequestAllowed } = require(path.join(root, 'dist-electron/sdk/appPolicy.js'));
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
-const appId = 'company.dental.appointments';
+const appId = 'company.dental.appointments.m17';
 const syntheticId = '11111111-1111-4111-8111-111111111111';
 const syntheticDoctorId = '22222222-2222-4222-8222-222222222222';
 const dayParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());

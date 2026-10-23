@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "appId": "company.dental.calendar.m17",
+  "sourceRepository": "https://github.com/Business-It-Partners/dental-saas.git",
+  "sourceRef": "refs/heads/cloudfare-staging",
+  "sourceCommit": "fd2cc5439694ce844362c9dec8a6267378d11381",
+  "capturedAt": "2026-10-23",
+  "reference": "apps/clinic-web/src/features/calendar",
+  "files": [
+    { "path": "apps/clinic-web/src/features/calendar/components/CalendarView.tsx", "gitBlob": "f64cb40478326b773420e46bb85a68183411270c", "sha256": "7a2277b75440d56d2f43d1e56b34cd11c2edd9feac9111ed9b715d62d9c3d485" },
+    { "path": "apps/clinic-web/src/features/calendar/components/CalendarView.module.css", "gitBlob": "ed425c9b851fa78b4daf6b8c43cb422c82538657", "sha256": "93e7bd7d34605cb326f1721112369c42653d1a53b62c55e4f51ca0a2662556a3" },
+    { "path": "apps/clinic-web/src/features/calendar/api.ts", "gitBlob": "3a55fca132dc437194a1fd7863e83f8f0b729af0", "sha256": "d272eb423cefab0871aa51a00487cc2bd436d1e1eb93fa896b7afbceca2dfa4c" },
+    { "path": "apps/clinic-web/src/features/calendar/calendarTasks.ts", "gitBlob": "dd57a2aac5f06e6f87aa29400560e7cf10d5de72", "sha256": "85bf2618b993446cf7b94553f1b949b87074de9b1b6be7da976f7081ded99265" },
+    { "path": "apps/clinic-web/src/features/calendar/types.ts", "gitBlob": "04a5a6880544e195eee3af093b21b149be7a8c55", "sha256": "c7baf282d1db81976cba020d7a76aafca08552fb1ca186149c96436c575937d5" },
+    { "path": "apps/clinic-web/src/shared/dates/MonthPicker.tsx", "gitBlob": "5d9ddf6b2eaecd640e8d15128f53b5a0ce284282", "sha256": "28d6be2265b6e35a4a42168dd865b447216cf57aa8e5a597e5f35aaeae883dc8" },
+    { "path": "apps/clinic-web/src/shared/dates/bikramSambat.ts", "gitBlob": "a2b9be92e178553462a447f4d5fa76cf626249bd", "sha256": "7f7cd07804ef925142b2e4a76fd5b6caf87888a620d2bf5d2a09b7e6e78eab09" },
+    { "path": "apps/clinic-web/src/shared/dates/nepaliDate.ts", "gitBlob": "e924d76e78a0a47e0e8d40fb0afbde1406538ebb", "sha256": "33c0f9a5c5e7efe3360f4942256cd6aec99fbdadfcb253264478b5ce3b9e047f" },
+    { "path": "apps/platform-worker/src/clinic/calendar/calendarTasks.controller.ts", "gitBlob": "228cded2a0f471d5186778e8a7a27fae999d9d9f", "sha256": "61a30b17329978169a253fe8d8f1c913ceec6c3fe46094d95a3d86d917cef7c4" },
+    { "path": "apps/platform-worker/src/clinic/calendar/calendarTasks.service.ts", "gitBlob": "a471dac58e0287caf4b28dffa9828ac037f77d02", "sha256": "f004ceebb8a4aa1dbc782699062609e60b3c420c304a5f972832057a50225717" },
+    { "path": "apps/platform-worker/src/clinic/calendar/calendarTasks.types.ts", "gitBlob": "2951e0662110d2690e36dc7de8a6a89ded99dad7", "sha256": "4cbf2119070ba7ccf5e85b5d5a6d8233119074c281516960bce1f6c017af69d3" }
+  ]
+}

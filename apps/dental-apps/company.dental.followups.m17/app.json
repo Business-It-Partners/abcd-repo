@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "appId": "company.dental.followups.m17",
+  "title": "Follow-ups",
+  "description": "Patient follow-up scheduling and contact workflow.",
+  "icon": "assets/followups.png",
+  "anyCapabilities": [
+    "followups.access"
+  ],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "followups",
+      "label": "Follow-ups",
+      "tab": "followups",
+      "capability": "followups.access"
+    }
+  ]
+}

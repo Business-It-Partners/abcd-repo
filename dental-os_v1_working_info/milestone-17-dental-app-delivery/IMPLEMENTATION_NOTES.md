@@ -1,11 +1,11 @@
 # M17 Implementation Notes
 
-This file records current M17 decisions, source pins, implementation deltas, and platform dependencies. Verification outcomes belong in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
+This file records current M17 decisions, source pins, implementation deltas, and platform dependencies. Follow-ups, Appointments and Calendar source is now integrated in the M15 worktree; verification outcomes belong in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 
 ## Current user-directed scope — 2026-10-22
 
 - M17 stays in the current M15 worktree and branch.
-- Reuse the Follow-ups and Appointments app source already present in this M17 worktree. Keep those workflows; update their package identities for the M17 release line rather than restarting UI implementation.
+- Reuse the Follow-ups and Appointments app source already implemented for M17. Keep those workflows; update their package identities for the M17 release line rather than restarting UI implementation. Calendar source was also imported into M15 on 2026-10-23.
 - Build the other nine apps from scratch against each maintained Dental SaaS UI/workflow/API module. Pin the exact source revision per app before implementation.
 - Assign all eleven apps their own new unique M17 app IDs. Each app's first M17 package is version 1.0.0. Existing preview identities/releases remain unchanged.
 - Use one new M17 staging signing key for the suite. Its public identity is pinned in the source staging trust configuration; the private key stays protected outside the checkout.
@@ -22,9 +22,9 @@ A fresh Ed25519 key pair was generated for M17 staging. Key ID: `company-staging
 
 | Submilestone | Existing M17 app source | SaaS behavior source | New M17 release ID/version | Current state |
 | --- | --- | --- | --- | --- |
-| M17.1 Follow-ups | Existing package source in this worktree; reuse | f0d059d36540b4b6907cace089085ce0df62d454 | `company.dental.followups.m17` / 1.0.0 | Signed package and API grant verified in the staging feed; install/runtime evidence must be reconciled from its owning record |
+| M17.1 Follow-ups | Existing package source imported into M15; reuse | f0d059d36540b4b6907cace089085ce0df62d454 | `company.dental.followups.m17` / 1.0.0 | Published at sequence 24; private-profile Store install/open and exact-payload health passed; full live acceptance open |
 | M17.2 Patient Record | None; fresh implementation | Pin on start | TBD / 1.0.0 | Queued after M17.1 and M17.3 |
-| M17.3 Appointments | Existing package source in this worktree; reuse | f0d059d36540b4b6907cace089085ce0df62d454 | `company.dental.appointments.m17` / 1.0.0 first package; current 1.0.1 | Current signed package and API grant verified in the staging feed; install/runtime evidence must be reconciled from its owning record |
+| M17.3 Appointments | Existing package source imported into M15; reuse | f0d059d36540b4b6907cace089085ce0df62d454 | `company.dental.appointments.m17` / 1.0.0 first package; current 1.0.1 | Current package published at sequence 26; private-profile Store install/open and exact-payload health passed; full live acceptance open |
 | M17.4 Work Entry | None; fresh implementation | Pin on start | TBD / 1.0.0 | Not started |
 | M17.5 Treatment Progress | Feed entry observed; local source/acceptance not reconciled here | Pin on source review | `company.dental.treatment-progress.m17` / 1.0.0 | Signed package and API grant verified in the staging feed; app-specific source/install evidence must be reconciled |
 | M17.6 Lab Tracker | None; fresh implementation | Pin on start | TBD / 1.0.0 | Not started |
@@ -32,9 +32,9 @@ A fresh Ed25519 key pair was generated for M17 staging. Key ID: `company-staging
 | M17.8 Patient Payments | None; fresh implementation | Pin on start | TBD / 1.0.0 | Not started |
 | M17.9 Staff | None; fresh implementation | Pin on start | TBD / 1.0.0 | Not started |
 | M17.10 Treatment Protocols | Fresh app under `company.dental.m17.treatment-protocols` | f0d059d36540b4b6907cace089085ce0df62d454 | `company.dental.m17.treatment-protocols` / 1.0.0 | Published and publicly verified at staging sequence 29; Store installation/runtime health remain open |
-| M17.11 Calendar | Feed entry observed; local source/acceptance not reconciled here | Pin on source review | `company.dental.calendar.m17` / 1.0.0 | Signed package and API grant verified in the staging feed; app-specific source/install evidence must be reconciled |
+| M17.11 Calendar | Existing package source imported into M15 | `fd2cc5439694ce844362c9dec8a6267378d11381` | `company.dental.calendar.m17` / 1.0.0 | Published at sequence 28; private-profile Store install/open and exact-payload health passed; full live acceptance open |
 
-The existing Follow-ups 1.1.0 staging release and Appointments 1.1.0 local fixture checkpoint are immutable historical package artifacts under earlier identities. Neither is relabeled as an M17 1.0.0 package. Repackage from the current M17 code under the new ID, recalculate the digest and grants, then perform the required new-identity checks.
+The existing Follow-ups 1.1.0 staging release and Appointments 1.1.0 local fixture checkpoint are immutable historical package artifacts under earlier identities. Neither is relabeled as an M17 1.0.0 package. Their M17 source and new identities are recorded in the app plans; new versions must use immutable package bytes and updated grants.
 
 ## Delivery notes
 
@@ -56,3 +56,9 @@ The existing Appointments package source was implemented in this M17 worktree fr
 ### 2026-10-23 — Treatment Protocols started early
 
 The user directed M17.10 to start before the remaining app sequence. The M13 preview ID and package remain historical and untouched. M17 uses new ID `company.dental.m17.treatment-protocols`, version `1.0.0`, and the pinned Dental SaaS source in `apps/dental-apps/company.dental.m17.treatment-protocols/SOURCE_IMPORT.json`. The app ports the SaaS catalogue/detail editor and shared action button, calls the existing treatment-protocol routes through `ClinicClient`, and uses the current `clinic.app.treatment-protocols` broker family. SaaS UI has no stage-reorder control; no new reorder UI was added. App typecheck/build, three package checks, three API contract tests, fourteen private Linux UI checks, workspace production build and 510 unit tests pass. The private report and screenshot cover create, stage pricing/settings, conflict refresh, unknown-outcome same-key retry, soft retirement and role denial. The M17-signed 1.0.0 package was published at catalogue sequence 29 and verified by reading back the package, catalogue and update policy; all existing entries were preserved and the temporary publisher Worker was removed. See the [publication evidence](evidence/m17-treatment-protocols-staging-seq29-2026-10-22.json). Store installation and live clinic API acceptance remain open.
+
+### 2026-10-23 — Follow-ups, Appointments and Calendar imported into M15
+
+The user asked to bring the separately completed M17 app work into this local M15 worktree. Commit `5306b80161542b7a9480b4bb2bc49df6b1218d84` was merged locally, bringing the three app packages, assets, release tooling, focused fixtures, release evidence and app plans. The running OS instance and its shared installed-app profile were not changed. This integration keeps M15's generic `clinic.app.*` host policy: each manifest declares one supported app family and the existing route/role rules are selected from that signed capability; no Follow-ups, Appointments or Calendar IDs were registered in host source. The incoming M17-specific 32-entry metadata cap was discarded in favor of M15's shared 64-company-app limit.
+
+The imported apps' staging releases and private Store/runtime evidence predate this merge: Follow-ups 1.0.0 at sequence 24, Appointments 1.0.1 at sequence 26, and Calendar 1.0.0 at sequence 28. Their Store tests used private disposable Linux profiles and made no business writes. The integrated M15 build and focused checks will be recorded once complete; this merge does not publish or install packages, validate full live role/tenant workflows, deploy the M17 trust pin to the user's running desktop, or close G17/G15.

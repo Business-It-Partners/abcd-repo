@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "failure": "Error: Follow-ups guest did not open. Pages: \nPrivate host: Error: ENOENT: no such file or directory, scandir '/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/apps/dental-apps/company.dental.followups.m17/dist'\n    at Object.readdirSync (node:fs:1630:26)\n    at Object.readdirSync (node:electron/js2c/node_init:1:16987)\n    at collect (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:82:25)\n    at /home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:93:40\nPrivate page diagnostic: {\"host\":\"Error: ENOENT: no such file or directory, scandir '/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/apps/dental-apps/company.dental.followups.m17/dist'\\n    at Object.readdirSync (node:fs:1630:26)\\n    at Object.readdirSync (node:electron/js2c/node_init:1:16987)\\n    at collect (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:82:25)\\n    at /home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:93:40\",\"calls\":null}\nPrivate host stderr: [20952:1023/100310.323436:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
+  "checks": [],
+  "errors": [],
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
+  "screenshot": null
+}

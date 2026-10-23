@@ -18,7 +18,7 @@ const check = (label, value = true) => { assert.ok(value, label); checks.push(la
 let app, page, deniedApp, passed = false, packageInfo, failure, screenshotWritten = false, deniedProfile;
 const waitForGuest = async target => {
   for (let attempt = 0; attempt < 160; attempt++) {
-    const candidate = target.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.appointments/'));
+    const candidate = target.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.appointments.m17/'));
     if (candidate) return candidate;
     await new Promise(resolve => setTimeout(resolve, 50));
   }
@@ -40,8 +40,13 @@ try {
   await page.getByRole('heading', { name: 'Appointments', exact: true }).waitFor();
   await page.getByText('Synthetic M17 Appointment', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('ephemeral signed package has the declared identity and stays below the package asset cap', packageInfo.version === '1.1.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
-  check('renderer receives only the SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request'));
+  check('ephemeral signed package has the declared 1.0.1 update identity and stays below the package asset cap', packageInfo.version === '1.0.1' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  const tableHeaders = await page.locator('.appointmentTable thead th').allTextContents();
+  check('appointments screen follows the SaaS day-book layout with summary cards, date controls, and the same status columns',
+    await page.locator('.appointmentSummaryCard').count() === 4
+      && await page.getByRole('button', { name: 'Previous day' }).count() === 1
+      && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Doctor|Phone|Arrived|No-show|Cancel|Action');
+  check('renderer receives only the current SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
   check('initial reads use only the registered appointment and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/appointments|/v1/appointments/summary|/v1/clinic/staff-references');
   check('the active-doctor filter excludes inactive doctors and non-doctor staff', await page.getByRole('combobox', { name: 'Doctor', exact: true }).locator('option').allTextContents().then(values => values.includes('Synthetic Doctor') && !values.some(value => /Inactive|Helper/.test(value))));
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
@@ -84,8 +89,8 @@ try {
   check('half-open adjacent appointment slot is accepted and reflected in the refreshed schedule', afterCreate.appointments.length === 2 && afterCreate.appointments.some(row => row.startMinute === 660));
 
   const newRow = page.getByRole('row').filter({ hasText: 'Synthetic overlap candidate' });
-  const status = page.getByRole('combobox', { name: 'Set Synthetic overlap candidate appointment status', exact: true });
-  await status.selectOption('arrived');
+  const status = newRow.getByRole('checkbox', { name: 'Mark arrived', exact: true });
+  await status.click();
   await page.getByText('Appointment status saved.', { exact: true }).waitFor();
   check('permitted status change saves through the idempotent status route', (await inspect(app)).appointments.some(row => row.appointmentId === '33333333-3333-4333-8333-333333333333' && row.status === 'arrived') && (await inspect(app)).calls.some(call => call.method === 'POST' && call.path.endsWith('/status')));
 
@@ -100,8 +105,8 @@ try {
 
   const afterConflictStart = await inspect(app);
   await app.evaluate(() => globalThis.m17.conflict());
-  const currentStatus = page.getByRole('combobox', { name: 'Set Synthetic overlap candidate appointment status', exact: true });
-  await currentStatus.selectOption('cancelled');
+  const currentStatus = newRow.getByRole('checkbox', { name: 'Cancel booking', exact: true });
+  await currentStatus.click();
   await page.getByText(/changed or overlaps another booking/, { exact: false }).waitFor();
   const afterConflict = await inspect(app);
   check('409 conflict refreshes canonical row version without applying the rejected status', afterConflict.effects === afterConflictStart.effects && afterConflict.appointments.find(row => row.appointmentId === '33333333-3333-4333-8333-333333333333')?.status === 'arrived');
@@ -151,7 +156,7 @@ try {
   if (target) {
     try {
       const diagnostic = await target.evaluate(() => ({ host: globalThis.__m17Diagnostic ?? null, calls: globalThis.m17?.calls ?? null }));
-      const targetPage = target.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.appointments/'));
+      const targetPage = target.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.appointments.m17/'));
       if (targetPage) diagnostic.body = await targetPage.evaluate(() => document.body?.innerText?.slice(0, 3000) ?? null);
       if (diagnostic.host) failure += `\nPrivate host: ${diagnostic.host}`;
       failure += `\nPrivate page diagnostic: ${JSON.stringify(diagnostic)}`;

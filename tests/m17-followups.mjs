@@ -16,7 +16,7 @@ let app, page, passed = false, packageInfo, failure, screenshotWritten = false;
 const check = (label, value = true) => { assert.ok(value, label); checks.push(label); console.log('PASS', label); };
 const waitForGuest = async () => {
   for (let attempt = 0; attempt < 160; attempt++) {
-    const candidate = app.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.followups/'));
+    const candidate = app.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.followups.m17/'));
     if (candidate) return candidate;
     await new Promise(resolve => setTimeout(resolve, 50));
   }
@@ -38,8 +38,8 @@ try {
   await page.getByRole('heading', { name: 'Follow-ups', exact: true }).waitFor();
   await page.getByText('Synthetic M17 Patient', { exact: true }).waitFor();
   const initial = await inspect(); packageInfo = initial.package;
-  check('ephemeral signed package is the declared app and is below the 2 MiB package asset cap', packageInfo.version === '1.1.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
-  check('app is isolated behind the renderer-safe SDK with no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request'));
+  check('ephemeral signed package is the declared app and is below the 2 MiB package asset cap', packageInfo.version === '1.0.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('app is isolated behind the current renderer-safe SDK with no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
   check('initial business reads use only the registered worklist and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/clinic/staff-references|/v1/follow-ups');
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
   await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'wx' });

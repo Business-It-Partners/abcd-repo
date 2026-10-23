@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "failure": "AssertionError: app is isolated behind the renderer-safe SDK with no credential getter\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/clinic/staff-references\",\"method\":\"GET\",\"operationId\":null},{\"path\":\"/v1/follow-ups\",\"method\":\"GET\",\"operationId\":null}],\"body\":\"Follow-ups\\nFriday, 06/07/2083 · patient recall tracker\\nRefresh\\nCreate follow-up\\n1\\nDue today\\nto follow up today\\n1\\nThis week\\nremaining till Saturday\\n0\\nUpcoming\\nafter this week\\n0\\nMissed\\nwindow passed\\n06/07/2083\\n#\\tPatient⇅\\tDue⇅\\tDoctor⇅\\tLast visit\\tPhone\\tCall\\tUn-response\\tCaught\\tAction\\n\\n1\\n\\t\\nSynthetic M17 Patient\\n\\t\\nToday\\n10:30 AM\\n\\t\\nSynthetic Doctor\\n\\t\\n\\t\\n9800000000\\n\\t\\n\\t\\n\\t\\n\\t\\nReschedule\\nDetails\\nShowing 1 to 1 of 1 follow-ups\\nPrevious\\n1\\nNext\\nOpening follow-ups…\"}\nPrivate host stderr: [22333:1023/100428.970307:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
+  "checks": [
+    "ephemeral signed package is the declared app and is below the 2 MiB package asset cap"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.0",
+    "packageSha256": "d3e9e4a8f67bb0e588e36bf4a99496d4c902aa04191e7f3bc84c63a45655b685",
+    "payloadDigest": "53db9f57bb612c035a6f1c34b31a84d92740b213266f976fec28353a6590a20d",
+    "wireBytes": 1224143,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
+  "screenshot": null
+}
