@@ -55,12 +55,21 @@ try {
   await page.getByRole("status", { name: "Opening treatment progress…" }).waitFor({ state: "detached" });
   check("initial loading overlay clears after the server projection is ready");
   packageInfo = (await inspect(app)).package;
-  check("ephemeral package signature carries the new app ID and version 1.0.0", packageInfo.appId === "company.dental.treatment-progress.m17" && packageInfo.version === "1.0.0");
-  check("renderer receives only the SDK bridge methods and no credential getter", await page.evaluate(() => Object.keys(window.dentalApp).sort().join(",") === "cancel,connect,getAppInfo,onModuleSelected,openAppExplorer,report,request"));
+  check("ephemeral package signature carries the app ID and version 1.0.1", packageInfo.appId === "company.dental.treatment-progress.m17" && packageInfo.version === "1.0.1");
+  check("renderer receives only the current SDK bridge methods and no credential getter", await page.evaluate(() => Object.keys(window.dentalApp).sort().join(",") === "cancel,connect,getAppInfo,onFilesReceived,onModuleSelected,openAppExplorer,report,request"));
   const initial = await inspect(app);
   check("initial projection uses only the permitted GET treatment-progress route", initial.calls.length === 1 && initial.calls[0].path === "/v1/treatment-progress" && initial.calls[0].method === "GET");
   const sitaRow = page.getByRole("row").filter({ hasText: "Sita Rai" });
   const mayaRow = page.getByRole("row").filter({ hasText: "Maya Gurung" });
+  check("Doctors is removed from the table while the doctor filter remains available",
+    await page.getByRole("columnheader", { name: "Doctors", exact: true }).count() === 0 &&
+    await page.getByRole("combobox", { name: "Filter by doctor" }).isVisible());
+  check("long treatment plans wrap to two lines and stay clamped there", await sitaRow.locator(".tprogressPlan").evaluate(element => {
+    const style = getComputedStyle(element);
+    const height = element.getBoundingClientRect().height;
+    const lineHeight = parseFloat(style.lineHeight);
+    return style.webkitLineClamp === "2" && height > lineHeight * 1.4 && height <= lineHeight * 2.1;
+  }));
   check("partial completion, remaining stages, balance, and next return render from the server projection",
     await sitaRow.getByText("1 / 3 done", { exact: true }).isVisible() &&
     await sitaRow.getByText("2 remaining", { exact: true }).isVisible() &&

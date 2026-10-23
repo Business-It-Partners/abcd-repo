@@ -32,11 +32,11 @@ if (!credentials || Object.keys(credentials).sort().join(',') !== 'email,passwor
 const expected = [
   { id: 'company.dental.followups.m17', version: '1.0.0', sha256: '48e0bc95de7003abe701fc6b6be5c87ab4643dbb7a1caed98c6858a03e44f197' },
   { id: 'company.dental.appointments.m17', version: '1.0.1', sha256: '433a37e77da1ff20beb09b710c0da2d9ccbd944c1300375a08875f4c3abf9b03' },
-  { id: 'company.dental.treatment-progress.m17', version: '1.0.0', sha256: 'd6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61' },
+  { id: 'company.dental.treatment-progress.m17', version: '1.0.1', sha256: 'ba1082a1ef429094be6fc0f8b6dd270d12bf6316df6a9c071d845c5301a9b5c7' },
   { id: 'company.dental.calendar.m17', version: '1.0.0', sha256: '0d45934d0ae43d0b79b3f1a60d188a865b3da0f509756d6a4a1642eed57d929d' },
   { id: 'company.dental.m17.treatment-protocols', version: '1.0.0', sha256: '6db5fbe5b5418a88e4ea92c7ea32435c9d3a35619e21bb013cc286fcc004c224' },
   { id: 'company.dental.work-entry.m17', version: '1.0.0', sha256: '2a48f9d5c7d708a3c7f9b93a3888da8e364f5ab0f9607c7b55b3b5f2a6463afc' },
-  { id: 'company.dental.patient-record.m17', version: '1.0.0', sha256: '6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4', capabilities: ['clinic.media.read', 'clinic.media.upload'] },
+  { id: 'company.dental.patient-record.m17', version: '1.0.1', sha256: '9f0c4097b2dc6b596df7ba54766cc6a965755cb5af7d019ee39986501194bfc8', capabilities: ['clinic.media.read', 'clinic.media.upload'] },
 ];
 let root;
 let session;

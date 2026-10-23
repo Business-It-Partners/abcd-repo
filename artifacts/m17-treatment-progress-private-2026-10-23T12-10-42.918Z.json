@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "initial loading overlay clears after the server projection is ready",
+    "ephemeral package signature carries the app ID and version 1.0.1",
+    "renderer receives only the current SDK bridge methods and no credential getter",
+    "initial projection uses only the permitted GET treatment-progress route",
+    "Doctors is removed from the table while the doctor filter remains available",
+    "long treatment plans wrap to two lines and stay clamped there",
+    "partial completion, remaining stages, balance, and next return render from the server projection",
+    "completed work is shown inside an incomplete plan and zero balance is cleared",
+    "patients remain worklist rows and do not expose an unapproved patient-detail action",
+    "Treatment Progress module selection is acknowledged after app readiness",
+    "search matches patient record IDs",
+    "search also matches assigned doctor names",
+    "doctor filter keeps rows assigned to the selected clinician",
+    "table pagination bounds the rendered rows while retaining all 12 projection rows",
+    "second page renders the remaining two records",
+    "refresh reloads the server projection and replaces stage counts",
+    "refreshed projection reflects a corrected stage count and return date",
+    "empty server projection shows a clear no-incomplete-plans state",
+    "failed refresh clears the old projection so stale patient rows are not presented as current",
+    "a later successful refresh recovers from the Worker error",
+    "malformed projection is rejected without rendering a partial clinic worklist",
+    "all successful data requests stayed read-only on the one approved route",
+    "all renderer errors stayed clear during the accepted workflow",
+    "host denies a session without treatment_progress.access before the business route is called",
+    "role-denied view contains no patient data or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.1",
+    "appId": "company.dental.treatment-progress.m17",
+    "packageSha256": "261b85eb51540800042ccf98c26e55af4b67aa29de0fef6070b684421155ab87",
+    "payloadDigest": "14ec8d5268b5ce1e1b463604748a73d8f5cbf694e25e70386a0fa1db46cbd4a8",
+    "wireBytes": 1123819,
+    "assetCount": 5
+  },
+  "scope": "Private headless Electron acceptance with ephemeral test-only package signatures and synthetic in-memory projection. No clinic records, live staging, or publication.",
+  "screenshot": "m17-treatment-progress-private-2026-10-23T12-10-42.918Z.png"
+}

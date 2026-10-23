@@ -76,6 +76,7 @@
   display: -webkit-box;
   max-width: 300px;
   overflow: hidden;
+  overflow-wrap: anywhere;
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

@@ -273,14 +273,6 @@ function TreatmentProgressWorkspace() {
       },
     },
     {
-      key: "doctors",
-      header: "Doctors",
-      value: (row) => row.doctorNames.join(", "),
-      render: (row) => row.doctorNames.length
-        ? <span>{row.doctorNames.join(", ")}</span>
-        : <span className="tprogressMuted">Not recorded</span>,
-    },
-    {
       key: "balance",
       header: "Balance",
       align: "right",

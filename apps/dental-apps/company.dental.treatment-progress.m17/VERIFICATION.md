@@ -1,11 +1,22 @@
 # M17.5 Treatment Progress verification
 
-**M17 release:** `company.dental.treatment-progress.m17` `1.0.0`
+**M17 release:** `company.dental.treatment-progress.m17` current `1.0.1` (first release `1.0.0`)
 
 **SaaS source:** `Business-It-Partners/dental-saas` at `f0d059d36540b4b6907cace089085ce0df62d454`
-**Current status:** Published to the Cloudflare staging Store as sequence 27. The public signed catalogue, update policy, and downloaded package verify as M17 1.0.0. Store installation and live synthetic clinic acceptance were not run.
+**Current status:** Version 1.0.1 was published to the Cloudflare staging Store at sequence 34. Public signed catalogue, update policy, package bytes, signer, and exact grant verify. Authenticated Store installation/runtime health and live synthetic clinic acceptance remain open.
 
-The app is a fresh Dental OS implementation of the pinned Treatment Progress worklist. It reads the server-calculated active, incomplete treatment projection through `ClinicClient`; supports patient/record/plan/doctor search, doctor filtering, sortable paginated rows, and manual refresh; and shows server-projected stage counts, assigned doctors, outstanding balance, and next return date. It does not add a local clinical database or patient-detail navigation.
+The app is a fresh Dental OS implementation of the pinned Treatment Progress worklist. It reads the server-calculated active, incomplete treatment projection through `ClinicClient`; supports patient/record/plan/doctor search, doctor filtering, sortable paginated rows, and manual refresh; and shows server-projected stage counts, outstanding balance, and next return date. Assigned doctors remain available to search/filter but are no longer shown in a table column. Long treatment plan labels wrap to a maximum of two lines. It does not add a local clinical database or patient-detail navigation.
+
+## 2026-10-23 UI update — version 1.0.1
+
+- Removed the Doctors table column while retaining the doctor filter and doctor-name search.
+- Confirmed long plan names wrap to two lines and remain clamped there.
+- App typecheck and package build passed; four app package contract tests passed.
+- Root M15 production build passed and `npm test -- --maxWorkers=1` passed 521 tests across 36 files.
+- Private headless UI acceptance passed 25/25 checks, including the new column and long-plan layout assertions. The first run stopped at an outdated SDK bridge assertion; the test was corrected for the current `onFilesReceived` bridge method, and the failed attempt was retained.
+- Private UI report: [`m17-treatment-progress-private-2026-10-23T12-10-42.918Z.json`](../../../artifacts/m17-treatment-progress-private-2026-10-23T12-10-42.918Z.json). Screenshot: [`m17-treatment-progress-private-2026-10-23T12-10-42.918Z.png`](../../../artifacts/m17-treatment-progress-private-2026-10-23T12-10-42.918Z.png).
+- Public staging verifier passed all 26 checks at sequence 34, including package signature/bytes/grants and isolated local install/launch/uninstall for all seven M17 releases: [`m17-staging-packages-readonly-2026-10-23T12-12-51.836Z.json`](../../../artifacts/m17-staging-packages-readonly-2026-10-23T12-12-51.836Z.json).
+- Staging release record: [M17.5 version 1.0.1 sequence 34](../../../dental-os_v1_working_info/milestone-17-dental-app-delivery/evidence/M17.5_TREATMENT_PROGRESS_STAGING_UPDATE_2026-10-23.json).
 
 ## Local evidence
 
@@ -20,11 +31,19 @@ The app is a fresh Dental OS implementation of the pinned Treatment Progress wor
 
 Private acceptance used synthetic in-memory data and an ephemeral test-only package key on the isolated headless display. It did not access clinic records, sign with the suite key, publish to staging, install from the Store, or mutate a live service. Staging signing, catalogue publication, Store installation, and live clinic acceptance remain separate release steps. M15 platform-dependent behavior must be repeated on the final verified platform source.
 
-## Staging release evidence
+## Historical first staging release — version 1.0.0
 
 - M17 suite key: `company-staging-m17-20261022`; catalogue sequence 27 (baseline sequence 26).
 - App: `company.dental.treatment-progress.m17` version `1.0.0`, approved in the public catalogue and update policy.
 - Package SHA-256: `d6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61` (1,119,939 bytes); payload digest: `f37e6eaa3c05a82051c938728e120fb4fa1009d3207fe45d57ff03abefaec998`.
 - Public verification confirmed 17 matching catalogue and update-policy apps, the package signature and inventory, the exact release grant, and the `clinic.api.request` operation. The staging publisher confirmed both metadata objects advanced to sequence 27, denied anonymous and replay publication, and removed its temporary Worker.
 - Report: [staging publication and public verification](../../../artifacts/m17-treatment-progress-staging-publication-2026-10-23.json).
-- This task stopped after public staging verification. No Store install, clinic credential use, live clinical request, or production action occurred. The OS changes that pin the M17 signer and raise suite capacity to 64 still need integration into a desktop build before existing clients can consume the new feed.
+- The original version 1.0.0 release remains in the update policy as the prior grant.
+
+## Current staging release — version 1.0.1
+
+- Published at sequence 34 from baseline sequence 33 using the pinned M17 suite key. Package SHA-256: `ba1082a1ef429094be6fc0f8b6dd270d12bf6316df6a9c071d845c5301a9b5c7` (1,123,815 bytes); payload digest: `14ec8d5268b5ce1e1b463604748a73d8f5cbf694e25e70386a0fa1db46cbd4a8`.
+- Catalogue SHA-256: `892e9c4e35b789b2ad9679c37e329bb2c9738bc8412bd7e0354f5d1e4fa75076`; update-policy SHA-256: `47cba8b1865ecbbde281c216eabbda14b54e93f27210fc1b65133c7482da6ace`.
+- Publication advanced both signed metadata objects to sequence 34; the temporary publisher Worker was ready, denied anonymous and replay publication, returned HTTP 200 for the authorized write, and was cleaned up.
+- Public readback verified the new signature, package bytes, exact `clinic.api.request` grant, and the prior 1.0.0 grant. The isolated local registry installed, launched, and removed the package. No authenticated Store profile, live clinic API, business write, GitHub Action, or production target was used.
+- See the [M17.5 staging update evidence](../../../dental-os_v1_working_info/milestone-17-dental-app-delivery/evidence/M17.5_TREATMENT_PROGRESS_STAGING_UPDATE_2026-10-23.json). The user's running OS was not restarted or modified; it must already trust the M17 signer to discover/install this staging release.

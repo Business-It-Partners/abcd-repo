@@ -24,7 +24,7 @@ const appId = "company.dental.treatment-progress.m17";
 const tenantId = "11111111-1111-4111-8111-111111111111";
 const appFamily = "clinic.app.treatment-progress";
 const rows = [
-  { patientId: tenantId, patientNumber: "TP-0001", fullName: "Sita Rai", planTitle: "Root canal", completedStages: 1, totalStages: 3, doctorNames: ["Dr. Anisha Rai", "Dr. Bimal Shrestha"], outstandingDue: 1500, nextReturnOn: "2026-10-25" },
+  { patientId: tenantId, patientNumber: "TP-0001", fullName: "Sita Rai", planTitle: "Root canal, crown restoration, and follow-up treatment plan", completedStages: 1, totalStages: 3, doctorNames: ["Dr. Anisha Rai", "Dr. Bimal Shrestha"], outstandingDue: 1500, nextReturnOn: "2026-10-25" },
   { patientId: "22222222-2222-4222-8222-222222222222", patientNumber: "TP-0002", fullName: "Maya Gurung", planTitle: "Crown restoration", completedStages: 3, totalStages: 4, doctorNames: ["Dr. Anisha Rai"], outstandingDue: 0, nextReturnOn: null },
   { patientId: "33333333-3333-4333-8333-333333333333", patientNumber: "TP-0003", fullName: "Nabin Lama", planTitle: "Dental review", completedStages: 0, totalStages: 2, doctorNames: [], outstandingDue: 2500, nextReturnOn: "2026-10-28" },
   ...Array.from({ length: 9 }, (_, index) => ({

@@ -19,6 +19,7 @@
     "test:lab-tracker": "node tools/run-ui-test.mjs tests/m17-lab-tracker.mjs",
     "test:lab-tracker:contract": "node --test apps/dental-apps/company.dental.lab-tracker.m17/tests/*.test.mjs",
     "build:lab-tracker": "npm --prefix apps/dental-apps/company.dental.lab-tracker.m17 run build",
+    "build:finance": "npm --prefix apps/dental-apps/company.dental.finance.m17 run build",
     "test:patient-record": "node tools/run-ui-test.mjs tests/m17-patient-record.mjs",
     "build:patient-record": "npm --prefix apps/dental-apps/company.dental.patient-record.m17 run build",
     "test:treatment-protocols": "node tools/run-ui-test.mjs tests/m17-treatment-protocols.mjs",
