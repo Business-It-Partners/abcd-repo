@@ -10,7 +10,7 @@ const shell=await app.firstWindow(),checks=[],errors=[];
 shell.setDefaultTimeout(15000);shell.on('pageerror',error=>errors.push(error.message));
 const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const phase=value=>shell.waitForFunction(value=>document.querySelector('[data-window-id="studio"]')?.dataset.phase===value,value);
-const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.getByRole('button',{name:'Back to apps',exact:true});if(await back.isVisible())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
+const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
 
 try{
  await shell.getByRole('heading',{name:'Sign in to your clinic'}).waitFor();

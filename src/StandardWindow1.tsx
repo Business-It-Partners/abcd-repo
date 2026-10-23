@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowLeft, ArrowRight, Plus, RefreshCw, Search } from 'lucide-react';
+import { Plus, RefreshCw, Search } from 'lucide-react';
 import { ManagedWindowFrame, type WindowController } from './ManagedWindow';
 import './StandardWindow1.css';
 
@@ -16,7 +16,6 @@ type DemoCase = {
 };
 type StatusFilter = 'All' | 'Active' | 'Completed' | 'Closed';
 type SortKey = 'patient' | 'complaint';
-type HistoryPage = { key: number; kind: 'table' } | { key: number; kind: 'case'; caseId: string };
 type ScrollbarMetrics = { visible: boolean; top: number; height: number; value: number };
 
 const INITIAL_CASES: DemoCase[] = [
@@ -33,26 +32,25 @@ const INITIAL_CASES: DemoCase[] = [
   { caseKey: 'case-11', id: 'PT-0048', patient: 'Suman KC', phone: '9861234567', complaint: 'Routine crown review', opened: '2026-09-28', protocols: 3, status: 'Completed' },
   { caseKey: 'case-12', id: 'PT-0052', patient: 'Sabina Thapa', phone: '9847654321', complaint: 'Extraction follow-up', opened: '2026-09-27', protocols: 1, status: 'Closed' },
 ];
-const FIRST_PAGE: HistoryPage = { key: 0, kind: 'table' };
 const PAGE_SIZE = 10;
 const STATUS_FILTERS: StatusFilter[] = ['All', 'Active', 'Completed', 'Closed'];
 
 /** First-party sample app for the shared Dental OS table and window patterns. */
 export function StandardWindow1({ controller }: { controller: WindowController }) {
-  const nextKey = useRef(1);
   const nextCaseNumber = useRef(53);
   const pageScrollRef = useRef<HTMLDivElement>(null);
   const scrollbarTrackRef = useRef<HTMLDivElement>(null);
   const scrollbarDrag = useRef<{ pointerId: number; startY: number; startTop: number } | null>(null);
   const [cases, setCases] = useState(INITIAL_CASES);
-  const [history, setHistory] = useState<HistoryPage[]>([FIRST_PAGE]);
-  const [position, setPosition] = useState(0);
   const [filter, setFilter] = useState<StatusFilter>('Active');
   const [search, setSearch] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
   const [sort, setSort] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
   const [scrollbar, setScrollbar] = useState<ScrollbarMetrics>({ visible: false, top: 0, height: 0, value: 0 });
-  const page = history[position] ?? FIRST_PAGE;
+  const activeEntry = controller.win.navigation.entries[controller.win.navigation.index] ?? 'table';
+  const page = activeEntry.startsWith('case:')
+    ? { kind: 'case' as const, caseId: activeEntry.slice('case:'.length) }
+    : { kind: 'table' as const };
 
   const updateScrollbar = useCallback(() => {
     const scroller = pageScrollRef.current;
@@ -128,19 +126,13 @@ export function StandardWindow1({ controller }: { controller: WindowController }
   };
 
   useEffect(() => {
-    if (controller.win.phase !== 'closed') return;
-    setHistory([FIRST_PAGE]);
-    setPosition(0);
-  }, [controller.win.phase]);
+    if (controller.win.phase !== 'visible' || controller.win.navigation.entries.length > 0) return;
+    controller.resetNavigation('table');
+  }, [controller.win.phase, controller.win.navigation.entries.length, controller.resetNavigation]);
 
   const selectedCase = page.kind === 'case' ? cases.find(item => item.caseKey === page.caseId) : undefined;
-  const canGoBack = position > 0;
-  const canGoForward = position < history.length - 1;
-
   const navigateToCase = (caseId: string) => {
-    const next: HistoryPage = { key: nextKey.current++, kind: 'case', caseId };
-    setHistory(previous => [...previous.slice(0, position + 1), next]);
-    setPosition(position + 1);
+    controller.navigate(`case:${caseId}`);
   };
 
   const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -199,8 +191,7 @@ export function StandardWindow1({ controller }: { controller: WindowController }
 
   const refresh = () => {
     setCases(INITIAL_CASES);
-    setHistory([FIRST_PAGE]);
-    setPosition(0);
+    controller.resetNavigation('table');
     setFilter('Active');
     setSearch('');
     setPageNumber(0);
@@ -225,21 +216,15 @@ export function StandardWindow1({ controller }: { controller: WindowController }
     setSearch('');
     setSort({ key: null, direction: 'asc' });
     setPageNumber(0);
-    setHistory([FIRST_PAGE]);
-    setPosition(0);
+    controller.resetNavigation('table');
   };
 
   const startWork = (caseId: string) => {
     setCases(previous => previous.map(item => item.caseKey === caseId && item.status === 'Open' ? { ...item, status: 'In progress' } : item));
   };
 
-  const titleBarNavigation = <div className="standard-window-history" role="group" aria-label="Page history">
-    <button type="button" aria-label="Back" title="Back" disabled={!canGoBack} onClick={() => setPosition(value => Math.max(0, value - 1))}><ArrowLeft size={24}/></button>
-    <button type="button" aria-label="Forward" title="Forward" disabled={!canGoForward} onClick={() => setPosition(value => Math.min(history.length - 1, value + 1))}><ArrowRight size={24}/></button>
-  </div>;
-
   const statusClass = (status: CaseStatus) => status.toLocaleLowerCase().replace(' ', '-');
-  return <ManagedWindowFrame controller={controller} titleBarLeading={titleBarNavigation}>
+  return <ManagedWindowFrame controller={controller}>
     <div className="standard-window-body" data-testid="standard-window-1-app">
       {page.kind === 'table' ? <>
         <div className="standard-window-scroll-shell">

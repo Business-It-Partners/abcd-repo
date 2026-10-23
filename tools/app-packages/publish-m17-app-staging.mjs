@@ -1,4 +1,4 @@
-// Publish one prepared Follow-ups, Appointments, or Calendar M17 release to Cloudflare staging.
+// Publish one prepared M17 app release to Cloudflare staging.
 // Uses a short-lived, nonce-protected Worker and conditional R2 writes. Never targets production.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -34,6 +34,7 @@ const definitions = {
   'company.dental.followups.m17': 'Follow-ups',
   'company.dental.work-entry.m17': 'Work Entry',
   'company.dental.patient-record.m17': 'Patient Record',
+  'company.dental.m17.treatment-protocols': 'Treatment Protocols',
   'company.dental.appointments.m17': 'Appointments',
   'company.dental.calendar.m17': 'Calendar',
   'company.dental.treatment-progress.m17': 'Treatment Progress',

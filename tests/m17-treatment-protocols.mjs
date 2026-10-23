@@ -29,6 +29,14 @@ const inspect = target => target.evaluate(() => ({
   protocols: globalThis.m17.protocols.map(row => ({ protocolId: row.protocolId, name: row.name, active: row.active, totalPrice: row.totalPrice, rowVersion: row.rowVersion, stages: row.stages.map(stage => ({ stageName: stage.stageName, stageOrder: stage.stageOrder, price: stage.price, active: stage.active })) })),
   effects: globalThis.m17.effects(), moduleAcks: globalThis.m17.moduleAcks.slice(), moduleSelectionResult: globalThis.m17.moduleSelectionResult(), package: globalThis.m17.package,
 }));
+const waitForNavigation = async target => {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const value = await target.evaluate(() => globalThis.m17.navigation());
+    if (value?.index >= 0) return value;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  throw new Error('Treatment Protocols did not report its page history to the host.');
+};
 
 try {
   app = await electron.launch({ args: [hostApp, ...profileArgs], env, timeout: 30000 });
@@ -38,10 +46,10 @@ try {
   await page.getByText(/Synthetic Root Canal/).waitFor();
   await page.getByText('Opening treatment protocols…', { exact: true }).waitFor({ state: 'hidden' });
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has the new M17 identity and version 1.0.0', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('private signed package has the updated M17 identity and version 1.0.1', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.1' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('renderer receives the SDK bridge without a credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
-    return ['cancel', 'connect', 'getAppInfo', 'request', 'report'].every(method => methods.includes(method))
+    return ['cancel', 'connect', 'getAppInfo', 'navigation', 'request', 'report'].every(method => methods.includes(method))
       && !methods.some(method => /token|credential|fetch|storage/i.test(method));
   }));
   check('initial list reads use only the SaaS treatment-protocol route', initial.calls.filter(call => call.method === 'GET').map(call => call.path).join('|') === '/v1/treatment-protocols');
@@ -59,11 +67,19 @@ try {
   await page.getByRole('heading', { name: 'Synthetic Crown Protocol', exact: true }).waitFor();
   const created = await inspect(app);
   check('new protocol is created through POST and opens the SaaS detail editor', created.effects === 1 && created.calls.some(call => call.method === 'POST' && call.path === '/v1/treatment-protocols' && call.body.name === 'Synthetic Crown Protocol'));
+  const detailHistory = await waitForNavigation(app);
+  check('protocol detail reports only opaque UUID entries to the OS', detailHistory?.index === 1 && detailHistory.entries.length === 2 && detailHistory.entries.every(entry => /^[0-9a-f-]{36}$/i.test(entry)));
+  check('OS Back returns from protocol detail to the catalogue', await app.evaluate(() => globalThis.m17.navigate('back')));
+  await page.getByRole('heading', { name: 'Treatment Protocols', exact: true }).waitFor();
+  check('OS Forward restores the protocol detail page', await app.evaluate(() => globalThis.m17.navigate('forward')));
+  await page.getByRole('heading', { name: 'Synthetic Crown Protocol', exact: true }).waitFor();
 
   await page.getByRole('button', { name: 'Add stage', exact: true }).click();
   await page.getByRole('textbox', { name: 'Stage 1 description' }).fill('Prepare the tooth');
   await page.getByRole('textbox', { name: 'Stage 1 cost in NPR' }).fill('12500');
   await page.getByLabel('Record canal measurements for this treatment').check();
+  check('OS Back is blocked while the protocol detail has unsaved edits', !(await app.evaluate(() => globalThis.m17.navigate('back'))));
+  await page.getByRole('heading', { name: 'Synthetic Crown Protocol', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await page.getByText('Treatment protocol updated.', { exact: true }).waitFor();
   const afterEdit = await inspect(app);

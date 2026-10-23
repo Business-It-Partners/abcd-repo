@@ -1,5 +1,5 @@
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
-import type { AppSdk, Connection } from "../../../../electron/sdk/contracts";
+import { SDK, type AppSdk, type Connection } from "../../../../electron/sdk/contracts";
 import { bsMonthToADRange, todayBS } from "../../../../packages/dental-ui/src/shared/dates/bikramSambat";
 import type {
   PatientCore, PatientDirectoryPage, PatientDirectoryCounts, PatientSummary, PatientIntakeInput,
@@ -172,7 +172,7 @@ export type XrayMetadata = {chiefComplaintId: string | null; xrayType: PatientXr
 export class PatientMediaSdk {
   private connection?: Promise<Connection>;
   constructor(private readonly bridge: AppSdk) {}
-  private connect() { this.connection ??= this.bridge.connect({major:1, minor:4}).then(x => {
+  private connect() { this.connection ??= this.bridge.connect({major:SDK.major, minor:SDK.minor}).then(x => {
     if (!x.ok) throw new ClinicError(x.error.code, x.error.message, x.error.outcome);
     if (!x.value.capabilities.includes("clinic.media.read") && !x.value.capabilities.includes("clinic.media.upload")) throw new ClinicError("FORBIDDEN","Private image permissions are unavailable.");
     return x.value;

@@ -3,13 +3,16 @@ import { fitBounds, initialBounds, WINDOW_IDS, windowSpec, type Size, type Windo
 import type { Rect } from './motion';
 
 export type Phase = 'closed' | 'visible' | 'minimizing' | 'minimized' | 'restoring';
+/** Ephemeral opaque route keys; app page data remains inside the app. */
+export type WindowNavigation = { entries: string[]; index: number };
+const MAX_WINDOW_NAVIGATION_ENTRIES = 64;
 export type ManagedWindow = {
   id: WindowId; title: string; phase: Phase; presentation: 'normal' | 'fullscreen'; normalBounds: Rect;
-  busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing';
+  busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing'; navigation: WindowNavigation;
 };
 export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean };
 export function createDesktop(size: Size): DesktopState {
-  const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle' });
+  const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', navigation: { entries: [], index: -1 } });
   return { size, windows: Object.fromEntries([...WINDOW_IDS, 'image-viewer'].map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false };
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
@@ -22,6 +25,11 @@ export type WindowAction =
   | { type: 'focus'; id: WindowId }
   | { type: 'phase'; id: WindowId; phase: Phase }
   | { type: 'patch'; id: WindowId; patch: Partial<Pick<ManagedWindow, 'normalBounds' | 'busy' | 'modal' | 'interaction'>> }
+  | { type: 'navigation-push'; id: WindowId; entry: string }
+  | { type: 'navigation-reset'; id: WindowId; entry: string }
+  | { type: 'navigation-sync'; id: WindowId; navigation: WindowNavigation }
+  | { type: 'navigation-back'; id: WindowId }
+  | { type: 'navigation-forward'; id: WindowId }
   | { type: 'toggle'; id: WindowId }
   | { type: 'viewport'; size: Size };
 
@@ -51,17 +59,41 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
     if (win.phase !== 'visible' || win.busy || win.modal || win.interaction !== 'idle') return state;
     return { ...state, order: focus(), windows: { ...state.windows, [action.id]: { ...win, presentation: win.presentation === 'normal' ? 'fullscreen' : 'normal' } } };
   }
+  if (action.type === 'navigation-push') {
+    let entries = [...win.navigation.entries.slice(0, win.navigation.index + 1), action.entry];
+    if (entries.length > MAX_WINDOW_NAVIGATION_ENTRIES) entries = entries.slice(-MAX_WINDOW_NAVIGATION_ENTRIES);
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win, navigation: { entries, index: entries.length - 1 } } } };
+  }
+  if (action.type === 'navigation-reset') {
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win, navigation: { entries: [action.entry], index: 0 } } } };
+  }
+  if (action.type === 'navigation-sync') {
+    const { entries, index } = action.navigation;
+    if (!Array.isArray(entries) || entries.length > MAX_WINDOW_NAVIGATION_ENTRIES || !Number.isInteger(index) ||
+        (entries.length === 0 ? index !== -1 : index < 0 || index >= entries.length)) return state;
+    if (win.navigation.index === index && win.navigation.entries.length === entries.length &&
+        win.navigation.entries.every((entry, position) => entry === entries[position])) return state;
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win, navigation: { entries: [...entries], index } } } };
+  }
+  if (action.type === 'navigation-back') {
+    if (win.navigation.index <= 0) return state;
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win, navigation: { ...win.navigation, index: win.navigation.index - 1 } } } };
+  }
+  if (action.type === 'navigation-forward') {
+    if (win.navigation.index >= win.navigation.entries.length - 1) return state;
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win, navigation: { ...win.navigation, index: win.navigation.index + 1 } } } };
+  }
   if (action.type === 'patch') return { ...state, windows: { ...state.windows, [action.id]: { ...win, ...action.patch } } };
   const closed = action.phase === 'closed';
   const reopening = win.phase === 'closed' && action.phase === 'visible';
   return { ...state,
     order: action.phase === 'visible' ? focus() : state.order,
-    windows: { ...state.windows, [action.id]: { ...win, phase: action.phase, interaction: 'idle', ...(reopening ? { normalBounds: fitBounds(win.normalBounds, state.size, windowSpec(action.id).minimum) } : {}), ...(closed ? { presentation: 'normal', busy: false, modal: false } : {}) } },
+    windows: { ...state.windows, [action.id]: { ...win, phase: action.phase, interaction: 'idle', ...(reopening ? { normalBounds: fitBounds(win.normalBounds, state.size, windowSpec(action.id).minimum) } : {}), ...(closed ? { presentation: 'normal', busy: false, modal: false, navigation: { entries: [], index: -1 } } : {}) } },
   };
 }
 
 function createWindow(id: WindowId, title: string, size: Size): ManagedWindow {
-  return { id, title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle' };
+  return { id, title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', navigation: { entries: [], index: -1 } };
 }
 
 type Manager = { state: DesktopState; getState(): DesktopState; dispatch(action: WindowAction): void };

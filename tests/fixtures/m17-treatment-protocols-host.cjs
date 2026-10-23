@@ -129,11 +129,14 @@ app.whenReady().then(async () => {
   ipcMain.handle('runtime:app-info', event => runtime.appInfo(event));
   ipcMain.handle('runtime:open-explorer', event => runtime.openExplorer(event));
   ipcMain.on('runtime:report', (event, value) => runtime.report(event, value));
+  ipcMain.on('runtime:navigation-report', (event, value) => runtime.navigationReport(event, value));
   ipcMain.on('runtime:module-selection-ack', (event, value) => { moduleAcks.push(value); runtime.acknowledgeModule(event, value); });
   global.m17 = {
     calls, protocols, effects: () => effects, dropReply: () => { dropReply = true; }, conflict: () => { conflictNext = true; },
     module: async () => { moduleSelectionResult = await runtime.selectModule(appId, 'treatment-protocols'); return moduleSelectionResult; },
     moduleAcks, moduleSelectionResult: () => moduleSelectionResult,
+    navigate: direction => runtime.navigate(appId, direction),
+    navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
     package: { appId, version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, wireBytes: bytes.length, assetCount: pkg.files.size },
   };
   runtime.sync([{ id: appId, open: true, visible: true, rect: { x: 0, y: 0, width: win.getContentSize()[0], height: win.getContentSize()[1] } }]);

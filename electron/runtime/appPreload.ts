@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppSdk, Result } from '../sdk/contracts';
+import type { AppNavigationRequest, AppNavigationSnapshot, AppSdk, Result } from '../sdk/contracts';
 import type { DentalAppInfo } from '../packages/appMetadata';
 import type { FileSelection } from '../host/localFiles';
 function acknowledgeAfterPaintOrTimeout(acknowledge: () => void) {
@@ -26,6 +26,14 @@ async function invoke(channel: 'sdk:connect' | 'sdk:request' | 'sdk:cancel', val
 }
 let modalOpen = false;
 const fileListeners = new Set<(value:FileSelection)=>void>();
+const navigationListeners = new Set<(value:AppNavigationRequest)=>void>();
+ipcRenderer.on('runtime:navigate', (_event, value: unknown) => {
+  const request = value as AppNavigationRequest | null;
+  if (!request || Object.keys(request).sort().join() !== 'direction,entry' ||
+      !['back','forward'].includes(request.direction) ||
+      typeof request.entry !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.entry)) return;
+  for (const listener of navigationListeners) listener(request);
+});
 ipcRenderer.on('runtime:file-transfer',(_event,value:unknown)=>{
   // Sandboxed preload: parse inline; never import executable local modules.
   const v=value as {transferId?:unknown;selection?:unknown}|null;
@@ -75,6 +83,23 @@ contextBridge.exposeInMainWorld('dentalApp', Object.freeze({
     fileListeners.add(listener);
     ipcRenderer.send('runtime:file-transfer-ready',true);
     return ()=>{fileListeners.delete(listener);if(fileListeners.size===0)ipcRenderer.send('runtime:file-transfer-ready',false);};
+  },
+  navigation: {
+    report(input: AppNavigationSnapshot) {
+      const value = cloneBounded(input) as AppNavigationSnapshot;
+      const valid = !!value && Object.keys(value).sort().join() === 'entries,index' && Array.isArray(value.entries) &&
+        value.entries.length >= 1 && value.entries.length <= 64 && value.entries.every(entry =>
+          typeof entry === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(entry)) &&
+        new Set(value.entries).size === value.entries.length && Number.isSafeInteger(value.index) &&
+        value.index >= 0 && value.index < value.entries.length;
+      if (!valid) throw new Error('Invalid navigation state');
+      ipcRenderer.send('runtime:navigation-report', value);
+    },
+    onRequest(listener: (value: AppNavigationRequest) => void) {
+      if (typeof listener !== 'function') throw new Error('Invalid navigation listener');
+      navigationListeners.add(listener);
+      return () => navigationListeners.delete(listener);
+    },
   },
   report(value: { dirty: boolean; modal: boolean }) {
     if (!value || Object.keys(value).sort().join() !== 'dirty,modal' || typeof value.dirty !== 'boolean' || typeof value.modal !== 'boolean') throw new Error('Invalid report');

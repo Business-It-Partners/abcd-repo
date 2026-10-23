@@ -74,10 +74,14 @@ function TreatmentProtocolsWorkspace({ client }: { client: ClinicClient }) {
   const [lifecycle, setLifecycle] = useState({ dirty: false, modal: false });
   const pendingRef = useRef<PendingWrite | null>(null);
   const loadSequence = useRef(0);
+  const lifecycleRef = useRef(lifecycle); lifecycleRef.current = lifecycle;
+  const history = useMemo(() => client.createHistory<Record<string, string>>({}, () =>
+    !lifecycleRef.current.dirty && !lifecycleRef.current.modal && !pendingRef.current), [client]);
 
   const reportLifecycle = useCallback((value: { dirty: boolean; modal: boolean }) => setLifecycle(value), []);
   useEffect(() => { client.report(lifecycle); }, [client, lifecycle]);
   useEffect(() => () => { client.report({ dirty: false, modal: false }); }, [client]);
+  useEffect(() => () => history.dispose(), [history]);
 
   useClinicPageLoading('Treatment Protocols', initialLoading);
 
@@ -178,6 +182,7 @@ function TreatmentProtocolsWorkspace({ client }: { client: ClinicClient }) {
       onSave={save}
       onRetrySave={retryOriginalSave}
       onLifecycleChange={reportLifecycle}
+      history={history}
     />
   </main>;
 }

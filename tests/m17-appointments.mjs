@@ -46,7 +46,7 @@ try {
     await page.locator('.appointmentSummaryCard').count() === 4
       && await page.getByRole('button', { name: 'Previous day' }).count() === 1
       && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Doctor|Phone|Arrived|No-show|Cancel|Action');
-  check('renderer receives only the current SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
+  check('renderer receives only the current SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,navigation,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
   check('initial reads use only the registered appointment and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/appointments|/v1/appointments/summary|/v1/clinic/staff-references');
   check('the active-doctor filter excludes inactive doctors and non-doctor staff', await page.getByRole('combobox', { name: 'Doctor', exact: true }).locator('option').allTextContents().then(values => values.includes('Synthetic Doctor') && !values.some(value => /Inactive|Helper/.test(value))));
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });

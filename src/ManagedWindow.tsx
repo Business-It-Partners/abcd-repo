@@ -1,5 +1,5 @@
 import { useSessionGeneration } from './SessionBoundary';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
 import { dockZoneTop, fitBounds, maximizedBounds, moveBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
@@ -30,7 +30,11 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
   const bounds = win.presentation === 'fullscreen' ? maximizedBounds(state.size) : win.normalBounds;
   const patch = (value: Parameters<typeof dispatch>[0] & { type: 'patch' }) => dispatch(value);
   const focus = () => dispatch({ type: 'focus', id });
-  const setModal = (modal: boolean) => dispatch({ type: 'patch', id, patch: { modal } });
+  const setModal = useCallback((modal: boolean) => dispatch({ type: 'patch', id, patch: { modal } }), [dispatch, id]);
+  const navigate = useCallback((entry: string) => dispatch({ type: 'navigation-push', id, entry }), [dispatch, id]);
+  const resetNavigation = useCallback((entry: string) => dispatch({ type: 'navigation-reset', id, entry }), [dispatch, id]);
+  const goBack = useCallback(() => dispatch({ type: 'navigation-back', id }), [dispatch, id]);
+  const goForward = useCallback(() => dispatch({ type: 'navigation-forward', id }), [dispatch, id]);
 
   function endGesture(cancel = false) {
     const g = gesture.current;
@@ -144,12 +148,12 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     dispatch({ type: 'phase', id, phase: 'closed' });
   }
   const toggleFullscreen = () => { if (!Object.values(getState().windows).some(w => w.busy || w.interaction !== 'idle')) dispatch({ type: 'toggle', id }); };
-  return { id, win, bounds, active, anyBusy, snapshot, windowRef, canvasRef, focus, setModal, setCloseGuard, open, close, toggleFullscreen,
+  return { id, win, bounds, active, anyBusy, snapshot, windowRef, canvasRef, focus, setModal, setCloseGuard, navigate, resetNavigation, goBack, goForward, open, close, toggleFullscreen,
     minimize: () => void transition(true), startGesture };
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;
 
-export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, titleBarLeading }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; titleBarLeading?: ReactNode }) {
+export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, navigationDisabled = false, onNavigationBack, onNavigationForward }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; navigationDisabled?:boolean; onNavigationBack?:()=>void; onNavigationForward?:()=>void }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
@@ -160,8 +164,9 @@ export function ManagedWindowFrame({ controller: c, children, onClose, hideMinim
       data-window-id={c.id} data-phase={c.win.phase} data-presentation={c.win.presentation} data-interaction={c.win.interaction} data-active={c.active}
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
-      <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} inert={c.win.modal}
-        onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize} leadingControls={titleBarLeading}/>
+      <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} navigationDisabled={navigationDisabled} inert={c.win.modal}
+        onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}
+        canGoBack={c.win.navigation.index > 0} canGoForward={c.win.navigation.index < c.win.navigation.entries.length - 1} onBack={onNavigationBack ?? c.goBack} onForward={onNavigationForward ?? c.goForward}/>
       {children}
       {!fullscreen && !c.anyBusy && !c.win.modal && edges.map(edge => <div key={edge} className={`window-resize-handle resize-${edge}`} data-resize={edge}
         aria-hidden="true" onPointerDown={event => c.startGesture(event, edge)}/>)}

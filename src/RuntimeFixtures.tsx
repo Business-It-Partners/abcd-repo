@@ -91,7 +91,11 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
   },[revealingLaunchId]);
   useLayoutEffect(()=>{window.dispatchEvent(new Event('runtime:snapshot'));},[entries]);
   useEffect(()=>window.desktop?.runtime.subscribe((kind,value)=>{
-    if(kind==='state')setEntries(value as RuntimeState[]);
+    if(kind==='state'){
+      const next=value as RuntimeState[];
+      setEntries(next);
+      for(const entry of next)dispatch({type:'navigation-sync',id:entry.id,navigation:entry.navigation??{entries:[],index:-1}});
+    }
     else if(kind==='app-explorer')window.dispatchEvent(new CustomEvent('runtime:app-explorer',{detail:value}));
     else if(kind==='key')window.dispatchEvent(new KeyboardEvent('keydown',value as KeyboardEventInit));
     else if(kind==='close-blocked'){const id=(value as {id:RuntimeId}).id;const controller=liveControllers.current[id];if(controller){controller.open();setConfirm(id);}}
@@ -105,7 +109,7 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
         setPeek(true);window.dispatchEvent(new Event('runtime:dock-edge'));
       }
     }
-  }),[]);
+  }),[dispatch]);
   useEffect(()=>{const move=(e:PointerEvent)=>{if(e.clientY<innerHeight-170)setPeek(false);};window.addEventListener('pointermove',move,true);return()=>window.removeEventListener('pointermove',move,true);},[]);
   useLayoutEffect(()=>{
     // Keep the last stable native bounds while the shell is moving/resizing.
@@ -140,15 +144,20 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}/>;
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
-  return <ManagedWindowFrame controller={controller}><Surface id={id} title={title} controller={controller} entry={entry} confirm={confirm} requestConfirm={requestConfirm} cancel={cancel} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/></ManagedWindowFrame>;
+  const navigationDisabled=entry?.phase!=='ready'||!!entry?.dirty||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
+  return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled}
+    onNavigationBack={()=>void window.desktop?.runtime.navigate(id,'back',generation)}
+    onNavigationForward={()=>void window.desktop?.runtime.navigate(id,'forward',generation)}>
+    <Surface id={id} title={title} controller={controller} entry={entry} confirm={confirm} requestConfirm={requestConfirm} cancel={cancel} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>
+  </ManagedWindowFrame>;
 }
 
 function Surface({id,title,controller:c,entry,confirm,requestConfirm,cancel,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {

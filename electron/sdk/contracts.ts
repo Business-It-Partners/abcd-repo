@@ -1,8 +1,9 @@
 import { validMediaUpload } from './mediaUploadContract';
 import { validPickInput } from '../host/filePickerContract';
 /** Renderer-safe wire contract. No Electron, credential, filesystem or transport imports. */
-export const SDK = { major: 1, minor: 5 } as const;
+export const SDK = { major: 1, minor: 6 } as const;
 export const MAX_REQUEST_BYTES = 16_384;
+export const MAX_NAVIGATION_ENTRIES = 64;
 export const operations = [
   'appointments.list', 'appointments.setStatus', 'clinic.api.request', 'clinic.api.blob.read', 'clinic.media.read', 'clinic.media.upload',
   'clinic.app.followups', 'clinic.app.appointments', 'clinic.app.work-entry', 'clinic.app.patient-record',
@@ -25,6 +26,9 @@ export type ClinicSessionContext = {
   branches: Array<{ branchId: string; branchCode: string; name: string }>;
 };
 export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[] };
+/** Random opaque UUIDs only; page data and business identifiers stay in the app renderer. */
+export type AppNavigationSnapshot = { entries: string[]; index: number };
+export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string };
 export type Request = { version: 1; connection: string; generation: number; requestId: string; operation: Operation; input: Record<string, unknown> };
 export type Cancel = Pick<Request, 'version' | 'connection' | 'generation' | 'requestId'>;
 export type AppSdk = {
@@ -36,6 +40,10 @@ export type AppSdk = {
   onModuleSelected(listener: (value: { moduleId: string }) => void): () => void;
   /** Local Files metadata delivered by the trusted OS, never file bytes or paths. */
   onFilesReceived(listener: (selection: import('../host/localFiles').FileSelection) => void): () => void;
+  navigation: {
+    report(input: AppNavigationSnapshot): void;
+    onRequest(listener: (value: AppNavigationRequest) => void): () => void;
+  };
   report(input: { dirty: boolean; modal: boolean }): void;
 };
 export function shape(value: unknown, keys: string[]): value is Record<string, unknown> {
@@ -43,6 +51,15 @@ export function shape(value: unknown, keys: string[]): value is Record<string, u
 }
 export const id = (v: unknown): v is string => typeof v === 'string' && /^[a-zA-Z0-9_-]{8,64}$/.test(v);
 export const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
+export function appNavigationSnapshot(value: unknown): value is AppNavigationSnapshot {
+  return shape(value, ['entries', 'index']) && Array.isArray(value.entries) &&
+    value.entries.length >= 1 && value.entries.length <= MAX_NAVIGATION_ENTRIES &&
+    value.entries.every(uuid) && new Set(value.entries).size === value.entries.length &&
+    Number.isSafeInteger(value.index) && (value.index as number) >= 0 && (value.index as number) < value.entries.length;
+}
+export function appNavigationRequest(value: unknown): value is AppNavigationRequest {
+  return shape(value, ['direction', 'entry']) && (value.direction === 'back' || value.direction === 'forward') && uuid(value.entry);
+}
 const integer = (v: unknown) => Number.isSafeInteger(v) && (v as number) > 0;
 export const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);
 export function bounded(value: unknown, max = MAX_REQUEST_BYTES) {

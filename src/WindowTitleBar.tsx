@@ -1,11 +1,11 @@
-import type { PointerEventHandler, ReactNode } from 'react';
-import { Maximize2, Minimize2, Minus, X } from 'lucide-react';
+import type { PointerEventHandler } from 'react';
+import { ArrowLeft, ArrowRight, Maximize2, Minimize2, Minus, X } from 'lucide-react';
 
 /** Shared macOS-style chrome for every internal app window. */
-export function WindowTitleBar({ title, active, maximized, disabled = false, inert = false, onDrag, onClose, onMinimize, onToggleMaximize, hideMinimize = false, leadingControls }: {
-  title: string; active: boolean; maximized: boolean; disabled?: boolean; inert?: boolean;
+export function WindowTitleBar({ title, active, maximized, disabled = false, navigationDisabled = false, inert = false, onDrag, onClose, onMinimize, onToggleMaximize, hideMinimize = false, canGoBack, canGoForward, onBack, onForward }: {
+  title: string; active: boolean; maximized: boolean; disabled?: boolean; navigationDisabled?: boolean; inert?: boolean;
   onDrag: PointerEventHandler<HTMLElement>; onClose(): void; onMinimize(): void; onToggleMaximize(): void; hideMinimize?:boolean;
-  leadingControls?: ReactNode;
+  canGoBack: boolean; canGoForward: boolean; onBack(): void; onForward(): void;
 }) {
   return <header className={`studio-title mac-titlebar ${active ? 'is-active' : 'is-inactive'}`} inert={inert}
     onPointerDown={onDrag} onDoubleClick={event => {
@@ -18,7 +18,10 @@ export function WindowTitleBar({ title, active, maximized, disabled = false, ine
       {!hideMinimize && <button className="window-control window-control-minimize" aria-label={`Minimize ${title}`} title={`Minimize ${title}`} disabled={disabled} onClick={onMinimize}><Minus size={10.206} strokeWidth={2.4}/></button>}
       <button className="window-control window-control-close" aria-label={`Close ${title}`} title={`Close ${title}`} disabled={disabled} onClick={onClose}><X size={10.206} strokeWidth={2.4}/></button>
     </div>
-    {leadingControls && <div className="window-titlebar-leading">{leadingControls}</div>}
+    <div className="window-history-controls" role="group" aria-label="Page navigation">
+      <button type="button" aria-label="Back" title="Back" disabled={disabled || navigationDisabled || !canGoBack} onClick={onBack}><ArrowLeft size={19} strokeWidth={1.8}/></button>
+      <button type="button" aria-label="Forward" title="Forward" disabled={disabled || navigationDisabled || !canGoForward} onClick={onForward}><ArrowRight size={19} strokeWidth={1.8}/></button>
+    </div>
     <span className="window-title">{title}</span>
   </header>;
 }

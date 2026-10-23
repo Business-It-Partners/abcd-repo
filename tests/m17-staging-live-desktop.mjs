@@ -78,9 +78,8 @@ try {
   for (const target of apps) {
     phase = 'store-open-' + target.id;
     await shell.getByRole('button', { name: 'App Store', exact: true }).click();
-    if (await shell.getByRole('button', { name: 'Back to apps', exact: true }).count()) {
-      await shell.getByRole('button', { name: 'Back to apps', exact: true }).click();
-    }
+    const storeBack = shell.getByRole('button', { name: 'Back', exact: true });
+    if (await storeBack.isEnabled()) await storeBack.click();
     phase = 'store-heading-' + target.id;
     await shell.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
     phase = 'store-catalogue-' + target.id;

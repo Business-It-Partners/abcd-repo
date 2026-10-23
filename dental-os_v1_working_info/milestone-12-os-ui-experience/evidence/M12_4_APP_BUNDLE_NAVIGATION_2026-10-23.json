@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-23",
+  "branch": "codex/dental-ap-ui-enhance",
+  "baseCommit": "132a9373093d473341522d5733592146aade0adb",
+  "scope": "SDK and isolated runtime integration of verified app page history with each shared managed-window Back/Forward control.",
+  "securityBoundary": {
+    "historyIdentifiers": "opaque UUIDs only",
+    "pageState": "owned and restored by each app",
+    "excludedFromOsHistory": ["patient identifiers", "session identifiers", "route payloads"],
+    "guards": ["dirty forms", "blocking dialogs", "unresolved writes"],
+    "appsWithPageFlows": ["App Store", "Treatment Protocols", "Patient Record"],
+    "sampleAppsWithoutPageFlows": ["Motion Studio", "Records"]
+  },
+  "appReleases": [
+    {
+      "appId": "company.dental.patient-record.m17",
+      "previousVersion": "1.0.1",
+      "version": "1.0.2",
+      "publishedSequence": 36,
+      "latestFeedSequence": 37,
+      "packageSha256": "ed5960456cb939d31519eadf49037006777a721b5347fc7e23c5ed18e162e556",
+      "payloadDigest": "1707f27fbfa6c17178b785a90059fd01be78996867cc83206d74e6177ad19afd",
+      "packageBytes": 1775375,
+      "apiOperations": ["clinic.api.request", "clinic.media.read", "clinic.media.upload"],
+      "previousVersionGrantsPreserved": true,
+      "publication": "HTTP 200; package and both sequence-36 feed objects written; anonymous and replay publication denied; temporary Worker removed"
+    },
+    {
+      "appId": "company.dental.m17.treatment-protocols",
+      "previousVersion": "1.0.0",
+      "version": "1.0.1",
+      "publishedSequence": 37,
+      "latestFeedSequence": 37,
+      "packageSha256": "fd744dbd1d6abc22f9a2e2feea6c25b6c54c18376bb5803c18f5fda03e8fd156",
+      "payloadDigest": "0ef82112f463a03dafa560eb854b9da96283770d7bea0fe456830e238ce4967e",
+      "packageBytes": 1434256,
+      "apiOperations": ["clinic.api.request"],
+      "previousVersionGrantsPreserved": true,
+      "publication": "HTTP 200; package and both sequence-37 feed objects written; anonymous and replay publication denied; temporary Worker removed"
+    }
+  ],
+  "verification": {
+    "rootBuild": "passed",
+    "rootUnitTests": "527/527 across 37 files",
+    "patientRecordPrivateUi": "22/22 checks passed; artifacts/m17-patient-record-private-2026-10-23T12-44-42.909Z.json",
+    "treatmentProtocolsPrivateUi": "18/18 checks passed; artifacts/m17-treatment-protocols-private-2026-10-23T12-44-28.732Z.json",
+    "storeWindowNavigationPrivateUi": "8/8 checks passed with signed synthetic company catalogue; Back, Forward, branch truncation, search, and route reset verified",
+    "treatmentProtocolsPackageTests": "3/3 passed",
+    "publicSignedFeedAndPackageReadback": {
+      "passed": true,
+      "sequence": 37,
+      "checks": 26,
+      "artifact": "artifacts/m17-staging-packages-readonly-2026-10-23T13-03-43.089Z.json"
+    },
+    "runtimeNavigation": "50 assertions passed with zero renderer errors; Electron runner hung during app.close() cleanup and was stopped after a bounded wait",
+    "runtimeDpr": "DPR 2 capture check passed; Electron runner hung during app.close() cleanup and was stopped after a bounded wait",
+    "documentationValidation": "passed"
+  },
+  "notClaimed": [
+    "authenticated Store UI installation or runtime health",
+    "live clinic workflow acceptance",
+    "Windows/device acceptance",
+    "G12 or G17 closure",
+    "production publication"
+  ],
+  "liveOsRestarted": false,
+  "committedOrPushed": false
+}

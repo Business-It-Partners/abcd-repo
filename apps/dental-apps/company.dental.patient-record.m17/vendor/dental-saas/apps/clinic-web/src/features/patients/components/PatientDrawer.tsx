@@ -82,6 +82,8 @@ interface PatientDrawerProps {
   clinicName: string;
   isClosing: boolean;
   onClose: () => void;
+  /** Hide the legacy in-content Back control when the host window owns page navigation. */
+  showBackButton?: boolean;
   patientCases?: Case[];
   /** This patient's lab orders, grouped by case in the Lab tab. */
   patientLabOrders: LabOrder[];
@@ -1251,6 +1253,7 @@ function PatientChiefComplaintsTab({
 export default function PatientDrawer({
   selectedPatient,
   onClose,
+  showBackButton = true,
   patientCases,
   patientLabOrders,
   labs,
@@ -1407,13 +1410,13 @@ export default function PatientDrawer({
         {/* Left Sidebar */}
         <div className={styles.patientSidebar}>
           <nav ref={navRef} className={styles.tabBar}>
-            <button
+            {showBackButton ? <button
               className={`${styles.tabBtn} ${styles.sidebarBackButton}`}
               onClick={onClose}
               type="button"
             >
               <ChevronLeft aria-hidden="true" size={15} /> Back
-            </button>
+            </button> : null}
             <button
               data-tab="profile"
               className={`${styles.tabBtn} ${activeSubTab === "profile" ? styles.tabBtnActive : ""}`}

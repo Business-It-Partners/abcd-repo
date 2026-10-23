@@ -4,6 +4,8 @@
 
 The shared window manager owns stable IDs, lifecycle phases, normal bounds, fullscreen presentation, stacking, focus, interaction locks, and overview. Apps own their content, not separate window-management implementations.
 
+The shared title bar provides Back and Forward controls backed by an ephemeral history stack scoped to each managed window. The shell stores opaque route identifiers and safe navigation guards; page content, route interpretation and session data stay with the app. Verified bundles use the SDK history helper to publish opaque page entries and restore app-owned pages when the user moves through the window history. App Store home/details are shell-owned routes. The current M12.4 integration covers Patient Record and Treatment Protocols; sample apps without page flows leave Back and Forward disabled.
+
 Preserve shared dock-field geometry, snapshot/Genie coordination and fallback, scoped forms/blur, and softer readable styling. Maintain remembered focus, keyboard access, compact-layout usability, and reduced-motion behavior.
 
 Moving/resizing/fullscreen/minimize must coordinate with modals and captures. Display changes must keep controls reachable without corrupting remembered bounds. A modal belongs to one app; it must not create a desktop-wide barrier unnecessarily.

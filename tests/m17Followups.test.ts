@@ -8,7 +8,7 @@ function fixture() {
   const calls: Request[] = [];
   const lost = vi.fn();
   const bridge: AppSdk = {
-    connect: vi.fn<AppSdk['connect']>(async () => ({ ok: true as const, value: { connection: '00000000-0000-4000-8000-000000000001', generation, appId: 'company.dental.followups', appVersion: '1.1.0', sdk: { major: 1, minor: 5 }, capabilities: ['clinic.api.request', 'session.context', 'clinic.app.followups'] } })),
+    connect: vi.fn<AppSdk['connect']>(async () => ({ ok: true as const, value: { connection: '00000000-0000-4000-8000-000000000001', generation, appId: 'company.dental.followups', appVersion: '1.1.0', sdk: { major: 1, minor: 6 }, capabilities: ['clinic.api.request', 'session.context', 'clinic.app.followups'] } })),
     request: vi.fn<AppSdk['request']>(async request => {
       calls.push(structuredClone(request));
       if (request.generation !== generation) return { ok: false, error: { code: 'STALE_SESSION', message: 'Session changed', outcome: 'not_sent' } };
@@ -34,7 +34,8 @@ function fixture() {
     }),
     cancel: vi.fn<AppSdk['cancel']>(async () => ({ ok: true, value: { cancelledLocally: true } })),
     getAppInfo: vi.fn<AppSdk['getAppInfo']>(async () => ({ ok: true, value: { appId: 'company.dental.followups', title: 'Follow-ups', description: '', iconDataUrl: '', modules: [] } })),
-    openAppExplorer: vi.fn<AppSdk['openAppExplorer']>(async () => ({ ok: true, value: {} })), onModuleSelected: () => () => {}, onFilesReceived: () => () => {}, report: vi.fn(),
+    openAppExplorer: vi.fn<AppSdk['openAppExplorer']>(async () => ({ ok: true, value: {} })), onModuleSelected: () => () => {}, onFilesReceived: () => () => {},
+    navigation: { report: vi.fn(), onRequest: () => () => {} }, report: vi.fn(),
   };
   const client = new ClinicClient(bridge, lost);
   return { bridge, calls, client, lost, unknown: () => { unknown = true; }, malformed: (value: boolean) => { malformed = value; }, malformedList: (value: boolean) => { malformedList = value; }, denied: (value: boolean) => { denied = value; }, switchSession: () => { generation++; } };

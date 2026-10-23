@@ -4,7 +4,7 @@ import { clinicAppFamily } from '../sdk/appPolicy';
 import { FilePickerCoordinator } from '../host/filePicker';
 import { FileTransferCoordinator } from '../host/fileTransfer';
 import type { FilePickInput } from '../host/filePickerContract';
-import type { Result } from '../sdk/contracts';
+import { appNavigationSnapshot, type AppNavigationSnapshot, type Result } from '../sdk/contracts';
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
 import { PackageRegistry, type Lease } from '../packages/registry';
@@ -277,7 +277,7 @@ export class FixtureRuntime {
     });
     }
     const view = new WebContentsView({ webPreferences: { session: ses, preload: this.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false, webSecurity: true, backgroundThrottling: false } });
-    const e: Entry = { view, state: { id, phase: 'loading', dirty: false, modal: false }, rect };
+    const e: Entry = { view, state: { id, phase: 'loading', dirty: false, modal: false, navigation: { entries: [], index: -1 } }, rect };
     this.entries.set(id, e); view.setVisible(false); this.win.contentView.addChildView(view);
     view.setBounds(rect);
     const wc = view.webContents;
@@ -402,6 +402,27 @@ export class FixtureRuntime {
     const v = input as { dirty: boolean; modal: boolean };
     if (!v || Object.keys(v).sort().join() !== 'dirty,modal' || typeof v.dirty !== 'boolean' || typeof v.modal !== 'boolean') return;
     this.reportState(e, v);
+  }
+  navigationReport(event: IpcMainEvent, input: unknown) {
+    const e = [...this.entries.values()].find(entry => entry.view.webContents === event.sender);
+    if (!e || event.senderFrame !== event.sender.mainFrame || !appNavigationSnapshot(input) ||
+        e.state.phase === 'failed' || e.state.phase === 'unresponsive') return;
+    const previous = e.state.navigation;
+    if (previous && JSON.stringify(previous) === JSON.stringify(input)) return;
+    e.state.navigation = input as AppNavigationSnapshot;
+    this.emit();
+  }
+  navigate(id: unknown, direction: unknown): boolean {
+    if (!isRuntimeId(id) || (direction !== 'back' && direction !== 'forward')) return false;
+    const e = this.entries.get(id), navigation = e?.state.navigation;
+    if (!e || !navigation || e.state.phase !== 'ready' || e.state.dirty || e.state.modal ||
+        !!e.state.writeState && e.state.writeState !== 'none') return false;
+    const index = navigation.index + (direction === 'back' ? -1 : 1);
+    if (index < 0 || index >= navigation.entries.length) return false;
+    const entry = navigation.entries[index];
+    if (e.view.webContents.isDestroyed()) return false;
+    e.view.webContents.send('runtime:navigate', { direction, entry });
+    return true;
   }
   private reportState(e: Entry, v: { dirty: boolean; modal: boolean }) {
     const changed=e.state.dirty!==v.dirty||e.state.modal!==v.modal;

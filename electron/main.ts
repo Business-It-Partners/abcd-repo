@@ -330,6 +330,10 @@ ipcMain.handle('os:status', event => {
   return { phase: bootPhase };
 });
 ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.sync(value); });
+ipcMain.handle('runtime:navigate', (event, id: unknown, direction: unknown, generation: unknown) => {
+  if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) return false;
+  return runtime.navigate(id, direction);
+});
 ipcMain.on('runtime:hide-all', (event, generation: unknown) => {
   const trustedShell = !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
   if (!trustedShell || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) { event.returnValue = false; return; }
@@ -373,6 +377,7 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
   return { ok: false, code: 'INVALID' };
 });
 ipcMain.on('runtime:report', (event, value: unknown) => runtime?.report(event, value));
+ipcMain.on('runtime:navigation-report', (event, value: unknown) => runtime?.navigationReport(event, value));
 ipcMain.on('runtime:shortcut', (event,value: unknown) => runtime?.shortcut(event,value));
 ipcMain.on('runtime:file-activation',event=>runtime?.fileActivated(event));
 ipcMain.on('runtime:file-transfer-ready',(event,value:unknown)=>runtime?.fileTransferReady(event,value));

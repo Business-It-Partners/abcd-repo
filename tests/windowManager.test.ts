@@ -114,3 +114,46 @@ describe('Shared lifecycle and focus', () => {
     expect(state.windows['company.sample.preview']).toBeUndefined();
   });
 });
+
+describe('Per-window page navigation', () => {
+  it('keeps an isolated back/forward stack for each window and drops forward entries after a new route', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'navigation-reset', id: 'standard-window-1', entry: 'table' });
+    state = desktopReducer(state, { type: 'navigation-push', id: 'standard-window-1', entry: 'case:one' });
+    state = desktopReducer(state, { type: 'navigation-push', id: 'standard-window-1', entry: 'case:two' });
+    state = desktopReducer(state, { type: 'navigation-back', id: 'standard-window-1' });
+    expect(state.windows['standard-window-1'].navigation).toEqual({ entries: ['table', 'case:one', 'case:two'], index: 1 });
+    state = desktopReducer(state, { type: 'navigation-push', id: 'standard-window-1', entry: 'case:three' });
+    expect(state.windows['standard-window-1'].navigation).toEqual({ entries: ['table', 'case:one', 'case:three'], index: 2 });
+    state = desktopReducer(state, { type: 'navigation-back', id: 'standard-window-1' });
+    state = desktopReducer(state, { type: 'navigation-forward', id: 'standard-window-1' });
+    expect(state.windows['standard-window-1'].navigation.entries[state.windows['standard-window-1'].navigation.index]).toBe('case:three');
+    expect(state.windows.followups.navigation).toEqual({ entries: [], index: -1 });
+  });
+
+  it('does not move outside the stack and clears history when a window closes', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'navigation-back', id: 'standard-window-1' });
+    expect(state.windows['standard-window-1'].navigation).toEqual({ entries: [], index: -1 });
+    state = desktopReducer(state, { type: 'navigation-reset', id: 'standard-window-1', entry: 'table' });
+    state = desktopReducer(state, { type: 'navigation-push', id: 'standard-window-1', entry: 'case:one' });
+    state = desktopReducer(state, { type: 'phase', id: 'standard-window-1', phase: 'minimizing' });
+    state = desktopReducer(state, { type: 'phase', id: 'standard-window-1', phase: 'minimized' });
+    state = desktopReducer(state, { type: 'phase', id: 'standard-window-1', phase: 'restoring' });
+    state = desktopReducer(state, { type: 'phase', id: 'standard-window-1', phase: 'visible' });
+    expect(state.windows['standard-window-1'].navigation).toEqual({ entries: ['table', 'case:one'], index: 1 });
+    state = desktopReducer(state, { type: 'phase', id: 'standard-window-1', phase: 'closed' });
+    expect(state.windows['standard-window-1'].navigation).toEqual({ entries: [], index: -1 });
+  });
+
+  it('bounds the shell stack to the shared 64-entry app navigation limit', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'navigation-reset', id: 'standard-window-1', entry: 'page-0' });
+    for (let index = 1; index <= 70; index++) {
+      state = desktopReducer(state, { type: 'navigation-push', id: 'standard-window-1', entry: `page-${index}` });
+    }
+    expect(state.windows['standard-window-1'].navigation.entries).toHaveLength(64);
+    expect(state.windows['standard-window-1'].navigation.entries[0]).toBe('page-7');
+    expect(state.windows['standard-window-1'].navigation.entries.at(-1)).toBe('page-70');
+  });
+});

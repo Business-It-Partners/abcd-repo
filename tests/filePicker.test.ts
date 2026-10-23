@@ -29,8 +29,8 @@ const opts={purpose:'patient-attachment' as const,fileTypes:'medical-images' as 
 afterEach(()=>{vi.clearAllMocks();for(const s of services.splice(0))s.dispose();for(const d of dirs.splice(0))rmSync(d,{recursive:true,force:true});});
 
 describe('M16.4 local SDK and signed selection boundary',()=>{
- it('validates closed SDK 1.5 picker shape without local paths, native flags or arbitrary IDs',()=>{
-  expect(SDK.minor).toBe(5);
+ it('validates closed SDK 1.6 picker shape without local paths, native flags or arbitrary IDs',()=>{
+  expect(SDK.minor).toBe(6);
   expect(validPickInput(opts)).toBe(true);
   const envelope={version:1,connection:'11111111-1111-4111-8111-111111111111',generation:1,requestId:'request_1234',operation:'local.files.pick',input:opts};
   expect(parseRequest(envelope)).toBeDefined();

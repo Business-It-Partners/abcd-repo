@@ -6,6 +6,7 @@ import type { TreatmentProtocol, TreatmentProtocolInput } from "@/shell/session/
 import { Card, CardBody, CardHeader, DataTable, Field, InlineCheck, Input, Modal, ModalBody, ModalError, Page, PageHeader, Table, TableWrap, Td, Th, Tr } from "@/shared/ui/workspace-primitives";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
+import type { AppHistory } from "../../../../../../../packages/app-sdk/src/appHistory";
 
 type DraftStage = { key: number; protocolStageId?: string; stageName: string; price: string; active: boolean };
 type Draft = Omit<TreatmentProtocolInput, "stages"> & { protocolId?: string; rowVersion?: number; stages: DraftStage[] };
@@ -33,14 +34,15 @@ const toInput = (draft: Draft): TreatmentProtocolInput => {
   };
 };
 
-export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSave, error, onReload, onSave, onRetrySave, onLifecycleChange }: {
+export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSave, error, onReload, onSave, onRetrySave, onLifecycleChange, history }: {
   protocols: TreatmentProtocol[]; loading: boolean; saving: boolean; error: string | null; onReload: () => void;
+  history: AppHistory<Record<string, string>>;
   pendingSave: boolean;
   onSave: (protocol: TreatmentProtocolInput, protocolId?: string, rowVersion?: number) => Promise<TreatmentProtocol>;
   onRetrySave: () => Promise<TreatmentProtocol>;
   onLifecycleChange: (state: { dirty: boolean; modal: boolean }) => void;
 }) {
-  const { route, openDetail, closeDetail, patch } = useClinicRouteState();
+  const { route, openDetail, closeDetail, patch } = useClinicRouteState(history);
   const [selected, setSelected] = useState<Draft | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
       const saved = await onSave(input, draft.protocolId, draft.rowVersion);
       setSelected(fromProtocol(saved)); setNewOpen(false);
       setDraftDirty(false); setSaveIntent(null);
-      if (saved.protocolId) openDetail("protocolId", saved.protocolId, "replace");
+      if (saved.protocolId) openDetail("protocolId", saved.protocolId, draft.protocolId ? "replace" : "push");
     } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "Protocol could not be saved."); }
   }
   async function retryPendingSave() {
@@ -75,7 +77,7 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
       else {
         setSelected(fromProtocol(saved));
         setNewOpen(false);
-        if (saved.protocolId) openDetail("protocolId", saved.protocolId, "replace");
+        if (saved.protocolId) openDetail("protocolId", saved.protocolId, saveIntent === 'create' ? "push" : "replace");
       }
       setDraftDirty(false); setSaveIntent(null);
     } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "The original save could not be confirmed."); }
@@ -166,7 +168,7 @@ function ProtocolDetail({ draft, saving, pendingSave, error, onBack, onChange, o
         : draft.stages.filter((stage) => stage.key !== key),
     });
   };
-  return <Page sheet><PageHeader title={draft.name || "New treatment protocol"} subtitle="Define the ordered clinical stages and default pricing for this reusable protocol." icon={<ListChecks size={17} style={{ color: "var(--acc)" }} />} back={{ label: "Treatment Protocols", onClick: onBack }}>
+  return <Page sheet><PageHeader title={draft.name || "New treatment protocol"} subtitle="Define the ordered clinical stages and default pricing for this reusable protocol." icon={<ListChecks size={17} style={{ color: "var(--acc)" }} />}>
     {draft.protocolId ? <button type="button" className="btn btn-danger btn-sm" onClick={onRetire} disabled={saving || pendingSave}><Trash2 size={14} /> Delete protocol</button> : null}
   </PageHeader>
     <Card square><CardHeader title="Stage workflow"><span style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)" }}>{activeStages.length ? `${activeStages.length} ${activeStages.length === 1 ? "stage" : "stages"}` : "Draft protocol"}</span></CardHeader><CardBody>

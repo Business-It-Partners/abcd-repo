@@ -11,7 +11,7 @@ try {
   const store = page.locator('[data-window-id="store"]');
   const install = async title => {
     await page.getByRole('button', { name: 'App Store', exact: true }).click();
-    const back = store.getByRole('button', { name: 'Back to apps', exact: true }); if (await back.isVisible()) await back.click();
+    const back = store.getByRole('button', { name: 'Back', exact: true }); if (await back.isEnabled()) await back.click();
     await store.getByRole('button', { name: 'Details ' + title, exact: true }).click();
     await store.getByRole('button', { name: 'Get', exact: true }).click(); await page.locator('.store-arrival').waitFor();
   };

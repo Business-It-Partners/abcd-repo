@@ -126,7 +126,7 @@ type Snapshot = {
   staff: ReadResult<string[]>;
 };
 
-export function SaaSPatientDetail({ patientId, onBack }: { patientId: string; onBack: () => void }) {
+export function SaaSPatientDetail({ patientId }: { patientId: string }) {
   const { api, media, session, run, capabilities } = useApp();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [revision, setRevision] = useState(0);
@@ -197,7 +197,7 @@ export function SaaSPatientDetail({ patientId, onBack }: { patientId: string; on
   if (loading && !core) return <main className="saasAdapterMessage" role="status">Loading patient record…</main>;
   if (!selectedPatient) return <main className="saasAdapterMessage" role="alert">
     <h2>Patient record unavailable</h2><p>{reloadError ?? "The clinic could not load this patient record."}</p>
-    <button type="button" onClick={refresh}>Retry</button><button type="button" onClick={onBack}>Back</button>
+    <button type="button" onClick={refresh}>Retry</button>
   </main>;
 
   const perioChart = record(record(snapshot?.periodontal.value)?.chart);
@@ -289,7 +289,8 @@ export function SaaSPatientDetail({ patientId, onBack }: { patientId: string; on
       selectedPatient={selectedPatient}
       clinicName={session.clinic.displayName}
       isClosing={false}
-      onClose={onBack}
+      onClose={() => {}}
+      showBackButton={false}
       patientCases={[] as Case[]}
       patientLabOrders={labOrders}
       labs={snapshot?.suppliers.value ?? []}

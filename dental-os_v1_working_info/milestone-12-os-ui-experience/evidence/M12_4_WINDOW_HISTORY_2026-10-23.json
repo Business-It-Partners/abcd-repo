@@ -1,0 +1,102 @@
+{
+  "scope": "M12.4 shared per-window page-history controls",
+  "date": "2026-10-23",
+  "sourceHead": "132a9373093d473341522d5733592146aade0adb",
+  "sourceDiffSha256": "4813c19feb9c0eb9595169a4218c6ce966ae52fd46a23e41ec18428f075c7a4d",
+  "host": "Linux; private headless GNOME/Wayland display via tools/run-ui-test.mjs",
+  "results": {
+    "build": {
+      "command": "npm run build",
+      "status": "passed"
+    },
+    "unit": {
+      "command": "npm test -- --maxWorkers=2",
+      "status": "passed",
+      "files": 36,
+      "tests": 523
+    },
+    "privateWindowUi": {
+      "command": "npm run test:windows",
+      "status": "passed",
+      "checks": 63,
+      "rendererErrors": []
+    }
+  },
+  "supersededAttempts": [
+    {
+      "command": "npm run test:windows",
+      "status": "failed",
+      "details": "The first private run passed the navigation assertions, then stopped at the existing dock-size assertion because document.querySelector('.system-icon') returned null. The assertion now measures the Standard Window 1 dock icon; the final run passed 63 checks."
+    }
+  ],
+  "limits": [
+    "Standard Window 1 is the only page-content demo wired to this shell history state.",
+    "Verified app bundle route integration and manifest/SDK/preload changes are deferred to a later phase.",
+    "Linux private-display evidence only; user visual acceptance and G12 remain open."
+  ],
+  "checks": [
+    "studio windows are clipped at the dock-zone top",
+    "studio opens flush below the status bar with a small dock gap",
+    "studio title bar exposes shared page navigation with an empty history",
+    "studio controls keep centered symbols inside reduced green-yellow-red circles",
+    "studio traffic-light symbols remain visible inside their smaller control circles",
+    "studio exposes eight resize directions",
+    "Motion Studio title control minimizes from the keyboard",
+    "Motion Studio dock control restores from the keyboard",
+    "Motion Studio title control maximizes from the keyboard",
+    "Motion Studio title control restores normal size from the keyboard",
+    "Motion Studio title control closes from the keyboard",
+    "records windows are clipped at the dock-zone top",
+    "records opens flush below the status bar with a small dock gap",
+    "records title bar exposes shared page navigation with an empty history",
+    "records controls keep centered symbols inside reduced green-yellow-red circles",
+    "records traffic-light symbols remain visible inside their smaller control circles",
+    "records exposes eight resize directions",
+    "Records title control minimizes from the keyboard",
+    "Records dock control restores from the keyboard",
+    "Records title control maximizes from the keyboard",
+    "Records title control restores normal size from the keyboard",
+    "Records title control closes from the keyboard",
+    "Standard Window 1 starts with Back and Forward disabled",
+    "Opening a case enables platform Back and keeps Forward disabled",
+    "Window Back returns to the table page",
+    "Window Forward restores the case page",
+    "A new page after Back discards the old Forward entry",
+    "Reopening Standard Window 1 starts a fresh page history",
+    "Lower and side resize cursors remain reachable above the dock",
+    "Dock does not magnify while the pointer is just above its visible sheet",
+    "Dock begins magnifying when the pointer enters the visible sheet",
+    "Magnified icons remain inside the sheet, clear of the app window",
+    "Dock hover keeps the narrow window gap and stays layered above app windows",
+    "dragging left leaves 30% of the window visible",
+    "dragging right leaves 30% of the window visible",
+    "dragging down leaves 30% visible above the dock gap",
+    "window pixels below the dock-zone top enter the clipped area",
+    "closing from the dock zone and reopening returns the full window to the usable area",
+    "dock clipping preserves the full-screen Genie overlay",
+    "dragging upward never crosses the status-bar bottom",
+    "Escape cancels a resize and restores initial bounds",
+    "Pointer cancellation rolls back and clears capture state",
+    "Lost capture continues through global routing and release outside the frame",
+    "Deactivation cancels the resize",
+    "Minimum size keeps opposite corner fixed",
+    "Table remains scrollable rather than deforming",
+    "Owned modal disables resize handles",
+    "Form remains inside the resized owner",
+    "Maximized app fills the viewport, with its title bar below the Dental OS status-bar row",
+    "Fullscreen initially hides both edge-revealed bars",
+    "Top-edge status-bar reveal overlays the window without moving its title bar or content",
+    "Bottom-edge dock reveal overlays the window without changing fullscreen bounds",
+    "Moving away hides both bars while the app keeps the same full-screen content geometry",
+    "Fullscreen app modal starts below the shifted app title bar",
+    "Fullscreen removes all resize handles",
+    "Fullscreen survives Genie restore",
+    "Fullscreen restore preserves resized normal geometry and data",
+    "Dock activation raises the requested window",
+    "Minimizing active app activates and focuses the next visible app",
+    "Closing active app transfers focus without losing other app data",
+    "Viewport change settles gestures and fits smaller screens",
+    "Native environment remains fullscreen during internal gestures",
+    "No renderer exceptions or abandoned gesture styles"
+  ]
+}

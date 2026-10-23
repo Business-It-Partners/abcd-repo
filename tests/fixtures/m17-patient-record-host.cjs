@@ -216,11 +216,14 @@ app.whenReady().then(async () => {
   ipcMain.handle('runtime:app-info', event => runtime.appInfo(event));
   ipcMain.handle('runtime:open-explorer', event => runtime.openExplorer(event));
   ipcMain.on('runtime:report', (event, value) => runtime.report(event, value));
+  ipcMain.on('runtime:navigation-report', (event, value) => runtime.navigationReport(event, value));
   ipcMain.on('runtime:module-selection-ack', (event, value) => runtime.acknowledgeModule(event, value));
   global.m17PatientRecord = {
     calls, mediaWrites, getEffects: () => writeEffects, getPackage: () => ({ appId, version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, wireBytes: packageBytes.length, assetCount: pkg.files.size, grants }),
     setCapabilities: values => { capabilities.splice(0, capabilities.length, ...values); },
     selectModule: async () => runtime.selectModule(appId, 'patient-record'),
+    navigate: direction => runtime.navigate(appId, direction),
+    navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
     snapshot: () => ({ patient: clone(patient), media: clone(mediaItem), profileAttempts, writeEffects }),
   };
   runtime.sync([{ id: appId, open: true, visible: true, rect: { x: 0, y: 0, width: win.getContentSize()[0], height: win.getContentSize()[1] } }]);

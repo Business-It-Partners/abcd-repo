@@ -12,7 +12,7 @@ export async function verifyOnboarding(profileArgs,reportName){
  let app,shell,profile,failureDetails;
  const wait=async(predicate,label='state')=>{for(let n=0;n<150;n++){try{const value=await predicate();if(value)return value;}catch{}await new Promise(resolve=>setTimeout(resolve,100));}throw Error(`Timed out waiting for ${label}`);};
  const registry=async profile=>JSON.parse(await fs.readFile(path.join(profile,'packages/registry.json'),'utf8'));
- const openStore=async shell=>{await shell.getByRole('button',{name:'App Store',exact:true}).click();const back=shell.getByRole('button',{name:'Back to apps',exact:true});if(await back.isVisible())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
+ const openStore=async shell=>{await shell.getByRole('button',{name:'App Store',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
  const detail=async(shell)=>{await openStore(shell);await shell.getByRole('button',{name:'Details Dental Workspace Preview',exact:true}).click();await shell.getByRole('heading',{name:'Dental Workspace Preview'}).waitFor();};
  const verifyPage=async(version)=>{
   const page=await wait(async()=>{

@@ -43,6 +43,8 @@ try {
     const windowBoundary=await page.locator('.window-stage').evaluate(e=>e.getBoundingClientRect().bottom);
     check(`${id} windows are clipped at the dock-zone top`,near(windowBoundary,dockTop));
     check(`${id} opens flush below the status bar with a small dock gap`,near(initial.y,statusBottom)&&near(initial.y+initial.height,dockTop-12));
+    const navigation=frame.locator('.window-history-controls');
+    check(`${id} title bar exposes shared page navigation with an empty history`,await navigation.count()===1&&await navigation.getByRole('button',{name:'Back',exact:true}).isDisabled()&&await navigation.getByRole('button',{name:'Forward',exact:true}).isDisabled());
     const controlMetrics=await frame.locator('.window-controls').evaluate(e=>{const group=e.getBoundingClientRect(),close=e.querySelector('.window-control-close').getBoundingClientRect(),left=e.parentElement.getBoundingClientRect(),buttons=[...e.querySelectorAll('.window-control')],order=buttons.map(button=>[...button.classList].find(name=>name.startsWith('window-control-')&&name!=='window-controls')).join('|');return {aligned:group.right>left.width-30&&close.left>group.left&&order==='window-control-maximize|window-control-minimize|window-control-close'&&buttons.length===3,buttons:buttons.map(button=>{const style=getComputedStyle(button),circle=button.getBoundingClientRect(),icon=button.querySelector('svg').getBoundingClientRect();return{width:style.width,opacity:style.opacity,radius:style.borderRadius,background:style.backgroundColor,icon:{width:icon.width,height:icon.height,centerX:(icon.left+icon.right)/2-(circle.left+circle.right)/2,centerY:(icon.top+icon.bottom)/2-(circle.top+circle.bottom)/2}};})};});
     const centeredControls=controlMetrics.aligned&&controlMetrics.buttons.every((button,index)=>Math.abs(Number.parseFloat(button.width)-16.6725)<.1&&button.opacity==='1'&&button.radius==='50%'&&button.background!=='rgba(0, 0, 0, 0)'&&Math.abs(button.icon.width-(index===0?8.748:10.206))<.1&&Math.abs(button.icon.centerX)<.5&&Math.abs(button.icon.centerY)<.5);
     if(!centeredControls)console.log('control metrics',JSON.stringify(controlMetrics));
@@ -64,6 +66,22 @@ try {
     await page.getByRole('button',{name:`Close ${title}`,exact:true}).focus();await page.keyboard.press('Enter');await phase(id,'closed');
     check(`${title} title control closes from the keyboard`,true);
   }
+  await page.getByRole('button',{name:'Standard Window 1',exact:true}).click();await phase('standard-window-1','visible');
+  const standard=page.getByTestId('standard-window-1-window'),back=standard.getByRole('button',{name:'Back',exact:true}),forward=standard.getByRole('button',{name:'Forward',exact:true});
+  check('Standard Window 1 starts with Back and Forward disabled',await back.isDisabled()&&await forward.isDisabled());
+  await standard.getByRole('button',{name:'Update',exact:true}).first().click();await standard.locator('.standard-window-case-detail').waitFor();
+  check('Opening a case enables platform Back and keeps Forward disabled',!await back.isDisabled()&&await forward.isDisabled());
+  await back.click();await standard.locator('.standard-window-table-panel').waitFor();
+  check('Window Back returns to the table page',await standard.locator('.standard-window-table-panel').isVisible()&&await forward.isEnabled());
+  await forward.click();await standard.locator('.standard-window-case-detail').waitFor();
+  check('Window Forward restores the case page',await standard.locator('.standard-window-case-detail').isVisible());
+  await back.click();await standard.locator('.standard-window-table-panel').waitFor();
+  await standard.getByRole('button',{name:'Update',exact:true}).nth(1).click();await standard.locator('.standard-window-case-detail').waitFor();
+  check('A new page after Back discards the old Forward entry',await forward.isDisabled());
+  await page.getByRole('button',{name:'Close Standard Window 1',exact:true}).click();await phase('standard-window-1','closed');
+  await page.getByRole('button',{name:'Standard Window 1',exact:true}).click();await phase('standard-window-1','visible');
+  check('Reopening Standard Window 1 starts a fresh page history',await back.isDisabled()&&await forward.isDisabled()&&await standard.locator('.standard-window-table-panel').isVisible());
+  await page.getByRole('button',{name:'Close Standard Window 1',exact:true}).click();await phase('standard-window-1','closed');
   await open('studio');
   const studio=page.getByTestId('studio-window');
   const viewport=await page.evaluate(()=>({width:innerWidth,height:innerHeight}));
@@ -162,7 +180,7 @@ try {
 
   await open('studio'); await page.locator('#note').fill('Shared manager preserves content');
   await page.mouse.move(30, 70);
-  await page.waitForFunction(() => Math.abs(document.querySelector('.system-icon').getBoundingClientRect().width - 36) < .1);
+  await page.waitForFunction(() => { const icon=document.querySelector('.dock-icon[data-dock-app="standard-window-1"]'); return !!icon&&Math.abs(icon.getBoundingClientRect().width-36)<.1; });
   await page.screenshot({ path: path.join(root, 'artifacts/window-depth.png') });
   await open('records');
   check('Dock activation raises the requested window', await records.getAttribute('data-active') === 'true' && Number(await records.evaluate(e => getComputedStyle(e).zIndex)) > Number(await page.getByTestId('studio-window').evaluate(e => getComputedStyle(e).zIndex)));

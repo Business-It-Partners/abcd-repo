@@ -1,24 +1,51 @@
 import { profileArgs } from './profile.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-const app=await electron.launch({args:[process.cwd(),...profileArgs],env}),page=await app.firstWindow(),checks=[];const check=(name,v)=>{assert.ok(v,name);checks.push(name);console.log('PASS',name);};
-try{
- await page.getByRole('button',{name:'App Store',exact:true}).click();const frame=page.getByTestId('store-window');await frame.getByText('Discover your next essential.').waitFor();
- check('Catalog shows ten dental apps',await frame.locator('.store-grid article').count()===10);
- check('Available apps do not occupy dock',await page.locator('[data-dock-app="calendar"]').count()===0);
- await page.screenshot({path:'artifacts/store-catalog.png'});
- await frame.getByRole('button',{name:'Details Calendar',exact:true}).click();check('Detail shows metadata and install control',await frame.getByRole('heading',{name:'Calendar',exact:true}).isVisible());await page.screenshot({path:'artifacts/store-detail.png'});
- await frame.getByRole('button',{name:'Get',exact:true}).click();await frame.getByRole('progressbar').waitFor();await frame.getByRole('button',{name:'Cancel',exact:true}).click();check('Cancelled installation can be retried',await frame.getByRole('button',{name:'Get',exact:true}).isVisible());
- await frame.getByRole('button',{name:'Get',exact:true}).click();await page.locator('.store-arrival').waitFor({timeout:10000});check('Choreographed arrival uses a 2050 ms timeline',await page.locator('.store-arrival').evaluate(el=>el.getAnimations()[0].effect.getTiming().duration)===2050);check('Arrival includes destination glow, light trails, and twenty sparks',await page.locator('.store-arrival-glow').count()===1&&await page.locator('.store-arrival-trail').count()===3&&await page.locator('.store-arrival-spark').count()===20);check('Completion creates artwork arrival overlay',await page.locator('.store-arrival').isVisible());await page.screenshot({path:'artifacts/store-arrival.png'});await page.waitForTimeout(700);await page.screenshot({path:'artifacts/store-flight.png'});await page.locator('.store-arrival').waitFor({state:'detached'});check('Celebration removes all temporary effects',await page.locator('.store-celebration').count()===0);check('Ready feedback appears at destination',await page.getByText('Ready to open',{exact:true}).isVisible());check('Source artwork restores after handoff',await page.locator('.store-source-separated').count()===0);check('New app lands at end of dock',await page.locator('[data-dock-app]').last().getAttribute('data-dock-app')==='calendar');
- await frame.getByRole('button',{name:'Open',exact:true}).click();await page.getByTestId('calendar-window').waitFor({state:'visible'});check('Installed app opens through shared manager',await page.getByTestId('calendar-window').isVisible());
- await page.getByRole('button',{name:'App Store',exact:true}).click();
- await frame.getByRole('button',{name:'Uninstall',exact:true}).click();await frame.getByRole('button',{name:'Keep app',exact:true}).click();check('Keep app cancels uninstall',await page.locator('[data-dock-app="calendar"]').count()===1);
- await frame.getByRole('button',{name:'Uninstall',exact:true}).click();await frame.getByRole('button',{name:'Confirm uninstall',exact:true}).click();await frame.getByRole('button',{name:'Get',exact:true}).waitFor();check('Uninstall removes dock entry and closes open app',await page.locator('[data-dock-app="calendar"]').count()===0&&await page.getByTestId('calendar-window').getAttribute('data-phase')==='closed');
- await frame.getByRole('button',{name:'Get',exact:true}).click();await page.locator('.store-arrival').waitFor({timeout:10000});await frame.getByRole('button',{name:'Open',exact:true}).click();await page.waitForFunction(()=>document.querySelector('[data-window-id="calendar"]').dataset.phase==='visible');check('Open during flight settles presentation and opens immediately',await page.locator('.store-celebration').count()===0&&await page.locator('.store-source-separated').count()===0);check('Uninstalled app can be reinstalled',await page.locator('[data-dock-app="calendar"]').isVisible());await page.getByRole('button',{name:'App Store',exact:true}).click();
- await frame.getByRole('button',{name:'Updates Available (2)',exact:true}).click();await frame.getByRole('button',{name:'Update all',exact:true}).click();await frame.getByRole('heading',{name:'You’re all up to date'}).waitFor({timeout:15000});check('Update all completes sequentially',await frame.locator('.store-grid article').count()===0);
- await frame.getByRole('button',{name:'All Apps',exact:true}).click();await frame.getByLabel('Search store').fill('protocol');check('Search filters catalog',await frame.locator('.store-grid article').count()===1);await page.emulateMedia({reducedMotion:'reduce'});await frame.getByRole('button',{name:'Get',exact:true}).click();await frame.getByRole('button',{name:'Open',exact:true}).waitFor({timeout:10000});await page.waitForTimeout(450);check('Reduced motion installs without flight',await page.locator('.store-arrival').count()===0&&await page.locator('[data-dock-app="protocols"]').isVisible());
- await page.getByRole('button',{name:'Close App Store',exact:true}).click();await page.getByRole('button',{name:'App Store',exact:true}).click();check('Session retains installation state',await frame.getByRole('button',{name:'Open',exact:true}).isVisible());
- await fs.writeFile('artifacts/store-verification.json',JSON.stringify({checks},null,2));
-}finally{await app.close();}
+
+const env = { ...process.env };
+delete env.ELECTRON_RUN_AS_NODE;
+const app = await electron.launch({
+  args: [process.cwd(), ...profileArgs, '--distribution-fixtures'],
+  env,
+});
+const page = await app.firstWindow();
+const checks = [];
+const check = (name, value) => {
+  assert.ok(value, name);
+  checks.push(name);
+  console.log('PASS', name);
+};
+
+try {
+  await page.getByRole('button', { name: 'App Store', exact: true }).click();
+  const frame = page.getByTestId('store-window');
+  await frame.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
+
+  const back = frame.getByRole('button', { name: 'Back', exact: true });
+  const forward = frame.getByRole('button', { name: 'Forward', exact: true });
+  check('Store home starts with Back and Forward disabled', await back.isDisabled() && await forward.isDisabled());
+  check('Synthetic company catalogue is available', await frame.locator('.store-grid article').count() === 2);
+
+  await frame.getByRole('button', { name: 'Details Motion Studio', exact: true }).click();
+  check('Opening app details enables Back only', await frame.getByRole('heading', { name: 'Motion Studio', exact: true }).isVisible() && await back.isEnabled() && await forward.isDisabled());
+
+  await back.click();
+  check('Window Back returns to the Store catalogue', await frame.getByRole('heading', { name: 'Your apps. One workspace.' }).isVisible() && await forward.isEnabled());
+
+  await forward.click();
+  check('Window Forward restores the app detail', await frame.getByRole('heading', { name: 'Motion Studio', exact: true }).isVisible() && await back.isEnabled());
+
+  await back.click();
+  await frame.getByRole('button', { name: 'Details Records', exact: true }).click();
+  check('Choosing a different detail clears Forward history', await frame.getByRole('heading', { name: 'Records', exact: true }).isVisible() && await back.isEnabled() && await forward.isDisabled());
+
+  await back.click();
+  await frame.getByLabel('Search store').fill('motion');
+  check('Store search filters the catalogue without changing the route', await frame.locator('.store-grid article').count() === 1 && await frame.getByRole('heading', { name: 'Your apps. One workspace.' }).isVisible());
+
+  await page.getByRole('button', { name: 'Close App Store', exact: true }).click();
+  await page.getByRole('button', { name: 'App Store', exact: true }).click();
+  check('Reopening App Store restores its home route', await frame.getByRole('heading', { name: 'Your apps. One workspace.' }).isVisible());
+} finally {
+  await app.close();
+}

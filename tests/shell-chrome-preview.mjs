@@ -24,7 +24,7 @@ try {
     await store.getByRole('button', { name: 'Get', exact: true }).click();
     await store.getByRole('button', { name: 'Open', exact: true }).waitFor();
     await page.locator('.store-celebration').waitFor({ state: 'detached' });
-    await store.getByRole('button', { name: 'Back to apps', exact: true }).click();
+    await store.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Close App Store', exact: true }).click();
   }
   await page.waitForFunction(() => document.querySelectorAll('.dock-icon:not(.system-icon)').length === 4);

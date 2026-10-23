@@ -8,6 +8,7 @@ declare global {
       identity: { view(): Promise<import('../electron/identity/contracts').SessionView>; action(kind: 'login' | 'lock' | 'logout', input?: unknown): Promise<import('../electron/identity/contracts').ActionResult>; devCredentialsAvailable(): Promise<boolean>; devCredentials(): Promise<{ email: string; password: string } | undefined>; subscribe(callback: (value: import('../electron/identity/contracts').SessionView) => void): () => void };
       runtime: {
         sync(value: unknown, generation?: number): Promise<void>;
+        navigate(id: string, direction: 'back' | 'forward', generation?: number): Promise<boolean>;
         hideAll(generation?: number): boolean;
         restart(id: string, generation?: number): Promise<void>;
         selectModule(id: string, moduleId: string): Promise<{ ok: boolean; code?: string }>;

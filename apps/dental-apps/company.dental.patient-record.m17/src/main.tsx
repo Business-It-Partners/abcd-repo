@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
+import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
 import type { ClinicSessionContext, AppSdk } from "../../../../electron/sdk/contracts";
 import { APP_ID, PatientApi, PatientMediaSdk, readable, isUnknown } from "./api";
 import { SaaSPatientDirectory } from "./saasDirectory";
@@ -49,6 +50,8 @@ function Main() {
   const [ready,setReady]=useState(false),[openingError,setOpeningError]=useState("");
   const [session,setSession]=useState<ClinicSessionContext|null>(null);
   const [screen,setScreen]=useState<Screen>({mode:"directory"});
+  const screenRef=useRef<Screen>({mode:"directory"});screenRef.current=screen;
+  const navigation=useRef<AppHistory<Screen>|null>(null);
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState("");
   const [pending,setPending]=useState<Pending|null>(null);
@@ -57,7 +60,7 @@ function Main() {
   const client=useRef<ClinicClient|null>(null),alive=useRef(true);
   const [api,setApi]=useState<PatientApi|null>(null),[media,setMedia]=useState<PatientMediaSdk|null>(null);
   const report=useCallback(()=>{
-    client.current?.report({dirty:dirtyKeys.current.size>0||lock.current||!!currentPending.current,
+    client.current?.report({dirty:dirtyKeys.current.size>0||lock.current||!!currentPending.current||screenRef.current.mode==="intake",
       modal:!!document.querySelector("[role='dialog'][aria-modal='true']")});
   },[]);
   const dirty=useCallback((key:string,value:boolean)=>{if(value)dirtyKeys.current.add(key);else dirtyKeys.current.delete(key);report();},[report]);
@@ -65,7 +68,9 @@ function Main() {
     if(dirtyKeys.current.size||lock.current||currentPending.current){
       return false;
     }
-    setScreen(next);return true;
+    const history=navigation.current;if(!history)return false;
+    screenRef.current=next;
+    history.push(next);return true;
   },[]);
   const run=useCallback(async<T,>(label:string,cmd:ClinicCommand<T>,done:(value:T)=>void|Promise<void>)=>{
     if(currentPending.current||lock.current)throw new ClinicError("BUSY","Finish or reconcile the previous save first.");
@@ -89,6 +94,7 @@ function Main() {
     const bridge=window.dentalApp;
     const sdk=new ClinicClient(bridge,()=>{
       alive.current=false;dirtyKeys.current.clear();currentPending.current=null;
+      navigation.current?.dispose();navigation.current=null;
       if(active){setReady(false);setSession(null);setScreen({mode:"directory"});
         setOpeningError("The clinic session changed. Reopen Patient Record from Dental OS.");}
     });
@@ -100,14 +106,19 @@ function Main() {
       if(!ctx.clinicUser.capabilities.includes("patient_record.access"))
         throw new ClinicError("FORBIDDEN","Patient Record is unavailable for this clinic role.");
       if(!active)return;
+      const history=sdk.createHistory<Screen>({mode:"directory"},()=>
+        !dirtyKeys.current.size&&!lock.current&&!currentPending.current&&screenRef.current.mode!=="intake");
+      navigation.current=history;
+      history.subscribe(page=>{screenRef.current=page;setScreen(page);});
       setSession(ctx);setApi(new PatientApi(sdk));setMedia(new PatientMediaSdk(bridge));
       setReady(true);setOpeningError("");
     }).catch(e=>{if(active)setOpeningError(errorText(e));});
     const observer=new MutationObserver(report);
     observer.observe(document.body,{subtree:true,childList:true});
-    return()=>{active=false;alive.current=false;unsub();observer.disconnect();dirtyKeys.current.clear();
+    return()=>{active=false;alive.current=false;unsub();observer.disconnect();navigation.current?.dispose();navigation.current=null;dirtyKeys.current.clear();
       currentPending.current=null;sdk.report({dirty:false,modal:false});client.current=null;};
   },[report]);
+  useEffect(()=>{report();},[report,screen]);
   const retry=useCallback(async()=>{
     const record=currentPending.current;if(!record)return;setBusy("Checking original save");setReconcileError("");lock.current=true;report();
     try{await record.retry();currentPending.current=null;setPending(null);setRevision(v=>v+1);}
@@ -132,10 +143,9 @@ function Main() {
           {busy&&<p className="prBusy" role="status">{busy}…</p>}
           {screen.mode==="directory"&&<SaaSPatientDirectory key={revision} onOpenPatient={patientId=>go({mode:"detail",patientId})}
             onAddPatient={()=>go({mode:"intake"})}/>}
-          {screen.mode==="intake"&&<SaaSPatientIntake onBack={()=>go({mode:"directory"})}
+          {screen.mode==="intake"&&<SaaSPatientIntake onBack={()=>{navigation.current?.back(true);}}
             onSaved={()=>setRevision(v=>v+1)}/>}
-          {screen.mode==="detail"&&<SaaSPatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId}
-            onBack={()=>{go({mode:"directory"});}}/>}
+          {screen.mode==="detail"&&<SaaSPatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId}/>}
         </div>
         <ClinicPageRefreshAction placement="page-bottom" />
       </section>

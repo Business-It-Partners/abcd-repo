@@ -33,6 +33,14 @@ const inspect = target => target.evaluate(() => ({
   mediaWrites: globalThis.m17PatientRecord.mediaWrites.map(({ path, method, operationId, body }) => ({ path, method, operationId, body })),
   package: globalThis.m17PatientRecord.getPackage(), snapshot: globalThis.m17PatientRecord.snapshot(),
 }));
+const waitForNavigation = async target => {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const value = await target.evaluate(() => globalThis.m17PatientRecord.navigation());
+    if (value?.index >= 0) return value;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  throw new Error('Patient Record did not report its page history to the host.');
+};
 const waitForHost = async (target, predicate, timeout = 15000) => {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -50,13 +58,13 @@ try {
   await page.getByRole('heading', { name: 'Patient Record Directory', exact: true }).waitFor();
   await page.getByText('Synthetic Patient', { exact: false }).first().waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('corrected package is Patient Record 1.0.1 with app assets and JSON/media grants',
-    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.1'
+  check('updated package is Patient Record 1.0.2 with app assets and JSON/media grants',
+    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.2'
       && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5
       && ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'].every(op => packageInfo.grants.includes(op)));
   check('renderer receives the SDK bridge without credential or direct-network accessors', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
-    return ['cancel', 'connect', 'getAppInfo', 'request', 'report'].every(method => methods.includes(method))
+    return ['cancel', 'connect', 'getAppInfo', 'navigation', 'request', 'report'].every(method => methods.includes(method))
       && !methods.some(method => /token|credential|fetch|storage/i.test(method));
   }));
   const directoryRead = initial.calls.find(call => call.method === 'GET' && call.path.startsWith('/v1/patients?'));
@@ -91,6 +99,13 @@ try {
   await page.getByRole('button', { name: 'Detail', exact: true }).click();
   await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
   await page.getByText('Synthetic condition', { exact: false }).first().waitFor();
+  const detailHistory = await waitForNavigation(app);
+  check('patient detail reports only opaque UUID entries to the OS', detailHistory?.index === 1 && detailHistory.entries.length === 2 && detailHistory.entries.every(entry => /^[0-9a-f-]{36}$/i.test(entry)));
+  check('OS Back returns from patient detail to the directory', await app.evaluate(() => globalThis.m17PatientRecord.navigate('back')));
+  await page.getByRole('heading', { name: 'Patient Record Directory', exact: true }).waitFor();
+  check('OS Forward restores the patient detail page', await app.evaluate(() => globalThis.m17PatientRecord.navigate('forward')));
+  await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
+  check('patient detail no longer renders its own Back button', await page.getByRole('button', { name: /^Back/ }).count() === 0);
   await fs.writeFile(detailScreenshotPath, await page.screenshot(), { flag: 'wx' }); detailScreenshotWritten = true;
   const profileRead = await inspect(app);
   check('SaaS patient profile reads the authoritative clinic record through ClinicClient',
@@ -106,6 +121,8 @@ try {
   const firstProfileWrite = afterUnknown.calls.find(call => call.method === 'PUT' && call.path.endsWith('/profile'));
   check('unknown profile-write outcome remains available to retry with its original operation identity',
     Boolean(firstProfileWrite?.operationId) && afterUnknown.snapshot.profileAttempts === 1 && afterUnknown.snapshot.writeEffects === 0);
+  check('OS Back is blocked while Patient Record has an unresolved clinic write', !(await app.evaluate(() => globalThis.m17PatientRecord.navigate('back'))));
+  await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Retry original save', exact: true }).click();
   await page.getByText('Synthetic Patient Updated', { exact: true }).waitFor();
   const afterRetry = await inspect(app);

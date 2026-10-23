@@ -7,7 +7,7 @@ export function runtimeIdForPackage(id: string) { return id === 'company.sample.
 export function runtimeHost(id: RuntimeId) { return id === 'studio' ? 'alpha' : id === 'records' ? 'beta' : packageIdForRuntime(id); }
 export type RuntimeRect = { x: number; y: number; width: number; height: number };
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
-export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'unresponsive' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; reason?: string; snapshot?: string };
+export type RuntimeState = { id: RuntimeId; phase: 'loading' | 'ready' | 'unresponsive' | 'failed'; dirty: boolean; modal: boolean; writeState?: 'none' | 'pending' | 'unknown'; navigation?: { entries: string[]; index: number }; reason?: string; snapshot?: string };
 export function parseLayout(input: unknown): RuntimeLayout[] {
   if (!Array.isArray(input) || input.length > 16) throw new Error('Invalid runtime layout');
   const seen = new Set();

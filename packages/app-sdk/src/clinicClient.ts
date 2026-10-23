@@ -1,4 +1,5 @@
-import type { AppSdk, ClinicSessionContext, Connection, ErrorCode, Outcome, Result, RuntimeAppInfo } from '../../../electron/sdk/contracts';
+import { SDK, type AppSdk, type ClinicSessionContext, type Connection, type ErrorCode, type Outcome, type Result, type RuntimeAppInfo } from '../../../electron/sdk/contracts';
+import { AppHistory } from './appHistory';
 
 export class ClinicError extends Error {
   constructor(readonly code: ErrorCode, message: string, readonly outcome: Outcome = 'not_sent', readonly operationId?: string) {
@@ -27,7 +28,7 @@ export class ClinicClient {
       // The signed document can mount just before the host finishes registering its frame.
       // Retry only that startup condition, before any business request is dispatched.
       for (let attempt = 0; ; attempt++) {
-        const result = await this.bridge.connect({ major: 1, minor: 4 });
+        const result = await this.bridge.connect({ major: SDK.major, minor: SDK.minor });
         if (!result.ok && result.error.code === 'UNKNOWN_CALLER' && attempt < 20) {
           await new Promise(resolve => setTimeout(resolve, 100)); continue;
         }
@@ -89,6 +90,7 @@ export class ClinicClient {
   }
   report(value: { dirty: boolean; modal: boolean }) { this.bridge.report(value); }
   onModuleSelected(listener: (value: { moduleId: string }) => void) { return this.bridge.onModuleSelected(listener); }
+  createHistory<T>(initialPage: T, canNavigate?: () => boolean): AppHistory<T> { return new AppHistory<T>(this.bridge, initialPage, canNavigate); }
 }
 
 /** One explicit write intent. Retry uses the same immutable payload and operation identity. */

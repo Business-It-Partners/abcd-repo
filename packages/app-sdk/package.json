@@ -1,1 +1,1 @@
-{"name":"@dental-os/app-sdk","version":"1.4.0","private":true,"type":"module","exports":{".":"./src/clinicClient.ts"}}
+{"name":"@dental-os/app-sdk","version":"1.6.0","private":true,"type":"module","exports":{".":"./src/clinicClient.ts"}}
