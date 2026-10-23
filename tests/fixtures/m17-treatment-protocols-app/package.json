@@ -1,0 +1,6 @@
+{
+  "name": "m17-treatment-protocols-private-fixture",
+  "version": "0.0.0",
+  "main": "../m17-treatment-protocols-host.cjs",
+  "private": true
+}

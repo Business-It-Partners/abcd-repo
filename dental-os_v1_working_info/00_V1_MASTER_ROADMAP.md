@@ -76,7 +76,10 @@ Preserve exact checkpoint commits, workflow run URLs and outcomes. `main` carrie
 
 ## Published M14 parallel app handoff — 2026-10-21
 
-The user authorized a separate web-chat app track while this checkout continues platform reconciliation. Dental OS `codex/milestone-14` is published at `3ace826ef4800abbcd7ff2c5bc37601de248e63a`; SaaS `codex/den-0003-dental-os-module-bundles` at `12ac3aed66979e7c924b416f5a70aa2733e366a8`. [Start here](https://github.com/Business-It-Partners/dental-os/blob/codex/milestone-14/dental-os_v1_working_info/milestone-14-dental-app-functionality/WEB_CHAT_START_HERE.md) owns the app handoff, source pins, eleven-app matrix and app/platform dependency boundary. M14 is IMPLEMENTING for planning/handoff; no functional app acceptance is claimed. M12/G12, M13/G13 and final G14 dependencies remain open. The app branch excludes this checkout's uncommitted runtime changes. Frontend SaaS typecheck/lint/56 existing unit tests and OS handoff documentation checks passed; static OS package build, live API/Store and private runtime app acceptance remain pending. No environment/main merge, deployment, signed publication or live-app restart occurred.
+
+## 2026-10-23 M17.10 early start
+
+At the user's direction, M17.10 Treatment Protocols started early in the existing M15 worktree under new app ID `company.dental.m17.treatment-protocols`, with `1.0.0` as its first package version. This independent app start does not change the remaining M17 app sequence or alter the historical `company.dental.treatment-protocols` M13 preview. Use Dental SaaS revision `f0d059d36540b4b6907cace089085ce0df62d454`; its UI exposes adding and removing stages while preserving displayed order, and has no manual stage-reorder control. See the [M17.10 plan](milestone-17-dental-app-delivery/M17.10_TREATMENT_PROTOCOLS_PLAN.md).
 
 ## 2026-10-22 M17 app-delivery realignment
 
@@ -84,7 +87,7 @@ At the user's direction, M17 is the active app implementation and staging-delive
 
 M17/G17 staging delivery can proceed against an exact documented current M15 contract before M15 closeout. M15/G15 remains open and owns final platform verification. G17 does not close G14: final functional-app acceptance must revalidate M17 evidence on the verified M15/G15 baseline. G12/G13, M20/G20, and G21 retain their owners and scope.
 
-**M17 progress (2026-10-22):** Follow-ups has an earlier signed staging/install result under its previous identity; it remains useful workflow evidence but does not satisfy the new M17 identity. Appointments has a passing local M17 implementation checkpoint and private Linux workflow checks but no new-identity staging package. Both need new unique IDs, version 1.0.0 first packages, and staging acceptance under the new suite signer. Patient Record follows these two checkpoints, then the remaining fresh implementations proceed in submilestone order. G17 remains open. See [M17 status](milestone-17-dental-app-delivery/STATUS.md) and [evidence ledger](milestone-17-dental-app-delivery/VERIFICATION_EVIDENCE.md).
+**M17 staging reconciliation (2026-10-22):** The signed staging feed at sequence 28 contained new M17 packages for Follow-ups 1.0.0, Appointments 1.0.1, Treatment Progress 1.0.0, and Calendar 1.0.0. A public readback verified their package signatures and API grants while adding Treatment Protocols at sequence 29; this is feed evidence, not proof of Store installation/runtime acceptance. Individual app plans must retain those separate acceptance limits. G17 remains open. See [M17 status](milestone-17-dental-app-delivery/STATUS.md) and [evidence ledger](milestone-17-dental-app-delivery/VERIFICATION_EVIDENCE.md).
 
 ## 2026-10-21 platform closeout adoption — historical starting point
 

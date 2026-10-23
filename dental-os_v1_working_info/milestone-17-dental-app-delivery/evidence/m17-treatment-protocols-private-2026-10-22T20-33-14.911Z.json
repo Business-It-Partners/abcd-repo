@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "private signed package has the new M17 identity and version 1.0.0",
+    "renderer receives the SDK bridge without a credential getter",
+    "initial list reads use only the SaaS treatment-protocol route",
+    "Treatment Protocols module selection is acknowledged",
+    "new protocol is created through POST and opens the SaaS detail editor",
+    "stage order, pricing and clinical settings are saved through PUT with the canonical row version",
+    "409 row-version conflict is shown and canonical state is refreshed",
+    "uncertain update locks the original form and offers same-command reconciliation",
+    "dropped receipt follows one committed update and records its operation identity",
+    "same-key retry confirms the original update without a duplicate effect",
+    "retire uses SaaS soft-delete semantics through PUT active=false",
+    "all renderer errors stayed clear through the synthetic protocol workflow",
+    "role without treatment_protocols.manage is denied before business routes execute",
+    "role-denied view contains no protocol data or renderer error"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.m17.treatment-protocols",
+    "version": "1.0.0",
+    "packageSha256": "5ae81af46ab836b1d2a07c2b7d2547a680d7d3d2f11a1446b72b54a4a32c51f7",
+    "payloadDigest": "27810f92fc91163b8d09a55d8bcb9eba115c93d75835a9f1bfc83a6f79f2cd5c",
+    "wireBytes": 1430881,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live staging data or publication.",
+  "screenshot": "m17-treatment-protocols-private-2026-10-22T20-33-14.911Z.png"
+}

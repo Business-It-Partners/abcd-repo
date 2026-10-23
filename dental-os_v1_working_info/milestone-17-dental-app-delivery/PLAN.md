@@ -1,7 +1,7 @@
 # M17 Plan — First-party Dental App Delivery
 
-**Status:** IMPLEMENTING — Follow-ups and Appointments have existing M17 app-code checkpoints and recorded local workflow checks. Both need new M17 release IDs, version 1.0.0 packages, and the new suite signer before their M17 staging releases. Patient Record is next after those two. The other nine apps are fresh builds from Dental SaaS. G17 remains open.
-**Updated:** 2026-10-22.
+**Status:** IMPLEMENTING — signed staging packages are present for Follow-ups, Appointments, Treatment Progress and Calendar; Treatment Protocols was added at sequence 29. These feed entries do not imply Store installation/runtime acceptance. Treatment Protocols started early at the user's direction; the planned app order is unchanged. G17 remains open.
+**Updated:** 2026-10-23.
 **Execution home:** Existing M15 worktree on branch codex/milestone-15. No separate M17 worktree or branch is used.
 **Requirements:** R02–R12 and R15, as mapped to G14/G17.
 **Exit gate:** G17 for app-by-app staging delivery. Final integrated acceptance is governed by the verified M15/G15 baseline.
@@ -11,7 +11,7 @@
 
 Deliver eleven first-party Dental OS apps as independently signed packages through the existing Cloudflare staging Store. M17 uses the app code already in this worktree, the maintained Dental SaaS UI/workflow/API modules, and the current M15 platform SDK/UI. Dental SaaS is the authority for business behavior; Dental OS is the authority for app identity, package signing, host capabilities, and Store delivery.
 
-The current M17 Follow-ups and Appointments packages are retained as implementation checkpoints. Their user-facing workflows are not restarted. They receive new, unique M17 app IDs and first-release version 1.0.0 packages. The other nine apps are built fresh against their specific Dental SaaS modules. Existing preview packages and previously published package bytes remain unchanged and are not M17 release identities.
+The current M17 Follow-ups and Appointments packages are retained as implementation checkpoints. Their user-facing workflows are not restarted. Signed M17 IDs/packages are present in the staging feed for Follow-ups, Appointments, Treatment Progress and Calendar; Treatment Protocols is now published as well. Individual source and runtime acceptance remain tracked separately. The other apps continue from their planned SaaS modules. Existing preview packages and previously published package bytes remain unchanged and are not M17 release identities.
 
 No other Dental OS app branch or worktree is an M17 source input. The active M17 app source is this worktree; app behavior is reviewed against the pinned Dental SaaS source for each app.
 
@@ -29,23 +29,23 @@ M17 app code does not implement capabilities that belong to Dental OS. The platf
 
 | Submilestone | App | New M17 ID | Main focus |
 | --- | --- | --- | --- |
-| [M17.1](M17.1_FOLLOWUPS_PLAN.md) | Follow-ups | TBD before release | Search, schedule, reschedule, status, safe writes |
+| [M17.1](M17.1_FOLLOWUPS_PLAN.md) | Follow-ups | `company.dental.followups.m17` / 1.0.0 | Search, schedule, reschedule, status, safe writes |
 | [M17.2](M17.2_PATIENT_RECORD_PLAN.md) | Patient Record | TBD before release | Patient workflow and host-mediated X-ray use |
-| [M17.3](M17.3_APPOINTMENTS_PLAN.md) | Appointments | TBD before release | Date/doctor views, booking, conflicts |
+| [M17.3](M17.3_APPOINTMENTS_PLAN.md) | Appointments | `company.dental.appointments.m17` / 1.0.0 first package; 1.0.1 current | Date/doctor views, booking, conflicts |
 | [M17.4](M17.4_WORK_ENTRY_PLAN.md) | Work Entry | TBD before release | Clinical encounter and reconciled commit |
-| [M17.5](M17.5_TREATMENT_PROGRESS_PLAN.md) | Treatment Progress | TBD before release | Patient-scoped stage aggregation |
+| [M17.5](M17.5_TREATMENT_PROGRESS_PLAN.md) | Treatment Progress | `company.dental.treatment-progress.m17` / 1.0.0 | Patient-scoped stage aggregation |
 | [M17.6](M17.6_LAB_TRACKER_PLAN.md) | Lab Tracker | TBD before release | Lab Tracker and Lab Supplier Record |
 | [M17.7](M17.7_FINANCE_PLAN.md) | Finance | TBD before release | Eight finance modules, ledger integrity |
 | [M17.8](M17.8_PATIENT_PAYMENTS_PLAN.md) | Patient Payments | TBD before release | Receptionist-scoped collection workflow |
 | [M17.9](M17.9_STAFF_PLAN.md) | Staff | TBD before release | Staff directory/profile and host-mediated documents |
-| [M17.10](M17.10_TREATMENT_PROTOCOLS_PLAN.md) | Treatment Protocols | TBD before release | Protocol editing, ordering, pricing |
-| [M17.11](M17.11_CALENDAR_PLAN.md) | Calendar | TBD before release | BS/AD dates, tasks, draft safety |
+| [M17.10](M17.10_TREATMENT_PROTOCOLS_PLAN.md) | Treatment Protocols | `company.dental.m17.treatment-protocols` / 1.0.0 | Protocol editing, ordered stages, pricing |
+| [M17.11](M17.11_CALENDAR_PLAN.md) | Calendar | `company.dental.calendar.m17` / 1.0.0 | BS/AD dates, tasks, draft safety |
 
 Assign a new unique first-party ID to every M17 package, including Follow-ups and Appointments. The IDs listed in the existing preview manifests are not M17 release IDs. Record each selected ID in its plan, manifest, app metadata, and evidence before packaging. Preserve each preview ID and release unchanged.
 
 ## Execution order and implementation method
 
-Complete one app at a time. The two existing M17 implementation checkpoints are Follow-ups and Appointments; after those release-identity updates, continue with Patient Record, then the remaining apps in submilestone order. Submilestone numbers and scopes do not change.
+Complete one app at a time. Follow-ups and Appointments remain existing M17 implementation checkpoints, and Patient Record remains next in the planned sequence after those checkpoints. Treatment Protocols is being implemented early at the user's direction because it is independent; this does not change the planned order for the other apps. Submilestone numbers and scopes do not change.
 
 1. For Follow-ups and Appointments, continue from the app source already present in this M17 worktree. Confirm the current SaaS contract and M15 SDK boundary; do not restart the UI implementation.
 2. For each remaining app, inspect its maintained Dental SaaS UI/workflow/API behavior, write a short route/role/payload/write-recovery contract note, pin the exact source, and build a Dental OS package from scratch using the current shared UI and SDK.
@@ -57,7 +57,7 @@ Complete one app at a time. The two existing M17 implementation checkpoints are 
 
 Every M17 app gets its own new unique app ID. The first package for each of the eleven IDs is version 1.0.0. Later packages under that same ID increment SemVer and never replace bytes under a used version. The earlier Follow-ups staging package and the local Appointments 1.1.0 checkpoint remain under their previous identities as historical artifacts; neither is relabeled or overwritten. New M17 packages are assembled from the retained source and assigned their new identity/version before signing. Each package declares exactly one supported `clinic.app.*` family capability; the signed catalogue/update policy bind the new ID and exact release grant, while the unchanged host applies that family's existing role, route and media rules. M17's new IDs need no per-ID OS source entry. A genuinely new host capability or route contract still requires platform implementation.
 
-Use one M17 first-party staging signing key for the full app suite. The fresh Ed25519 key was created on 2026-10-22 with key ID `company-staging-m17-20261022` and public-key SHA-256 fingerprint `e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709`. Its public key is pinned in the source staging trust configuration at `electron/distribution/staging.ts`; this source change has not been deployed to a running OS or used to sign a release. The private key remains local and outside the checkout in a protected directory (mode 0700; key mode 0600) until moved into the user's vault. Do not search for or reuse an earlier milestone key. Repository records may contain only the key ID, public fingerprint, trust/pinning evidence, and handling procedure.
+Use one M17 first-party staging signing key for the full app suite. The fresh Ed25519 key was created on 2026-10-22 with key ID `company-staging-m17-20261022` and public-key SHA-256 fingerprint `e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709`. Its public key is pinned in the source staging trust configuration at `electron/distribution/staging.ts` and has signed the M17.10 package and staging metadata at sequence 29. The private key remains local and outside the checkout in a protected directory (mode 0700; key mode 0600) until moved into the user's vault. Do not search for or reuse an earlier milestone key. Repository records may contain only the key ID, public fingerprint, trust/pinning evidence, and handling procedure. This work did not confirm installation in the user's running OS.
 
 The new package signer is separate from the authorized clinic credential required for live synthetic staging acceptance. If the new signer trust, scoped publisher, or protected clinic credential is not ready, pause that app's staging release while continuing independent local implementation. Staging only; no production publication or production grant.
 

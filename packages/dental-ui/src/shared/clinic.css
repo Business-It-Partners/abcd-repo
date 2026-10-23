@@ -509,3 +509,27 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* SaaS page-owned refresh and confirmation surfaces used by workspace primitives. */
+.clinicPageUtilityBar { display: flex; justify-content: flex-end; min-height: 2.75rem; padding: .6rem 1rem 0; background: #f7fafc; }
+.clinicPageBottomRefresh { display: flex; justify-content: flex-end; padding: .85rem 1rem 1.15rem; background: #f7fafc; }
+.clinicPageRefreshButton { display: inline-flex; align-items: center; gap: .42rem; min-height: 2.15rem; padding: 0 .72rem; border: 1px solid #050505; border-radius: .58rem; color: #fff; background: #111111; cursor: pointer; font-size: .78rem; font-weight: 800; box-shadow: 0 1px 2px rgb(15 23 42 / 16%); }
+.clinicPageRefreshButton:hover:not(:disabled) { border-color: #000; color: #fff; background: #000; box-shadow: 0 3px 7px rgb(15 23 42 / 22%); }
+.clinicPageRefreshButton:disabled { cursor: wait; border-color: #334155; background: #334155; color: #fff; opacity: .78; }
+.clinicPageRefreshButton .refreshing { animation: clinicRefreshSpin .72s linear infinite; }
+@keyframes clinicRefreshSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .clinicPageRefreshButton .refreshing { animation: none; } }
+
+.clinicSnackbar { position: fixed; z-index: 10000; top: 5.85rem; left: 50%; display: flex; align-items: center; gap: .65rem; width: min(calc(100vw - 2rem), 28rem); padding: .78rem .82rem; border: 1px solid #99f6e4; border-radius: .65rem; color: #134e4a; background: #f0fdfa; box-shadow: 0 14px 34px rgb(15 23 42 / 20%); transform: translateX(-50%); }
+.clinicSnackbar.error { border-color: #fecaca; color: #991b1b; background: #fff7f7; }
+.clinicSnackbar.loading { border-color: #bae6fd; color: #0f3f62; background: #f0f9ff; }
+.clinicSnackbar > span { display: grid; flex: 0 0 auto; width: 1.35rem; height: 1.35rem; place-items: center; border-radius: 50%; color: #fff; background: #0f766e; font-size: .82rem; font-weight: 900; }
+.clinicSnackbar.error > span { background: #dc2626; }
+.clinicSnackbar.loading > span { border: 2px solid #bae6fd; border-top-color: #0284c7; background: transparent; animation: clinicSnackbarSpin .72s linear infinite; }
+.clinicSnackbar p { flex: 1; margin: 0; font-size: .88rem; font-weight: 760; line-height: 1.35; }
+.clinicSnackbar button { display: grid; width: 1.7rem; height: 1.7rem; padding: 0; place-items: center; border: 0; border-radius: .35rem; color: inherit; background: transparent; cursor: pointer; font-size: 1.2rem; line-height: 1; }
+.clinicSnackbar button:hover { background: rgb(15 23 42 / 8%); }
+@keyframes clinicSnackbarSpin { to { transform: rotate(360deg); } }
+@media (max-width: 960px) { .clinicSnackbar { top: 7.25rem; } }
+@media (max-width: 600px) { .clinicSnackbar { top: 6.25rem; width: calc(100vw - 2rem); } }
+@media (prefers-reduced-motion: reduce) { .clinicSnackbar.loading > span { animation-duration: 1.5s; } }

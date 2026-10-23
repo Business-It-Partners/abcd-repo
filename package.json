@@ -15,6 +15,7 @@
     "test:files": "node tools/run-ui-test.mjs tests/files.mjs",
     "test:native-session": "node tools/run-ui-test.mjs tests/native-session.mjs",
     "test:followups": "node tools/run-ui-test.mjs tests/followups.mjs",
+    "test:treatment-protocols": "node tools/run-ui-test.mjs tests/m17-treatment-protocols.mjs",
     "test:ui": "node tools/run-ui-test.mjs tests/store.mjs tests/labs.mjs tests/staff.mjs tests/overview.mjs tests/finance.mjs tests/dockapps.mjs tests/followups.mjs tests/records.mjs tests/windows.mjs tests/electron.mjs tests/native-session.mjs tests/scaling.mjs",
     "test:dockapps": "node tools/run-ui-test.mjs tests/dockapps.mjs",
     "test:finance": "node tools/run-ui-test.mjs tests/finance.mjs",
