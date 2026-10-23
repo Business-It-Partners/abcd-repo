@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, RefreshCw, Search } from 'lucide-react';
 import { ManagedWindowFrame, type WindowController } from './ManagedWindow';
+import { StandardPageScroll } from '../packages/dental-ui/src/shared/ui/StandardPageScroll';
 import './StandardWindow1.css';
 
 type CaseStatus = 'Open' | 'In progress' | 'Completed' | 'Closed';
@@ -16,7 +17,6 @@ type DemoCase = {
 };
 type StatusFilter = 'All' | 'Active' | 'Completed' | 'Closed';
 type SortKey = 'patient' | 'complaint';
-type ScrollbarMetrics = { visible: boolean; top: number; height: number; value: number };
 
 const INITIAL_CASES: DemoCase[] = [
   { caseKey: 'case-1', id: 'PT-0001', patient: 'Abishek Tiwari', phone: '9999999999', complaint: 'Pain in lower motor', opened: '2026-10-05', protocols: 2, status: 'In progress' },
@@ -38,92 +38,15 @@ const STATUS_FILTERS: StatusFilter[] = ['All', 'Active', 'Completed', 'Closed'];
 /** First-party sample app for the shared Dental OS table and window patterns. */
 export function StandardWindow1({ controller }: { controller: WindowController }) {
   const nextCaseNumber = useRef(53);
-  const pageScrollRef = useRef<HTMLDivElement>(null);
-  const scrollbarTrackRef = useRef<HTMLDivElement>(null);
-  const scrollbarDrag = useRef<{ pointerId: number; startY: number; startTop: number } | null>(null);
   const [cases, setCases] = useState(INITIAL_CASES);
   const [filter, setFilter] = useState<StatusFilter>('Active');
   const [search, setSearch] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
   const [sort, setSort] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
-  const [scrollbar, setScrollbar] = useState<ScrollbarMetrics>({ visible: false, top: 0, height: 0, value: 0 });
   const activeEntry = controller.win.navigation.entries[controller.win.navigation.index] ?? 'table';
   const page = activeEntry.startsWith('case:')
     ? { kind: 'case' as const, caseId: activeEntry.slice('case:'.length) }
     : { kind: 'table' as const };
-
-  const updateScrollbar = useCallback(() => {
-    const scroller = pageScrollRef.current;
-    if (!scroller) return;
-
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const trackHeight = Math.max(0, scroller.clientHeight - 16);
-    if (!maxScroll || !trackHeight) {
-      setScrollbar(current => current.visible ? { visible: false, top: 0, height: 0, value: 0 } : current);
-      return;
-    }
-
-    const nativeThumbHeight = scroller.clientHeight * scroller.clientHeight / scroller.scrollHeight;
-    const thumbHeight = Math.min(trackHeight, Math.max(14, nativeThumbHeight * 0.3));
-    const thumbTravel = Math.max(0, trackHeight - thumbHeight);
-    const value = scroller.scrollTop / maxScroll;
-    const next = { visible: true, top: value * thumbTravel, height: thumbHeight, value: value * 100 };
-    setScrollbar(current => current.visible === next.visible && current.top === next.top && current.height === next.height && current.value === next.value ? current : next);
-  }, []);
-
-  const handleScrollbarPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const scroller = pageScrollRef.current;
-    const track = scrollbarTrackRef.current;
-    if (!scroller || !track || !scrollbar.visible) return;
-
-    event.preventDefault();
-    const clickedThumb = (event.target as HTMLElement).closest('.standard-window-scrollbar-thumb') !== null;
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const maxThumbTop = Math.max(0, track.clientHeight - scrollbar.height);
-    const targetTop = clickedThumb
-      ? scrollbar.top
-      : Math.max(0, Math.min(maxThumbTop, event.clientY - track.getBoundingClientRect().top - scrollbar.height / 2));
-    if (!clickedThumb && maxThumbTop) scroller.scrollTop = targetTop / maxThumbTop * maxScroll;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    scrollbarDrag.current = { pointerId: event.pointerId, startY: event.clientY, startTop: targetTop };
-  };
-
-  const handleScrollbarPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = scrollbarDrag.current;
-    const scroller = pageScrollRef.current;
-    const track = scrollbarTrackRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !scroller || !track) return;
-
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const maxThumbTop = Math.max(0, track.clientHeight - scrollbar.height);
-    if (!maxScroll || !maxThumbTop) return;
-    const top = Math.max(0, Math.min(maxThumbTop, drag.startTop + event.clientY - drag.startY));
-    scroller.scrollTop = top / maxThumbTop * maxScroll;
-  };
-
-  const handleScrollbarPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (scrollbarDrag.current?.pointerId !== event.pointerId) return;
-    scrollbarDrag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  };
-
-  const handleScrollbarKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const scroller = pageScrollRef.current;
-    if (!scroller) return;
-    const pageStep = Math.max(50, scroller.clientHeight * 0.8);
-    const offsets: Record<string, number> = { ArrowDown: 50, ArrowUp: -50, PageDown: pageStep, PageUp: -pageStep };
-    if (event.key in offsets) {
-      event.preventDefault();
-      scroller.scrollBy({ top: offsets[event.key] });
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      scroller.scrollTop = 0;
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      scroller.scrollTop = scroller.scrollHeight;
-    }
-  };
 
   useEffect(() => {
     if (controller.win.phase !== 'visible' || controller.win.navigation.entries.length > 0) return;
@@ -155,32 +78,6 @@ export function StandardWindow1({ controller }: { controller: WindowController }
   const visibleCases = sortedCases.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
   const firstVisible = sortedCases.length ? currentPage * PAGE_SIZE + 1 : 0;
   const lastVisible = Math.min((currentPage + 1) * PAGE_SIZE, sortedCases.length);
-
-  useEffect(() => {
-    if (page.kind !== 'table') return;
-    const scroller = pageScrollRef.current;
-    const content = scroller?.querySelector<HTMLElement>('.standard-window-scroll-content');
-    if (!scroller || !content) return;
-
-    let frame = 0;
-    const scheduleUpdate = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateScrollbar);
-    };
-    const resizeObserver = new ResizeObserver(scheduleUpdate);
-    resizeObserver.observe(scroller);
-    resizeObserver.observe(content);
-    scroller.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate);
-    scheduleUpdate();
-
-    return () => {
-      cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
-      scroller.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
-    };
-  }, [page.kind, updateScrollbar]);
 
   const toggleSort = (key: SortKey) => {
     setSort(current => ({
@@ -227,9 +124,7 @@ export function StandardWindow1({ controller }: { controller: WindowController }
   return <ManagedWindowFrame controller={controller}>
     <div className="standard-window-body" data-testid="standard-window-1-app">
       {page.kind === 'table' ? <>
-        <div className="standard-window-scroll-shell">
-          <div id="standard-window-page-scroll" ref={pageScrollRef} className="standard-window-page-scroll" onScroll={updateScrollbar}>
-            <div className="standard-window-scroll-content">
+        <StandardPageScroll id="standard-window-page-scroll" shellClassName="standard-window-scroll-shell" viewportClassName="standard-window-page-scroll" contentClassName="standard-window-scroll-content">
               <header className="standard-window-page-header">
                 <h1>Standard Window 1</h1>
                 <div className="standard-window-page-actions" role="group" aria-label="Page actions">
@@ -277,29 +172,7 @@ export function StandardWindow1({ controller }: { controller: WindowController }
               </div>
                 </section>
               </main>
-            </div>
-          </div>
-          {scrollbar.visible && <div
-            ref={scrollbarTrackRef}
-            className="standard-window-scrollbar-track"
-            role="scrollbar"
-            aria-label="Page scroll position"
-            aria-controls="standard-window-page-scroll"
-            aria-orientation="vertical"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(scrollbar.value)}
-            aria-valuetext={`${Math.round(scrollbar.value)}% scrolled`}
-            tabIndex={0}
-            onKeyDown={handleScrollbarKeyDown}
-            onPointerDown={handleScrollbarPointerDown}
-            onPointerMove={handleScrollbarPointerMove}
-            onPointerUp={handleScrollbarPointerEnd}
-            onPointerCancel={handleScrollbarPointerEnd}
-          >
-            <span className="standard-window-scrollbar-thumb" style={{ height: scrollbar.height, transform: `translateY(${scrollbar.top}px)` }}/>
-          </div>}
-        </div>
+        </StandardPageScroll>
         <footer className="standard-window-table-footer">
           <span>Showing {firstVisible} to {lastVisible} of {sortedCases.length} {sortedCases.length === 1 ? 'case' : 'cases'}</span>
           <nav className="standard-window-pagination" aria-label="Table pagination">

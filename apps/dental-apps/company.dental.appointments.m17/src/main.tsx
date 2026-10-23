@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowUpDown, CalendarDays, CalendarPlus, CalendarRange, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Plus, RefreshCw, Stethoscope } from 'lucide-react';
+import { StandardPageScroll } from '@/shared/ui/StandardPageScroll';
+import { ArrowUpDown, CalendarDays, CalendarPlus, CalendarRange, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Plus, RefreshCw, Search, Stethoscope } from 'lucide-react';
 import { ClinicClient, ClinicError, type ClinicCommand } from '../../../../packages/app-sdk/src/clinicClient';
 import DatePicker from '@/shared/dates/NepaliDatePicker';
 import TimePicker from '@/shared/dates/TimePicker';
@@ -14,6 +15,7 @@ import {
 } from './appointments';
 import '@/shared/clinic.css';
 import './styles.css';
+import '@/shared/standard-app-page.css';
 
 declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
 
@@ -136,6 +138,7 @@ function AppointmentsApp() {
   const [date, setDate] = useState('');
   const [bucket, setBucket] = useState<BucketChoice>('day');
   const [doctorFilter, setDoctorFilter] = useState('');
+  const [search, setSearch] = useState('');
   const [form, setForm] = useState<FormSeed | null>(null);
   const [details, setDetails] = useState<Appointment | null>(null);
   const [sort, setSort] = useState<{ column: SortColumn; direction: 'ascending' | 'descending' } | null>(null);
@@ -272,6 +275,11 @@ function AppointmentsApp() {
       return sort.direction === 'ascending' ? compared : -compared;
     });
   }, [appointments, sort]);
+  const visibleAppointments = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase();
+    if (!term) return sortedAppointments;
+    return sortedAppointments.filter(item => `${item.patientName} ${item.contactPhone ?? ''} ${item.reason} ${item.doctorName}`.toLocaleLowerCase().includes(term));
+  }, [search, sortedAppointments]);
   const toggleSort = (column: SortColumn) => setSort(current => current?.column === column
     ? { column, direction: current.direction === 'ascending' ? 'descending' : 'ascending' }
     : { column, direction: 'ascending' });
@@ -282,16 +290,14 @@ function AppointmentsApp() {
     { label: 'Upcoming booked', value: 'upcomingBooked' as const, bucket: 'upcoming' as const, count: summary.upcomingBooked, hint: 'after this week', Icon: Clock3, tone: 'upcoming' },
     { label: 'Cancelled', value: 'cancelled' as const, bucket: 'cancelled' as const, count: summary.cancelled, hint: 'future slots released', Icon: CalendarDays, tone: 'cancelled' },
   ];
-  const heading = bucket === 'day' ? 'Day schedule' : bucketLabels[bucket];
-  const headingDate = bucket === 'day' ? `Clinic day ${date}` : `Clinic day ${clinicDate}`;
-
   if (error && !ready) return <main className="appointmentsMessage" role="alert"><h1>Appointments unavailable</h1><p>{error}</p></main>;
   if (!ready) return <main className="appointmentsMessage" role="status">Opening Appointments…</main>;
 
   return <DraftSafety.Provider value={(_key, dirty) => setDraftDirty(dirty)}>
-    <main className="clinicWorkspaceCanvas appointmentsCanvas" data-dental-os-app="company.dental.appointments.m17">
-      <header className="appointmentsHeader">
-        <div><h1>Appointments</h1><p>{dayLabel(date)} · daily appointment book</p></div>
+    <main className="clinicWorkspaceCanvas appointmentsCanvas" data-dental-os-app="company.dental.appointments.m17" data-sajilo-standard-page="">
+      <StandardPageScroll contentClassName="appointmentsPageScrollContent">
+      <header className="appointmentsHeader" data-sajilo-page-header>
+        <h1>Appointments</h1>
         <div className="appointmentsHeaderActions"><button className="btn btn-secondary" type="button" onClick={() => void refresh()} disabled={loading}><RefreshCw size={16} aria-hidden="true" /> Refresh</button><button className="btn btn-primary" type="button" onClick={() => setForm({ date: bucket === 'day' ? date : clinicDate })} disabled={!!pending || !doctors.length}><Plus size={17} aria-hidden="true" /> Book appointment</button></div>
       </header>
 
@@ -308,26 +314,27 @@ function AppointmentsApp() {
         </button>)}
       </section>
 
-      <section className="appointmentToolbar" aria-label="Schedule filters">
-        <div className="appointmentDayNav" role="group" aria-label="Appointment day navigation">
-          <button type="button" onClick={() => moveDay(-1)} aria-label="Previous day"><ChevronLeft size={16} aria-hidden="true" /></button>
-          <button className="appointmentToday" type="button" onClick={() => setDay(clinicDate)}>Today</button>
-          <button type="button" onClick={() => moveDay(1)} aria-label="Next day"><ChevronRight size={16} aria-hidden="true" /></button>
+      <section className="appointmentListPanel" aria-label="Appointments" data-clinic-data-table>
+        <div className="appointmentToolbar" data-sajilo-table-toolbar="" aria-label="Schedule filters">
+          <div className="appointmentDayNav" role="group" aria-label="Appointment day navigation">
+            <button type="button" onClick={() => moveDay(-1)} aria-label="Previous day"><ChevronLeft size={16} aria-hidden="true" /></button>
+            <button className="appointmentToday" type="button" onClick={() => setDay(clinicDate)}>Today</button>
+            <button type="button" onClick={() => moveDay(1)} aria-label="Next day"><ChevronRight size={16} aria-hidden="true" /></button>
+          </div>
+          <DatePicker id="schedule-date" value={date} onChange={setDay} />
+          <label className="appointmentDoctorFilter"><span>Doctor</span><span className="appointmentDoctorSelect"><select aria-label="Doctor" value={doctorFilter} onChange={event => setDoctorFilter(event.target.value)}><option value="">All doctors</option>{doctors.map(doctor => <option key={doctor.staffId} value={doctor.fullName}>{doctor.fullName}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></span></label>
+          <label className="appointmentSearch"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search appointments" placeholder="Search patient, phone, reason…" value={search} onChange={event => setSearch(event.target.value)} /></label>
+          <span className="appointmentTableCount" aria-live="polite">{visibleAppointments.length} {visibleAppointments.length === 1 ? 'appointment' : 'appointments'}</span>
         </div>
-        <DatePicker id="schedule-date" value={date} onChange={setDay} />
-        <label className="appointmentDoctorFilter"><span>Doctor</span><span className="appointmentDoctorSelect"><select aria-label="Doctor" value={doctorFilter} onChange={event => setDoctorFilter(event.target.value)}><option value="">All doctors</option>{doctors.map(doctor => <option key={doctor.staffId} value={doctor.fullName}>{doctor.fullName}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></span></label>
-      </section>
-
-      <section className="appointmentListPanel" aria-labelledby="schedule-heading">
-        <div className="appointmentListHeading"><div><h2 id="schedule-heading">{heading}</h2><p>{headingDate}</p></div>{loading && <span role="status" className="appointmentLoading"><span className="appointmentsSpinner" /> Updating schedule…</span>}</div>
-        {sortedAppointments.length === 0 && !loading ? <div className="appointmentEmpty"><CalendarDays size={24} aria-hidden="true" /><strong>No appointments in this range</strong><span>Bookings for this clinic and filter will appear here.</span></div> : <div className="appointmentTableWrap"><table className="appointmentTable"><thead><tr>
+        {loading && <div role="status" className="appointmentLoading"><span className="appointmentsSpinner" /> Updating schedule…</div>}
+        {visibleAppointments.length === 0 && !loading ? <div className="appointmentEmpty"><CalendarDays size={24} aria-hidden="true" /><strong>{search.trim() ? 'No appointments match this search' : 'No appointments in this range'}</strong><span>{search.trim() ? 'Try a different patient, phone, reason, or doctor.' : 'Bookings for this clinic and filter will appear here.'}</span></div> : visibleAppointments.length > 0 ? <div className="appointmentTableWrap"><table className="appointmentTable" data-sajilo-standard-table=""><thead><tr>
           <th scope="col">Time</th>
           <th scope="col" aria-sort={sort?.column === 'patient' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('patient')}>Patient <ArrowUpDown size={12} aria-hidden="true" /></button></th>
           <th scope="col">Reason</th>
           <th scope="col" aria-sort={sort?.column === 'doctor' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('doctor')}>Doctor <ArrowUpDown size={12} aria-hidden="true" /></button></th>
           <th scope="col">Phone</th><th scope="col" className="appointmentCenter">Arrived</th><th scope="col" className="appointmentCenter">No-show</th><th scope="col" className="appointmentCenter">Cancel</th><th scope="col" className="appointmentCenter">Action</th>
         </tr></thead><tbody>
-          {sortedAppointments.map(item => <tr key={item.appointmentId}>
+          {visibleAppointments.map(item => <tr key={item.appointmentId}>
             <td data-label="Time"><strong>{minuteLabel(item.startMinute)}</strong><span>till {minuteLabel(item.startMinute + item.durationMinutes)}</span></td>
             <td data-label="Patient"><strong>{item.patientName}</strong><span>{item.contactPhone || 'No contact added'}</span></td>
             <td data-label="Reason">{item.reason}</td>
@@ -338,9 +345,10 @@ function AppointmentsApp() {
             <td data-label="Cancel" className="appointmentCenter"><StatusToggle appointment={item} status="cancelled" color="#dc2626" title="Cancel booking" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
             <td data-label="Action" className="appointmentRowActions"><div>{(item.status === 'booked' || item.status === 'arrived') && <button type="button" className="btn btn-primary btn-sm" onClick={() => setForm({ appointment: item, date: item.appointmentDate })} disabled={pending !== null}><Clock3 size={13} aria-hidden="true" /> Reschedule</button>}<button type="button" className="btn btn-secondary btn-sm" onClick={() => setDetails(item)}>Details</button></div></td>
           </tr>)}
-        </tbody></table></div>}
+        </tbody></table></div> : null}
       </section>
       {notice && <p className="appointmentNotice" role="status">{notice}</p>}
+      </StandardPageScroll>
       {form && <AppointmentForm seed={form} doctors={doctors} rows={appointments} onSave={save} onClose={() => { setForm(null); setDraftDirty(false); }} pending={pending} onRetry={() => void retryOriginal()} />}
       {details && <AppointmentDetails appointment={details} dateLabel={dayLabel(details.appointmentDate)} onClose={() => setDetails(null)} />}
     </main>

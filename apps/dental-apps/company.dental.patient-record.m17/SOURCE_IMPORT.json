@@ -5,7 +5,7 @@
   "method": "Directly import the pinned SaaS patient-record presentation and workflow components. Adapt only their app-shell, session, route, JSON API, and media transport seams to the Dental OS SDK.",
   "uiParity": {
     "vendoredFiles": 128,
-    "byteIdenticalFiles": 121,
+    "byteIdenticalFiles": 118,
     "adapterFiles": [
       {
         "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
@@ -36,7 +36,21 @@
         "purpose": "Receive the active clinic role from the verified Dental OS session."
       }
     ],
-    "visibleMarkupAndStylesChanged": false,
+    "visibleMarkupAndStylesChanged": true,
+    "localUiChanges": [
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientRecordView.tsx",
+        "purpose": "Align the directory title and integrated filters/count/pagination with the Standard Window 1 main-page pattern while retaining the pinned patient workflow."
+      },
+      {
+        "path": "apps/clinic-web/src/shared/ui/workspace-primitives/Layout.tsx",
+        "purpose": "Add an opt-in standard-page presentation marker used only by the Patient Record directory."
+      },
+      {
+        "path": "apps/clinic-web/src/shared/ui/ClinicDataTable.tsx",
+        "purpose": "Expose the standard-page toolbar and table markers for the directory's existing filters and table."
+      }
+    ],
     "shellLayoutClasses": [
       "clinicApp",
       "clinicWorkspaceCanvas",

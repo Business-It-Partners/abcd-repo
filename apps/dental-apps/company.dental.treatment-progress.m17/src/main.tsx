@@ -22,6 +22,7 @@ import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
 import { SnackbarProvider } from "@/shared/ui/SnackbarProvider";
 import "@/shared/clinic.css";
 import "./styles.css";
+import "@/shared/standard-app-page.css";
 
 const APP_ID = "company.dental.treatment-progress.m17";
 
@@ -296,16 +297,11 @@ function TreatmentProgressWorkspace() {
   if (openingError) return <main className="tprogressMessage" role="alert"><h1>Treatment Progress unavailable</h1><p>{openingError}</p></main>;
   if (!ready) return <main className="tprogressMessage" role="status">Opening Treatment Progress…</main>;
 
-  const subtitle = loading
-    ? "Loading active treatment plans…"
-    : error
-      ? "Treatment progress is temporarily unavailable."
-      : rows.length + " patients with active, incomplete treatment plans.";
-
-  return <Page sheet fillSheet>
-    <PageHeader title="Treatment Progress" icon={<Activity size={18} aria-hidden="true" />} subtitle={subtitle} />
+  return <Page sheet fillSheet standardPage>
+    <PageHeader title="Treatment Progress" />
     <DataTable
       rows={filteredRows}
+      standardPage
       columns={columns}
       rowKey={(row) => row.patientId}
       noun="patients"

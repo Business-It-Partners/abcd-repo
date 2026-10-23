@@ -35,9 +35,10 @@ try {
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Work Entry', exact: true }).waitFor();
+  check('Work Entry list uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
   await page.getByText('Synthetic Work Entry Patient', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has Work Entry identity, version 1.0.0, and packaged assets', packageInfo.appId === 'company.dental.work-entry.m17' && packageInfo.version === '1.0.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024 && packageInfo.assetCount >= 5);
+  check('private signed package has Work Entry identity, version 1.0.2, and packaged assets', packageInfo.appId === 'company.dental.work-entry.m17' && packageInfo.version === '1.0.2' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024 && packageInfo.assetCount >= 5);
   check('renderer receives the SDK bridge without a credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
     return ['cancel', 'connect', 'getAppInfo', 'request', 'report'].every(method => methods.includes(method))

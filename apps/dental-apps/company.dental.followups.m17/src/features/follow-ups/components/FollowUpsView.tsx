@@ -500,8 +500,8 @@ export default function FollowUpsView({
     : "No follow-ups in this range.";
 
   return (
-    <Page sheet>
-      <PageHeader title="Follow-ups" subtitle={`${todayLabel()} · patient recall tracker`}>
+    <Page sheet standardPage>
+      <PageHeader title="Follow-ups">
         <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
           <Plus size={16} /> Create follow-up
         </button>
@@ -528,6 +528,7 @@ export default function FollowUpsView({
           onto two lines, which would cost more height than the scrollbar costs dignity. */}
       <DataTable<FollowUp>
         rows={rows}
+        standardPage
         rowKey={(f) => f.id}
         noun="follow-ups"
         pageSize={10}

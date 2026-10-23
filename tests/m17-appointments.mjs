@@ -38,9 +38,10 @@ try {
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Appointments', exact: true }).waitFor();
+  check('Appointments list uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
   await page.getByText('Synthetic M17 Appointment', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('ephemeral signed package has the declared 1.0.1 update identity and stays below the package asset cap', packageInfo.version === '1.0.1' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral signed package has the declared 1.0.3 update identity and stays below the package asset cap', packageInfo.version === '1.0.3' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   const tableHeaders = await page.locator('.appointmentTable thead th').allTextContents();
   check('appointments screen follows the SaaS day-book layout with summary cards, date controls, and the same status columns',
     await page.locator('.appointmentSummaryCard').count() === 4

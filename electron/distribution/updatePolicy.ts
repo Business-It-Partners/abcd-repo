@@ -35,6 +35,7 @@ export type UpdatePolicy = UpdatePolicyV1 | UpdatePolicyV2;
 
 const hash = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const version = (value: unknown): value is string => typeof value === 'string' && /^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/.test(value);
+const maxRetainedReleaseGrantsPerApp = 6;
 const hasExactKeys = (value: unknown, expected: string[]) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return Object.keys(value).sort().join() === expected.slice().sort().join();
@@ -44,7 +45,7 @@ const requireKeys = (value: unknown, expected: string[]) => {
 };
 
 function validateReleaseGrants(app: AppUpdatePolicyV2, trust: TrustPolicy) {
-  if (!Array.isArray(app.releases) || app.releases.length > 3) throw Error('Update policy release grants');
+  if (!Array.isArray(app.releases) || app.releases.length > maxRetainedReleaseGrantsPerApp) throw Error('Update policy release grants');
   const releaseVersions = new Set<string>(), packageHashes = new Set<string>(), payloadDigests = new Set<string>();
   const ceiling = appTrust(trust, app.id);
   for (const release of app.releases) {

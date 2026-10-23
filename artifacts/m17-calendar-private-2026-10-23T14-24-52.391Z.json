@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Calendar main page uses the shared Standard Window scroll viewport",
+    "ephemeral package has the Calendar 1.0.2 update identity and stays under the package cap",
+    "calendar reads only through the SDK with a bounded BS month range",
+    "task completion uses expected row version and reloads canonical clinic state",
+    "a stale row conflict refreshes and preserves the server task status",
+    "reopen sends the refreshed row version and returns the task to open",
+    "task creation sends the SaaS AD date, title, and category through an idempotent SDK command",
+    "lost create receipt leaves one committed synthetic row and offers original-command retry",
+    "retry reuses the same operation identity and does not create a duplicate",
+    "archive uses the SaaS archive endpoint with expected row version and hides the archived task",
+    "dirty task draft survives a rejected day-sheet close",
+    "confirmed discard closes the day sheet without saving its draft",
+    "Bikram Sambat month navigation loads the next calendar month",
+    "session revocation clears Calendar data and blocks further clinic routes",
+    "all Calendar renderer errors stayed clear during synthetic acceptance",
+    "host session capability denies Calendar before any clinic business route is called",
+    "role-denied Calendar renders no business rows or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.2",
+    "packageSha256": "5b8d9258cf3eb5dd3d7b9b06f5364db4974eccaf7168827ab8a831db07c98ead",
+    "payloadDigest": "39e019ca056b88464ca34815435b5b0c9ea086eb68fdb4df3750048a478e5aea",
+    "wireBytes": 1110367,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and an in-memory synthetic Calendar service; no live staging reads/writes or publication.",
+  "screenshot": "m17-calendar-private-2026-10-23T14-24-52.391Z.png"
+}

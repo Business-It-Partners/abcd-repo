@@ -8,12 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relativePath => fs.readFile(path.join(root, relativePath));
 const readText = async relativePath => (await read(relativePath)).toString('utf8');
 
-test('package identity is the 1.0.1 M17 Appointments update with the platform SDK grant', async () => {
+test('package identity is the 1.0.3 M17 Appointments update with the platform SDK grant', async () => {
   const packageJson = JSON.parse(await readText('package.json'));
   const manifest = JSON.parse(await readText('app.manifest.json'));
 
   assert.equal(packageJson.name, 'company.dental.appointments.m17');
-  assert.equal(packageJson.version, '1.0.1');
+  assert.equal(packageJson.version, '1.0.3');
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.publisher, 'company');
   assert.equal(manifest.version, packageJson.version);

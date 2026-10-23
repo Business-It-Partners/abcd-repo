@@ -55,11 +55,12 @@ try {
   app = await electron.launch({ args: [hostApp, ...profileArgs], env, timeout: 30000 });
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
-  await page.getByRole('heading', { name: 'Patient Record Directory', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Patient Record', exact: true }).waitFor();
+  check('Patient Record directory uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
   await page.getByText('Synthetic Patient', { exact: false }).first().waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('updated package is Patient Record 1.0.2 with app assets and JSON/media grants',
-    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.2'
+  check('updated package is Patient Record 1.0.4 with app assets and JSON/media grants',
+    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.4'
       && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5
       && ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'].every(op => packageInfo.grants.includes(op)));
   check('renderer receives the SDK bridge without credential or direct-network accessors', await page.evaluate(() => {
@@ -75,7 +76,7 @@ try {
       && !directoryUrl.searchParams.has('tenantId'));
   const directoryText = await page.locator('body').innerText();
   check('production SaaS directory is displayed without the former custom app header or copy',
-    directoryText.includes('Patient Record Directory') && directoryText.includes('Detail')
+    directoryText.includes('Patient Record') && directoryText.includes('Detail')
       && !directoryText.includes('Registration, clinical history and patient care')
       && !directoryText.includes('Signed in as Synthetic user'));
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
@@ -94,7 +95,7 @@ try {
     intakeCalls.calls.some(call => call.method === 'GET' && call.path === '/v1/patient-intakes/context'));
   await fs.writeFile(intakeScreenshotPath, await page.screenshot(), { flag: 'wx' }); intakeScreenshotWritten = true;
   await page.getByRole('button', { name: 'Back to Patient Record', exact: true }).click();
-  await page.getByRole('heading', { name: 'Patient Record Directory', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Patient Record', exact: true }).waitFor();
 
   await page.getByRole('button', { name: 'Detail', exact: true }).click();
   await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
@@ -102,7 +103,7 @@ try {
   const detailHistory = await waitForNavigation(app);
   check('patient detail reports only opaque UUID entries to the OS', detailHistory?.index === 1 && detailHistory.entries.length === 2 && detailHistory.entries.every(entry => /^[0-9a-f-]{36}$/i.test(entry)));
   check('OS Back returns from patient detail to the directory', await app.evaluate(() => globalThis.m17PatientRecord.navigate('back')));
-  await page.getByRole('heading', { name: 'Patient Record Directory', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Patient Record', exact: true }).waitFor();
   check('OS Forward restores the patient detail page', await app.evaluate(() => globalThis.m17PatientRecord.navigate('forward')));
   await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
   check('patient detail no longer renders its own Back button', await page.getByRole('button', { name: /^Back/ }).count() === 0);

@@ -12,7 +12,7 @@ const appointmentsId = 'company.dental.appointments.m17';
 const calendarId = 'company.dental.calendar.m17';
 
 describe('M17 app identities and signing trust', () => {
-  it('assigns unique first-release identities without changing the preview IDs', () => {
+it('assigns unique M17 identities and current versions without changing the preview IDs', () => {
     const entries = readdirSync(path.join(root, 'apps/dental-apps'), { withFileTypes: true }).filter(entry => entry.isDirectory());
     const ids = entries.map(entry => {
       const manifestPath = path.join(root, 'apps/dental-apps', entry.name, 'app.manifest.json');
@@ -24,8 +24,16 @@ describe('M17 app identities and signing trust', () => {
     });
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(packageNames).size).toBe(packageNames.length);
-    for (const id of [followupsId, appointmentsId, calendarId]) {
-      const expectedVersion = id === appointmentsId ? '1.0.1' : '1.0.0';
+    const expectedVersions: Record<string, string> = {
+      [followupsId]: '1.0.2',
+      [appointmentsId]: '1.0.3',
+      [calendarId]: '1.0.2',
+      'company.dental.work-entry.m17': '1.0.2',
+      'company.dental.patient-record.m17': '1.0.4',
+      'company.dental.treatment-progress.m17': '1.0.4',
+      'company.dental.m17.treatment-protocols': '1.0.5',
+    };
+    for (const [id, expectedVersion] of Object.entries(expectedVersions)) {
       const folder = path.join(root, 'apps/dental-apps', id);
       const pkg = JSON.parse(readFileSync(path.join(folder, 'package.json'), 'utf8'));
       const manifest = JSON.parse(readFileSync(path.join(folder, 'app.manifest.json'), 'utf8'));

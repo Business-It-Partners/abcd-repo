@@ -3,7 +3,7 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ListChecks, Loader2, Plus, Trash2 } from "lucide-react";
 import type { TreatmentProtocol, TreatmentProtocolInput } from "@/shell/session/types";
-import { Card, CardBody, CardHeader, DataTable, Field, InlineCheck, Input, Modal, ModalBody, ModalError, Page, PageHeader, Table, TableWrap, Td, Th, Tr } from "@/shared/ui/workspace-primitives";
+import { Card, CardBody, CardHeader, DataTable, Field, InlineCheck, Input, Modal, ModalBody, ModalError, Page, PageHeader, SearchBox, Table, TableWrap, Td, Th, Tr } from "@/shared/ui/workspace-primitives";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import type { AppHistory } from "../../../../../../../packages/app-sdk/src/appHistory";
@@ -45,6 +45,7 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
   const { route, openDetail, closeDetail, patch } = useClinicRouteState(history);
   const [selected, setSelected] = useState<Draft | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const [saveIntent, setSaveIntent] = useState<'create' | 'update' | 'retire' | null>(null);
@@ -82,6 +83,12 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
       setDraftDirty(false); setSaveIntent(null);
     } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "The original save could not be confirmed."); }
   }
+  const visibleProtocols = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase();
+    if (!term) return protocols;
+    return protocols.filter((protocol) => [protocol.name, protocol.category, protocol.description ?? "", ...protocol.stages.map((stage) => stage.stageName)]
+      .some((value) => value.toLocaleLowerCase().includes(term)));
+  }, [protocols, search]);
   if (selected) return <ProtocolDetail draft={selected} saving={saving} pendingSave={pendingSave} error={saveError ?? error} onRetrySave={() => void retryPendingSave()} onBack={() => { if (pendingSave) return; closeDetail("protocolId"); setSaveError(null); setDraftDirty(false); }} onChange={(next) => { if (pendingSave) return; setSelected(next); setDraftDirty(true); }} onSave={() => void persist(selected)} onRetire={() => {
     if (pendingSave) return;
     if (!selected.protocolId || selected.rowVersion === undefined) return;
@@ -95,23 +102,25 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
       return saved;
     })().catch((cause) => setSaveError(cause instanceof Error ? cause.message : "Protocol could not be removed."));
   }} />;
-  return <Page sheet>
-    <PageHeader title="Treatment Protocols" subtitle="Reusable clinical stages and default pricing for future treatment plans." icon={<ListChecks size={17} style={{ color: "var(--acc)" }} />}>
+  return <Page sheet standardPage>
+    <PageHeader title="Treatment Protocols">
       <ClinicActionButton onClick={() => { setNewOpen(true); setDraftDirty(false); setSaveError(null); }}><Plus size={14} /> New protocol</ClinicActionButton>
     </PageHeader>
     {error && protocols.length > 0 ? <div role="alert" className="formError">{error} <button type="button" className="btn btn-secondary btn-sm" onClick={onReload}>Retry</button></div> : null}
     <DataTable<TreatmentProtocol>
-      rows={protocols}
+      rows={visibleProtocols}
+      standardPage
       rowKey={(protocol) => protocol.protocolId}
       noun="treatment protocols"
-      paginate={false}
+      pageSize={10}
       minWidth={820}
       loading={loading}
       loadingLabel="Loading treatment protocols…"
       error={!loading && protocols.length === 0 ? error : null}
       errorHint="Try again to reconnect to the clinic workspace."
+      filters={<><SearchBox aria-label="Search treatment protocols" placeholder="Search protocols or stages…" value={search} onChange={(event) => setSearch(event.target.value)} /><span style={{ marginLeft: "auto", color: "var(--ink-3)", whiteSpace: "nowrap" }}>{visibleProtocols.length} {visibleProtocols.length === 1 ? "protocol" : "protocols"}</span></>}
       onRowClick={(protocol) => openDetail("protocolId", protocol.protocolId)}
-      empty={<div style={{ padding: "40px 16px", color: "var(--ink-3)", textAlign: "center" }}>No treatment protocols found. Click <strong>+ New protocol</strong> to create one.</div>}
+      empty={<div style={{ padding: "40px 16px", color: "var(--ink-3)", textAlign: "center" }}>{search ? "No treatment protocols match this search." : <>No treatment protocols found. Click <strong>+ New protocol</strong> to create one.</>}</div>}
       columns={[
         { key: "sn", header: "S.N.", align: "center", width: 60, render: (_protocol, index) => index + 1 },
         { key: "name", header: "Protocol name & stage workflow", sortable: true, value: (protocol) => protocol.name, render: (protocol) => { const stages = protocol.stages.filter((stage) => stage.active); return <div><div>{protocol.name}{protocol.recordsCanalMeasurements ? <span data-table-tone="semantic" style={{ display: "inline-block", marginLeft: "8px", padding: "2px 7px", borderRadius: "999px", color: "var(--acc)", background: "var(--acc-soft)", verticalAlign: "middle" }}>Canal tracking</span> : null}</div><div data-table-secondary style={{ marginTop: "4px" }}>{stages.map((stage) => stage.stageName).join(" → ") || "No active stages"}</div></div>; } },

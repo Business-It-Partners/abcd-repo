@@ -10,6 +10,7 @@ import { SnackbarProvider } from '@/shared/ui/SnackbarProvider';
 import { DraftSafety } from './draftSafety';
 import '@/shared/clinic.css';
 import './styles.css';
+import '@/shared/standard-app-page.css';
 
 function FollowupsApp() {
   const [ready, setReady] = useState(false), [error, setError] = useState('');

@@ -4,6 +4,7 @@ import React from "react";
 import { Search } from "lucide-react";
 import { ClinicDetailBackButton } from "@/shared/ui/ClinicDetailBackButton";
 import { ClinicPageRefreshAction } from "@/shared/ui/ClinicPageRefresh";
+import { StandardPageScroll } from "@/shared/ui/StandardPageScroll";
 import styles from "./ui.module.css";
 
 /* Page chrome: the header, the card, the toolbar. Every view had its own version of these three
@@ -14,14 +15,21 @@ function cx(...parts: Array<string | undefined | false>) {
   return parts.filter(Boolean).join(" ");
 }
 
-export function Page({ children, sheet = false, fillSheet = false }: {
+export function Page({ children, sheet = false, fillSheet = false, standardPage = false }: {
   children: React.ReactNode;
   /** One clear working surface for table-driven finance/list pages. */
   sheet?: boolean;
   /** Let a short sheet occupy the page's full available viewport height. */
   fillSheet?: boolean;
+  /** Apply the Standard Window 1 main-page presentation contract. */
+  standardPage?: boolean;
 }) {
-  return <div className={styles.page}>{sheet ? <div className={cx(styles.pageSheet, fillSheet && styles.pageSheetFill)}>{children}</div> : children}</div>;
+  const content = sheet ? <div className={cx(styles.pageSheet, fillSheet && styles.pageSheetFill)}>{children}</div> : children;
+  return <div className={styles.page} data-sajilo-standard-page={standardPage ? "" : undefined}>
+    {standardPage
+      ? <StandardPageScroll contentClassName="clinic-standard-page-scroll-content">{content}</StandardPageScroll>
+      : content}
+  </div>;
 }
 
 interface PageHeaderProps {

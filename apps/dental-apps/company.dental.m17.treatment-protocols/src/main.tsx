@@ -9,6 +9,7 @@ import { TreatmentProtocolsApi } from '@/features/treatment-protocols/api';
 import type { TreatmentProtocol, TreatmentProtocolInput } from '@/shell/session/types';
 import '@/shared/clinic.css';
 import './styles.css';
+import '@/shared/standard-app-page.css';
 
 declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
 

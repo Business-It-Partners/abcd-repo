@@ -1,6 +1,6 @@
 {
   "name": "company.dental.m17.treatment-protocols",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "private": true,
   "description": "M17 Treatment Protocols app package for Dental OS.",
   "type": "module",

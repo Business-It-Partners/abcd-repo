@@ -37,9 +37,10 @@ try {
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Calendar', exact: true }).waitFor();
+  check('Calendar main page uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
   const initial = await inspect(app); packageInfo = initial.package;
   const initialMonth = await page.locator('.calendarCard h2').innerText();
-  check('ephemeral package has the new Calendar 1.0.0 identity and stays under the package cap', packageInfo.version === '1.0.0' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral package has the Calendar 1.0.2 update identity and stays under the package cap', packageInfo.version === '1.0.2' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('calendar reads only through the SDK with a bounded BS month range', initial.calls.some(call => call.method === 'GET' && call.path.startsWith('/v1/calendar-tasks?')
     && (Date.parse(`${new URLSearchParams(call.path.split('?')[1]).get('to')}T00:00:00Z`) - Date.parse(`${new URLSearchParams(call.path.split('?')[1]).get('from')}T00:00:00Z`)) / 86400000 <= 45));
   const day = Number(initial.todayBs.split('-')[2]);

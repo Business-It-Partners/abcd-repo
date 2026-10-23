@@ -43,10 +43,33 @@ try {
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Treatment Protocols', exact: true }).waitFor();
+  check('Treatment Protocols catalogue uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
   await page.getByText(/Synthetic Root Canal/).waitFor();
   await page.getByText('Opening treatment protocols…', { exact: true }).waitFor({ state: 'hidden' });
+  await page.evaluate(() => {
+    const viewport = document.querySelector('.clinic-standard-scroll-viewport');
+    const content = document.querySelector('.clinic-standard-scroll-content');
+    if (viewport && content) content.style.minHeight = `${viewport.clientHeight + 256}px`;
+  });
+  await page.locator('.clinic-standard-scrollbar-track').waitFor({ state: 'visible' });
+  const pageLayout = await page.evaluate(() => {
+    const canvas = document.querySelector('.clinicWorkspaceCanvas.protocolCanvas');
+    const content = document.querySelector('.clinic-standard-scroll-content');
+    const track = document.querySelector('.clinic-standard-scrollbar-track');
+    const layout = {
+      canvasPadding: canvas ? getComputedStyle(canvas).padding : null,
+      contentPadding: content ? getComputedStyle(content).padding : null,
+      trackWidth: track ? getComputedStyle(track).width : null,
+      trackRight: track ? getComputedStyle(track).right : null,
+    };
+    if (content) content.style.minHeight = '';
+    return layout;
+  });
+  await page.locator('.clinic-standard-scrollbar-track').waitFor({ state: 'hidden' });
+  check('Treatment Protocols removes its duplicate outer inset and matches the shared page gutter', pageLayout.canvasPadding === '0px' && pageLayout.contentPadding === '22px 26px 0px');
+  check('Treatment Protocols keeps the narrow scrollbar track aligned to the page edge', pageLayout.trackWidth === '6px' && pageLayout.trackRight === '4px');
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has the updated M17 identity and version 1.0.1', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.1' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('private signed package has the updated M17 identity and version 1.0.5', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.5' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('renderer receives the SDK bridge without a credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
     return ['cancel', 'connect', 'getAppInfo', 'navigation', 'request', 'report'].every(method => methods.includes(method))

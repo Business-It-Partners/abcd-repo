@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Treatment Protocols catalogue uses the shared Standard Window scroll viewport",
+    "Treatment Protocols removes its duplicate outer inset and matches the shared page gutter",
+    "Treatment Protocols keeps the narrow scrollbar track aligned to the page edge",
+    "private signed package has the updated M17 identity and version 1.0.5",
+    "renderer receives the SDK bridge without a credential getter",
+    "initial list reads use only the SaaS treatment-protocol route",
+    "Treatment Protocols module selection is acknowledged",
+    "new protocol is created through POST and opens the SaaS detail editor",
+    "protocol detail reports only opaque UUID entries to the OS",
+    "OS Back returns from protocol detail to the catalogue",
+    "OS Forward restores the protocol detail page",
+    "OS Back is blocked while the protocol detail has unsaved edits",
+    "stage order, pricing and clinical settings are saved through PUT with the canonical row version",
+    "409 row-version conflict is shown and canonical state is refreshed",
+    "uncertain update locks the original form and offers same-command reconciliation",
+    "dropped receipt follows one committed update and records its operation identity",
+    "same-key retry confirms the original update without a duplicate effect",
+    "retire uses SaaS soft-delete semantics through PUT active=false",
+    "all renderer errors stayed clear through the synthetic protocol workflow",
+    "role without treatment_protocols.manage is denied before business routes execute",
+    "role-denied view contains no protocol data or renderer error"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.m17.treatment-protocols",
+    "version": "1.0.5",
+    "packageSha256": "9506ac7d09b2a4b916d94a8a3d955f2abb87025ba2587918da9b38d5b854bd92",
+    "payloadDigest": "8d368cf47dbb472408405ccc32426252b876c77dd0960511ff5b46298d312c25",
+    "wireBytes": 1456865,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live staging data or publication.",
+  "screenshot": "m17-treatment-protocols-private-2026-10-23T15-02-13.106Z.png"
+}

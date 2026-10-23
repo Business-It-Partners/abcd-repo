@@ -8,6 +8,7 @@ import { ClinicNavigationGuardProvider } from '@/shell/navigation/ClinicNavigati
 import { WorkEntryWorkspace } from '@/features/work-entry/WorkEntryWorkspace';
 import { installClinicClient } from '@/sdk/client';
 import '@/shared/clinic.css';
+import '@/shared/standard-app-page.css';
 
 const appId = 'company.dental.work-entry.m17';
 

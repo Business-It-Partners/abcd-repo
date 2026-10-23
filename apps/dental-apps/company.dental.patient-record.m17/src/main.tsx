@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import "../../../../packages/dental-ui/src/shared/standard-app-page.css";
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
 import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
 import type { ClinicSessionContext, AppSdk } from "../../../../electron/sdk/contracts";

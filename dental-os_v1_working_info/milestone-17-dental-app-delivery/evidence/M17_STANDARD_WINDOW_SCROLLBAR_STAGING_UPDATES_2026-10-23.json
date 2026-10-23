@@ -1,0 +1,100 @@
+{
+  "title": "M17 shared Standard Window scrollbar app updates",
+  "date": "2026-10-23",
+  "scope": "Reused the Standard Window 1 scrollbar discipline on the primary/list page of each of the seven M17 dental apps. This is shared app-page UI behavior; the OS window frame and window-manager scroll behavior were not changed by this step.",
+  "implementation": {
+    "sharedComponent": "packages/dental-ui/src/shared/ui/StandardPageScroll.tsx",
+    "sharedStyles": "packages/dental-ui/src/shared/standard-app-page.css",
+    "behavior": "App content scrolls within its page viewport and shows the matching draggable, keyboard-accessible scrollbar only when content overflows. Standard Window 1 keeps its fixed pagination footer. Existing app summaries, calendar controls, workflows, details and overlays remain app-owned.",
+    "hostPolicyChange": "Raised the maximum retained signed API release grants per app from four to five so Patient Record and Treatment Protocols retain versions 1.0.0–1.0.4. The OS production build was rebuilt with the five-grant validator."
+  },
+  "publication": {
+    "environment": "cloudfare-staging",
+    "keyId": "company-staging-m17-20261022",
+    "publicKeySha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709",
+    "sequences": [46, 47, 48, 49, 50, 51, 52],
+    "allPublicationsPassed": true,
+    "publisherChecks": "Each sequence was prepared against the preceding signed catalogue and update policy, validated against the staging backend, then applied by the nonce-protected temporary Worker. Every apply confirmed the package write, signed feed advancement, authenticated readiness, anonymous denial, replay denial, and Worker cleanup."
+  },
+  "releases": [
+    {
+      "appId": "company.dental.followups.m17",
+      "version": "1.0.2",
+      "sequence": 46,
+      "packageSha256": "31614a593ce389d1739f7da7c4798e08b94aa8e44340b7317b30a6490b56707f",
+      "payloadDigest": "a2b047bf7a36008dc0ab27fbf3ae1c70ad9a7b957df6096b940c0cc632fb0156",
+      "packageBytes": 1247486,
+      "privateUiChecks": 21
+    },
+    {
+      "appId": "company.dental.appointments.m17",
+      "version": "1.0.3",
+      "sequence": 47,
+      "packageSha256": "0d55de88d362882f6157be78eac871411a4d4b89032355c0791f8ed8dcba96c6",
+      "payloadDigest": "f1fbaa01f85ac67a2582538e55440e8f125fa53d5456785308d87a452195fa0d",
+      "packageBytes": 1242809,
+      "privateUiChecks": 22
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "version": "1.0.2",
+      "sequence": 48,
+      "packageSha256": "de45de9e17dcc11ec96a8b3b7e5788e8d528103ad8dbf1f764c805a63a80e987",
+      "payloadDigest": "643c9e7c3f6b298dafbda68ef0b613d759b43802a179184746818b300bcd096c",
+      "packageBytes": 1780011,
+      "privateUiChecks": 12
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "version": "1.0.4",
+      "sequence": 49,
+      "packageSha256": "e2c58a786692d368ebd7886189ca0366a34f8223855868561e21829c44f859f2",
+      "payloadDigest": "367218b84597aef5f615d2ec1c98e9f14f7d45f7276853d43be29ff0a30b3096",
+      "packageBytes": 1795815,
+      "apiOperations": ["clinic.api.request", "clinic.media.read", "clinic.media.upload"],
+      "privateUiChecks": 23
+    },
+    {
+      "appId": "company.dental.treatment-progress.m17",
+      "version": "1.0.4",
+      "sequence": 50,
+      "packageSha256": "7d29f474519f428bda38899a7b495ed7b1cd0a3e8b83baf6071ce927bbf9f175",
+      "payloadDigest": "8ffbfc96141c6440c54a0b316b43cf7818b1a286122aca12273d2fe4e67a212e",
+      "packageBytes": 1147347,
+      "privateUiChecks": 24
+    },
+    {
+      "appId": "company.dental.calendar.m17",
+      "version": "1.0.2",
+      "sequence": 51,
+      "packageSha256": "087c6d80aa0dd6f141be985345d8ccc2db27702e0f9395815b91975ee1037062",
+      "payloadDigest": "39e019ca056b88464ca34815435b5b0c9ea086eb68fdb4df3750048a478e5aea",
+      "packageBytes": 1110373,
+      "privateUiChecks": 17
+    },
+    {
+      "appId": "company.dental.m17.treatment-protocols",
+      "version": "1.0.4",
+      "sequence": 52,
+      "packageSha256": "1cd092b6763949a9525e7ca8264d0f61543f547afbc997adb8b23a5ec6ce7920",
+      "payloadDigest": "303d13231bdf8bf632de1a4298d8ab2e188328a29d191c06828f4a43befdfb47",
+      "packageBytes": 1456716,
+      "privateUiChecks": 19
+    }
+  ],
+  "verification": {
+    "applicationTypechecks": "All seven app typechecks passed.",
+    "applicationBuilds": "All seven app production bundles built successfully.",
+    "applicationTests": "Appointments package tests 4/4; Treatment Protocols package tests 3/3.",
+    "privateUiFixtures": "All seven private headless M17 fixtures passed: 138 assertions total. Scrollbar viewport presence was asserted in each fixture; screenshots were visually reviewed.",
+    "osBuild": "npm run build passed: root typecheck, Vite production build and Electron TypeScript compilation.",
+    "rootTests": "npm test -- --maxWorkers=1 passed: 527 tests across 37 files.",
+    "publicReadback": "node tools/verify-m17-staging-packages.mjs passed. It verified the signed public catalogue and policy, all seven exact package bytes and signer identities, release grants and capability declarations, then installed/launched/uninstalled each package in an isolated local PackageRegistry.",
+    "documentation": "python3 tools/check-dental-docs.py passed after the evidence and milestone records were updated."
+  },
+  "limits": [
+    "No authenticated Store install or live clinic workflow was performed; the readback test uses an isolated local registry and does not make business API writes.",
+    "The user's existing OS session was preserved. A separate fresh OS instance was launched from this worktree with a dedicated profile so it loads the rebuilt five-grant validator; that profile starts signed out and can be used to log in.",
+    "No Git commit, push, production publication or deployment was made."
+  ]
+}

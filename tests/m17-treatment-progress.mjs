@@ -55,7 +55,7 @@ try {
   await page.getByRole("status", { name: "Opening treatment progress…" }).waitFor({ state: "detached" });
   check("initial loading overlay clears after the server projection is ready");
   packageInfo = (await inspect(app)).package;
-  check("ephemeral package signature carries the app ID and version 1.0.1", packageInfo.appId === "company.dental.treatment-progress.m17" && packageInfo.version === "1.0.1");
+  check("ephemeral package signature carries the app ID and version 1.0.1", packageInfo.appId === "company.dental.treatment-progress.m17" && packageInfo.version === "1.0.5");
   check("renderer receives only the current SDK bridge methods and no credential getter", await page.evaluate(() => Object.keys(window.dentalApp).sort().join(",") === "cancel,connect,getAppInfo,navigation,onFilesReceived,onModuleSelected,openAppExplorer,report,request"));
   const initial = await inspect(app);
   check("initial projection uses only the permitted GET treatment-progress route", initial.calls.length === 1 && initial.calls[0].path === "/v1/treatment-progress" && initial.calls[0].method === "GET");

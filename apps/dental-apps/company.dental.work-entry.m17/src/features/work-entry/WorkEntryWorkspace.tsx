@@ -32,6 +32,7 @@ import type { CanalChartData } from "@/features/work-entry/model/canalData";
 import { defaultFeeSchedule, type CaseEntryData, type TreatmentProtocol as CareTreatmentProtocol } from "@/features/work-entry/model/caseData";
 import type { ClinicProfile, LabSupplier, PatientDetail } from "@/features/patients/model/domain";
 import styles from "./WorkEntryWorkspace.module.css";
+import { StandardPageScroll } from "@/shared/ui/StandardPageScroll";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import { inProgressStepForTab, startCaseStepForTab, tabForInProgressStep, tabForStartCaseStep } from "./workEntryRouteState";
 import { invalidateLabOrdersAfterCommit } from "./labOrderInvalidation";
@@ -972,11 +973,13 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
     {completionOpen ? <ClinicModal title="Record completed work" size="medium" onClose={() => !caseBusy && setCompletionOpen(false)} closeDisabled={caseBusy} description="Only selected stages are recorded, charged, and linked to the selected clinician(s)."><div className={styles.completionForm}><fieldset><legend>Completed stages</legend>{selectedCase.protocols.flatMap((protocol) => protocol.stages.filter((stage) => stage.status === "pending").map((stage) => <label key={stage.stageId}><input type="checkbox" checked={completedStageIds.includes(stage.stageId)} onChange={(event) => setCompletedStageIds((current) => event.target.checked ? [...current, stage.stageId] : current.filter((id) => id !== stage.stageId))} />{protocol.protocolName} · {stage.stageName} <span>Rs {stage.price.toLocaleString()}</span></label>))}</fieldset>{doctors.length ? <fieldset><legend>Completed by</legend>{doctors.map((doctor) => <label key={doctor.staffId}><input type="checkbox" checked={completedDoctorIds.includes(doctor.staffId)} onChange={(event) => setCompletedDoctorIds((current) => event.target.checked ? [...current, doctor.staffId] : current.filter((id) => id !== doctor.staffId))} />{doctor.fullName}</label>)}</fieldset> : <p className={styles.noDoctors}>No active doctors are in the staff directory. Add one before recording attributed clinical work.</p>}<div className={styles.modalActions}><button className="secondaryAction" disabled={caseBusy} type="button" onClick={() => setCompletionOpen(false)}>Cancel</button><button className="primaryAction" disabled={caseBusy || !doctors.length} type="button" onClick={() => void recordCompletedWork()}>{caseBusy ? "Recording…" : "Record work"}</button></div></div></ClinicModal> : null}
   </section>;
 
-  return <section className={styles.workspace} key="work-entry-list">
-    <div className={styles.heading}><div><p className={styles.eyebrow}>CLINICAL WORKLIST</p><h2>Work Entry</h2><p>Open a case to record its work, or create a new chief complaint for a registered patient.</p></div><div className={styles.headingActions}><ClinicPageRefreshAction placement="page-action" /><ClinicActionButton className={styles.newCaseButton} onClick={() => { setError(null); setNewCasePatientQuery(""); setNewCasePatients([]); setNewCase({ patient: null, complaint: "" }); }}>＋ New case</ClinicActionButton></div></div>
+  return <section className={styles.workspace} key="work-entry-list" data-sajilo-standard-page="">
+    <StandardPageScroll contentClassName="workEntryPageScrollContent">
+    <div className={styles.heading} data-sajilo-page-header><div><h2>Work Entry</h2></div><div className={styles.headingActions}><ClinicPageRefreshAction placement="page-action" /><ClinicActionButton className={styles.newCaseButton} onClick={() => { setError(null); setNewCasePatientQuery(""); setNewCasePatients([]); setNewCase({ patient: null, complaint: "" }); }}>＋ New case</ClinicActionButton></div></div>
     {error && rows.length > 0 ? <p className={styles.error}>{error}</p> : null}
     <ClinicDataTable
       rows={visibleCases}
+      standardPage
       rowKey={({ caseItem }) => caseItem.chiefComplaintId}
       noun="cases"
       minWidth={780}
@@ -994,6 +997,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
         { key: "actions", header: "Actions", align: "right", render: ({ patient, caseItem }) => { const opening = openingCaseId === caseItem.chiefComplaintId; return <div style={{ display: "inline-flex", gap: "6px" }}>{caseItem.status === "open" ? <ClinicActionButton size="compact" disabled={openingCaseId !== null} onClick={() => openDetail("caseId", caseItem.chiefComplaintId)}>{opening ? "Opening…" : "Start work"}</ClinicActionButton> : null}<button className="secondaryAction" type="button" onClick={() => setStatusTarget({ caseId: caseItem.chiefComplaintId, patientId: patient.patientId, rowVersion: caseItem.rowVersion, title: caseItem.chiefComplaint, status: caseItem.status, pendingStageCount: 0, pendingStageNames: [] })}>Update</button></div>; } },
       ]}
     />
+    </StandardPageScroll>
     {statusTarget ? <CaseStatusUpdateModal caseTitle={statusTarget.title} currentStatus={statusTarget.status} pendingStageCount={statusTarget.pendingStageCount} pendingStageNames={statusTarget.pendingStageNames} onClose={() => setStatusTarget(null)} onSave={updateCaseStatus} /> : null}
     {newCase ? (
       <ClinicModal

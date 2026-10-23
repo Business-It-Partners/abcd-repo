@@ -1,6 +1,6 @@
 {
   "name": "company.dental.appointments.m17",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "private": true,
   "description": "Appointments app package for Dental OS.",
   "type": "module",

@@ -87,19 +87,9 @@ export default function PatientRecordView(props: PatientRecordViewProps) {
   const canOpenPage = (pageNumber: number) => pageNumber <= knownPageCount || (pageNumber === pageIndex + 2 && hasNext) || (pageNumber === pageIndex && hasPrevious);
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader
-        title="Patient Record Directory"
-        icon={<Users size={17} style={{ color: "var(--acc)" }} />}
-        subtitle={
-          loading
-            ? "Loading the patient directory…"
-            : directoryIsEmpty
-            ? "No registered patients yet"
-            : searchInput.trim() || cohort !== "all"
-            ? `${total} matching record${total === 1 ? "" : "s"}`
-            : `${total} registered patient record${total === 1 ? "" : "s"}`
-        }
+        title="Patient Record"
       >
         <ClinicActionButton onClick={onAddPatient}>
           <UserPlus size={14} /> {directoryIsEmpty ? "Add first patient" : "New patient"}
@@ -109,6 +99,7 @@ export default function PatientRecordView(props: PatientRecordViewProps) {
       {/* Directory Table with Integrated Filters */}
       <DataTable<PatientDetail>
         rows={patients}
+        standardPage
         rowKey={(p) => p.id}
         noun="patients"
         filters={(
@@ -132,6 +123,9 @@ export default function PatientRecordView(props: PatientRecordViewProps) {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
+            <span aria-live="polite" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: "var(--fs-13)", whiteSpace: "nowrap" }}>
+              {loading ? "Loading…" : directoryIsEmpty ? "No patients" : `${total} ${total === 1 ? "patient" : "patients"}`}
+            </span>
             {searchInput.trim() && (
               <div role="status" style={{ width: "100%", fontSize: "var(--fs-12)", color: "#475569" }}>
                 Searching every patient record. Month and activity filters resume when the search is cleared.
@@ -218,7 +212,7 @@ export default function PatientRecordView(props: PatientRecordViewProps) {
         paginate={false}
       />
 
-      {!loading && total > 0 && <Pagination page={pageIndex + 1} totalPages={totalPages} from={firstRow} to={lastRow} total={total} noun="patients" onPage={onPageChange} canPage={canOpenPage} />}
+      {!loading && total > 0 && <div data-sajilo-pagination=""><Pagination page={pageIndex + 1} totalPages={totalPages} from={firstRow} to={lastRow} total={total} noun="patients" onPage={onPageChange} canPage={canOpenPage} /></div>}
 
     </Page>
   );

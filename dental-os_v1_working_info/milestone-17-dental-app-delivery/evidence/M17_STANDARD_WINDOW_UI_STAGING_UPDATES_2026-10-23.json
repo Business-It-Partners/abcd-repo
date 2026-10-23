@@ -1,0 +1,123 @@
+{
+  "title": "Standard Window 1 UI alignment updates",
+  "date": "2026-10-23",
+  "scope": {
+    "apps": [
+      "company.dental.followups.m17",
+      "company.dental.appointments.m17",
+      "company.dental.work-entry.m17",
+      "company.dental.patient-record.m17",
+      "company.dental.treatment-progress.m17",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.calendar.m17"
+    ],
+    "design_reference": "Standard Window 1 list page",
+    "changes": [
+      "Aligned list-page title, typography, colors, filters, table framing and pagination with the Standard Window 1 UI discipline.",
+      "Removed redundant eyebrow labels and descriptive subtitles from the affected first pages.",
+      "Kept Follow-ups and Appointments summary cards in their existing position; preserved Calendar month navigation and grid.",
+      "Kept app-specific create, refresh, search, filters, actions and detail workflows where present; did not add actions where the app did not need them."
+    ],
+    "shared_ui": "packages/dental-ui/src/shared/standard-app-page.css plus opt-in standardPage styling on Page and ClinicDataTable"
+  },
+  "source": {
+    "worktree": "/home/master-x/.codex/worktrees/dental-ap-ui-enhance/fewa_business_os",
+    "branch": "codex/dental-ap-ui-enhance",
+    "base_head": "431ee4112c6ab1966230a6b90dbd30429bd72d8b",
+    "note": "Packages were built from the implementation changes in this worktree, including uncommitted UI, app version, package policy, and test updates. No commit was created."
+  },
+  "staging": {
+    "environment": "Cloudflare staging",
+    "signer_key_id": "company-staging-m17-20261022",
+    "signer_public_key_sha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709",
+    "final_catalogue_sequence": 45,
+    "public_readback": "Passed; signatures, freshness, exact package bytes and grants verified. Each package was installed, launched, health-marked and uninstalled in an isolated local PackageRegistry.",
+    "readback_artifact": "../../../artifacts/m17-staging-packages-readonly-2026-10-23T14-00-28.097Z.json",
+    "production_touched": false,
+    "authenticated_store_install": "Not performed for these UI updates.",
+    "running_os": "Not restarted; its current in-memory build does not include the new four-release policy allowance or app packages."
+  },
+  "platform_policy": {
+    "change": "Raised the maximum retained signed API release grants per app from three to four so Patient Record can retain all existing grants and receive version 1.0.3.",
+    "compatibility": "A host still enforcing the previous three-grant maximum must be rebuilt before it can accept the resulting signed policy.",
+    "build": "Root Electron production build passed after the policy change."
+  },
+  "verification": {
+    "app_builds": "All seven production bundles built successfully; app typechecks passed where package scripts provide them.",
+    "private_ui": "All seven M17-specific UI fixtures passed on private headless Linux displays: Follow-ups 20, Appointments 21, Work Entry 11, Patient Record 22, Treatment Progress 23, Treatment Protocols 18, Calendar 16 checks.",
+    "root_unit_tests": "Passed: 527/527 tests across 37 files via npm test -- --maxWorkers=1.",
+    "docs_check": "Passed: python3 tools/check-dental-docs.py; no documentation structure or ownership errors.",
+    "limitations": [
+      "Private UI fixtures use synthetic in-memory data and do not establish live clinic acceptance.",
+      "The public feed readback and isolated PackageRegistry lifecycle do not prove authenticated Dental OS Store installation or runtime health on a user device.",
+      "The legacy test:followups launcher fixture timed out looking for an old shell button label; the M17-specific Follow-ups UI fixture passed."
+    ]
+  },
+  "releases": [
+    {
+      "app_id": "company.dental.followups.m17",
+      "version": "1.0.1",
+      "sequence": 38,
+      "sha256": "12fe87720a38f9245002166c811012969fed58fd0b6f63e3a4e7862806ff2588",
+      "payload_digest": "4376faad6620b54e651fbfa5a8466eadd831d4bf2a5ef82b667c7c32f2c4b3e6",
+      "size_bytes": 1238350,
+      "capabilities": ["clinic.app.followups", "clinic.api.request", "session.context"]
+    },
+    {
+      "app_id": "company.dental.appointments.m17",
+      "version": "1.0.2",
+      "sequence": 39,
+      "sha256": "206b68025c802008489115ee14b7f7100df5a99c4eda4821887d773dab197b93",
+      "payload_digest": "29b608b4eb446f6e5b83760dc65de92519f1f4de83f13f932198c0df8f7cc69d",
+      "size_bytes": 1233673,
+      "capabilities": ["clinic.app.appointments", "clinic.api.request", "session.context"]
+    },
+    {
+      "app_id": "company.dental.work-entry.m17",
+      "version": "1.0.1",
+      "sequence": 40,
+      "sha256": "c4289ce3e9fd17dbcd4fa0d8baf0a1f6b04cfe2e4603c5a9e3cd6a3e586f4d54",
+      "payload_digest": "f03911e5f8adbfe9910cc9e95d94a0d3e8b1c27f869d082fcfb5bc9f1bde90d4",
+      "size_bytes": 1770743,
+      "capabilities": ["clinic.app.work-entry", "clinic.api.request", "session.context"]
+    },
+    {
+      "app_id": "company.dental.patient-record.m17",
+      "version": "1.0.3",
+      "sequence": 41,
+      "sha256": "5b9d80dd9ece37b0bd8cfd1133631f70d370e6109319e8b528c071fb1795f6e1",
+      "payload_digest": "22571fce3cae69b2591e22da53db3908312a6effc5c76f214bc7b841c9752840",
+      "size_bytes": 1786703,
+      "capabilities": ["clinic.app.patient-record", "clinic.api.request", "session.context", "clinic.media.read", "clinic.media.upload"],
+      "retained_grants": ["1.0.0", "1.0.1", "1.0.2", "1.0.3"]
+    },
+    {
+      "app_id": "company.dental.treatment-progress.m17",
+      "version": "1.0.3",
+      "sequence": 42,
+      "sha256": "4cb03e716c2541b10527bfbbc71be4d9c9ee7b91892eddc104cac42a550cc1dd",
+      "payload_digest": "60320030810a966c757c06ca97b6cac04655745c5408cc8a4f0d979b0e0410d7",
+      "size_bytes": 1138207,
+      "capabilities": ["clinic.app.treatment-progress", "clinic.api.request", "session.context"]
+    },
+    {
+      "app_id": "company.dental.m17.treatment-protocols",
+      "version": "1.0.3",
+      "sequence": 45,
+      "sha256": "dfd0d9955abcbf982176178f5f4acfab7c6277d9d519ff9beed1d1304f109b7e",
+      "payload_digest": "5956da35efc9f1e85524b4a43688d9759348d83953a00ca9c7103524c9996ef8",
+      "size_bytes": 1447580,
+      "capabilities": ["clinic.app.treatment-protocols", "clinic.api.request", "session.context"],
+      "release_history": "1.0.2 at sequence 43 was superseded after private UI testing found a React hook-order crash; corrected 1.0.3 is the current release."
+    },
+    {
+      "app_id": "company.dental.calendar.m17",
+      "version": "1.0.1",
+      "sequence": 44,
+      "sha256": "48cd26a45703441db77835fd82b5202bbdb769949476bc06a0ae70e8d21bbe8f",
+      "payload_digest": "25c4ce828c5b4123c92c76f43e0c6f2fa83893884dc5819bef67c69308cb338f",
+      "size_bytes": 1101325,
+      "capabilities": ["clinic.app.calendar", "clinic.api.request", "session.context"]
+    }
+  ]
+}

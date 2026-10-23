@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Treatment Protocols catalogue uses the shared Standard Window scroll viewport",
+    "private signed package has the updated M17 identity and version 1.0.4",
+    "renderer receives the SDK bridge without a credential getter",
+    "initial list reads use only the SaaS treatment-protocol route",
+    "Treatment Protocols module selection is acknowledged",
+    "new protocol is created through POST and opens the SaaS detail editor",
+    "protocol detail reports only opaque UUID entries to the OS",
+    "OS Back returns from protocol detail to the catalogue",
+    "OS Forward restores the protocol detail page",
+    "OS Back is blocked while the protocol detail has unsaved edits",
+    "stage order, pricing and clinical settings are saved through PUT with the canonical row version",
+    "409 row-version conflict is shown and canonical state is refreshed",
+    "uncertain update locks the original form and offers same-command reconciliation",
+    "dropped receipt follows one committed update and records its operation identity",
+    "same-key retry confirms the original update without a duplicate effect",
+    "retire uses SaaS soft-delete semantics through PUT active=false",
+    "all renderer errors stayed clear through the synthetic protocol workflow",
+    "role without treatment_protocols.manage is denied before business routes execute",
+    "role-denied view contains no protocol data or renderer error"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.m17.treatment-protocols",
+    "version": "1.0.4",
+    "packageSha256": "3f47220a3277d6178f572f077e46879bf0edc0bc3700a6f0111bce3d3a4ba77b",
+    "payloadDigest": "303d13231bdf8bf632de1a4298d8ab2e188328a29d191c06828f4a43befdfb47",
+    "wireBytes": 1456721,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live staging data or publication.",
+  "screenshot": "m17-treatment-protocols-private-2026-10-23T14-24-43.305Z.png"
+}

@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-23",
+  "appId": "company.dental.m17.treatment-protocols",
+  "release": {
+    "version": "1.0.5",
+    "sequence": 53,
+    "previousVersion": "1.0.4",
+    "packageSha256": "388917e049c738eda113579410a9cf4e6adfdf96889e0b88299ec88640b4deb5",
+    "payloadDigest": "8d368cf47dbb472408405ccc32426252b876c77dd0960511ff5b46298d312c25",
+    "packageBytes": 1456860,
+    "objectKey": "releases/company.dental.m17.treatment-protocols/1.0.5/388917e049c738eda113579410a9cf4e6adfdf96889e0b88299ec88640b4deb5.dentalpkg",
+    "keyId": "company-staging-m17-20261022",
+    "apiOperations": ["clinic.api.request"]
+  },
+  "change": {
+    "issue": "Treatment Protocols applied a 22px canvas inset in addition to the shared Standard Window page's 22px top and 26px horizontal padding, moving the list/table and custom scrollbar rail too far from the window edges.",
+    "fix": "Set the outer Treatment Protocols canvas padding to zero only on its Standard Window list route. The shared page keeps 22px 26px 0 padding; the detail route keeps its original canvas inset.",
+    "hostPolicy": "Raised the host maximum retained signed API release grants per app from five to six so Treatment Protocols can keep exact grants for versions 1.0.0–1.0.5. The rebuilt OS uses this validator."
+  },
+  "privateUi": {
+    "passed": true,
+    "checks": 21,
+    "report": "artifacts/m17-treatment-protocols-private-2026-10-23T15-02-13.106Z.json",
+    "screenshot": "artifacts/m17-treatment-protocols-private-2026-10-23T15-02-13.106Z.png",
+    "syntheticOnly": true
+  },
+  "localChecks": {
+    "treatmentProtocolsPackageTests": "3/3 passed",
+    "treatmentProtocolsProductionBuild": "passed",
+    "rootBuild": "passed",
+    "rootUnitTests": "527 passed across 37 files",
+    "policyTests": "passed as part of the root unit suite"
+  },
+  "stagingPublication": {
+    "validated": true,
+    "published": true,
+    "packageWritten": true,
+    "catalogueSequence": 53,
+    "updatePolicySequence": 53,
+    "publicationOutcome": 200,
+    "anonymousPublicationDenied": true,
+    "replayDenied": true,
+    "temporaryWorkerCleanedUp": true,
+    "publicReadbackPassed": true,
+    "isolatedRegistryInstallLaunchUninstallPassed": true,
+    "retainedTreatmentProtocolsGrants": 6,
+    "authenticatedStoreInstall": false,
+    "liveClinicWorkflow": false
+  },
+  "scope": "Treatment Protocols catalogue/list inset correction and the host release-grant ceiling required for its 1.0.5 signed update. Other dental app code was not changed by this follow-up."
+}

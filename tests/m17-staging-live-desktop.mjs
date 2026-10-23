@@ -23,9 +23,9 @@ if (!credentials || Object.keys(credentials).sort().join(',') !== 'email,passwor
 }
 
 const apps = [
-  { id: 'company.dental.followups.m17', title: 'Follow-ups', version: '1.0.0', payloadDigest: 'd587da409ad4e528cfe4485f22d6f17027b72f39c5e1fa80d6723e1d81d9eb35' },
-  { id: 'company.dental.appointments.m17', title: 'Appointments', version: '1.0.1', payloadDigest: '6e58bc374902f99710b4293385ffac5feb317b3849d67533dff9312b51b4b291' },
-  { id: 'company.dental.calendar.m17', title: 'Calendar', version: '1.0.0', payloadDigest: '428b90a0f970ff5ca29f245fc00e172bd7965b645615e9848ddb243d0b911c02' },
+  { id: 'company.dental.followups.m17', title: 'Follow-ups', version: '1.0.2', payloadDigest: 'a2b047bf7a36008dc0ab27fbf3ae1c70ad9a7b957df6096b940c0cc632fb0156' },
+  { id: 'company.dental.appointments.m17', title: 'Appointments', version: '1.0.3', payloadDigest: 'f1fbaa01f85ac67a2582538e55440e8f125fa53d5456785308d87a452195fa0d' },
+  { id: 'company.dental.calendar.m17', title: 'Calendar', version: '1.0.2', payloadDigest: '39e019ca056b88464ca34815435b5b0c9ea086eb68fdb4df3750048a478e5aea' },
 ];
 const env = { ...process.env };
 for (const key of ['ELECTRON_RUN_AS_NODE', 'DEBUG', 'PWDEBUG']) delete env[key];

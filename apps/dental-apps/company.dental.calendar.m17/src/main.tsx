@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
+import { StandardPageScroll } from '@/shared/ui/StandardPageScroll';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardCheck, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { ClinicClient, ClinicError, type ClinicCommand } from '../../../../packages/app-sdk/src/clinicClient';
 import { BS_MONTHS_LONG, BS_YEAR_MAX, BS_YEAR_MIN, adToBS, bsMonthToADRange, bsToAD, daysInBSMonth, formatBSMonthYear, todayBS, type BSDate } from '@/shared/dates/bikramSambat';
 import { CalendarTasksApi, type CalendarTask, type CalendarTaskCategory, type CalendarTaskReceipt } from './calendarTasks';
 import '@/shared/clinic.css';
 import './styles.css';
+import '@/shared/standard-app-page.css';
 
 declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
 
@@ -170,9 +172,10 @@ function CalendarApp() {
   if (error) return <main className="calendarMessage" role="alert"><h1>Calendar unavailable</h1><p>{error}</p></main>;
   if (!ready) return <main className="calendarMessage" role="status">Opening Calendar…</main>;
 
-  return <main className="calendarWorkspace" data-dental-os-app="company.dental.calendar.m17">
-    <header className="calendarPageHeader">
-      <div><p className="calendarEyebrow">CLINIC WORKFLOW</p><h1><CalendarDays size={23} /> Calendar</h1><p>Plan, share, and complete the operational work that keeps the clinic ready.</p></div>
+  return <main className="calendarWorkspace" data-dental-os-app="company.dental.calendar.m17" data-sajilo-standard-page="">
+    <StandardPageScroll contentClassName="calendarPageScrollContent">
+    <header className="calendarPageHeader" data-sajilo-page-header>
+      <h1>Calendar</h1>
       <div className="calendarHeaderActions"><span><strong>{openThisMonth}</strong> open this month</span><button type="button" onClick={() => void reload()} disabled={loading}><RefreshCw size={15} className={loading ? 'calendarSpin' : ''} />{loading ? 'Refreshing…' : 'Refresh'}</button></div>
     </header>
     {loadError && <section className="calendarAlert" role="alert"><span>{loadError}</span><button type="button" className="btn btn-secondary" onClick={() => void reload()}>Retry</button></section>}
@@ -201,6 +204,7 @@ function CalendarApp() {
       {loading && !tasks.length && <p className="calendarLoading" role="status"><Loader2 size={16} className="calendarSpin" /> Loading clinic tasks…</p>}
       <footer className="calendarLegend"><span><i className="openDot" /> Open tasks</span><span><i className="overdueDot" /> Overdue</span><span><i className="doneDot" /> All complete</span></footer>
     </section>
+    </StandardPageScroll>
 
     {selectedDay !== null && <div className="calendarOverlay" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) navigate({ year, month, day: null }); }}>
       <aside className="calendarDaySheet" role="dialog" aria-modal="true" aria-labelledby="calendarDayTitle">

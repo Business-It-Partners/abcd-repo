@@ -3,5 +3,6 @@ body { margin: 0; background: var(--surface); color: var(--ink-1); }
 button, input, select, textarea { font: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #8bbce8; outline-offset: 2px; }
 .clinicWorkspaceCanvas.protocolCanvas { min-height: 100vh; padding: 22px; }
+.clinicWorkspaceCanvas.protocolCanvas:has([data-sajilo-standard-page]) { padding: 0; }
 .protocolMessage { display: grid; place-content: center; min-height: 100vh; padding: 30px; color: var(--ink-2); text-align: center; }
 @media (max-width: 720px) { .clinicWorkspaceCanvas.protocolCanvas { padding: 14px; } }
