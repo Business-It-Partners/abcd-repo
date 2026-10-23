@@ -27,9 +27,9 @@ it('assigns unique M17 identities and current versions without changing the prev
     const expectedVersions: Record<string, string> = {
       [followupsId]: '1.0.2',
       [appointmentsId]: '1.0.3',
-      [calendarId]: '1.0.2',
+      [calendarId]: '1.0.3',
       'company.dental.work-entry.m17': '1.0.2',
-      'company.dental.patient-record.m17': '1.0.4',
+      'company.dental.patient-record.m17': '1.0.5',
       'company.dental.treatment-progress.m17': '1.0.4',
       'company.dental.m17.treatment-protocols': '1.0.5',
     };

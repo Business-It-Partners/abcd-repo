@@ -1,4 +1,5 @@
 import { profileArgs } from './profile.mjs';
+import { assertStandardPageScroll } from './standard-page-scroll-test.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -56,11 +57,23 @@ try {
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Patient Record', exact: true }).waitFor();
-  check('Patient Record directory uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
+  await assertStandardPageScroll(page, check, 'Patient Record');
+  const careWorkspaceGeometry = await page.locator('[data-sajilo-standard-page]').evaluate(root => {
+    const shell = root.querySelector('[data-sajilo-standard-scroll-shell]');
+    const careWorkspace = root.closest('.clinicCareWorkspace');
+    if (!shell || !careWorkspace) return null;
+    return {
+      shellLeft: shell.getBoundingClientRect().left - careWorkspace.getBoundingClientRect().left,
+      shellRight: careWorkspace.getBoundingClientRect().right - shell.getBoundingClientRect().right,
+      padding: getComputedStyle(careWorkspace).padding,
+    };
+  });
+  check('Patient Record list removes the legacy care-workspace gutter', !!careWorkspaceGeometry
+    && careWorkspaceGeometry.shellLeft === 0 && careWorkspaceGeometry.shellRight === 0 && careWorkspaceGeometry.padding === '0px');
   await page.getByText('Synthetic Patient', { exact: false }).first().waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('updated package is Patient Record 1.0.4 with app assets and JSON/media grants',
-    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.4'
+  check('updated package is Patient Record 1.0.5 with app assets and JSON/media grants',
+    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.5'
       && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5
       && ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'].every(op => packageInfo.grants.includes(op)));
   check('renderer receives the SDK bridge without credential or direct-network accessors', await page.evaluate(() => {

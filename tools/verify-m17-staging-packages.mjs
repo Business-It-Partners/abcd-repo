@@ -16,10 +16,10 @@ const expectedApps = [
   { id: 'company.dental.followups.m17', version: '1.0.2', sha256: '31614a593ce389d1739f7da7c4798e08b94aa8e44340b7317b30a6490b56707f' },
   { id: 'company.dental.appointments.m17', version: '1.0.3', sha256: '0d55de88d362882f6157be78eac871411a4d4b89032355c0791f8ed8dcba96c6' },
   { id: 'company.dental.treatment-progress.m17', version: '1.0.4', sha256: '7d29f474519f428bda38899a7b495ed7b1cd0a3e8b83baf6071ce927bbf9f175' },
-  { id: 'company.dental.calendar.m17', version: '1.0.2', sha256: '087c6d80aa0dd6f141be985345d8ccc2db27702e0f9395815b91975ee1037062' },
+  { id: 'company.dental.calendar.m17', version: '1.0.3', sha256: 'c9d58d459f0dc03a42bf31323afca54ba6f33187eadd794e96d242a52db8b398' },
   { id: 'company.dental.m17.treatment-protocols', version: '1.0.5', sha256: '388917e049c738eda113579410a9cf4e6adfdf96889e0b88299ec88640b4deb5' },
   { id: 'company.dental.work-entry.m17', version: '1.0.2', sha256: 'de45de9e17dcc11ec96a8b3b7e5788e8d528103ad8dbf1f764c805a63a80e987' },
-  { id: 'company.dental.patient-record.m17', version: '1.0.4', sha256: 'e2c58a786692d368ebd7886189ca0366a34f8223855868561e21829c44f859f2', capabilities: ['clinic.media.read', 'clinic.media.upload'] },
+  { id: 'company.dental.patient-record.m17', version: '1.0.5', sha256: '7aa21170bbe04821817d62f4c06bc3613cfaf64342058c41deb266a429a562d1', capabilities: ['clinic.media.read', 'clinic.media.upload'] },
 ];
 const origin = stagingDistribution.publicBase;
 if (origin !== 'https://pub-5a82684f6abc4896b7bd2a4b59828182.r2.dev') throw Error('Pinned staging distribution fence');
@@ -81,12 +81,14 @@ try {
       && appointmentPolicy?.releases.some(row => row.version === '1.0.2' && row.packageSha256 === '206b68025c802008489115ee14b7f7100df5a99c4eda4821887d773dab197b93')
       && appointmentPolicy?.releases.some(row => row.version === '1.0.3' && row.packageSha256 === '0d55de88d362882f6157be78eac871411a4d4b89032355c0791f8ed8dcba96c6'));
   const patientRecordPolicy = policy.apps.find(row => row.id === 'company.dental.patient-record.m17');
-  check('Patient Record policy retains all five signed release grants through 1.0.4',
-    patientRecordPolicy?.releases.some(row => row.version === '1.0.0' && row.packageSha256 === '6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4')
+  check('Patient Record policy retains all six signed release grants through 1.0.5',
+    patientRecordPolicy?.releases.length === 6
+      && patientRecordPolicy?.releases.some(row => row.version === '1.0.0' && row.packageSha256 === '6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4')
       && patientRecordPolicy?.releases.some(row => row.version === '1.0.1' && row.packageSha256 === '9f0c4097b2dc6b596df7ba54766cc6a965755cb5af7d019ee39986501194bfc8')
       && patientRecordPolicy?.releases.some(row => row.version === '1.0.2' && row.packageSha256 === 'ed5960456cb939d31519eadf49037006777a721b5347fc7e23c5ed18e162e556')
       && patientRecordPolicy?.releases.some(row => row.version === '1.0.3' && row.packageSha256 === '5b9d80dd9ece37b0bd8cfd1133631f70d370e6109319e8b528c071fb1795f6e1')
-      && patientRecordPolicy?.releases.some(row => row.version === '1.0.4' && row.packageSha256 === 'e2c58a786692d368ebd7886189ca0366a34f8223855868561e21829c44f859f2'));
+      && patientRecordPolicy?.releases.some(row => row.version === '1.0.4' && row.packageSha256 === 'e2c58a786692d368ebd7886189ca0366a34f8223855868561e21829c44f859f2')
+      && patientRecordPolicy?.releases.some(row => row.version === '1.0.5' && row.packageSha256 === '7aa21170bbe04821817d62f4c06bc3613cfaf64342058c41deb266a429a562d1'));
 
   const treatmentProtocolsPolicy = policy.apps.find(row => row.id === 'company.dental.m17.treatment-protocols');
   check('Treatment Protocols policy retains all six signed grants through 1.0.5',

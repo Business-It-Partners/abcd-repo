@@ -173,7 +173,7 @@ function CalendarApp() {
   if (!ready) return <main className="calendarMessage" role="status">Opening Calendar…</main>;
 
   return <main className="calendarWorkspace" data-dental-os-app="company.dental.calendar.m17" data-sajilo-standard-page="">
-    <StandardPageScroll contentClassName="calendarPageScrollContent">
+    <StandardPageScroll>
     <header className="calendarPageHeader" data-sajilo-page-header>
       <h1>Calendar</h1>
       <div className="calendarHeaderActions"><span><strong>{openThisMonth}</strong> open this month</span><button type="button" onClick={() => void reload()} disabled={loading}><RefreshCw size={15} className={loading ? 'calendarSpin' : ''} />{loading ? 'Refreshing…' : 'Refresh'}</button></div>

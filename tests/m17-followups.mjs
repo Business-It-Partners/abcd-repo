@@ -1,4 +1,5 @@
 import { profileArgs } from './profile.mjs';
+import { assertStandardPageScroll } from './standard-page-scroll-test.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -36,7 +37,7 @@ try {
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Follow-ups', exact: true }).waitFor();
-  check('Follow-ups list uses the shared Standard Window scroll viewport', await page.locator('[data-sajilo-standard-scroll-viewport]').count() === 1);
+  await assertStandardPageScroll(page, check, 'Follow-ups');
   await page.getByText('Synthetic M17 Patient', { exact: true }).waitFor();
   const initial = await inspect(); packageInfo = initial.package;
   check('ephemeral signed package is the declared app and is below the 2 MiB package asset cap', packageInfo.version === '1.0.2' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);

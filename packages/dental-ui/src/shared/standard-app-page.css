@@ -356,17 +356,6 @@ body [data-sajilo-standard-page] {
   overflow: hidden;
 }
 
-.calendarPageScrollContent {
-  box-sizing: border-box;
-  width: min(100% - 40px, 1232px);
-  min-height: calc(100vh - 40px);
-  margin: 20px auto;
-  padding: 26px;
-  border: 1px solid #d5dee9;
-  background: #fff;
-  box-shadow: 0 10px 24px -16px rgb(15 23 42 / 32%);
-}
-
 .appointmentsPageScrollContent,
 .workEntryPageScrollContent {
   min-height: 100%;
@@ -408,13 +397,6 @@ body [data-sajilo-standard-page] {
   .clinicWorkspaceCanvas.appointmentsCanvas[data-sajilo-standard-page],
   .calendarWorkspace[data-sajilo-standard-page] {
     padding: 0;
-  }
-
-  .calendarPageScrollContent {
-    width: calc(100% - 32px);
-    min-height: calc(100vh - 32px);
-    margin: 16px auto;
-    padding: 18px 16px;
   }
 
   [data-sajilo-standard-page] .appointmentSearch {

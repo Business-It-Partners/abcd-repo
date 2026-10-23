@@ -1,0 +1,76 @@
+{
+  "title": "Standard Window 1 page alignment across M17 apps",
+  "date": "2026-10-23",
+  "scope": "Verified the Standard Window 1 page-shell and scrollbar discipline across the seven published M17 apps. Calendar and Patient Record were the only pages with an additional outer inset; the other five already used the shared viewport geometry.",
+  "design": {
+    "sharedPage": "packages/dental-ui/src/shared/ui/StandardPageScroll.tsx",
+    "sharedStyles": "packages/dental-ui/src/shared/standard-app-page.css",
+    "discipline": "The app page fills the window content area and uses the shared inset once. Overflow uses the six-pixel scrollbar positioned four pixels from the page edge, without an extra framed scroll-content card or workspace gutter.",
+    "preserved": [
+      "Follow-ups and Appointments summary cards remain in their established position.",
+      "Each app keeps its app-specific controls, tables, calendar grid, detail pages, workflows and pagination behavior."
+    ]
+  },
+  "changes": [
+    {
+      "appId": "company.dental.calendar.m17",
+      "version": "1.0.3",
+      "change": "Removed the extra framed scroll-content wrapper and now use the shared page inset directly.",
+      "privateUiChecks": 20,
+      "packageSha256": "c9d58d459f0dc03a42bf31323afca54ba6f33187eadd794e96d242a52db8b398",
+      "packageBytes": 1109697,
+      "payloadDigest": "f580fefa938193c842dd7c38929e8999150042f591c0e7e21597ae239e51b4f3",
+      "sequence": 54,
+      "publicationEvidence": "M17_CALENDAR_STANDARD_PAGE_STAGING_2026-10-23.json"
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "version": "1.0.5",
+      "change": "Removed the legacy care-workspace padding on the directory page while keeping detail and intake layouts scoped to their existing workspace behavior.",
+      "privateUiChecks": 26,
+      "packageSha256": "7aa21170bbe04821817d62f4c06bc3613cfaf64342058c41deb266a429a562d1",
+      "packageBytes": 1795483,
+      "payloadDigest": "4f72edc04f51f9eb13caca88895b65189ef5e8d143670800ca406d61b27c6c02",
+      "sequence": 55,
+      "apiOperations": [
+        "clinic.api.request",
+        "clinic.media.read",
+        "clinic.media.upload"
+      ],
+      "publicationEvidence": "M17_PATIENT_RECORD_STANDARD_PAGE_STAGING_2026-10-23.json"
+    }
+  ],
+  "privateUi": {
+    "runner": "node tools/run-ui-test.mjs <script>",
+    "display": "private headless Linux GNOME/Wayland",
+    "apps": {
+      "followups": { "checks": 23, "report": "../../../artifacts/m17-followups-private-2026-10-23T15-21-44.957Z.json" },
+      "appointments": { "checks": 24, "report": "../../../artifacts/m17-appointments-private-2026-10-23T15-22-01.351Z.json" },
+      "workEntry": { "checks": 14, "report": "../../../artifacts/m17-work-entry-private-2026-10-23T15-22-15.473Z.json" },
+      "treatmentProgress": { "checks": 26, "report": "../../../artifacts/m17-treatment-progress-private-2026-10-23T15-22-25.962Z.json" },
+      "calendar": { "checks": 20, "report": "../../../artifacts/m17-calendar-private-2026-10-23T15-22-36.402Z.json" },
+      "patientRecord": { "checks": 26, "report": "../../../artifacts/m17-patient-record-private-2026-10-23T15-22-47.308Z.json" }
+    },
+    "totalChecks": 133,
+    "passed": true,
+    "commonGeometryAssertions": "Each fixture verifies the shared page viewport, a scroll shell filling the app page, and the six-pixel scrollbar positioned four pixels from the page edge. App-specific workflow assertions also remain enabled."
+  },
+  "verification": {
+    "calendarTypecheck": "passed",
+    "calendarProductionBuild": "passed",
+    "calendarPackageTests": "3/3 passed",
+    "patientRecordTypecheck": "passed",
+    "patientRecordProductionBuild": "passed",
+    "rootProductionBuild": "passed",
+    "rootUnitTests": "527 passed across 37 files",
+    "publicStagingVerification": "passed: signed catalogue and policy, seven current identities, retained release grants, package bytes/signatures, and isolated registry install/launch/uninstall for all seven apps",
+    "publicStagingReport": "../../../artifacts/m17-staging-packages-readonly-2026-10-23T15-29-16.474Z.json",
+    "publicStagingChecks": 26,
+    "documentationCheck": "passed: python3 tools/check-dental-docs.py; 24 architecture docs, 18 milestones, 72 required milestone records, 16 requirements, 18 acceptance gates, 14 invariants; no errors"
+  },
+  "limits": [
+    "The published updates are signed Cloudflare staging releases; no authenticated Store install or live clinic business write was performed in this follow-up.",
+    "The existing six-grant OS session remained running and was not restarted. App Store Refresh reads the updated staging catalogue.",
+    "No production publication, push or merge occurred."
+  ]
+}

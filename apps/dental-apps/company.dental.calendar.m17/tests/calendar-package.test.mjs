@@ -7,12 +7,12 @@ const root = path.resolve(import.meta.dirname, '..');
 const read = relative => fs.readFile(path.join(root, relative));
 const readText = async relative => (await read(relative)).toString('utf8');
 
-test('Calendar gets a unique first-release identity and only its existing app capability', async () => {
+test('Calendar keeps its unique app identity and existing app capability', async () => {
   const packageJson = JSON.parse(await readText('package.json'));
   const manifest = JSON.parse(await readText('app.manifest.json'));
   const metadata = JSON.parse(await readText('app.json'));
   assert.equal(packageJson.name, 'company.dental.calendar.m17');
-  assert.equal(packageJson.version, '1.0.0');
+  assert.equal(packageJson.version, '1.0.3');
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ['clinic.app.calendar', 'clinic.api.request', 'session.context']);

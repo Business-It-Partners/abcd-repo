@@ -38,3 +38,15 @@
   border: 1px solid var(--line);
   background: var(--surface);
 }
+
+/* The directory opts into the shared Standard Window page. Let its scroll shell
+   reach the window edges; the standard page content owns the only horizontal inset. */
+.clinicCareWorkspace:has([data-sajilo-standard-page]) {
+  display: flex;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
