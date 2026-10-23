@@ -18,13 +18,21 @@ const { stagingDistribution, m17StagingKeyId } = require('../../dist-electron/di
 
 const M17_FINGERPRINT = 'e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709';
 const definitions = {
-  'company.dental.followups.m17': { title: 'Follow-ups', moduleId: 'followups', family: 'clinic.app.followups' },
-  'company.dental.work-entry.m17': { title: 'Work Entry', moduleId: 'work-entry', family: 'clinic.app.work-entry' },
-  'company.dental.patient-record.m17': { title: 'Patient Record', moduleId: 'patient-record', family: 'clinic.app.patient-record' },
-  'company.dental.m17.treatment-protocols': { title: 'Treatment Protocols', moduleId: 'treatment-protocols', family: 'clinic.app.treatment-protocols' },
-  'company.dental.appointments.m17': { title: 'Appointments', moduleId: 'appointments', family: 'clinic.app.appointments' },
-  'company.dental.calendar.m17': { title: 'Calendar', moduleId: 'calendar', family: 'clinic.app.calendar' },
-  'company.dental.treatment-progress.m17': { title: 'Treatment Progress', moduleId: 'treatment-progress', family: 'clinic.app.treatment-progress' },
+  'company.dental.followups.m17': { title: 'Follow-ups', moduleIds: ['followups'], family: 'clinic.app.followups' },
+  'company.dental.work-entry.m17': { title: 'Work Entry', moduleIds: ['work-entry'], family: 'clinic.app.work-entry' },
+  'company.dental.patient-record.m17': { title: 'Patient Record', moduleIds: ['patient-record'], family: 'clinic.app.patient-record' },
+  'company.dental.m17.treatment-protocols': { title: 'Treatment Protocols', moduleIds: ['treatment-protocols'], family: 'clinic.app.treatment-protocols' },
+  'company.dental.appointments.m17': { title: 'Appointments', moduleIds: ['appointments'], family: 'clinic.app.appointments' },
+  'company.dental.calendar.m17': { title: 'Calendar', moduleIds: ['calendar'], family: 'clinic.app.calendar' },
+  'company.dental.treatment-progress.m17': { title: 'Treatment Progress', moduleIds: ['treatment-progress'], family: 'clinic.app.treatment-progress' },
+  'company.dental.finance.m17': {
+    title: 'Finance',
+    moduleIds: ['transaction-record', 'patient-payments', 'general-expenses', 'salary-payments', 'product-list', 'purchases', 'supplier-list', 'supplier-payments'],
+    family: 'clinic.app.finance',
+    initialVersion: '1.7.0',
+  },
+  'company.dental.lab-tracker.m17': { title: 'Lab Tracker', moduleIds: ['lab-tracker', 'lab-suppliers'], family: 'clinic.app.lab-tracker' },
+  'company.dental.staff.m17': { title: 'Staff', moduleIds: ['staff'], family: 'clinic.app.staff' },
 };
 const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput] = process.argv.slice(2);
 const sequence = Number(rawSequence);
@@ -120,9 +128,11 @@ if (priorPolicy.revokedKeys.includes(m17StagingKeyId)) throw Error('M17 staging 
 const checkoutRoot = path.resolve(import.meta.dirname, '../..');
 const appRoot = path.join(checkoutRoot, 'apps/dental-apps', appId);
 const definition = definitions[appId];
+const initialVersion = definition.initialVersion ?? '1.0.0';
 const packageMetadata = JSON.parse(readRegular(path.join(appRoot, 'package.json'), 65_536).toString('utf8'));
 const manifest = JSON.parse(readRegular(path.join(appRoot, 'app.manifest.json'), 65_536).toString('utf8'));
 const appMetadata = JSON.parse(readRegular(path.join(appRoot, 'app.json'), 65_536).toString('utf8'));
+const expectedModuleIds = definition.moduleIds;
 const version = packageMetadata.version;
 const parseVersion = value => {
   const match = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.exec(value ?? '');
@@ -143,12 +153,13 @@ if (!parsedVersion || packageMetadata.name !== appId || manifest.appId !== appId
   || !manifest.capabilities.every(capability => stagingDistribution.policy.companyApps.capabilities.includes(capability))) {
   throw Error('M17 manifest exceeds approved company capability ceiling or has an unexpected identity');
 }
-if (releaseKind === 'new' && version !== '1.0.0') throw Error('A new M17 app identity must start at version 1.0.0');
+if (releaseKind === 'new' && version !== initialVersion) throw Error('A new M17 app identity must start at its configured first release version');
 if (releaseKind === 'update' && (!parsedPreviousVersion || compareVersion(parsedVersion, parsedPreviousVersion) <= 0)) {
   throw Error('M17 update version must be greater than the currently published app version');
 }
-if (appMetadata.appId !== appId || appMetadata.title !== definition.title || appMetadata.modules?.length !== 1
-  || appMetadata.modules[0]?.id !== definition.moduleId) {
+if (appMetadata.appId !== appId || appMetadata.title !== definition.title
+  || !Array.isArray(appMetadata.modules)
+  || JSON.stringify(appMetadata.modules.map(module => module?.id)) !== JSON.stringify(expectedModuleIds)) {
   throw Error('Unexpected M17 app metadata');
 }
 if (releaseKind === 'update') {
@@ -188,7 +199,7 @@ const release = {
   packageBytes: packageBytes.length,
   payloadDigest,
   status: 'approved',
-  minimumVersion: priorRelease?.minimumVersion ?? '1.0.0',
+  minimumVersion: priorRelease?.minimumVersion ?? initialVersion,
 };
 const catalogueReleases = priorRelease
   ? priorCatalogue.releases.map(row => row.id === appId ? release : row)
@@ -237,7 +248,7 @@ if (priorAppPolicy) {
   nextApps.push({
     id: appId,
     capabilities: [...manifest.capabilities],
-    minimumVersion: '1.0.0',
+    minimumVersion: initialVersion,
     revokedDigests: [],
     rollback: null,
     releases: [grant],

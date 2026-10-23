@@ -6,6 +6,7 @@
   "description": "M17.9 Dental OS Staff app.",
   "scripts": {
     "build": "node ../../../tools/app-packages/build-m17-staff.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test tests/*.test.mjs"
   }
 }

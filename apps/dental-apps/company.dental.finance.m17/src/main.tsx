@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicError } from "./sdk/client";
+import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
 import { TransactionRecordWorkspace } from "./features/finance/transaction-record/TransactionRecordWorkspace";
 import { PatientPaymentsWorkspace } from "./features/finance/patient-payments/PatientPaymentsWorkspace";
 import { GeneralExpensesWorkspace } from "./features/finance/general-expenses/GeneralExpensesWorkspace";
@@ -26,6 +27,14 @@ const FINANCE_MODULES = {
   "supplier-payments": { label: "Supplier payments", capability: "finance.manage" },
 } as const;
 type FinanceModuleId = keyof typeof FINANCE_MODULES;
+type FinancePage =
+  | { moduleId: FinanceModuleId; screen: "main" }
+  | { moduleId: "product-list"; screen: "product-detail"; productId: string }
+  | { moduleId: "supplier-list"; screen: "supplier-detail"; supplierId: string };
+
+function mainPage(moduleId: FinanceModuleId): FinancePage {
+  return { moduleId, screen: "main" };
+}
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ClinicError) {
@@ -45,10 +54,48 @@ function App() {
   const [message, setMessage] = useState("Opening Finance…");
   const [moduleMessage, setModuleMessage] = useState("");
   const [moduleId, setModuleId] = useState<FinanceModuleId>("transaction-record");
+  const [page, setPage] = useState<FinancePage | null>(null);
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const capabilitiesRef = useRef<string[]>([]);
   const moduleIdRef = useRef<FinanceModuleId>("transaction-record");
   const financeNavigationLocked = useRef(false);
+  const historyRef = useRef<AppHistory<FinancePage> | null>(null);
+
+  const applyHistoryPage = useCallback((next: FinancePage) => {
+    moduleIdRef.current = next.moduleId;
+    setModuleId(next.moduleId);
+    setPage(next);
+  }, []);
+  const openProduct = useCallback((productId: string) => {
+    const history = historyRef.current;
+    if (!history) return;
+    const current = history.current();
+    if (current.moduleId === "product-list" && current.screen === "main") {
+      history.push({ moduleId: "product-list", screen: "product-detail", productId });
+    }
+  }, []);
+  const openSupplier = useCallback((supplierId: string) => {
+    const history = historyRef.current;
+    if (!history) return;
+    const current = history.current();
+    if (current.moduleId === "supplier-list" && current.screen === "main") {
+      history.push({ moduleId: "supplier-list", screen: "supplier-detail", supplierId });
+    }
+  }, []);
+  const closeDetail = useCallback((owner: "product-list" | "supplier-list") => {
+    const history = historyRef.current;
+    const current = history?.current();
+    if (!history || current?.moduleId !== owner || current.screen === "main") return;
+    if (!history.back(true)) history.replace(mainPage(owner));
+  }, []);
+  const resetMissingDetail = useCallback((owner: "product-list" | "supplier-list") => {
+    const history = historyRef.current;
+    if (history?.current().moduleId === owner && history.current().screen !== "main") history.replace(mainPage(owner));
+  }, []);
+  const closeProduct = useCallback(() => closeDetail("product-list"), [closeDetail]);
+  const closeSupplier = useCallback(() => closeDetail("supplier-list"), [closeDetail]);
+  const resetMissingProduct = useCallback(() => resetMissingDetail("product-list"), [resetMissingDetail]);
+  const resetMissingSupplier = useCallback(() => resetMissingDetail("supplier-list"), [resetMissingDetail]);
 
   const setFinanceNavigationLock = useCallback((locked: boolean) => {
     financeNavigationLocked.current = locked;
@@ -66,8 +113,14 @@ function App() {
       return;
     }
 
+    let history: AppHistory<FinancePage> | null = null;
+    let unsubscribeHistory: (() => void) | null = null;
     const sdk = new ClinicClient(bridge, () => {
       if (!active) return;
+      unsubscribeHistory?.();
+      history?.dispose();
+      historyRef.current = null;
+      setPage(null);
       setClient(null);
       capabilitiesRef.current = [];
       setCapabilities([]);
@@ -87,8 +140,14 @@ function App() {
           setModuleMessage("Your clinic role cannot open this Finance module.");
           return;
         }
-        moduleIdRef.current = selected;
-        setModuleId(selected);
+        if (selected !== moduleIdRef.current) {
+          const history = historyRef.current;
+          if (history) history.reset(mainPage(selected));
+          else {
+            moduleIdRef.current = selected;
+            setModuleId(selected);
+          }
+        }
         setModuleMessage("");
       }
     });
@@ -106,11 +165,14 @@ function App() {
       if (!initialModule) {
         throw new ClinicError("FORBIDDEN", "Finance requires an approved Finance module capability.");
       }
-      setModuleId((current) => {
-        const selected = nextCapabilities.includes(FINANCE_MODULES[current].capability) ? current : initialModule;
-        moduleIdRef.current = selected;
-        return selected;
-      });
+      const preferredModule = moduleIdRef.current;
+      const selected = nextCapabilities.includes(FINANCE_MODULES[preferredModule].capability)
+        ? preferredModule
+        : initialModule;
+      const appHistory = sdk.createHistory<FinancePage>(mainPage(selected), () => !financeNavigationLocked.current);
+      history = appHistory;
+      historyRef.current = appHistory;
+      unsubscribeHistory = appHistory.subscribe(applyHistoryPage);
       setClient(sdk);
       setMessage("");
     }).catch((cause) => {
@@ -120,13 +182,19 @@ function App() {
     return () => {
       active = false;
       unsubscribe();
+      unsubscribeHistory?.();
+      history?.dispose();
+      historyRef.current = null;
       sdk.report({ dirty: false, modal: false });
     };
-  }, []);
+  }, [applyHistoryPage]);
 
   if (!client) {
     return <main className="finance-open-state" role={message.startsWith("Opening") ? "status" : "alert"}>{message}</main>;
   }
+
+  const productId = page?.moduleId === "product-list" && page.screen === "product-detail" ? page.productId : null;
+  const supplierId = page?.moduleId === "supplier-list" && page.screen === "supplier-detail" ? page.supplierId : null;
 
   return (
     <ClinicLoadingProvider>
@@ -166,9 +234,23 @@ function App() {
             ) : moduleId === "salary-payments" ? (
               <SalaryPaymentsWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
             ) : moduleId === "product-list" ? (
-              <ProductListWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
+              <ProductListWorkspace
+                client={client}
+                onNavigationLockChange={setFinanceNavigationLock}
+                selectedProductId={productId}
+                onOpenProduct={openProduct}
+                onCloseProduct={closeProduct}
+                onInvalidProduct={resetMissingProduct}
+              />
             ) : moduleId === "supplier-list" ? (
-              <SupplierListWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
+              <SupplierListWorkspace
+                client={client}
+                onNavigationLockChange={setFinanceNavigationLock}
+                selectedSupplierId={supplierId}
+                onOpenSupplier={openSupplier}
+                onCloseSupplier={closeSupplier}
+                onInvalidSupplier={resetMissingSupplier}
+              />
             ) : moduleId === "purchases" ? (
               <PurchasesWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
             ) : (

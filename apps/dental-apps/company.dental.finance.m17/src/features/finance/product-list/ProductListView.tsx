@@ -58,6 +58,10 @@ export default function ProductListView({
   purchasesLoading,
   purchasesError,
   onNavigationLockChange,
+  selectedProductId,
+  onOpenProduct,
+  onCloseProduct,
+  onInvalidProduct,
   onRefresh,
   onCreated,
   onUpdated,
@@ -71,6 +75,10 @@ export default function ProductListView({
   purchasesLoading: boolean;
   purchasesError: string | null;
   onNavigationLockChange: (locked: boolean) => void;
+  selectedProductId: string | null;
+  onOpenProduct: (productId: string) => void;
+  onCloseProduct: () => void;
+  onInvalidProduct: () => void;
   onRefresh: () => Promise<void>;
   onCreated: (product: ClinicProduct) => Promise<void>;
   onUpdated: (product: ClinicProduct) => Promise<void>;
@@ -80,7 +88,7 @@ export default function ProductListView({
   const [activeOnly, setActiveOnly] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<ClinicProduct | null>(null);
-  const [viewing, setViewing] = useState<ClinicProduct | null>(null);
+  const viewing = products.find((product) => product.productId === selectedProductId) ?? null;
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const [unknownStatus, setUnknownStatus] = useState<UnknownStatusWrite | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
@@ -96,6 +104,10 @@ export default function ProductListView({
       onNavigationLockChange(false);
     };
   }, [client, modalOpen, navigationLocked, onNavigationLockChange]);
+
+  useEffect(() => {
+    if (!loading && !loadError && selectedProductId && !viewing) onInvalidProduct();
+  }, [loadError, loading, onInvalidProduct, selectedProductId, viewing]);
 
   const query = term.trim().toLowerCase();
   const rows = useMemo(() => products.filter((product) => {
@@ -170,7 +182,7 @@ export default function ProductListView({
       align: "right",
       render: (product) => (
         <RowActions>
-          <ClinicActionButton size="compact" onClick={() => setViewing(product)} title="View product details" disabled={writeInProgress}>
+          <ClinicActionButton size="compact" onClick={() => onOpenProduct(product.productId)} title="View product details" disabled={writeInProgress}>
             <Eye size={13} /> Details
           </ClinicActionButton>
           <ClinicActionButton size="compact" onClick={() => setEditing(product)} title="Edit product" disabled={writeInProgress}>
@@ -188,8 +200,8 @@ export default function ProductListView({
         purchases={purchases}
         purchasesLoading={purchasesLoading}
         purchasesError={purchasesError}
-        onClose={() => setViewing(null)}
-        onEdit={() => { const selected = viewing; setViewing(null); setEditing(selected); }}
+        onClose={onCloseProduct}
+        onEdit={() => { onCloseProduct(); setEditing(viewing); }}
       />
     );
   }

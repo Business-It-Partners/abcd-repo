@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClinicClient, ClinicError, type ClinicCommand } from '../../../../packages/app-sdk/src/clinicClient';
+import type { AppHistory } from '../../../../packages/app-sdk/src/appHistory';
 import type { ClinicLabOrder, LabOrderAssignmentInput, LabOrderUpdateInput } from '@/features/labs/types';
 import type { ClinicSupplier, SupplierUpdateInput, SupplierWriteInput } from '@/features/labs/supplierTypes';
 import { LabTrackerApi } from '@/features/labs/api';
@@ -17,6 +18,14 @@ import '@/shared/clinic.css';
 
 const APP_ID = 'company.dental.lab-tracker.m17';
 const MODULES = new Set(['lab-tracker', 'lab-suppliers']);
+type LabModuleId = 'lab-tracker' | 'lab-suppliers';
+type LabPage =
+  | { moduleId: LabModuleId; screen: 'main' }
+  | { moduleId: 'lab-suppliers'; screen: 'supplier-detail'; supplierId: string };
+
+function mainPage(moduleId: LabModuleId): LabPage {
+  return { moduleId, screen: 'main' };
+}
 
 type LifecycleState = { dirty: boolean; modal: boolean };
 type PendingWrite = { command: ClinicCommand<unknown>; label: string };
@@ -29,13 +38,45 @@ function friendly(cause: unknown, fallback: string) {
 function App() {
   const [client, setClient] = useState<ClinicClient | null>(null);
   const [capabilities, setCapabilities] = useState<string[]>([]);
-  const [activeModule, setActiveModule] = useState('lab-tracker');
+  const [activeModule, setActiveModule] = useState<LabModuleId>('lab-tracker');
+  const [page, setPage] = useState<LabPage | null>(null);
   const [message, setMessage] = useState('Opening Lab Tracker…');
   const [lifecycle, setLifecycle] = useState<LifecycleState>({ dirty: false, modal: false });
+  const activeModuleRef = useRef<LabModuleId>('lab-tracker');
+  const lifecycleRef = useRef(lifecycle);
+  const historyRef = useRef<AppHistory<LabPage> | null>(null);
+  const applyHistoryPage = useCallback((next: LabPage) => {
+    activeModuleRef.current = next.moduleId;
+    setActiveModule(next.moduleId);
+    setPage(next);
+    setMessage('');
+  }, []);
   const reportModuleLifecycle = useCallback((moduleId: string, next: LifecycleState) => {
-    if (moduleId !== activeModule) return;
+    if (moduleId !== activeModuleRef.current) return;
+    lifecycleRef.current = next;
     setLifecycle(current => current.dirty === next.dirty && current.modal === next.modal ? current : next);
-  }, [activeModule]);
+  }, []);
+  const openLabSupplier = useCallback((supplierId: string) => {
+    const history = historyRef.current;
+    if (!history) return;
+    const current = history.current();
+    if (current.moduleId === 'lab-suppliers' && current.screen === 'main') {
+      history.push({ moduleId: 'lab-suppliers', screen: 'supplier-detail', supplierId });
+    }
+  }, []);
+  const closeLabSupplier = useCallback(() => {
+    const history = historyRef.current;
+    const current = history?.current();
+    if (!history || current?.moduleId !== 'lab-suppliers' || current.screen === 'main') return;
+    if (!history.back(true)) history.replace(mainPage('lab-suppliers'));
+  }, []);
+  const resetMissingSupplier = useCallback(() => {
+    const history = historyRef.current;
+    const current = history?.current();
+    if (history && current?.moduleId === 'lab-suppliers' && current.screen !== 'main') {
+      history.replace(mainPage('lab-suppliers'));
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -43,11 +84,17 @@ function App() {
       setMessage('Open Lab Tracker from the Dental OS Store.');
       return;
     }
+    let history: AppHistory<LabPage> | null = null;
+    let unsubscribeHistory: (() => void) | null = null;
     const sdk = new ClinicClient(window.dentalApp, () => {
+      unsubscribeHistory?.();
+      history?.dispose();
+      historyRef.current = null;
       installClinicClient(null);
       if (active) {
         setClient(null);
         setCapabilities([]);
+        setPage(null);
         setMessage('The clinic session changed. Reopen Lab Tracker from Dental OS.');
       }
     });
@@ -57,9 +104,17 @@ function App() {
         return;
       }
       if (active) {
-        setActiveModule(moduleId);
+        const selected = moduleId as LabModuleId;
+        if (selected !== activeModuleRef.current) {
+          lifecycleRef.current = { dirty: false, modal: false };
+          setLifecycle(lifecycleRef.current);
+          if (history) history.reset(mainPage(selected));
+          else {
+            activeModuleRef.current = selected;
+            setActiveModule(selected);
+          }
+        }
         setMessage('');
-        setLifecycle({ dirty: false, modal: false });
       }
     });
     void sdk.initialize(APP_ID).then(({ session }) => {
@@ -68,6 +123,10 @@ function App() {
       if (active) {
         installClinicClient(sdk);
         setCapabilities(access);
+        const appHistory = sdk.createHistory<LabPage>(mainPage(activeModuleRef.current), () => !lifecycleRef.current.dirty && !lifecycleRef.current.modal);
+        history = appHistory;
+        historyRef.current = appHistory;
+        unsubscribeHistory = appHistory.subscribe(applyHistoryPage);
         setClient(sdk);
         setMessage('');
       }
@@ -77,10 +136,13 @@ function App() {
     return () => {
       active = false;
       unsubscribe();
+      unsubscribeHistory?.();
+      history?.dispose();
+      historyRef.current = null;
       installClinicClient(null);
       sdk.report({ dirty: false, modal: false });
     };
-  }, []);
+  }, [applyHistoryPage]);
 
   useEffect(() => { client?.report(lifecycle); }, [client, lifecycle]);
 
@@ -90,17 +152,25 @@ function App() {
     <LabTrackerWorkspace
       client={client}
       activeModule={activeModule}
+      selectedLabSupplierId={page?.moduleId === 'lab-suppliers' && page.screen === 'supplier-detail' ? page.supplierId : null}
       capabilities={capabilities}
       onLifecycle={reportModuleLifecycle}
+      onOpenLabSupplier={openLabSupplier}
+      onCloseLabSupplier={closeLabSupplier}
+      onInvalidLabSupplier={resetMissingSupplier}
     />
   </ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicSnackbarProvider>;
 }
 
-function LabTrackerWorkspace({ client, activeModule, capabilities, onLifecycle }: {
+function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capabilities, onLifecycle, onOpenLabSupplier, onCloseLabSupplier, onInvalidLabSupplier }: {
   client: ClinicClient;
-  activeModule: string;
+  activeModule: LabModuleId;
+  selectedLabSupplierId: string | null;
   capabilities: string[];
   onLifecycle: (moduleId: string, state: LifecycleState) => void;
+  onOpenLabSupplier: (supplierId: string) => void;
+  onCloseLabSupplier: () => void;
+  onInvalidLabSupplier: () => void;
 }) {
   const api = useMemo(() => new LabTrackerApi(client), [client]);
   const [orderRows, setOrderRows] = useState<ClinicLabOrder[]>([]);
@@ -266,6 +336,7 @@ function LabTrackerWorkspace({ client, activeModule, capabilities, onLifecycle }
           ordersRefreshing={ordersRefreshing} onUpdateOrderStatus={updateStatus} onUpdateOrder={updateReceptionNote}
           onRemoveOrder={cancelOrder} pendingRequests={pendingRequests} onAssignPendingRequest={assignPending}
           onAddLab={createSupplier} onUpdateLab={updateSupplier} canManageSharedSuppliers={canManageSharedSuppliers}
+          loadError={loadError}
         />
       </LabRouteProvider>
     </div>
@@ -277,6 +348,11 @@ function LabTrackerWorkspace({ client, activeModule, capabilities, onLifecycle }
           ordersRefreshing={ordersRefreshing} onUpdateOrderStatus={updateStatus} onUpdateOrder={updateReceptionNote}
           onRemoveOrder={cancelOrder} pendingRequests={pendingRequests} onAssignPendingRequest={assignPending}
           onAddLab={createSupplier} onUpdateLab={updateSupplier} canManageSharedSuppliers={canManageSharedSuppliers}
+          selectedLabSupplierId={selectedLabSupplierId}
+          onOpenLabSupplierDetail={onOpenLabSupplier}
+          onCloseLabSupplierDetail={onCloseLabSupplier}
+          onInvalidLabSupplierDetail={onInvalidLabSupplier}
+          loadError={loadError}
         />
       </LabRouteProvider>
     </div>

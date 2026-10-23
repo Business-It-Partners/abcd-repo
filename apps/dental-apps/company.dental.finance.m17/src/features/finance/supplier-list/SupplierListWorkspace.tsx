@@ -7,27 +7,6 @@ import SupplierDetailView from "./SupplierDetailView";
 import SupplierListView from "./SupplierListView";
 import type { ClinicPurchase, ClinicSupplier, ClinicSupplierPayment, ClinicSupplierStatement } from "./types";
 
-const SUPPLIER_ROUTE_PREFIX = "#finance/suppliers/";
-const ROUTE_STATE_KEY = "dentalFinanceSupplierId";
-
-function routeSupplierId(): string | null {
-  if (window.location.hash.startsWith(SUPPLIER_ROUTE_PREFIX)) {
-    try { return decodeURIComponent(window.location.hash.slice(SUPPLIER_ROUTE_PREFIX.length)) || null; }
-    catch { return null; }
-  }
-  const state = window.history.state;
-  return state && typeof state === "object" && typeof state[ROUTE_STATE_KEY] === "string" ? state[ROUTE_STATE_KEY] as string : null;
-}
-
-function writeRoute(supplierId: string | null, mode: "push" | "replace") {
-  const current = window.history.state && typeof window.history.state === "object" ? window.history.state : {};
-  const next = { ...current, [ROUTE_STATE_KEY]: supplierId };
-  const url = new URL(window.location.href);
-  url.hash = supplierId ? `finance/suppliers/${encodeURIComponent(supplierId)}` : "";
-  if (mode === "push") window.history.pushState(next, "", url);
-  else window.history.replaceState(next, "", url);
-}
-
 function readableError(cause: unknown, fallback: string): string {
   if (cause instanceof ClinicError) {
     if (cause.code === "FORBIDDEN" || cause.code === "ACCESS_DENIED") return "Your clinic role cannot open supplier finance.";
@@ -40,15 +19,22 @@ function readableError(cause: unknown, fallback: string): string {
 export function SupplierListWorkspace({
   client,
   onNavigationLockChange,
+  selectedSupplierId,
+  onOpenSupplier,
+  onCloseSupplier,
+  onInvalidSupplier,
 }: {
   client: ClinicClient;
   onNavigationLockChange: (locked: boolean) => void;
+  selectedSupplierId: string | null;
+  onOpenSupplier: (supplierId: string) => void;
+  onCloseSupplier: () => void;
+  onInvalidSupplier: () => void;
 }) {
   const [suppliers, setSuppliers] = useState<ClinicSupplier[]>([]);
   const [purchases, setPurchases] = useState<ClinicPurchase[]>([]);
   const [payments, setPayments] = useState<ClinicSupplierPayment[]>([]);
   const [statement, setStatement] = useState<ClinicSupplierStatement | null>(null);
-  const [routeId, setRouteId] = useState<string | null>(() => routeSupplierId());
   const [suppliersLoading, setSuppliersLoading] = useState(true);
   const [purchasesLoading, setPurchasesLoading] = useState(false);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -60,7 +46,7 @@ export function SupplierListWorkspace({
   const listSequence = useRef(0);
   const detailSequence = useRef(0);
   const api = useMemo(() => new SupplierListApi(client), [client]);
-  const selected = suppliers.find((supplier) => supplier.supplierId === routeId) ?? null;
+  const selected = suppliers.find((supplier) => supplier.supplierId === selectedSupplierId) ?? null;
   const selectedId = selected?.supplierId ?? null;
   const loading = suppliersLoading || Boolean(selected && (purchasesLoading || paymentsLoading || statementLoading));
 
@@ -126,29 +112,22 @@ export function SupplierListWorkspace({
   }, [loadSuppliers]);
 
   useEffect(() => {
-    const onPopState = () => setRouteId(routeSupplierId());
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  useEffect(() => {
-    if (!routeId || !selectedId) return;
+    if (!selectedSupplierId || !selectedId) return;
     const controller = new AbortController();
     void loadDetail(selectedId, controller.signal).catch(() => undefined);
     return () => {
       controller.abort();
       detailSequence.current += 1;
     };
-  }, [loadDetail, routeId, selectedId]);
+  }, [loadDetail, selectedSupplierId, selectedId]);
 
   useEffect(() => {
-    if (!suppliersLoading && routeId && !selected) {
-      writeRoute(null, "replace");
-      setRouteId(null);
+    if (!suppliersLoading && !suppliersError && selectedSupplierId && !selected) {
       setStatement(null);
       setStatementLoading(false);
+      onInvalidSupplier();
     }
-  }, [routeId, selected, suppliersLoading]);
+  }, [onInvalidSupplier, selected, selectedSupplierId, suppliersError, suppliersLoading]);
 
   const refresh = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -180,19 +159,12 @@ export function SupplierListWorkspace({
   }, []);
 
   const openSupplier = useCallback((supplier: ClinicSupplier) => {
-    writeRoute(supplier.supplierId, "push");
-    setRouteId(supplier.supplierId);
-  }, []);
+    onOpenSupplier(supplier.supplierId);
+  }, [onOpenSupplier]);
 
   const closeSupplier = useCallback(() => {
-    const currentState = window.history.state;
-    if (currentState && typeof currentState === "object" && currentState[ROUTE_STATE_KEY] === routeId) {
-      window.history.back();
-    } else {
-      writeRoute(null, "replace");
-      setRouteId(null);
-    }
-  }, [routeId]);
+    onCloseSupplier();
+  }, [onCloseSupplier]);
 
   const onRecordPayment = useCallback(async (payment: ClinicSupplierPayment) => {
     setPayments((current) => [payment, ...current.filter((row) => row.supplierPaymentId !== payment.supplierPaymentId)]);

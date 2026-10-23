@@ -41,6 +41,10 @@ export function StaffDirectory({
   clinicCapabilities,
   mediaCapabilities,
   onLifecycle,
+  selectedStaffId,
+  onOpenStaff,
+  onCloseStaff,
+  onInvalidStaff,
 }: {
   client: ClinicClient;
   api: StaffApi;
@@ -48,10 +52,13 @@ export function StaffDirectory({
   clinicCapabilities: string[];
   mediaCapabilities: string[];
   onLifecycle: (state: LifecycleState) => void;
+  selectedStaffId: string | null;
+  onOpenStaff: (staffId: string) => void;
+  onCloseStaff: () => void;
+  onInvalidStaff: () => void;
 }) {
   const { showSuccess } = useClinicSnackbar();
   const [staff, setStaff] = useState<StaffProfile[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | StaffType>("all");
   const [showCreate, setShowCreate] = useState(false);
@@ -86,7 +93,10 @@ export function StaffDirectory({
     placement: "page-action" as const,
   }), [load, loading]));
 
-  const selectedStaff = staff.find((member) => member.staffId === selectedId) ?? null;
+  const selectedStaff = staff.find((member) => member.staffId === selectedStaffId) ?? null;
+  useEffect(() => {
+    if (!loading && !error && selectedStaffId && !selectedStaff) onInvalidStaff();
+  }, [error, loading, onInvalidStaff, selectedStaff, selectedStaffId]);
   const activeCount = useMemo(() => staff.filter((member) => member.status === "active").length, [staff]);
   const visibleStaff = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
@@ -132,7 +142,7 @@ export function StaffDirectory({
         clinicCapabilities={clinicCapabilities}
         media={media}
         mediaCapabilities={mediaCapabilities}
-        onBack={() => setSelectedId(null)}
+        onBack={onCloseStaff}
         onLifecycle={onLifecycle}
         onUpdated={(updated) => setStaff((current) =>
           current.map((member) => member.staffId === updated.staffId ? updated : member))}
@@ -245,7 +255,7 @@ export function StaffDirectory({
               },
               {
                 key: "actions", header: "", width: "6%", align: "right",
-                render: (member) => <button className="staffDetailButton" onClick={() => setSelectedId(member.staffId)} type="button">
+                render: (member) => <button className="staffDetailButton" onClick={() => onOpenStaff(member.staffId)} type="button">
                   View <ArrowRight aria-hidden="true" size={14} />
                 </button>,
               },

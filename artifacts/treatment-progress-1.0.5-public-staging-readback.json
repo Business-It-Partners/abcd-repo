@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-23T16:06:21.972Z",
+  "environment": "Cloudflare staging public feed",
+  "sequence": 57,
+  "appId": "company.dental.treatment-progress.m17",
+  "currentVersion": "1.0.5",
+  "previousVersion": "1.0.4",
+  "keyId": "company-staging-m17-20261022",
+  "packageSha256": "20e2d0697fe3a984d419686b008102278da7413137feedc58a41f006c3fcb807",
+  "packageBytes": 1144851,
+  "payloadDigest": "0b714709afc852c6cf6e1d3c77d66960a87017985415622ce1c44b3be339d331",
+  "exactApiOperations": [
+    "clinic.api.request"
+  ],
+  "retainedReleaseGrantVersions": [
+    "1.0.0",
+    "1.0.1",
+    "1.0.2",
+    "1.0.3",
+    "1.0.4",
+    "1.0.5"
+  ],
+  "checks": [
+    "catalogue signature and freshness",
+    "update-policy signature and freshness",
+    "matching feed sequence",
+    "pinned M17 signer",
+    "catalogue current release identity",
+    "public package bytes, hash and size",
+    "package signature, identity and payload digest",
+    "exact API grant matches package and catalogue",
+    "public metadata bytes match the prepared signed release hashes"
+  ],
+  "catalogueSha256": "f152d1c5e886ae12409c926cfc40f4ce217170a6902659d819590518007d6ba3",
+  "updatePolicySha256": "fc31bb3933a114ad5c17f204085938041fbaeeedffdde0ba47fd9ebdc8e550d3"
+}

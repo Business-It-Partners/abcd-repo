@@ -31,13 +31,16 @@ if (stagingDistribution.apiBase !== 'https://dentmitra-api-cloudfare-staging.tiw
   || stagingDistribution.publicBase !== 'https://pub-5a82684f6abc4896b7bd2a4b59828182.r2.dev') throw Error('Pinned staging distribution fence');
 
 const definitions = {
-  'company.dental.followups.m17': 'Follow-ups',
-  'company.dental.work-entry.m17': 'Work Entry',
-  'company.dental.patient-record.m17': 'Patient Record',
-  'company.dental.m17.treatment-protocols': 'Treatment Protocols',
-  'company.dental.appointments.m17': 'Appointments',
-  'company.dental.calendar.m17': 'Calendar',
-  'company.dental.treatment-progress.m17': 'Treatment Progress',
+  'company.dental.followups.m17': { title: 'Follow-ups' },
+  'company.dental.work-entry.m17': { title: 'Work Entry' },
+  'company.dental.patient-record.m17': { title: 'Patient Record' },
+  'company.dental.m17.treatment-protocols': { title: 'Treatment Protocols' },
+  'company.dental.appointments.m17': { title: 'Appointments' },
+  'company.dental.calendar.m17': { title: 'Calendar' },
+  'company.dental.treatment-progress.m17': { title: 'Treatment Progress' },
+  'company.dental.finance.m17': { title: 'Finance', initialVersion: '1.7.0' },
+  'company.dental.lab-tracker.m17': { title: 'Lab Tracker' },
+  'company.dental.staff.m17': { title: 'Staff' },
 };
 function read(name, max = 2_097_152) {
   const file = path.join(root, name), info = fs.lstatSync(file);
@@ -46,6 +49,7 @@ function read(name, max = 2_097_152) {
 }
 const release = JSON.parse(read('release.json', 65_536).toString('utf8'));
 const appId = release.appId;
+const expectedInitialVersion = definitions[appId]?.initialVersion ?? '1.0.0';
 const versionParts = typeof release.version === 'string' ? /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.exec(release.version) : null;
 if (!Object.hasOwn(definitions, appId) || release.environment !== 'cloudfare-staging' || release.localOnly !== true
   || release.keyId !== m17StagingKeyId || release.publicKeySha256 !== 'e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709'
@@ -94,7 +98,7 @@ const versionIsNewer = (next, prior) => {
   return false;
 };
 const updateShapeValid = release.releaseKind === 'new'
-  ? !priorReleaseRow && !priorAppPolicy && release.version === '1.0.0'
+  ? !priorReleaseRow && !priorAppPolicy && release.version === expectedInitialVersion
     && catalogue.releases.length === priorCatalogue.releases.length + 1 && policy.apps.length === priorPolicy.apps.length + 1
   : !!priorReleaseRow && !!priorAppPolicy && priorReleaseRow.version === release.previousVersion
     && priorReleaseRow.packageSha256 === release.previousPackageSha256

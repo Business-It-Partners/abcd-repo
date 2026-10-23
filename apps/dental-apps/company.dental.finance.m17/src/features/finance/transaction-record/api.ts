@@ -29,10 +29,11 @@ function finiteNumber(value: unknown): value is number {
 
 function validReport(value: unknown): value is ClinicTransactionRecordReport {
   if (!record(value) || !Array.isArray(value.transactions)) return false;
+  const overview = value.overview;
   if (!finiteNumber(value.cashInTotal) || value.cashInTotal < 0
     || !finiteNumber(value.cashOutTotal) || value.cashOutTotal < 0
-    || !finiteNumber(value.netCashAmount) || !record(value.overview)) return false;
-  if (!overviewFields.every((field) => finiteNumber(value.overview[field]))) return false;
+    || !finiteNumber(value.netCashAmount) || !record(overview)) return false;
+  if (!overviewFields.every((field) => finiteNumber(overview[field]))) return false;
 
   return value.transactions.every((item) => record(item)
     && typeof item.transactionId === "string" && item.transactionId.length > 0

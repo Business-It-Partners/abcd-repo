@@ -450,7 +450,9 @@ export function StaffDetailPage({
     setError(null);
     try {
       const content = await media.read(profile.staffId, document.staffDocumentId);
-      const url = URL.createObjectURL(new Blob([content.bytes], { type: content.mimeType }));
+      const blobBytes = new ArrayBuffer(content.bytes.byteLength);
+      new Uint8Array(blobBytes).set(content.bytes);
+      const url = URL.createObjectURL(new Blob([blobBytes], { type: content.mimeType }));
       setPreview({ url, mimeType: content.mimeType, filename: document.displayFilename });
     } catch (cause) {
       setError(friendly(cause, "The private document could not be opened."));

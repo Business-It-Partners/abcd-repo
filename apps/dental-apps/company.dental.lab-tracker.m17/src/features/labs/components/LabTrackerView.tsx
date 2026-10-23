@@ -50,6 +50,11 @@ interface LabTrackerViewProps {
   canManageSharedSuppliers?: boolean;
   active?: boolean;
   onLifecycle?: (state: { dirty: boolean; modal: boolean }) => void;
+  loadError?: string;
+  selectedLabSupplierId?: string | null;
+  onOpenLabSupplierDetail?: (supplierId: string) => void;
+  onCloseLabSupplierDetail?: () => void;
+  onInvalidLabSupplierDetail?: () => void;
 }
 
 const PAGE_SIZE = 15;
@@ -76,6 +81,11 @@ export default function LabTrackerView({
   canManageSharedSuppliers = false,
   active = true,
   onLifecycle,
+  loadError = '',
+  selectedLabSupplierId = null,
+  onOpenLabSupplierDetail,
+  onCloseLabSupplierDetail,
+  onInvalidLabSupplierDetail,
 }: LabTrackerViewProps) {
   // The migration adapter owns this in-memory order directory. It resets on refresh.
   const orders = activeOrderRows.filter((order) => !order.voidedAt);
@@ -127,24 +137,26 @@ export default function LabTrackerView({
     }
   };
 
-  const openLabSupplierId = route.params.labSupplierId;
+  const openLabSupplierId = selectedLabSupplierId;
   const openLabSupplier = openLabSupplierId ? labs.find((l) => l.id === openLabSupplierId) : null;
   useEffect(() => {
     if (!active || section === "labs") return;
     const formOpen = Boolean(editingOrder || deletingOrder || assigningRequest);
-    const modalOpen = formOpen || Boolean(statusConfirm) || Boolean(detailId) || Boolean(openLabSupplierId);
+    const modalOpen = formOpen || Boolean(statusConfirm) || Boolean(detailId);
     onLifecycle?.({ dirty: formOpen, modal: modalOpen });
   }, [active, assigningRequest, deletingOrder, detailId, editingOrder, onLifecycle, openLabSupplierId, section, statusConfirm]);
   useEffect(() => {
-    if (!labsLoading && openLabSupplierId && !openLabSupplier) patch({ labSupplierId: null }, "replace");
-  }, [labsLoading, openLabSupplier, openLabSupplierId, patch]);
+    if (active && section === "labs" && !labsLoading && !loadError && openLabSupplierId && !openLabSupplier) {
+      onInvalidLabSupplierDetail?.();
+    }
+  }, [active, labsLoading, loadError, onInvalidLabSupplierDetail, openLabSupplier, openLabSupplierId, section]);
   if (openLabSupplier) {
     return (
       <LabSupplierDetailView
         lab={openLabSupplier}
         orders={[...orders, ...removedOrders]}
         loading={labsLoading}
-        onBack={() => closeDetail("labSupplierId")}
+        onBack={() => onCloseLabSupplierDetail?.()}
       />
     );
   }
@@ -161,7 +173,7 @@ export default function LabTrackerView({
           labs={labs}
           onAddLab={onAddLab}
           onUpdateLab={onUpdateLab}
-          onOpenLabDetail={(lab) => openDetail("labSupplierId", lab.id)}
+          onOpenLabDetail={(lab) => onOpenLabSupplierDetail?.(lab.id)}
           loading={labsLoading}
           canManageSharedSuppliers={canManageSharedSuppliers}
           active={active}

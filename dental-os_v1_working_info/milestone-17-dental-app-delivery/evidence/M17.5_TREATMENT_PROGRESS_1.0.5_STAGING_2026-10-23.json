@@ -1,0 +1,81 @@
+{
+  "milestone": "M17.5",
+  "environment": "Cloudflare staging",
+  "appId": "company.dental.treatment-progress.m17",
+  "version": "1.0.5",
+  "previousVersion": "1.0.4",
+  "sequence": 57,
+  "priorSequence": 56,
+  "keyId": "company-staging-m17-20261022",
+  "packageSha256": "20e2d0697fe3a984d419686b008102278da7413137feedc58a41f006c3fcb807",
+  "packageBytes": 1144851,
+  "payloadDigest": "0b714709afc852c6cf6e1d3c77d66960a87017985415622ce1c44b3be339d331",
+  "objectKey": "releases/company.dental.treatment-progress.m17/1.0.5/20e2d0697fe3a984d419686b008102278da7413137feedc58a41f006c3fcb807.dentalpkg",
+  "apiOperations": [
+    "clinic.api.request"
+  ],
+  "publication": {
+    "packageWritten": true,
+    "catalogueAndPolicyAdvancedToSequence": 57,
+    "temporaryWorkerReady": true,
+    "anonymousPublicationDenied": true,
+    "replayPublicationDenied": true,
+    "authorizedPublicationHttpStatus": 200,
+    "temporaryWorkerCleanedUp": true
+  },
+  "localChecks": {
+    "appTypecheck": "passed",
+    "appContractTests": "4/4 passed",
+    "appProductionBuild": "passed",
+    "privateHeadlessUi": {
+      "passed": true,
+      "checks": 29,
+      "report": "../../../artifacts/m17-treatment-progress-private-2026-10-23T16-02-54.038Z.json",
+      "screenshot": "../../../artifacts/m17-treatment-progress-private-2026-10-23T16-02-54.038Z.png"
+    },
+    "rootUnitTests": {
+      "passed": true,
+      "tests": 527,
+      "testFiles": 37,
+      "command": "npm test -- --maxWorkers=1",
+      "note": "The first run exposed one stale 1.0.4 identity expectation. Updated it for 1.0.5; the complete rerun passed."
+    },
+    "focusedReleaseIdentityTests": "3/3 passed"
+  },
+  "publicReadback": {
+    "passed": true,
+    "report": "../../../artifacts/treatment-progress-1.0.5-public-staging-readback.json",
+    "checks": [
+      "catalogue signature and freshness",
+      "update-policy signature and freshness",
+      "matching feed sequence",
+      "pinned M17 signer",
+      "catalogue current release identity",
+      "public package bytes, hash and size",
+      "package signature, identity and payload digest",
+      "exact API grant matches package and catalogue"
+    ],
+    "retainedReleaseGrantVersions": [
+      "1.0.0",
+      "1.0.1",
+      "1.0.2",
+      "1.0.3",
+      "1.0.4",
+      "1.0.5"
+    ]
+  },
+  "changes": [
+    "Removed the progress bar.",
+    "Removed the remaining-count label.",
+    "Kept the completed/total count text.",
+    "Removed the Doctors table column while retaining doctor search and filtering.",
+    "Kept long treatment-plan names on at most two lines.",
+    "Removed the fixed table minimum width so the table can fit without horizontal scrolling."
+  ],
+  "acceptanceLimitations": [
+    "Authenticated Store installation and runtime health on the user's profile were not performed.",
+    "The user's already-open app window was not restarted; publishing does not update its active in-memory version.",
+    "Live clinic workflow acceptance remains open.",
+    "No GitHub Actions, production publication, or OS restart was performed."
+  ]
+}

@@ -413,7 +413,7 @@ export default function PurchaseForm({
         <div className="purchase-lines-heading"><h3>Invoice items</h3><span>{lines.length} / {MAX_PURCHASE_LINES} lines</span></div>
         <DataTable<DraftLine>
           rows={lines}
-          rowKey={(line) => line.key}
+          rowKey={(line) => String(line.key)}
           noun="invoice lines"
           minWidth={760}
           columns={tableColumns}

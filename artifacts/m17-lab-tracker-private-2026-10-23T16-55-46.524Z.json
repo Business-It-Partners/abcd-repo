@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "private signed package has Lab Tracker identity, version 1.0.0, and packaged assets",
+    "renderer receives the SDK bridge with no credential getter",
+    "startup loads lab orders and lab-scoped shared suppliers through the approved SDK routes",
+    "pending doctor request is assigned with the expected row version and an idempotent SDK write",
+    "receipt and fit progression are persisted with optimistic row versions",
+    "reception notes are editable without exposing immutable clinical request fields",
+    "cancellation sends its reason with the row version and preserves the cancelled order in audit history",
+    "second module selection is acknowledged in the same app package and runtime",
+    "new lab supplier is created in the shared directory as a lab-only record",
+    "Lab Supplier Record displays associated operational work history without finance balances",
+    "renderer completed workflows without errors and every write used an idempotency key",
+    "role without lab_tracker.access is denied before clinic business routes execute",
+    "role-denied view contains no lab data or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.lab-tracker.m17",
+    "version": "1.0.0",
+    "packageSha256": "3e34dfa37e21adaf0b4087484ce295e3336e522964ac94e54384d9777c01ac05",
+    "payloadDigest": "02da7a156a7095b2fbdfc20b78ff6c377c4e5181301c1ee5ec7f7b82cc817d6c",
+    "wireBytes": 1295221,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.",
+  "screenshot": "m17-lab-tracker-private-2026-10-23T16-55-46.524Z.png"
+}

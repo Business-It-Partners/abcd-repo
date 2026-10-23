@@ -18,9 +18,17 @@ function readableError(cause: unknown, fallback: string): string {
 export function ProductListWorkspace({
   client,
   onNavigationLockChange,
+  selectedProductId,
+  onOpenProduct,
+  onCloseProduct,
+  onInvalidProduct,
 }: {
   client: ClinicClient;
   onNavigationLockChange: (locked: boolean) => void;
+  selectedProductId: string | null;
+  onOpenProduct: (productId: string) => void;
+  onCloseProduct: () => void;
+  onInvalidProduct: () => void;
 }) {
   const [products, setProducts] = useState<ClinicProduct[]>([]);
   const [purchases, setPurchases] = useState<ProductPurchase[]>([]);
@@ -96,6 +104,10 @@ export function ProductListWorkspace({
       purchasesLoading={purchasesLoading}
       purchasesError={purchaseError}
       onNavigationLockChange={onNavigationLockChange}
+      selectedProductId={selectedProductId}
+      onOpenProduct={onOpenProduct}
+      onCloseProduct={onCloseProduct}
+      onInvalidProduct={onInvalidProduct}
       onRefresh={reload}
       onCreated={saveCreated}
       onUpdated={saveUpdated}
