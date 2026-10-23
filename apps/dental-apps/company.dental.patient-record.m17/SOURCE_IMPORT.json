@@ -1,0 +1,58 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "sourceBranch": "production",
+  "revision": "f44d3e30ca6f79cba61e32601c53d58826500201",
+  "method": "Recreated Patient Record user workflows against production Patient Record UI, typed source and exact Worker API via the Dental OS ClinicClient and media SDK. No SaaS code or transport changed.",
+  "sources": [
+    {
+      "path": "apps/clinic-web/src/features/patients/api.ts",
+      "blob": "082ad6d0ffd5dba7febfcca81f75b02abf200042"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/types.ts",
+      "blob": "e1baa4c1dad3ac768e6dd5e0f9d2da633a31f73a"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/patientDirectory.ts",
+      "blob": "b36d2c4df392d31faa2fd674ab13b71e2553123d"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/components/PatientRecordView.tsx",
+      "blob": "aded4a7e4e830c9de5956761e917a22334e1c5b1"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
+      "blob": "b32f3420ac4af7b07a03b36e51a934fdf7b6132e"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/components/PatientProfileTab.tsx",
+      "blob": "dd793812227a07c323a66bc97a7847ff6cec3dc4"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/components/TreatmentPlanTab.tsx",
+      "blob": "fc05359e53b92ebdde10cc02caeb47398e7aa254"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/components/PrescriptionTab.tsx",
+      "blob": "8a623af2d24e6ec64dafe41fba94fa625d59ea9f"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/media/api.ts",
+      "blob": "2d92a763ce30cdef60842a15d6497347bb123c22"
+    },
+    {
+      "path": "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx",
+      "blob": "23c576697350dc57b8396846a9a60777d49a284c"
+    },
+    {
+      "path": "apps/clinic-web/src/features/clinical-care/ClinicCareWorkspace.tsx",
+      "blob": "f0736eca79b0c8ab36a956babec581da894ea9b4"
+    }
+  ],
+  "boundaries": [
+    "No production API credentials or direct HTTP",
+    "No app-to-app navigation or native print/export",
+    "No SaaS mutation",
+    "No release or verification performed"
+  ]
+}
