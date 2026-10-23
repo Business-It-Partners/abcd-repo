@@ -31,13 +31,13 @@ export class SessionManager implements Identity {
     finally{clearTimeout(timeout);if(this.action===controller)this.action=undefined;}
   }
   private schedule(){clearTimeout(this.timer);if(this.tokens)this.timer=setTimeout(()=>void this.refreshNow().catch(()=>{}),Math.max(1000,this.tokens.expiresAt-this.now()-60_000));}
-  private async install(tokens:Tokens,clinic:Clinic,epoch:number,remember:boolean){
+  private async install(tokens:Tokens,clinic:Clinic,epoch:number){
     if(epoch!==this.generation)throw new Error('Stale');
     let remembered=false,warning='';
-    if(remember&&this.store.available()){
+    if(this.store.available()){
       try{await this.persist(()=>this.store.save(tokens.refreshToken));remembered=true;}
       catch{warning='Protected storage unavailable. This login is session-only.';if(epoch===this.generation)await this.persist(()=>this.store.clear()).catch(()=>{});}
-    }else if(remember)warning='Protected storage unavailable. This login is session-only.';
+    }else warning='Protected storage unavailable. This login is session-only.';
     if(epoch!==this.generation)throw new Error('Stale');
     this.remembered=remembered;if(warning)this.message=warning;this.tokens=tokens;this.clinic=clinic;this.phase='ready';this.schedule();this.emit();
   }
@@ -48,7 +48,7 @@ export class SessionManager implements Identity {
       if(epoch!==this.generation)return{ok:false,code:'STALE'};
       if(!token){this.phase='signed-out';this.message=this.store.available()?'':'Protected storage unavailable. Sign in for this session only.';this.emit();return{ok:true};}
       const {tokens,clinic}=await this.bounded(async signal=>{const tokens=await this.client.refresh(token,signal);const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
-      await this.install(tokens,clinic,epoch,true);return{ok:true};
+      await this.install(tokens,clinic,epoch);return{ok:true};
     }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'signed-out','Saved session could not be restored. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});return{ok:false,code:error instanceof AuthFailure&&error.kind==='denied'?'DENIED':'STORAGE_UNAVAILABLE'};}
     finally{this.busy=false;}
   }
@@ -62,7 +62,7 @@ export class SessionManager implements Identity {
       await this.persist(()=>this.store.clear());
       const {tokens,clinic}=await this.bounded(async signal=>{signal.addEventListener('abort',()=>report('timeout'),{once:true});stage='firebase-sign-in';report('started');const tokens=await this.client.signIn(input.email,input.password,signal);stage='clinic-session-resolve';report('started');const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
       stage='session-install';report('started');
-      await this.install(tokens,clinic,epoch,input.remember);report('complete');return{ok:true};
+      await this.install(tokens,clinic,epoch);report('complete');return{ok:true};
     }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};const denied=error instanceof AuthFailure&&error.kind==='denied';report(error instanceof AuthFailure?error.kind:'other');this.reset(denied?'signed-out':'unavailable',denied?'Sign-in or clinic access denied.':'Staging sign-in is unavailable. Retry when connected.');return{ok:false,code:denied?'DENIED':'UNAVAILABLE'};}
     finally{this.busy=false;}
   }
@@ -73,15 +73,15 @@ export class SessionManager implements Identity {
   refreshNow():Promise<string>{
     if(this.renewal)return this.renewal;
     if(this.phase!=='ready'||!this.tokens)return Promise.reject(new AuthFailure('denied'));
-    const epoch=this.generation,old=this.tokens,priorClinic=this.clinic!,remember=this.remembered;
+    const epoch=this.generation,old=this.tokens,priorClinic=this.clinic!;
     const run=async()=>{
       try{
         const {tokens,clinic}=await this.bounded(async signal=>{const tokens=await this.client.refresh(old.refreshToken,signal);if(tokens.uid!==old.uid)throw new AuthFailure('denied');const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
         if(epoch!==this.generation)throw new Error('Stale');
         if(JSON.stringify(clinic)!==JSON.stringify(priorClinic)){
-          this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation,remember);throw new AuthFailure('denied');
+          this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation);throw new AuthFailure('denied');
         }
-        await this.install(tokens,clinic,epoch,remember);return tokens.idToken;
+        await this.install(tokens,clinic,epoch);return tokens.idToken;
       }catch(error){if(epoch===this.generation){this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Session expired or access could not be verified. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});}throw error;}
     };
     const promise=run();this.renewal=promise;void promise.finally(()=>{if(this.renewal===promise)this.renewal=undefined;}).catch(()=>{});return promise;
@@ -95,11 +95,11 @@ export class SessionManager implements Identity {
     // Re-resolve /v1/me once; deny/changed membership clears all old workspaces.
     if(this.accessCheck)return this.accessCheck;
     if(this.renewal){await this.renewal.catch(()=>{});return;}
-    const epoch=this.generation,tokens=this.tokens,prior=this.clinic,remember=this.remembered;
+    const epoch=this.generation,tokens=this.tokens,prior=this.clinic;
     const run=async()=>{try{
       const clinic=await this.bounded(signal=>this.client.resolve(tokens.idToken,signal));
       if(epoch!==this.generation)return;
-      if(JSON.stringify(clinic)!==JSON.stringify(prior)){this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation,remember);}
+      if(JSON.stringify(clinic)!==JSON.stringify(prior)){this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation);}
     }catch(error){if(epoch===this.generation){this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Clinic access could not be verified. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});}}};
     const promise=run();this.accessCheck=promise;try{await promise;}finally{if(this.accessCheck===promise)this.accessCheck=undefined;}
   }

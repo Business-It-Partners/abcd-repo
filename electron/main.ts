@@ -87,9 +87,9 @@ function createWindow() {
   const display = screen.getPrimaryDisplay();
   const win = new BrowserWindow({
     ...display.bounds,
-    title: 'Desktop — Motion Prototype', frame: false, fullscreen: true, fullscreenable: true, resizable: true, backgroundColor: '#eef3f8',
+    title: 'Sajilo Dental', frame: false, fullscreen: true, fullscreenable: true, resizable: true, backgroundColor: '#10162e',
     show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
   });
   hostWindow = win;
   if(localFiles){filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());

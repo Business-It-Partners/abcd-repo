@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="tile" x1="14" y1="8" x2="113" y2="121" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63c6dc"/>
+      <stop offset=".52" stop-color="#328ebc"/>
+      <stop offset="1" stop-color="#2855a0"/>
+    </linearGradient>
+    <linearGradient id="pane" x1="34" y1="27" x2="91" y2="101" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#e9f3fb"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="46" y1="68" x2="83" y2="68" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#167fba"/>
+      <stop offset="1" stop-color="#365bb1"/>
+    </linearGradient>
+    <filter id="shadow" x="17" y="18" width="94" height="99" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="29" fill="url(#tile)"/>
+  <path d="M8 31C18 12 42 6 63 7c24 1 42 9 56 23" fill="none" stroke="#fff" stroke-opacity=".32" stroke-width="3"/>
+  <rect x="24" y="30" width="80" height="77" rx="13" fill="#132e53" fill-opacity=".28" filter="url(#shadow)"/>
+  <rect x="24" y="27" width="80" height="77" rx="13" fill="url(#pane)"/>
+  <path d="M24 40a13 13 0 0 1 13-13h54a13 13 0 0 1 13 13v8H24z" fill="#f0f5f9"/>
+  <circle cx="35" cy="37.5" r="2.2" fill="#e87370"/>
+  <circle cx="42.5" cy="37.5" r="2.2" fill="#efbc51"/>
+  <circle cx="50" cy="37.5" r="2.2" fill="#64b982"/>
+  <path d="M24 48h80" stroke="#dce6ed" stroke-width="2"/>
+  <path d="m58 65-8 8 8 8m12-16 8 8-8 8m-4-20-4 24" fill="none" stroke="url(#arrow)" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5"/>
+  <path d="M35 93h48" stroke="#bfd0dc" stroke-linecap="round" stroke-width="3"/>
+  <path d="M35 101h29" stroke="#d1dee7" stroke-linecap="round" stroke-width="3"/>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="56" y1="28" x2="452" y2="488" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55D1DC"/><stop offset=".48" stop-color="#267DB7"/><stop offset="1" stop-color="#274B9A"/>
+    </linearGradient>
+    <linearGradient id="folder-back" x1="120" y1="164" x2="360" y2="374" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8FCF8"/><stop offset="1" stop-color="#9EDBD9"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="182" y1="137" x2="341" y2="330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF7"/><stop offset=".55" stop-color="#EFF9F6"/><stop offset="1" stop-color="#CDE9E8"/>
+    </linearGradient>
+    <linearGradient id="folder-front" x1="160" y1="274" x2="354" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B4F0E5"/><stop offset=".42" stop-color="#67CFC9"/><stop offset="1" stop-color="#3BA8B7"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="296" y1="141" x2="340" y2="186" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F3EF"/><stop offset="1" stop-color="#B5DCD9"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="95" y1="22" x2="423" y2="454" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF" stop-opacity=".2"/><stop offset=".55" stop-color="#FFF" stop-opacity="0"/><stop offset="1" stop-color="#041D54" stop-opacity=".13"/>
+    </linearGradient>
+    <filter id="tile-shadow" x="8" y="9" width="496" height="504" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="10" stdDeviation="11" flood-color="#0B2F67" flood-opacity=".33"/>
+    </filter>
+    <filter id="object-shadow" x="78" y="101" width="365" height="372" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="15" stdDeviation="14" flood-color="#123B69" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <g filter="url(#tile-shadow)">
+    <rect x="26" y="22" width="460" height="460" rx="111" fill="#113F85"/>
+    <rect x="20" y="15" width="464" height="464" rx="112" fill="url(#tile)"/>
+    <rect x="21.5" y="16.5" width="461" height="461" rx="110.5" stroke="#E7FFFF" stroke-opacity=".53" stroke-width="3"/>
+  </g>
+  <path d="M48 139C55 72 89 43 151 43H288" stroke="#EEFFFF" stroke-opacity=".27" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="258" cy="409" rx="151" ry="31" fill="#143F7E" fill-opacity=".28"/>
+  <g filter="url(#object-shadow)">
+    <path d="M129 199C129 183 142 170 158 170H211L241 199H358C375 199 388 212 388 229V361C388 379 374 393 356 393H160C143 393 129 379 129 362V199Z" fill="url(#folder-back)" stroke="#E9FFFC" stroke-width="5"/>
+    <path d="M176 145C176 134 185 125 196 125H301L344 168V306C344 317 335 326 324 326H196C185 326 176 317 176 306V145Z" fill="url(#paper)" stroke="#D8F2EF" stroke-width="5"/>
+    <path d="M301 127V158C301 165 307 171 314 171H341" fill="url(#fold)" stroke="#D0E9E5" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="204" y="189" width="31" height="31" rx="10" fill="#41BEBB"/>
+    <path d="M213 202H226M219.5 195.5V208.5" stroke="#E9FFFA" stroke-width="4" stroke-linecap="round"/>
+    <path d="M251 195H310M251 213H297" stroke="#86B7BD" stroke-width="7" stroke-linecap="round"/>
+    <path d="M207 245H310M207 261H286M207 278H300" stroke="#91BFC2" stroke-width="7" stroke-linecap="round"/>
+    <path d="M105 248C105 232 118 219 134 219H210L240 247H375C393 247 407 261 407 279V365C407 383 393 397 375 397H136C119 397 105 383 105 366V248Z" fill="url(#folder-front)" stroke="#C3F4EC" stroke-width="5"/>
+    <path d="M119 262H206L229 283H393" stroke="#F1FFFC" stroke-opacity=".5" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <rect x="20" y="15" width="464" height="464" rx="112" fill="url(#gloss)"/>
+</svg>

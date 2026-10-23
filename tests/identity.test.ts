@@ -22,16 +22,30 @@ async function harness(clientOverride?:Partial<AuthClient>,available=true,timeou
  await session.restore();
  return{session,client,store,root,invalidated:()=>invalidated,refreshes:()=>refreshes,close:async()=>{session.dispose();await session.flush();await rm(root,{recursive:true,force:true});}};
 }
-const input={email:'user@fixture.invalid',password:'fixture-pass',remember:false};
+const input={email:'user@fixture.invalid',password:'fixture-pass'};
 describe('protected credential storage',()=>{
  it('rejects basic_text, unknown and unavailable Linux storage with no plaintext fallback',async()=>{
   expect(adequateStorage('linux',true,'basic_text')).toBe(false);expect(adequateStorage('linux',true,'unknown')).toBe(false);expect(adequateStorage('linux',false,'gnome_libsecret')).toBe(false);expect(adequateStorage('linux',true,'gnome_libsecret')).toBe(true);expect(adequateStorage('win32',true,'os-protected')).toBe(true);
-  const h=await harness(undefined,false);try{expect(await h.session.login({...input,remember:true})).toEqual({ok:true});expect(h.session.view()).toMatchObject({phase:'ready',rememberAvailable:false,remembered:false});await expect(readFile(path.join(h.root,'identity/refresh.enc'))).rejects.toMatchObject({code:'ENOENT'});}finally{await h.close();}
+  const h=await harness(undefined,false);try{expect(await h.session.login(input)).toEqual({ok:true});expect(h.session.view()).toMatchObject({phase:'ready',rememberAvailable:false,remembered:false});expect(h.session.view().message).toContain('session-only');await expect(readFile(path.join(h.root,'identity/refresh.enc'))).rejects.toMatchObject({code:'ENOENT'});}finally{await h.close();}
  });
  it('persists only ciphertext, rotates remembered token and clears on logout',async()=>{
-  const h=await harness();try{await h.session.login({...input,remember:true});const file=path.join(h.root,'identity/refresh.enc'),bytes=await readFile(file);expect(bytes.toString()).not.toContain('fixture-refresh');expect(bytes.toString()).not.toContain('fixture-pass');expect(await h.store.load()).toBe('fixture-refresh-user@fixture.invalid-1');if(process.platform!=='win32')expect((await stat(file)).mode&0o777).toBe(0o600);
+  const h=await harness();try{await h.session.login(input);const file=path.join(h.root,'identity/refresh.enc'),bytes=await readFile(file);expect(bytes.toString()).not.toContain('fixture-refresh');expect(bytes.toString()).not.toContain('fixture-pass');expect(await h.store.load()).toBe('fixture-refresh-user@fixture.invalid-1');expect(h.session.view().remembered).toBe(true);if(process.platform!=='win32')expect((await stat(file)).mode&0o777).toBe(0o600);
    await h.session.refreshNow();expect(await h.store.load()).toBe('fixture-refresh-user@fixture.invalid-2');await h.session.logout();await expect(readFile(file)).rejects.toMatchObject({code:'ENOENT'});
   }finally{await h.close();}
+ });
+ it('restores the saved session after the app session manager is recreated',async()=>{
+  const h=await harness();let reopened:SessionManager|undefined;
+  try{
+   expect(await h.session.login(input)).toEqual({ok:true});
+   await h.session.flush();h.session.dispose();
+   reopened=new SessionManager(h.client,h.store,()=>{},'fixture');
+   expect(reopened.view().phase).toBe('restoring');
+   expect(await reopened.restore()).toEqual({ok:true});
+   expect(reopened.view()).toMatchObject({phase:'ready',userLabel:clinic.userLabel,clinicLabel:clinic.clinicLabel,remembered:true});
+   expect(h.refreshes()).toBe(1);
+   expect(await h.store.load()).toBe('fixture-refresh-user@fixture.invalid-2');
+   await reopened.logout();await reopened.flush();
+  }finally{reopened?.dispose();await h.close();}
  });
  it('refuses symlink/corrupt credentials and preserves unrelated target files',async()=>{
   const h=await harness();try{const outside=path.join(h.root,'unrelated');await writeFile(outside,'preserve');const file=path.join(h.root,'identity/refresh.enc');await mkdir(path.dirname(file),{recursive:true,mode:0o700});
@@ -39,8 +53,8 @@ describe('protected credential storage',()=>{
    await writeFile(file,'corrupt',{mode:0o600});await expect(h.store.load()).rejects.toThrow();expect(await readFile(file,'utf8')).toBe('corrupt');
   }finally{await h.close();}
  });
- it('uses session-only mode when encryption fails and never reports a remembered login',async()=>{
-  const h=await harness();try{const provider={available:()=>true,encrypt:async()=>{throw new Error('provider locked');},decrypt:async()=>{throw new Error('provider locked');}};const store=new CredentialStore(path.join(h.root,'failing'),provider);const s=new SessionManager(h.client,store,()=>{},'fixture');await s.restore();expect(await s.login({...input,remember:true})).toEqual({ok:true});expect(s.view()).toMatchObject({remembered:false,phase:'ready'});expect(s.view().message).toContain('session-only');s.dispose();await s.flush();}finally{await h.close();}
+ it('uses session-only mode when protected storage fails and never reports a saved session',async()=>{
+  const h=await harness();try{const provider={available:()=>true,encrypt:async()=>{throw new Error('provider locked');},decrypt:async()=>{throw new Error('provider locked');}};const store=new CredentialStore(path.join(h.root,'failing'),provider);const s=new SessionManager(h.client,store,()=>{},'fixture');await s.restore();expect(await s.login(input)).toEqual({ok:true});expect(s.view()).toMatchObject({remembered:false,phase:'ready'});expect(s.view().message).toContain('session-only');s.dispose();await s.flush();}finally{await h.close();}
  });
 });
 describe('single platform session',()=>{
@@ -67,7 +81,7 @@ describe('single platform session',()=>{
  });
  it('rejects malformed/concurrent login and bounded hangs, and destroys authority on lock',async()=>{
   const h=await harness({signIn:()=>new Promise(()=>{})},true,25);try{expect(await h.session.login({...input,token:'forged'})).toEqual({ok:false,code:'INVALID_INPUT'});const login=h.session.login(input);expect(await h.session.login(input)).toEqual({ok:false,code:'BUSY'});expect(await login).toEqual({ok:false,code:'UNAVAILABLE'});expect(h.session.snapshot().active).toBe(false);}finally{await h.close();}
-  const good=await harness();try{await good.session.login({...input,remember:true});const old=good.session.view().generation;good.session.lock();expect(good.session.view()).toMatchObject({phase:'locked',userLabel:'',clinicLabel:''});expect(good.session.view().generation).toBeGreaterThan(old);await good.session.flush();expect(await good.store.load()).toBeNull();await expect(good.session.credential(old,new AbortController().signal)).rejects.toThrow();}finally{await good.close();}
+  const good=await harness();try{await good.session.login(input);const old=good.session.view().generation;good.session.lock();expect(good.session.view()).toMatchObject({phase:'locked',userLabel:'',clinicLabel:''});expect(good.session.view().generation).toBeGreaterThan(old);await good.session.flush();expect(await good.store.load()).toBeNull();await expect(good.session.credential(old,new AbortController().signal)).rejects.toThrow();}finally{await good.close();}
  });
  it('rechecks operation denial without logging out valid users, then expires revoked membership',async()=>{
   const h=await harness();try{await h.session.login(input);await Promise.all([h.session.rejected(403),h.session.rejected(403)]);expect(h.session.view().phase).toBe('ready');h.client.resolve=async()=>{throw new AuthFailure('denied');};await h.session.rejected(403);expect(h.session.view().phase).toBe('expired');}finally{await h.close();}

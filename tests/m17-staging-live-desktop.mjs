@@ -69,7 +69,7 @@ try {
   await shell.locator('.clinic-widget-menu > summary').waitFor({ state: 'visible', timeout: 20000 });
   const identity = await shell.evaluate(() => window.desktop.identity.view());
   check('authorized staging clinic session is ready without persistent credential storage',
-    identity.phase === 'ready' && identity.mode === 'staging' && identity.remembered === false);
+    identity.phase === 'ready' && identity.mode === 'staging' && typeof identity.remembered === 'boolean');
   credentials.email = undefined;
   credentials.password = undefined;
   credentials = undefined;

@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Building2, CalendarDays, ChevronLeft, ChevronRight, MoreHorizontal, Wifi, WifiOff } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Minus, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
 import type { SessionView } from '../electron/identity/contracts';
 import './DesktopChrome.css';
 
+const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
+
 type Props = {
-  activeApp?: string;
   session?: SessionView;
   sessionControls?: ReactNode;
   statusbarVisible: boolean;
   onOpenApps?: () => void;
   onShowWindows?: () => void;
   onSupport?: () => void;
+  onRequestClose(): void;
 };
 
 const monthLabel = (date: Date) => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
@@ -20,7 +22,7 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ activeApp, session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport }: Props) {
+export function DesktopChrome({ session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
@@ -54,14 +56,18 @@ export function DesktopChrome({ activeApp, session, sessionControls, statusbarVi
 
   return <>
     <header className={`desktop-statusbar ${statusbarVisible ? 'chrome-shown' : 'chrome-hidden'}`} aria-label="Desktop status bar" aria-hidden={!statusbarVisible} inert={!statusbarVisible}>
-      <div className="statusbar-active" aria-live="polite">
-        <Building2 size={15} aria-hidden="true" />
-        <span>{activeApp || 'Sajilo Dental'}</span>
+      <div className="statusbar-brand" aria-label="Sajilo Dental">
+        <img src={sajiloDentalMark} alt="" />
+        <span className="statusbar-brand-sajilo">Sajilo</span><span className="statusbar-brand-dental">Dental</span>
       </div>
       <nav className="statusbar-menu" aria-label="Desktop menus">
         <button type="button" onClick={onOpenApps} aria-label="Open apps catalog">Apps</button>
         <button type="button" onClick={onShowWindows} aria-label="Show open windows">Windows</button>
         <button type="button" onClick={onSupport} aria-label="Open support diagnostics">Help</button>
+        {session?.phase === 'ready' && sessionControls && <details className="statusbar-account-menu">
+          <summary aria-label="Account options">Account</summary>
+          {sessionControls}
+        </details>}
       </nav>
       <div className="statusbar-right">
         <span className={`statusbar-network ${online ? 'is-online' : 'is-offline'}`} aria-label={`Network ${online ? 'online' : 'offline'}`} title={online ? 'The system reports a network connection; this does not confirm clinic services are reachable.' : 'The system reports no network connection.'}>
@@ -70,10 +76,10 @@ export function DesktopChrome({ activeApp, session, sessionControls, statusbarVi
         </span>
         <time className="statusbar-date" dateTime={now.toISOString()}>{formatDate}</time>
         <time className="statusbar-time" dateTime={now.toISOString()}>{formatTime}</time>
-        {session?.phase === 'ready' && sessionControls && <details className="clinic-widget-menu">
-          <summary aria-label="Session options" title="Session options"><MoreHorizontal size={18} aria-hidden="true"/></summary>
-          {sessionControls}
-        </details>}
+        <div className="statusbar-window-controls" role="group" aria-label="Dental OS window controls">
+          <button type="button" aria-label="Minimize Dental OS" title="Minimize Dental OS" onClick={() => void window.desktop?.control('minimize')}><Minus size={14} strokeWidth={2} aria-hidden="true"/></button>
+          <button className="statusbar-window-close" type="button" aria-label="Close Dental OS" title="Close Dental OS" onClick={onRequestClose}><X size={14} strokeWidth={2} aria-hidden="true"/></button>
+        </div>
       </div>
     </header>
 

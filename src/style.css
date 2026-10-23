@@ -186,11 +186,6 @@ button:disabled{opacity:.85}
 .records-toolbar{flex-wrap:wrap}
 .records-body{overflow:auto}
 
-/* Environment controls live in the dock, including in revealed fullscreen. */
-.dock-icon.system-icon{background:linear-gradient(145deg,#4b92eb,#2860b2);color:white}
-.dock-icon.host-shutdown{background:linear-gradient(145deg,#e87875,#ba4146);color:white}
-
-
 /* Follow-ups: the reference page body, inside the shared app frame. */
 .dock-icon.teal{background:linear-gradient(145deg,#67cbd4,#19889d);color:#fff}
 .dock-icon.image-icon{background:transparent;box-shadow:none}
@@ -451,4 +446,5 @@ button:disabled{opacity:1;color:var(--text-muted);cursor:default}
 /* Reduce shell hover, overview, delivery and status animations consistently. */
 @media(prefers-reduced-motion:reduce){.desktop *, .desktop *::before, .desktop *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 
-.identity-gate{height:100vh;display:grid;place-items:center;background:#eef3f8;color:#30333c;padding:24px}.identity-card{width:min(440px,100%);max-height:95vh;overflow:auto;padding:32px;background:#fcfdff;border:1px solid #ccd4df;border-radius:16px;box-shadow:0 14px 40px #18263b16}.identity-kicker{font-size:11px;letter-spacing:.12em;color:#68758a}.identity-card h1{font-size:25px;font-weight:600}.identity-card p{line-height:1.5;color:#596778}.identity-card form{display:grid;gap:16px}.identity-card label{display:grid;gap:6px;font-size:13px}.identity-card input:not([type=checkbox]){padding:11px;border:1px solid #bbc6d4;border-radius:7px;font:inherit;background:white}.identity-card button,.identity-controls button{padding:9px 13px;border:1px solid #aebdce;border-radius:7px;background:#f1f6fc;color:#283f5d;font:inherit;cursor:pointer}.identity-card button:disabled{opacity:.6;cursor:default}.identity-card .identity-remember{display:flex;gap:8px;align-items:center}.identity-card small,.identity-note{font-size:12px;color:#68758a}.identity-controls{position:fixed;top:6px;right:8px;height:30px;z-index:100000;display:flex;gap:6px;align-items:center;padding:0;background:transparent;border:0;border-radius:0;font-size:11px;box-shadow:none}.identity-controls span{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;text-shadow:0 1px 3px #172b46,0 0 7px #172b46b0}.identity-controls button{font-size:11px;padding:3px 7px}.identity-card input:focus-visible,.identity-card button:focus-visible,.identity-controls button:focus-visible{outline:2px solid #3376be;outline-offset:2px}
+.identity-controls button{padding:9px 13px;border:1px solid #aebdce;border-radius:7px;background:#f1f6fc;color:#283f5d;font:inherit;cursor:pointer}
+.identity-controls{position:fixed;top:6px;right:8px;height:30px;z-index:100000;display:flex;gap:6px;align-items:center;padding:0;background:transparent;border:0;border-radius:0;font-size:11px;box-shadow:none}.identity-controls span{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;text-shadow:0 1px 3px #172b46,0 0 7px #172b46b0}.identity-controls button{font-size:11px;padding:3px 7px}.identity-controls button:focus-visible{outline:2px solid #3376be;outline-offset:2px}

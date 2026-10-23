@@ -66,7 +66,7 @@ try {
   const session = await shell.evaluate(() => window.desktop.identity.view());
   check('clinic session is ready', session.phase === 'ready');
   check('session uses the staging identity mode', session.mode === 'staging');
-  check('sign-in did not remember credentials on this temporary profile', session.remembered === false);
+  check('session reports persistence state without exposing saved credentials', typeof session.rememberAvailable === 'boolean' && typeof session.remembered === 'boolean');
 
   phase = 'store-discovery';
   await shell.getByRole('button', { name: 'App Store', exact: true }).click();

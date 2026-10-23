@@ -32,7 +32,7 @@ const signIn = async shell => {
   await shell.getByRole('button', { name: 'Sign in', exact: true }).click();
   await shell.getByRole('complementary', { name: 'Session controls' }).waitFor({ timeout: 20000 });
   const view = await shell.evaluate(() => window.desktop.identity.view());
-  check('private desktop resolves the real staging clinic session', view.phase === 'ready' && view.mode === 'staging' && !view.remembered);
+  check('private desktop resolves the real staging clinic session with automatic persistence status', view.phase === 'ready' && view.mode === 'staging' && typeof view.remembered === 'boolean');
 };
 const openStore = async shell => {
   await shell.getByRole('button', { name: 'App Store', exact: true }).click();

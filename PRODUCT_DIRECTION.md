@@ -4,6 +4,8 @@
 
 As approved on 2026-10-15, `/home/master-x/Desktop/fewa_business_os` is the canonical home for Electron OS. The active implementation is Electron + React + TypeScript: `electron/` provides the sandboxed native host and narrow preload IPC, while `src/` provides desktop windows, dock, overview, motion, and clinic app demonstrations.
 
+**User-facing brand:** Sajilo Dental. “Dental OS” remains the internal platform and milestone name. The selected startup slogan is “Less admin. More room to grow.”
+
 The complete former Flutter/Rust project is archived in `refrence/`. Its pharmacy V1 architecture and sprint documents remain historical references, not active requirements for this Electron implementation. Use proven dock, window, and Genie ideas from that archive without treating Flutter/Rust as runtime dependencies.
 
 Preserve the shared window lifecycle, app-scoped dialogs, single-session continuity, stable motion fallback, and softer readable visual design. App records are currently synthetic and memory-only. Do not imply production data persistence, finance integration, authentication, or backend services that have not been implemented.
