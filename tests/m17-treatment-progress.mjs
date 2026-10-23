@@ -52,6 +52,12 @@ try {
   page.setDefaultTimeout(15000);
   page.on("pageerror", error => errors.push(error.message));
   await page.getByRole("heading", { name: "Treatment Progress", exact: true }).waitFor();
+  const tableMetrics = await page.locator("[data-sajilo-standard-table]").evaluate(table => {
+    const wrap = table.parentElement;
+    return wrap ? { clientWidth: wrap.clientWidth, scrollWidth: wrap.scrollWidth, tableWidth: table.getBoundingClientRect().width } : null;
+  });
+  check("Treatment Progress table fits the viewport without horizontal scrolling",
+    !!tableMetrics && tableMetrics.clientWidth > 0 && tableMetrics.scrollWidth <= tableMetrics.clientWidth + 1 && tableMetrics.tableWidth <= tableMetrics.clientWidth + 1);
   await assertStandardPageScroll(page, check, "Treatment Progress");
   await page.getByText("Sita Rai", { exact: true }).waitFor();
   await page.getByRole("status", { name: "Opening treatment progress…" }).waitFor({ state: "detached" });
@@ -72,9 +78,10 @@ try {
     const lineHeight = parseFloat(style.lineHeight);
     return style.webkitLineClamp === "2" && height > lineHeight * 1.4 && height <= lineHeight * 2.1;
   }));
-  check("partial completion, remaining stages, balance, and next return render from the server projection",
+  check("partial completion, balance, and next return render from the server projection",
     await sitaRow.getByText("1 / 3 done", { exact: true }).isVisible() &&
-    await sitaRow.getByText("2 remaining", { exact: true }).isVisible() &&
+    await sitaRow.getByText("2 remaining", { exact: true }).count() === 0 &&
+    await sitaRow.locator("progress").count() === 0 &&
     await sitaRow.getByText(/1,500/).isVisible() &&
     await sitaRow.getByText("25 Oct 2026", { exact: true }).isVisible());
   check("completed work is shown inside an incomplete plan and zero balance is cleared",

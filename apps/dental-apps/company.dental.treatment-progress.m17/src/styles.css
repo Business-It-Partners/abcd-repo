@@ -82,45 +82,9 @@
   -webkit-line-clamp: 2;
 }
 
-.tprogressMeter {
-  min-width: 148px;
-}
-
-.tprogressMeterText {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-  color: var(--ink-2);
-  font-size: var(--fs-12);
+.tprogressCompletion {
   white-space: nowrap;
-}
-
-.tprogressMeter progress {
-  display: block;
-  width: 100%;
-  height: 6px;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--surface-alt);
-  color: var(--acc);
-  accent-color: var(--acc);
-}
-
-.tprogressMeter progress::-webkit-progress-bar {
-  border-radius: var(--r-pill);
-  background: var(--surface-alt);
-}
-
-.tprogressMeter progress::-webkit-progress-value {
-  border-radius: var(--r-pill);
-  background: var(--acc);
-}
-
-.tprogressMeter progress::-moz-progress-bar {
-  border-radius: var(--r-pill);
-  background: var(--acc);
+  font-variant-numeric: tabular-nums;
 }
 
 .tprogressBalance {

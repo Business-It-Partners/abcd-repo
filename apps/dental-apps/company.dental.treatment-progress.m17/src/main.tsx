@@ -264,14 +264,9 @@ function TreatmentProgressWorkspace() {
       header: "Progress",
       sortable: true,
       value: (row) => row.completedStages / row.totalStages,
-      render: (row) => {
-        const remaining = row.totalStages - row.completedStages;
-        const label = row.completedStages + " of " + row.totalStages + " stages complete";
-        return <div className="tprogressMeter" aria-label={label}>
-          <div className="tprogressMeterText"><span>{row.completedStages} / {row.totalStages} done</span><span>{remaining} remaining</span></div>
-          <progress aria-label={label} max={row.totalStages} value={row.completedStages} />
-        </div>;
-      },
+      render: (row) => <span className="tprogressCompletion" aria-label={row.completedStages + " of " + row.totalStages + " stages complete"}>
+        {row.completedStages} / {row.totalStages} done
+      </span>,
     },
     {
       key: "balance",
@@ -306,7 +301,6 @@ function TreatmentProgressWorkspace() {
       rowKey={(row) => row.patientId}
       noun="patients"
       pageSize={10}
-      minWidth={1100}
       loading={loading}
       loadingLabel="Loading treatment progress…"
       error={error || undefined}

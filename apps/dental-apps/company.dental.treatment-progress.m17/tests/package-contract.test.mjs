@@ -12,7 +12,7 @@ const source = JSON.parse(fs.readFileSync(path.join(app, "SOURCE_IMPORT.json"), 
 test("M17 package has its own first-release identity and one Treatment Progress family", () => {
   assert.equal(appJson.appId, "company.dental.treatment-progress.m17");
   assert.equal(manifest.appId, appJson.appId);
-  assert.equal(manifest.version, "1.0.1");
+  assert.equal(manifest.version, "1.0.5");
   assert.equal(JSON.parse(fs.readFileSync(path.join(app, "package.json"), "utf8")).version, manifest.version);
   assert.deepEqual(manifest.capabilities, [
     "clinic.app.treatment-progress",
