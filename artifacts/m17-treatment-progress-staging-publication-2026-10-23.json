@@ -1,0 +1,39 @@
+{
+  "recordedAt": "2026-10-23",
+  "environment": "cloudfare-staging",
+  "appId": "company.dental.treatment-progress.m17",
+  "version": "1.0.0",
+  "status": "approved",
+  "catalogueSequence": 27,
+  "priorCatalogueSequence": 26,
+  "catalogueApps": 17,
+  "updatePolicyApps": 17,
+  "signingKeyId": "company-staging-m17-20261022",
+  "package": {
+    "objectKey": "releases/company.dental.treatment-progress.m17/1.0.0/d6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61.dentalpkg",
+    "bytes": 1119939,
+    "sha256": "d6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61",
+    "payloadDigest": "f37e6eaa3c05a82051c938728e120fb4fa1009d3207fe45d57ff03abefaec998"
+  },
+  "apiOperations": [
+    "clinic.api.request"
+  ],
+  "publication": {
+    "packageWritten": true,
+    "catalogueAdvancedToSequence": 27,
+    "updatePolicyAdvancedToSequence": 27,
+    "anonymousPublicationDenied": true,
+    "replayPublicationDenied": true,
+    "temporaryPublisherWorkerCleanedUp": true
+  },
+  "publicVerification": {
+    "catalogueSignature": true,
+    "updatePolicySignature": true,
+    "packageDownloaded": true,
+    "packageSignatureAndInventory": true,
+    "exactReleaseGrant": true
+  },
+  "storeInstall": "not performed",
+  "liveClinicWorkflow": "not performed",
+  "productionTouched": false
+}

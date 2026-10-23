@@ -1,0 +1,32 @@
+{
+  "passed": false,
+  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('alert').getByText(/temporarily unavailable|unavailable|could not/i) to be visible\u001b[22m\n\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/treatment-progress\",\"method\":\"GET\"},{\"path\":\"/v1/treatment-progress\",\"method\":\"GET\"},{\"path\":\"/v1/treatment-progress\",\"method\":\"GET\"},{\"path\":\"/v1/treatment-progress\",\"method\":\"GET\"},{\"path\":\"/v1/treatment-progress\",\"method\":\"GET\"}],\"body\":\"Treatment Progress\\nTreatment progress is temporarily unavailable.\\nRefresh\\nDoctor\\nAll doctors\\n0 of 0 patients\\nThe clinic returned an invalid response.\\nRefresh to request the latest clinic projection.\"}\nPrivate host stderr: [7407:1023/005443.906632:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n[7275:1023/005444.979451:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[7275:1023/005444.979585:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[7275:1023/005444.979725:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[7275:1023/005444.979760:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[7275:1023/005445.321153:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[7275:1023/005445.321232:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[7275:1023/005445.321345:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[7275:1023/005445.321489:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n",
+  "checks": [
+    "ephemeral package signature carries the new app ID and version 1.0.0",
+    "renderer receives only the SDK bridge methods and no credential getter",
+    "initial projection uses only the permitted GET treatment-progress route",
+    "partial completion, remaining stages, balance, and next return render from the server projection",
+    "completed work is shown inside an incomplete plan and zero balance is cleared",
+    "patients remain worklist rows and do not expose an unapproved patient-detail action",
+    "Treatment Progress module selection is acknowledged after app readiness",
+    "search matches patient record IDs",
+    "search also matches assigned doctor names",
+    "doctor filter keeps rows assigned to the selected clinician",
+    "table pagination bounds the rendered rows while retaining all 12 projection rows",
+    "second page renders the remaining two records",
+    "refresh reloads the server projection and replaces stage counts",
+    "refreshed projection reflects a corrected stage count and return date",
+    "empty server projection shows a clear no-incomplete-plans state"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.0",
+    "appId": "company.dental.treatment-progress.m17",
+    "packageSha256": "eaa0b26d6a0b737c33e963760036a3268bb7730e53f7f95bd484229fda8f03e7",
+    "payloadDigest": "f37e6eaa3c05a82051c938728e120fb4fa1009d3207fe45d57ff03abefaec998",
+    "wireBytes": 1119943,
+    "assetCount": 5
+  },
+  "scope": "Private headless Electron acceptance with ephemeral test-only package signatures and synthetic in-memory projection. No clinic records, live staging, or publication.",
+  "screenshot": "m17-treatment-progress-private-2026-10-22T19-09-42.751Z.png"
+}

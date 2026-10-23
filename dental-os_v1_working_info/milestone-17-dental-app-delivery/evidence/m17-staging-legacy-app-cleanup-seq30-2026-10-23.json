@@ -1,0 +1,164 @@
+{
+  "environment": "cloudfare-staging",
+  "account": "03453ad990acaaa56336e5851e24f490",
+  "bucket": "dentmitra-dental-os-releases-cloudfare-staging",
+  "signer": "company-staging-m17-20261022",
+  "priorSequence": 29,
+  "newSequence": 30,
+  "keepIds": [
+    "company.dental.appointments.m17",
+    "company.dental.calendar.m17",
+    "company.dental.followups.m17",
+    "company.dental.m17.treatment-protocols",
+    "company.dental.treatment-progress.m17",
+    "company.sample.alpha",
+    "company.sample.beta",
+    "company.sample.preview"
+  ],
+  "removeLegacyIds": [
+    "company.dental.appointments",
+    "company.dental.calendar",
+    "company.dental.finance",
+    "company.dental.followups",
+    "company.dental.lab-tracker",
+    "company.dental.patient-payments",
+    "company.dental.patient-record",
+    "company.dental.staff",
+    "company.dental.treatment-progress",
+    "company.dental.treatment-protocols",
+    "company.dental.work-entry"
+  ],
+  "metadataBaseline": {
+    "catalogue/staging.json": "2a6ee39345609de34c0172857c116f9a82dfbc85a904590040e22257496de8ec",
+    "update-policy/staging.json": "e16c9353449ee7ad661bade290fe8f2baa6c5e42e4b9f16ebfe13d364bbda00d"
+  },
+  "metadataPublished": true,
+  "objectsDeleted": true,
+  "temporaryWorkerRemoved": true,
+  "temporaryWorker": "dental-os-staging-cleanup-50eb1030bc84",
+  "temporaryWorkerUrlVerified": true,
+  "workerReady": true,
+  "inventoryBefore": {
+    "dentalAppIds": [
+      "company.dental.appointments",
+      "company.dental.appointments.m17",
+      "company.dental.calendar",
+      "company.dental.calendar.m17",
+      "company.dental.finance",
+      "company.dental.followups",
+      "company.dental.followups.m17",
+      "company.dental.lab-tracker",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.patient-payments",
+      "company.dental.patient-record",
+      "company.dental.staff",
+      "company.dental.treatment-progress",
+      "company.dental.treatment-progress.m17",
+      "company.dental.treatment-protocols",
+      "company.dental.work-entry"
+    ],
+    "objectCount": 20,
+    "removeObjectCount": 14,
+    "keepM17ObjectCount": 6,
+    "removeBytes": 11092706,
+    "removeKeys": [
+      "releases/company.dental.appointments/1.0.0/be60668d772e8b4ab077daa2daf4e571d90233af83537c2bd46ff0f9ed7b4ae4.dentalpkg",
+      "releases/company.dental.calendar/1.0.0/aaace6bcb1ce43bbd243f4c0db9f0797bd02f094f94c70ecf61b317226267aa4.dentalpkg",
+      "releases/company.dental.finance/1.0.0/43e3bcbcfb2c4da3b435578f89cf0ea87e56bc1f5212410f3b4b9626b4b182aa.dentalpkg",
+      "releases/company.dental.finance/1.0.1/7276714bfd844a06576a1ef5e8c916de47fff4d3c447ced2b1df8a9f765afc0d.dentalpkg",
+      "releases/company.dental.followups/1.0.0/e49fe8f93bfe80f0acaa85d85bd7b42ea9e75d05f6bfe5a8cc5adf1a0858e2c5.dentalpkg",
+      "releases/company.dental.followups/1.1.0/4f22e9eaaa30e0a82d551d0c9c04f564aba1899c6a7db7eebcd15885c042bb3a.dentalpkg",
+      "releases/company.dental.lab-tracker/1.0.0/721bd9425d78b6499d807be8d7284c67fad38923cdafe9c96ae77d5b7ac7c2c2.dentalpkg",
+      "releases/company.dental.lab-tracker/1.0.1/3b17d56f25f71c3573cac3e11700aa0e8ea47546e7abbcfb1ba3cb3dc47c89ab.dentalpkg",
+      "releases/company.dental.patient-payments/1.0.0/dc979f1a16d5bb5b07b04e64481e44f81c7c913bb446f147adefedb45fdc108c.dentalpkg",
+      "releases/company.dental.patient-record/1.0.0/2d378f771bc4c8ebd8f3e44455caecdfe8462de7d55757e06437337e7a7d04da.dentalpkg",
+      "releases/company.dental.staff/1.0.0/5b81ef90a40ed04db91374c1c281609384aa8983aff59b1ec563f3b23309e4c6.dentalpkg",
+      "releases/company.dental.treatment-progress/1.0.0/942b1bcce9a663c7143257ec1dd8283f655eae1c8a60762624922af58b00cab9.dentalpkg",
+      "releases/company.dental.treatment-protocols/1.0.0/6e66a2d4a1b3e16db8ce1600fab8240236bced03344ebd1ca102a66cc2bffb7d.dentalpkg",
+      "releases/company.dental.work-entry/1.0.0/4d6b81ef93278c97c42362789c5c0ac9caeb05fdaaa97de1a9e689e40a74f546.dentalpkg"
+    ],
+    "keepKeys": [
+      "releases/company.dental.appointments.m17/1.0.0/35ac80e60e34f1c9e2487c80052278e8978e5997d014eade7fa3d96b9ccfea16.dentalpkg",
+      "releases/company.dental.appointments.m17/1.0.1/433a37e77da1ff20beb09b710c0da2d9ccbd944c1300375a08875f4c3abf9b03.dentalpkg",
+      "releases/company.dental.calendar.m17/1.0.0/0d45934d0ae43d0b79b3f1a60d188a865b3da0f509756d6a4a1642eed57d929d.dentalpkg",
+      "releases/company.dental.followups.m17/1.0.0/48e0bc95de7003abe701fc6b6be5c87ab4643dbb7a1caed98c6858a03e44f197.dentalpkg",
+      "releases/company.dental.m17.treatment-protocols/1.0.0/6db5fbe5b5418a88e4ea92c7ea32435c9d3a35619e21bb013cc286fcc004c224.dentalpkg",
+      "releases/company.dental.treatment-progress.m17/1.0.0/d6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61.dentalpkg"
+    ]
+  },
+  "applyAttempted": true,
+  "applyHttpStatus": 200,
+  "applyResult": {
+    "published": true,
+    "cleaned": true,
+    "environment": "cloudfare-staging",
+    "sequence": 30,
+    "removedIds": [
+      "company.dental.appointments",
+      "company.dental.calendar",
+      "company.dental.finance",
+      "company.dental.followups",
+      "company.dental.lab-tracker",
+      "company.dental.patient-payments",
+      "company.dental.patient-record",
+      "company.dental.staff",
+      "company.dental.treatment-progress",
+      "company.dental.treatment-protocols",
+      "company.dental.work-entry"
+    ],
+    "removedObjects": 14,
+    "removedBytes": 11092706,
+    "keptM17Objects": 6,
+    "remainingM17Ids": [
+      "company.dental.appointments.m17",
+      "company.dental.calendar.m17",
+      "company.dental.followups.m17",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.treatment-progress.m17"
+    ]
+  },
+  "inventoryAfter": {
+    "dentalAppIds": [
+      "company.dental.appointments.m17",
+      "company.dental.calendar.m17",
+      "company.dental.followups.m17",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.treatment-progress.m17"
+    ],
+    "objectCount": 6,
+    "keys": [
+      "releases/company.dental.appointments.m17/1.0.0/35ac80e60e34f1c9e2487c80052278e8978e5997d014eade7fa3d96b9ccfea16.dentalpkg",
+      "releases/company.dental.appointments.m17/1.0.1/433a37e77da1ff20beb09b710c0da2d9ccbd944c1300375a08875f4c3abf9b03.dentalpkg",
+      "releases/company.dental.calendar.m17/1.0.0/0d45934d0ae43d0b79b3f1a60d188a865b3da0f509756d6a4a1642eed57d929d.dentalpkg",
+      "releases/company.dental.followups.m17/1.0.0/48e0bc95de7003abe701fc6b6be5c87ab4643dbb7a1caed98c6858a03e44f197.dentalpkg",
+      "releases/company.dental.m17.treatment-protocols/1.0.0/6db5fbe5b5418a88e4ea92c7ea32435c9d3a35619e21bb013cc286fcc004c224.dentalpkg",
+      "releases/company.dental.treatment-progress.m17/1.0.0/d6a0376d71ff6c709f84b936909ab76740331283b6b0f768a59aa14991994f61.dentalpkg"
+    ]
+  },
+  "publicReadback": {
+    "catalogueSequence": 30,
+    "policySequence": 30,
+    "catalogueSha256": "eedea3f982a020870466c959cfaaff1d36094b99fc7c8be1c32302bff6790453",
+    "updatePolicySha256": "17b62a18abe3b7dbbd0b5befcafb2724136e3e9b9e74ea0d37ca81c51c11d9a1",
+    "catalogueIds": [
+      "company.dental.appointments.m17",
+      "company.dental.calendar.m17",
+      "company.dental.followups.m17",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.treatment-progress.m17",
+      "company.sample.alpha",
+      "company.sample.beta",
+      "company.sample.preview"
+    ],
+    "policyIds": [
+      "company.dental.appointments.m17",
+      "company.dental.calendar.m17",
+      "company.dental.followups.m17",
+      "company.dental.m17.treatment-protocols",
+      "company.dental.treatment-progress.m17",
+      "company.sample.alpha",
+      "company.sample.beta",
+      "company.sample.preview"
+    ]
+  }
+}

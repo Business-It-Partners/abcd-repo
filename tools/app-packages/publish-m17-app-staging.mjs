@@ -33,6 +33,7 @@ const definitions = {
   'company.dental.followups.m17': 'Follow-ups',
   'company.dental.appointments.m17': 'Appointments',
   'company.dental.calendar.m17': 'Calendar',
+  'company.dental.treatment-progress.m17': 'Treatment Progress',
 };
 function read(name, max = 2_097_152) {
   const file = path.join(root, name), info = fs.lstatSync(file);

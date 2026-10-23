@@ -21,6 +21,7 @@ const definitions = {
   'company.dental.followups.m17': { title: 'Follow-ups', moduleId: 'followups', family: 'clinic.app.followups' },
   'company.dental.appointments.m17': { title: 'Appointments', moduleId: 'appointments', family: 'clinic.app.appointments' },
   'company.dental.calendar.m17': { title: 'Calendar', moduleId: 'calendar', family: 'clinic.app.calendar' },
+  'company.dental.treatment-progress.m17': { title: 'Treatment Progress', moduleId: 'treatment-progress', family: 'clinic.app.treatment-progress' },
 };
 const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput] = process.argv.slice(2);
 const sequence = Number(rawSequence);
