@@ -16,7 +16,7 @@ const { clinicRequestAllowed } = require(path.join(root, 'dist-electron/sdk/appP
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const appId = 'company.dental.finance.m17';
-const capabilities = ['finance.manage'];
+const capabilities = ['finance.manage', 'patient_payments.outstanding.read'];
 const calls = [];
 const overview = {
   patientOutstandingDueAmount: 0, generalExpenseAmount: 0, purchaseAmount: 0,
@@ -30,6 +30,9 @@ global.fetch = async (url, init = {}) => {
   calls.push({ path: target.pathname + target.search, method: init.method ?? 'GET' });
   if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/clinic/transaction-record') {
     return Response.json({ report: { transactions: [], cashInTotal: 0, cashOutTotal: 0, netCashAmount: 0, overview } });
+  }
+  if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/patient-payments') {
+    return Response.json({ received: [], outstanding: [] });
   }
   return Response.json({ code: 'route_not_found' }, { status: 404 });
 };
@@ -79,7 +82,13 @@ app.whenReady().then(async () => {
   ipcMain.handle('runtime:app-info', event => runtime.appInfo(event));
   ipcMain.handle('runtime:open-explorer', event => runtime.openExplorer(event));
   ipcMain.on('runtime:report', (event, value) => runtime.report(event, value));
-  global.m17Finance = { calls, package: { appId, version: manifest.version, wireBytes: bytes.length, assetCount: pkg.files.size } };
+  const moduleAcks = [];
+  ipcMain.on('runtime:module-selection-ack', (event, value) => { moduleAcks.push(value); runtime.acknowledgeModule(event, value); });
+  global.m17Finance = {
+    calls, moduleAcks,
+    selectModule: moduleId => runtime.selectModule(appId, moduleId),
+    package: { appId, version: manifest.version, wireBytes: bytes.length, assetCount: pkg.files.size },
+  };
   runtime.sync([{ id: appId, open: true, visible: true, rect: { x: 0, y: 0, width: win.getContentSize()[0], height: win.getContentSize()[1] } }]);
 }).catch(error => { global.__m17FinanceDiagnostic = error instanceof Error ? error.stack : String(error); console.error('M17 FINANCE PRIVATE HOST FAILED', global.__m17FinanceDiagnostic); });
 app.on('before-quit', () => runtime?.dispose());

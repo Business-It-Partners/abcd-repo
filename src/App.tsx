@@ -306,6 +306,31 @@ function Desktop({ session, sessionControls, onRequestClose, leaveConfirmationOp
       focusTarget?.focus({ preventScroll: true });
     });
   }
+  function closeRuntimeAppExplorer() {
+    explorerReturnTarget.current = null;
+    setAppExplorer(null);
+    setAppExplorerError('');
+  }
+  async function openRuntimeAppExplorer(runtimeId: string, trigger: HTMLElement) {
+    explorerReturnTarget.current = trigger;
+    setFinanceExplorer(false);
+    setAppExplorerError('');
+    try {
+      const result = await window.desktop?.runtime.discoverApp(runtimeId);
+      if (result?.ok === false) {
+        setLaunchNotice(result.error?.message ?? 'This app could not be verified. Try again or update it from Apps.');
+        return;
+      }
+      if (!result?.value || result.value.modules.length < 2) {
+        setLaunchNotice('There are no additional apps available for this window.');
+        return;
+      }
+      setLaunchNotice('');
+      setAppExplorer(result.value);
+    } catch {
+      setLaunchNotice('The installed app could not be verified. Try again or update it from Apps.');
+    }
+  }
   function selectFinanceModule(module: string) {
     explorerReturnTarget.current = null;
     setFinanceModule(module);
@@ -327,7 +352,7 @@ function Desktop({ session, sessionControls, onRequestClose, leaveConfirmationOp
       onShowWindows={() => { setFinanceExplorer(false); setAppExplorer(null); dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }} inert={explorerOpen || !!pickerPrompt} aria-hidden={explorerOpen || !!pickerPrompt}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} blocked={explorerOpen || !!pickerPrompt || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onOpenAppExplorer={openRuntimeAppExplorer} blocked={explorerOpen || !!pickerPrompt || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -345,13 +370,15 @@ function Desktop({ session, sessionControls, onRequestClose, leaveConfirmationOp
     </ManagedWindowFrame>
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     <StandardWindow1 controller={staticControllers['standard-window-1']}/>
-    {WINDOW_IDS.filter(id => id !== 'files' && id !== 'standard-window-1' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}>
+    {WINDOW_IDS.filter(id => id !== 'files' && id !== 'standard-window-1' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}
+      moduleNavigation={id === 'finance' ? { activeLabel: financeModule, moduleCount: FINANCE_MODULES.length } : undefined}
+      onOpenModuleExplorer={id === 'finance' ? trigger => openFinanceExplorer(trigger) : undefined}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore controller={staticControllers.store} settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));
         setStoreMessage(`${windowSpec(id).title} uninstalled. Demo records retained for this session.`);
-        }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule} onOpenExplorer={openFinanceExplorer}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
+        }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
     </div>
     <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock || explorerOpen || !!pickerPrompt} aria-label="Application dock">
@@ -375,8 +402,8 @@ function Desktop({ session, sessionControls, onRequestClose, leaveConfirmationOp
       })}
     </nav>
     {readyId && !state.overview && !hostTransitioning && !financeExplorer && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
-    {appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} title={appExplorer.title} icon={appExplorer.iconDataUrl} modules={appExplorer.modules} error={appExplorerError} onClose={()=>{setAppExplorer(null);setAppExplorerError('');}} onSelect={moduleId=>void selectAppModule(moduleId)}/>}
-    {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
+    {appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} title={appExplorer.title} icon={appExplorer.iconDataUrl} modules={appExplorer.modules} error={appExplorerError} returnFocusTarget={explorerReturnTarget.current} onClose={closeRuntimeAppExplorer} onSelect={moduleId=>void selectAppModule(moduleId)}/>}
+    {financeExplorer && !appExplorer && !state.overview && !hostTransitioning && <AppExplorer bottom={DOCK.bottom + dockHeight + 14} returnFocusTarget={explorerReturnTarget.current} onClose={closeFinanceExplorer} onSelect={selectFinanceModule}/>}
     {launchNotice && !appExplorer && !financeExplorer && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}
     {immersive && !state.overview && <>
       <div className="statusbar-reveal-edge" onPointerEnter={() => setStatusbarRevealed(true)} aria-hidden="true"/>

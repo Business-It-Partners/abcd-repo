@@ -62,6 +62,7 @@ if (!/^[a-f0-9]{64}$/.test(release.packageSha256)
   throw Error('Unexpected package object key or release scope');
 }
 const packageBytes = read(release.objectKey);
+const artworkBytes = read('artwork.png', 2_097_152);
 const catalogueBytes = read('catalogue/staging.json', 65_536);
 const policyBytes = read('update-policy/staging.json', 65_536);
 const priorCatalogueBytes = read('baseline/catalogue/staging.json', 65_536);
@@ -71,6 +72,13 @@ for (const [bytes, expected, name] of [
   [policyBytes, release.updatePolicySha256, 'update policy'], [priorCatalogueBytes, release.priorCatalogueSha256, 'prior catalogue'],
   [priorPolicyBytes, release.priorUpdatePolicySha256, 'prior update policy'],
 ]) if (sha256(bytes) !== expected) throw Error(`${name} bytes changed after package preparation`);
+if (!/^[a-f0-9]{64}$/.test(release.artworkSha256) || !Number.isSafeInteger(release.artworkBytes)
+  || release.artworkBytes !== artworkBytes.length || release.artworkBytes < 8 || release.artworkBytes > 2 * 1024 * 1024
+  || !artworkBytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+  || sha256(artworkBytes) !== release.artworkSha256
+  || release.artworkObjectKey !== `artwork/${appId}/${release.version}/${release.artworkSha256}.png`) {
+  throw Error('Unexpected app artwork bytes or object key');
+}
 
 const now = Date.now();
 const priorCatalogueEnvelope = parseCanonical(priorCatalogueBytes);
@@ -92,6 +100,9 @@ const priorReleaseRow = priorCatalogue.releases.find(row => row.id === appId);
 const priorAppPolicy = priorPolicy.apps.find(row => row.id === appId);
 const priorCurrentGrant = priorReleaseRow && priorAppPolicy?.releases?.find(row => row.version === priorReleaseRow.version);
 const packageInfo = verifiedPackage.manifest;
+const artworkRef = releaseRow?.icon;
+if (!artworkRef || artworkRef.objectKey !== release.artworkObjectKey || artworkRef.sha256 !== release.artworkSha256
+  || artworkRef.bytes !== release.artworkBytes || artworkRef.mime !== 'image/png') throw Error('Signed artwork metadata does not match prepared artwork bytes');
 const versionIsNewer = (next, prior) => {
   const a = next.split('.').map(Number), b = prior.split('.').map(Number);
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i];
@@ -157,6 +168,7 @@ const publication = {
   environment: 'cloudfare-staging', bucket: 'dentmitra-dental-os-releases-cloudfare-staging', appId,
   version: release.version, sequence: release.sequence, priorSequence: release.priorSequence, keyId: m17StagingKeyId,
   packageSha256: release.packageSha256, packageBytes: release.packageBytes, payloadDigest: release.payloadDigest,
+  artworkObjectKey: release.artworkObjectKey, artworkSha256: release.artworkSha256, artworkBytes: release.artworkBytes,
   apiOperations: [...release.exactApiOperations],
   objectKey: release.objectKey, catalogueSha256: release.catalogueSha256, updatePolicySha256: release.updatePolicySha256,
   priorCatalogueSha256: release.priorCatalogueSha256, priorUpdatePolicySha256: release.priorUpdatePolicySha256,
@@ -189,7 +201,12 @@ const evidence = { ...publication, worker: workerName, packageWritten: false, pu
 let failure;
 try {
   const deployed = run(['deploy', '--config', configPath]);
-  if (deployed.status !== 0) throw Error('temporary-worker-deploy');
+  if (deployed.status !== 0) {
+    evidence.workerDeployExitCode = deployed.status;
+    const diagnostic = String(deployed.error?.message ?? deployed.stderr ?? deployed.stdout ?? 'no Wrangler diagnostic');
+    evidence.workerDeployDiagnostic = diagnostic.replace(/(?:Bearer\s+)[A-Za-z0-9._-]+/gi, 'Bearer [redacted]').slice(-1600);
+    throw Error('temporary-worker-deploy');
+  }
   const url = deployed.stdout.match(new RegExp(`https://${workerName.replaceAll('-', '\\-')}\\.[a-z0-9-]+\\.workers\\.dev`))?.[0];
   if (!url || !url.startsWith(`https://${workerName}.`)) throw Error('temporary-worker-url');
   evidence.workerUrlVerified = true;
@@ -209,7 +226,7 @@ try {
   evidence.anonymousDenied = anonymous.status === 404;
   await anonymous.body?.cancel();
   if (!evidence.anonymousDenied) throw Error('anonymous-publish-guard');
-  const body = JSON.stringify({ package: packageBytes.toString('base64'), catalogue: catalogueBytes.toString('base64'), policy: policyBytes.toString('base64') });
+  const body = JSON.stringify({ artwork: artworkBytes.toString('base64'), package: packageBytes.toString('base64'), catalogue: catalogueBytes.toString('base64'), policy: policyBytes.toString('base64') });
   let response;
   try {
     response = await fetch(url + '/publish', {
@@ -223,8 +240,9 @@ try {
   const result = await response.json();
   evidence.publicationOutcome = response.status;
   evidence.packageWritten = result.packageWritten === true;
+  evidence.artworkWritten = result.artworkWritten === true;
   evidence.advanced = Array.isArray(result.advanced) ? result.advanced : [];
-  evidence.published = response.ok && result.published === true && evidence.advanced.length === 2
+  evidence.published = response.ok && result.published === true && evidence.packageWritten && evidence.artworkWritten && evidence.advanced.length === 2
     && evidence.advanced[0].key === 'catalogue/staging.json' && evidence.advanced[0].sequence === release.sequence
     && evidence.advanced[1].key === 'update-policy/staging.json' && evidence.advanced[1].sequence === release.sequence;
   if (!evidence.published) throw Error('publish-conflict-or-partial-write');

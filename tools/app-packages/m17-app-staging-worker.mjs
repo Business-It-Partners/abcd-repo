@@ -11,14 +11,17 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
   if (state.used) return Response.json({ published: false, replay: true }, { status: 409 });
   state.used = true;
   let packageWritten = false;
+  let artworkWritten = false;
   const advanced = [];
   try {
     const declaredSize = Number(request.headers.get('content-length') ?? 0);
-    if (!Number.isSafeInteger(declaredSize) || declaredSize < 1 || declaredSize > 2_500_000) throw Error('Request size bound');
+    if (!Number.isSafeInteger(declaredSize) || declaredSize < 1 || declaredSize > 6_500_000) throw Error('Request size bound');
     const body = await request.json();
-    if (!body || typeof body !== 'object' || Object.keys(body).sort().join(',') !== 'catalogue,package,policy') throw Error('Request fields');
-    const pkg = decode(body.package), catalogue = decode(body.catalogue), policy = decode(body.policy);
+    if (!body || typeof body !== 'object' || Object.keys(body).sort().join(',') !== 'artwork,catalogue,package,policy') throw Error('Request fields');
+    const artwork = decode(body.artwork), pkg = decode(body.package), catalogue = decode(body.catalogue), policy = decode(body.policy);
     if (pkg.length !== expected.packageBytes || await digest(pkg) !== expected.packageSha256
+      || artwork.length !== expected.artworkBytes || await digest(artwork) !== expected.artworkSha256
+      || ![137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => artwork[index] === value)
       || await digest(catalogue) !== expected.catalogueSha256 || await digest(policy) !== expected.updatePolicySha256) throw Error('Prepared bytes changed');
 
     const base = [];
@@ -46,6 +49,9 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
       || grant?.payloadDigest !== expected.payloadDigest || JSON.stringify(grant?.apiOperations) !== JSON.stringify(expected.apiOperations)) {
       throw Error('Prepared signed release contract');
     }
+    const icon = release?.icon;
+    if (!icon || icon.objectKey !== expected.artworkObjectKey || icon.sha256 !== expected.artworkSha256
+      || icon.bytes !== expected.artworkBytes || icon.mime !== 'image/png') throw Error('Prepared artwork contract');
 
     const objectResult = await bucket.put(expected.objectKey, pkg, {
       onlyIf: new Headers({ 'If-None-Match': '*' }),
@@ -53,6 +59,13 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
     });
     if (!objectResult) throw Error('Immutable package object already exists or raced');
     packageWritten = true;
+
+    const artworkResult = await bucket.put(expected.artworkObjectKey, artwork, {
+      onlyIf: new Headers({ 'If-None-Match': '*' }),
+      httpMetadata: { contentType: 'image/png', cacheControl: 'public, max-age=31536000, immutable' },
+    });
+    if (!artworkResult) throw Error('Immutable app artwork object already exists or raced');
+    artworkWritten = true;
 
     for (const [key, bytes, etag] of [
       ['catalogue/staging.json', catalogue, base[0].etag],
@@ -64,8 +77,8 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
       if (!result) return Response.json({ published: false, conflict: true, packageWritten, advanced }, { status: 409 });
       advanced.push({ key, sequence: expected.sequence });
     }
-    return Response.json({ published: true, packageWritten, advanced }, { status: 200 });
+    return Response.json({ published: true, packageWritten, artworkWritten, advanced }, { status: 200 });
   } catch {
-    return Response.json({ published: false, conflict: true, packageWritten, advanced }, { status: 409 });
+    return Response.json({ published: false, conflict: true, packageWritten, artworkWritten, advanced }, { status: 409 });
   }
 }

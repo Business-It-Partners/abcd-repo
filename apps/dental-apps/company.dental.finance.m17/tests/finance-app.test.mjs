@@ -19,13 +19,13 @@ const modules = [
   "supplier-payments",
 ];
 
-test("Finance M17 has one 1.7.3 package with all eight ordered Finance modules", async () => {
+test("Finance M17 has one 1.7.4 package with all eight ordered Finance modules", async () => {
   const packageJson = await readJson("package.json");
   const manifest = await readJson("app.manifest.json");
   const app = await readJson("app.json");
 
   assert.equal(packageJson.name, "company.dental.finance.m17");
-  assert.equal(packageJson.version, "1.7.3");
+  assert.equal(packageJson.version, "1.7.4");
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ["clinic.app.finance", "clinic.api.request", "session.context"]);
@@ -33,6 +33,14 @@ test("Finance M17 has one 1.7.3 package with all eight ordered Finance modules",
   assert.equal(app.title, "Finance");
   assert.deepEqual(app.modules.map((module) => module.id), modules);
   assert.deepEqual(app.anyCapabilities, ["finance.manage", "patient_payments.outstanding.read"]);
+});
+
+test("Finance delegates module identity and switching to the Dental OS window title bar", async () => {
+  const main = await readText("src/main.tsx");
+  const styles = await readText("src/styles.css");
+  assert.doesNotMatch(main, /finance-app-toolbar|finance-active-module|finance-more-apps|openAppExplorer/);
+  assert.doesNotMatch(styles, /\.finance-app-toolbar|#finance-active-module|\.finance-more-apps/);
+  assert.match(main, /onModuleSelected/);
 });
 
 test("filterable Finance tables use the Standard Window 1 list-page contract", async () => {

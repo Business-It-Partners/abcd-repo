@@ -11,10 +11,11 @@ type ControllerRef = MutableRefObject<WindowController>;
 type DynamicApp = StoreApp & { target: RefObject<HTMLButtonElement | null> };
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
-export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked }: {
+export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, onOpenAppExplorer }: {
   controllers: Record<string, WindowController>; apps?: StoreApp[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
   onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean;
+  onOpenAppExplorer?(id: RuntimeId, trigger: HTMLElement): void;
 }) {
   const generation = useSessionGeneration();
   const { state, dispatch } = useWindowManager();
@@ -144,16 +145,18 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}/>;
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
+        moduleNavigation={entry?.moduleNavigation ? { activeLabel: entry.moduleNavigation.activeLabel, moduleCount: entry.moduleNavigation.moduleCount } : undefined}
+        onOpenModuleExplorer={trigger=>onOpenAppExplorer?.(id,trigger)}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onOpenModuleExplorer}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:{activeLabel:string;moduleCount:number};onOpenModuleExplorer?(trigger:HTMLElement):void}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
   const navigationDisabled=entry?.phase!=='ready'||!!entry?.dirty||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
-  return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled}
+  return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled} moduleNavigation={moduleNavigation} onOpenModuleExplorer={onOpenModuleExplorer}
     onNavigationBack={()=>void window.desktop?.runtime.navigate(id,'back',generation)}
     onNavigationForward={()=>void window.desktop?.runtime.navigate(id,'forward',generation)}>
     <Surface id={id} title={title} controller={controller} entry={entry} confirm={confirm} requestConfirm={requestConfirm} cancel={cancel} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>

@@ -4,10 +4,10 @@ import { FINANCE_MODULES } from './FinanceApp';
 import { dockArtwork } from './dockArtwork';
 
 export type ExplorerModule = Readonly<{ id: string; label: string }>;
-export function AppExplorer({ bottom, onClose, onSelect, title = 'Finance', icon = dockArtwork('finance'), modules = FINANCE_MODULES.map(label => ({ id: label, label })), error }: { bottom: number; onClose(): void; onSelect(module: string): void; title?: string; icon?: string; modules?: readonly ExplorerModule[]; error?: string }) {
+export function AppExplorer({ bottom, onClose, onSelect, title = 'Finance', icon = dockArtwork('finance'), modules = FINANCE_MODULES.map(label => ({ id: label, label })), error, returnFocusTarget }: { bottom: number; onClose(): void; onSelect(module: string): void; title?: string; icon?: string; modules?: readonly ExplorerModule[]; error?: string; returnFocusTarget?: HTMLElement | null }) {
   const panel = useRef<HTMLElement>(null);
   // Capture the caller before the parent marks the dock/window stage inert.
-  const returnFocus = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null);
+  const returnFocus = useRef<HTMLElement | null>(returnFocusTarget ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
 
   useEffect(() => {
     panel.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true });

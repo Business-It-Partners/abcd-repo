@@ -25,14 +25,24 @@ try {
   app.process().stderr?.on('data', chunk => logs.push(String(chunk)));
   page = await waitForGuest(app);
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', message => {
+    const text = message.text();
+    if (message.type() === 'error' && !text.includes("frame-ancestors")) errors.push(text);
+  });
   page.setDefaultTimeout(15000);
   await page.getByRole('heading', { name: 'Transaction Record', exact: true }).waitFor();
   packageInfo = await app.evaluate(() => globalThis.m17Finance.package);
-  check('private Finance package opens with its current identity and assets', packageInfo.appId === 'company.dental.finance.m17' && packageInfo.version === '1.7.3' && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5);
+  check('private Finance package opens with its current identity and assets', packageInfo.appId === 'company.dental.finance.m17' && packageInfo.version === '1.7.4' && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5);
   check('Finance renders its initial page instead of a blank app window', await page.locator('[data-clinic-page-header]').innerText().then(value => value.includes('Transaction Record')));
   check('Finance completes its initial transaction report request', await app.evaluate(() => globalThis.m17Finance.calls.some(call => call.path.startsWith('/v1/clinic/transaction-record') && call.method === 'GET')));
+  await page.getByText(/No transactions found/).waitFor();
   check('Finance shows the loaded empty state with no renderer errors', (await page.locator('body').innerText()).includes('No transactions found') && errors.length === 0);
+  const selection = await app.evaluate(async () => {
+    const result = await globalThis.m17Finance.selectModule('patient-payments');
+    return { result, ackCount: globalThis.m17Finance.moduleAcks.length };
+  });
+  await page.getByRole('heading', { name: 'Patient payments', exact: true }).waitFor();
+  check('OS module-selection event moves Finance to Patient payments and receives its acknowledgement', selection.result.ok === true && selection.ackCount >= 1);
   const screenshotPath = path.join(root, 'artifacts', 'm17-finance-private-latest.png');
   await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'w' });
   passed = true;

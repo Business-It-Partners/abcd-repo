@@ -1,10 +1,10 @@
-import { profileArgs } from './profile.mjs';
+import { fixtureArgs } from './profile.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-const app=await electron.launch({args:[root,...profileArgs],env}),page=await app.firstWindow();
+const app=await electron.launch({args:[root,...fixtureArgs],env}),page=await app.firstWindow();
 const checks=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const modules=['Transaction Record','Patient payments','General expenses','Salary payments','Product list','Purchases','Supplier list','Supplier payments'];
@@ -14,14 +14,14 @@ const openFromDock=()=>page.getByRole('button',{name:'Finance',exact:true}).clic
 const choose=name=>explorer.getByRole('button',{name,exact:true}).click();
 const moreApps=()=>frame.getByRole('button',{name:'More Finance apps',exact:true});
 const selected=name=>frame.getByRole('heading',{name,exact:true}).isVisible();
-const currentModule=()=>frame.getByTestId('finance-current-module');
+const currentModule=()=>frame.getByTestId('window-active-module');
 const showExplorer=()=>moreApps().click();
 try{
  const display=await app.evaluate(({screen})=>screen.getPrimaryDisplay().bounds);await page.waitForFunction(b=>innerWidth===b.width&&innerHeight===b.height,display);
  await page.locator('[data-dock-app="store"]').click();await page.waitForFunction(()=>document.querySelector('[data-window-id="store"]').dataset.phase==='visible');
  await openFromDock();
  check('Finance dock click opens the compact app explorer without opening a Finance window',await explorer.isVisible()&&await page.locator('[data-window-id="finance"]').getAttribute('data-phase')==='closed'&&await page.locator('[data-window-id="store"]').getAttribute('data-phase')==='visible');
- check('Finance explorer takes the foreground viewport and keyboard focus',await page.locator('.statusbar-active span').innerText()==='Finance'&&await page.locator('.statusbar-more-apps').count()===0&&await explorer.evaluate(panel=>panel.contains(document.activeElement)));
+ check('Finance explorer takes the foreground viewport and keyboard focus',await frame.getAttribute('data-active')==='false'&&await explorer.evaluate(panel=>panel.contains(document.activeElement)));
  check('Explorer presents the eight Finance sub-app names in reference order',JSON.stringify(await explorer.locator('.app-explorer-item').allTextContents())===JSON.stringify(modules));
  check('Every Finance sub-app reuses the same Finance icon artwork',await explorer.locator('.app-explorer-item img').evaluateAll(images=>images.length===8&&new Set(images.map(image=>image.getAttribute('src'))).size===1));
  check('Blurred glass explorer sits directly above the visible dock',await explorer.evaluate(panel=>{const r=panel.getBoundingClientRect(),dock=document.querySelector('.dock-pill').getBoundingClientRect(),style=getComputedStyle(panel);return r.bottom<dock.top&&dock.width>0&&parseFloat(style.borderTopLeftRadius)>=20&&style.backgroundImage.includes('gradient')&&style.getPropertyValue('-webkit-backdrop-filter')!=='none';}));
@@ -32,14 +32,14 @@ try{
   await choose(name);
   await phase('visible');
   if(name===modules[0])check('Choosing a Finance sub-app brings its window to the front above the already-open Store',await frame.getAttribute('data-active')==='true'&&await page.locator('[data-window-id="store"]').getAttribute('data-active')==='false'&&Number(await frame.evaluate(e=>e.style.zIndex))>Number(await page.locator('[data-window-id="store"]').evaluate(e=>e.style.zIndex)));
-  check(`${name} opens its name-only module screen`,await explorer.count()===0&&await selected(name)&&await currentModule().innerText()===name&&await page.locator('.statusbar-active span').innerText()==='Finance'&&await moreApps().isVisible());
-  if(name===modules[0])check('More Apps is a four-dot control inside the Finance window toolbar',await moreApps().getByText('More Apps',{exact:true}).isVisible()&&await moreApps().locator('svg').count()===1&&await moreApps().evaluate(button=>!!button.closest('[data-window-id="finance"]')));
+  check(`${name} opens with the selected module shown in the shared OS title bar`,await explorer.count()===0&&await selected(name)&&await currentModule().innerText()===name&&await frame.getAttribute('data-active')==='true'&&await moreApps().isVisible());
+  if(name===modules[0])check('More Apps is grouped after Back/Forward in the shared Finance title bar',await moreApps().getByText('More Apps',{exact:true}).isVisible()&&await moreApps().locator('svg').count()===1&&await moreApps().evaluate(button=>!!button.closest('.mac-titlebar')&&button.closest('.window-titlebar-leading')?.querySelector('.window-history-controls')));
  }
  await page.locator('[data-dock-app="store"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-window-id="store"]').dataset.active==='true');
- check('Switching to another app updates the desktop app label while More Apps stays in the Finance window',await page.locator('.statusbar-active span').innerText()!=='Finance'&&await page.locator('.statusbar-more-apps').count()===0&&await moreApps().isVisible());
+ check('Switching to another app keeps More Apps scoped to the inactive Finance window',await frame.getAttribute('data-active')==='false'&&await moreApps().isVisible());
  await page.locator('[data-dock-app="finance"]').click();await explorer.waitFor({state:'visible'});await choose('Supplier payments');await phase('visible');
- check('Returning to Finance keeps the selected module and its local More Apps control',await currentModule().innerText()==='Supplier payments'&&await page.locator('.statusbar-active span').innerText()==='Finance'&&await moreApps().isVisible());
+ check('Returning to Finance keeps the selected module and its OS title bar controls',await currentModule().innerText()==='Supplier payments'&&await frame.getAttribute('data-active')==='true'&&await moreApps().isVisible());
  await showExplorer();await page.mouse.move(20,20);await page.screenshot({path:path.join(root,'artifacts/finance-module-discovery-small.png')});
  await choose('Purchases');await page.mouse.move(20,20);await page.waitForTimeout(200);await page.screenshot({path:path.join(root,'artifacts/finance-module-selected.png')});
  await showExplorer();await page.keyboard.press('Escape');check('Escape closes the explorer and returns focus to More Apps',await explorer.count()===0&&await moreApps().evaluate(e=>e===document.activeElement));
@@ -49,10 +49,13 @@ try{
  await page.getByRole('button',{name:'Minimize Finance',exact:true}).click();await phase('minimized');await page.getByRole('button',{name:'Restore Finance',exact:true}).click();await phase('visible');check('Genie restore retains the selected module',await selected('Purchases'));
  await page.keyboard.press('Backquote');const overview=page.getByRole('dialog',{name:'Open windows',exact:true});check('Window overview offers Finance as a switch target',await overview.getByRole('button',{name:'Switch to Finance',exact:true}).isVisible());await overview.getByRole('button',{name:'Switch to Finance',exact:true}).click();await phase('visible');check('Window overview returns to the selected Finance module',await selected('Purchases'));
  await page.getByRole('button',{name:'Close Finance',exact:true}).click();await phase('closed');await openFromDock();await choose('Purchases');await phase('visible');check('Close and reopen retains the selected module',await selected('Purchases'));
- await page.evaluate(()=>{window.desktop.onHostTransition(value=>{window.hostTransitioning=value;});});await page.getByRole('button',{name:'Minimize Electron OS',exact:true}).click();
+ await page.evaluate(()=>{window.desktop.onHostTransition(value=>{window.hostTransitioning=value;});});await page.getByRole('button',{name:'Minimize Dental OS',exact:true}).click();
  let minimized=false;for(let n=0;n<40;n++){minimized=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMinimized());if(minimized)break;await new Promise(r=>setTimeout(r,50));}assert.ok(minimized);await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].restore());await page.waitForFunction(()=>window.hostTransitioning===false);check('Whole OS restore retains selected Finance module',await selected('Purchases'));
  const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setDeviceMetricsOverride',{width:504,height:600,deviceScaleFactor:1,mobile:false});await page.waitForTimeout(200);
- check('Compact Finance toolbar keeps More Apps within the Finance window',await moreApps().evaluate(e=>{const r=e.getBoundingClientRect(),f=e.closest('[data-window-id="finance"]').getBoundingClientRect();return r.left>=f.left&&r.right<=f.right&&r.top>=f.top+43&&r.bottom<=f.bottom;}));
+ const compactBounds=await moreApps().evaluate(e=>{const rect=value=>{const r=value.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},frame=e.closest('[data-window-id="finance"]'),leading=e.closest('.window-titlebar-leading'),module=e.closest('.window-module-navigation'),history=frame.querySelector('.window-history-controls');return{button:rect(e),leading:rect(leading),module:rect(module),history:rect(history),frame:rect(frame),titlebar:rect(frame.querySelector('.mac-titlebar')),presentation:frame.dataset.presentation,leadingStyle:{alignItems:getComputedStyle(leading).alignItems,position:getComputedStyle(leading).position,transform:getComputedStyle(leading).transform},moduleStyle:{alignItems:getComputedStyle(module).alignItems,position:getComputedStyle(module).position,transform:getComputedStyle(module).transform},windowWidth:innerWidth,windowHeight:innerHeight};});
+ const compactFits=compactBounds.button.x>=compactBounds.frame.x&&compactBounds.button.right<=compactBounds.frame.right&&compactBounds.button.y>=compactBounds.titlebar.y&&compactBounds.button.bottom<=compactBounds.titlebar.bottom;
+ if(!compactFits)console.log('Compact title bar geometry',JSON.stringify(compactBounds));
+ check('Compact Finance title bar keeps More Apps within the window chrome',compactFits);
  await showExplorer();
  check('Compact explorer has no horizontal clipping',await explorer.locator('.app-explorer-grid').evaluate(e=>{const r=e.getBoundingClientRect();return e.scrollWidth===e.clientWidth&&[...e.querySelectorAll('button')].every(button=>{const b=button.getBoundingClientRect();return b.left>=r.left&&b.right<=r.right;} );}));
  check('Compact explorer retains all eight module labels',await explorer.locator('.app-explorer-item').count()===8);await page.screenshot({path:path.join(root,'artifacts/finance-module-discovery-small.png')});

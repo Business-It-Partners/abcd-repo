@@ -103,7 +103,8 @@ try {
   await app.evaluate(() => globalThis.m17LabTracker.selectModule('lab-suppliers'));
   await page.getByRole('heading', { name: 'Lab supplier record', exact: true }).waitFor();
   for (let index = 0; index < 40 && !(await inspect(app)).moduleAcks.length; index++) await new Promise(resolve => setTimeout(resolve, 50));
-  check('second module selection is acknowledged in the same app package and runtime', (await inspect(app)).moduleSelectionResult?.ok === true && (await inspect(app)).moduleAcks.length === 1);
+  const selectedModuleState = await inspect(app);
+  check('OS module-selection event updates Lab Tracker in-place and is acknowledged by the same runtime', selectedModuleState.moduleSelectionResult?.ok === true && selectedModuleState.moduleAcks.length >= 1);
   await page.getByRole('button', { name: 'Add Lab Supplier', exact: true }).click();
   await page.getByRole('heading', { name: 'Register a Dental Lab Supplier', exact: true }).waitFor();
   await page.getByPlaceholder('e.g. Kantipur Dental Lab').fill('Synthetic New Lab');

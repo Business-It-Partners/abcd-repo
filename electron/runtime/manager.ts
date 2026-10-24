@@ -196,6 +196,13 @@ export class FixtureRuntime {
   private visibleAppInfo(entry: Entry): DentalAppInfo | undefined {
     return entry.lease ? this.appInfoFor(entry.lease,entry.appMetadata) : undefined;
   }
+  private syncModuleNavigation(entry: Entry) {
+    const info=this.visibleAppInfo(entry),modules=info?.modules??[];
+    if(!info||modules.length<2){delete entry.state.moduleNavigation;return;}
+    const active=modules.find(module=>module.id===entry.moduleId)??modules[0];
+    entry.moduleId=active.id;
+    entry.state.moduleNavigation={activeModuleId:active.id,activeLabel:active.label,moduleCount:modules.length};
+  }
   private installedAppInfo(id: RuntimeId): DentalAppInfo | undefined {
     try {
       const pkg=this.packages.inspectPackage(packageIdForRuntime(id));
@@ -256,7 +263,7 @@ export class FixtureRuntime {
     if(entry?.state.phase==='failed')return{ok:false as const,code:'UNAVAILABLE'};
     if(entry?.state.phase==='ready'&&!await this.sendModuleSelection(entry,moduleId))return{ok:false as const,code:'NOT_READY'};
     this.selectedModules.set(id,moduleId);
-    if(entry)entry.moduleId=moduleId;
+    if(entry){entry.moduleId=moduleId;this.syncModuleNavigation(entry);this.emit();}
     return{ok:true as const};
   }
   private create(id: RuntimeId, rect: RuntimeRect) {
@@ -286,6 +293,7 @@ export class FixtureRuntime {
     const selected=this.selectedModules.get(id),info=this.visibleAppInfo(e);
     if(selected&&info?.modules.some(module=>module.id===selected))e.moduleId=selected;
     else if(selected)this.selectedModules.delete(id);
+    this.syncModuleNavigation(e);
     e.healthTimer=setTimeout(()=>this.fail(e,'launch-health-timeout'),appLaunchHealthTimeoutMs);
     const lease = e.lease, entryLocation=lease.manifest.entry==='index.html'?'':lease.manifest.entry.endsWith('/index.html')?lease.manifest.entry.slice(0,-'index.html'.length):lease.manifest.entry, entryURL = `dental-fixture://${host}/${entryLocation}`;
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));

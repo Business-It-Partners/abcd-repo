@@ -37,6 +37,21 @@ describe('signed catalogue authenticity/freshness and exact destination binding'
   expect(stagingDistribution.policy.apps['company.sample.alpha'].capabilities).toContain('appointments.setStatus');expect(stagingDistribution.policy.apps['company.sample.beta'].capabilities).not.toContain('appointments.setStatus');
  });
  it('accepts current company metadata and same-byte sequence replay only within expiry', () => { const a = verifyCatalogue(signed(), policy, noWatermark, now); expect(a.catalogue.sequence).toBe(1); expect(verifyCatalogue(signed(), policy, a.watermark, now + 1000).catalogue.releases).toHaveLength(1); });
+ it('accepts a signed immutable PNG artwork reference without changing package authority', () => {
+  const catalogue = structuredClone(base) as any;
+  const sha = 'a'.repeat(64);
+  catalogue.releases[0].icon = { objectKey: `artwork/company.sample.alpha/1.0.0/${sha}.png`, sha256: sha, bytes: 128, mime: 'image/png' };
+  expect(verifyCatalogue(signed(catalogue), policy, noWatermark, now).catalogue.releases[0].icon).toEqual(catalogue.releases[0].icon);
+  for (const icon of [
+   { ...catalogue.releases[0].icon, objectKey: '../escape' },
+   { ...catalogue.releases[0].icon, mime: 'image/svg+xml' },
+   { ...catalogue.releases[0].icon, bytes: 2 * 1024 * 1024 + 1 },
+   { ...catalogue.releases[0].icon, sha256: 'bad' },
+  ]) {
+   const invalid = structuredClone(catalogue); invalid.releases[0].icon = icon;
+   expect(() => verifyCatalogue(signed(invalid), policy, noWatermark, now)).toThrow('Invalid artwork reference');
+  }
+ });
  it('accepts 25 signed company apps in both catalogue and update policy', () => {
   const count = 25, ids = Array.from({ length: count }, (_, index) => `company.future.app-${index}`);
   const dynamicTrust: TrustPolicy = { ...policy, companyApps: { publisher: 'company', capabilities: [] } };

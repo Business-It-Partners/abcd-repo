@@ -173,6 +173,13 @@ if (releaseKind === 'update') {
 
 const files = collectFiles(path.join(appRoot, 'dist'));
 if (!files.has(manifest.entry) || !files.has('app.json') || !files.has(appMetadata.icon)) throw Error('M17 package is missing entry, metadata, or icon');
+const artworkBytes = files.get(appMetadata.icon);
+const pngMagic = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+if (!appMetadata.icon.endsWith('.png') || artworkBytes.length < 8 || artworkBytes.length > 2 * 1024 * 1024 || !artworkBytes.subarray(0, 8).equals(pngMagic)) {
+  throw Error('M17 Store artwork must be a bounded PNG from the signed app package');
+}
+const artworkSha256 = sha256(artworkBytes);
+const artworkObjectKey = `artwork/${appId}/${version}/${artworkSha256}.png`;
 const packageBytes = buildPackage(manifest, files, m17StagingKeyId, privateKey);
 const verifiedPackage = verifyPackage(packageBytes, stagingDistribution.policy);
 if (verifiedPackage.release.keyId !== m17StagingKeyId || verifiedPackage.manifest.appId !== appId || verifiedPackage.manifest.version !== version) {
@@ -200,6 +207,7 @@ const release = {
   payloadDigest,
   status: 'approved',
   minimumVersion: priorRelease?.minimumVersion ?? initialVersion,
+  icon: { objectKey: artworkObjectKey, sha256: artworkSha256, bytes: artworkBytes.length, mime: 'image/png' },
 };
 const catalogueReleases = priorRelease
   ? priorCatalogue.releases.map(row => row.id === appId ? release : row)
@@ -281,6 +289,7 @@ writeNew(path.join(output, 'catalogue/staging.json'), catalogueBytes);
 writeNew(path.join(output, 'update-policy/staging.json'), policyBytes);
 writeNew(path.join(output, 'baseline/catalogue/staging.json'), priorCatalogueBytes);
 writeNew(path.join(output, 'baseline/update-policy/staging.json'), priorPolicyBytes);
+writeNew(path.join(output, 'artwork.png'), artworkBytes);
 const releaseInfo = {
   environment: 'cloudfare-staging',
   localOnly: true,
@@ -303,6 +312,9 @@ const releaseInfo = {
   packageSha256,
   packageBytes: packageBytes.length,
   payloadDigest,
+  artworkObjectKey,
+  artworkSha256,
+  artworkBytes: artworkBytes.length,
   catalogueSha256: sha256(catalogueBytes),
   updatePolicySha256: sha256(policyBytes),
   priorCatalogueSha256: sha256(priorCatalogueBytes),

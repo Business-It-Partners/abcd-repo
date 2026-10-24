@@ -5,13 +5,14 @@
     "private Finance package opens with its current identity and assets",
     "Finance renders its initial page instead of a blank app window",
     "Finance completes its initial transaction report request",
-    "Finance shows the loaded empty state with no renderer errors"
+    "Finance shows the loaded empty state with no renderer errors",
+    "OS module-selection event moves Finance to Patient payments and receives its acknowledgement"
   ],
   "errors": [],
   "package": {
     "appId": "company.dental.finance.m17",
-    "version": "1.7.3",
-    "wireBytes": 1524433,
+    "version": "1.7.4",
+    "wireBytes": 1521121,
     "assetCount": 5
   },
   "scope": "Private headless GNOME/Electron startup check using an ephemeral test key and in-memory synthetic transaction report. No live clinic data or publication."

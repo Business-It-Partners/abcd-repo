@@ -149,16 +149,23 @@ button:disabled{opacity:.85}
 .record-modal-layer .form-actions{padding-top:14px}
 
 /* Shared internal window chrome and page-history controls. */
-.mac-titlebar{height:43px;position:relative;display:flex;align-items:center;background:linear-gradient(#f5f5f5,#ececec);border-bottom:1px solid var(--border);color:var(--text-primary);user-select:none;touch-action:none;cursor:grab}
+.mac-titlebar{height:43px;position:relative;display:block;background:linear-gradient(#f5f5f5,#ececec);border-bottom:1px solid var(--border);color:var(--text-primary);user-select:none;touch-action:none;cursor:grab}
 .mac-titlebar:active{cursor:grabbing}
-.window-title{position:absolute;left:110px;right:110px;text-align:center;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.window-history-controls{position:absolute;left:12px;display:flex;align-items:center;overflow:hidden;border:1px solid var(--control-border);border-radius:8px;background:#ffffffb8}
+.window-titlebar-leading{position:absolute;left:12px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;min-width:0;z-index:1}
+.window-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:min(42vw,600px);min-width:0;text-align:center;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.window-history-controls{position:static;display:flex;align-items:center;flex:0 0 auto;overflow:hidden;border:1px solid var(--control-border);border-radius:8px;background:#ffffffb8}
 .window-history-controls button{display:grid;width:43px;height:34px;place-items:center;padding:0;border:0;background:transparent;color:var(--text-secondary);cursor:pointer}
 .window-history-controls button+button{border-left:1px solid var(--separator)}
 .window-history-controls button:hover:not(:disabled){background:var(--surface-subtle);color:var(--text-primary)}
 .window-history-controls button:disabled{color:#aab4bd;cursor:default}
 .window-history-controls button:focus-visible{position:relative;z-index:1;outline-offset:-3px}
-.window-controls{display:flex;gap:12px;align-items:center;margin-left:auto;margin-right:15px;position:relative;z-index:1}
+.window-module-navigation{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden}
+.window-active-module{display:block;min-width:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);font-size:12px;font-weight:600}
+.window-more-apps{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-height:30px;padding:0 9px;border:1px solid var(--control-border);border-radius:8px;background:#ffffffb8;color:var(--text-secondary);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.window-more-apps:hover:not(:disabled){background:#fff;color:var(--text-primary)}
+.window-more-apps:disabled{opacity:.55;cursor:default}
+.window-more-apps:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.window-controls{position:absolute;top:50%;right:15px;transform:translateY(-50%);display:flex;gap:12px;align-items:center;z-index:1}
 .window-control{display:grid;place-items:center;position:relative;width:16.6725px;height:16.6725px;border:1px solid #00000012;border-radius:50%;padding:0;color:#29313a;line-height:0;cursor:pointer;transition:filter .12s ease,transform .12s ease}
 .window-control svg{display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:1;pointer-events:none}
 .window-control-minimize{background:#f4c451;color:#62480d}
@@ -204,11 +211,6 @@ button:disabled{opacity:.85}
 .coming-soon-body h2{margin:8px 0 0;font-size:28px;font-weight:700;color:var(--text-primary)}
 .coming-soon-body p{margin:0;color:var(--text-muted);font-size:18px;font-weight:600}
 .finance-body{height:calc(100% - var(--window-titlebar-total,43px));display:flex;flex-direction:column;min-height:0;background:#f8fafc;container:finance / size;color:var(--text-primary)}
-.finance-window-statusbar{height:48px;min-height:48px;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid #33415520;background:linear-gradient(180deg,#ffffff,#f8fafc);color:var(--text-primary)}
-.finance-current-module{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:650;letter-spacing:.01em}
-.finance-more-apps{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;padding:6px 10px;border:1px solid #61758b26;border-radius:8px;background:#ffffffb8;color:var(--text-secondary);font:inherit;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;transition:background-color .14s,border-color .14s,color .14s}
-.finance-more-apps:hover,.finance-more-apps:focus-visible{border-color:#61758b55;background:#eef4f8;color:var(--text-primary);outline:none}
-.finance-more-apps:focus-visible{box-shadow:0 0 0 2px #5b8dab50}
 .finance-selected{flex:1;min-height:0;display:flex;flex-direction:column;padding:20px;background:var(--surface);gap:0}
 .app-explorer-backdrop{position:fixed;inset:0;z-index:80;background:#16233512}
 .app-explorer{position:fixed;left:50%;z-index:81;transform:translateX(-50%);width:min(560px,calc(100vw - 24px));height:min(450px,calc(100vh - 128px));overflow:auto;padding:15px 17px 18px;border:1px solid #ffffffc0;border-radius:22px;background:linear-gradient(145deg,#ffffffe0,#e8f0f5d8);box-shadow:0 16px 48px #10243838,inset 0 1px #ffffffee;backdrop-filter:blur(32px) saturate(185%);-webkit-backdrop-filter:blur(32px) saturate(185%);color:var(--text-primary)}
@@ -233,7 +235,7 @@ button:disabled{opacity:.85}
 @container finance (width < 600px){.finance-selected{padding:18px}.finance-selected-screen h2{font-size:24px}}
 @media(max-width:540px){.app-explorer-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.app-explorer{padding:12px}.app-explorer-item img{width:50px;height:50px}}
 @media(max-height:600px){.app-explorer{height:min(440px,calc(100vh - 112px));padding-block:10px}.app-explorer-grid{gap:3px 5px;padding-top:7px}.app-explorer-item{gap:6px;padding-block:5px}.app-explorer-item img{width:44px;height:44px}}
-@container finance (height < 430px){.finance-window-statusbar{height:42px;min-height:42px;padding-inline:14px}.finance-selected{padding:14px;gap:0}.finance-selected-screen h2{font-size:22px}}
+@container finance (height < 430px){.finance-selected{padding:14px;gap:0}.finance-selected-screen h2{font-size:22px}}
 .followups-body{display:flex;flex-direction:column;height:calc(100% - var(--window-titlebar-total,43px));overflow:hidden;background:#fff;padding:16px;color:var(--text-primary);font-size:14px;container:followups / size}
 .followups-heading,.followups-cards,.followups-filters,.followups-pagination,.followups-session{flex-shrink:0}
 .followups-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}
@@ -447,7 +449,7 @@ button:disabled{opacity:1;color:var(--text-muted);cursor:default}
 .runtime-failure,.runtime-confirm{position:absolute;inset:10px;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px #0002}
 .runtime-failure h2,.runtime-confirm h2{font-size:21px}.runtime-failure button,.runtime-confirm button{padding:9px 13px;margin:5px;border:1px solid #b1bbc7;border-radius:6px;background:#fff;color:#30333c}
 
-@media(max-width:760px){.studio-window[data-presentation="fullscreen"]{--window-titlebar-offset:59px;--window-titlebar-total:102px}.window-title{left:108px;right:94px}.window-history-controls{left:8px}.window-history-controls button{width:39px;height:32px}}
+@media(max-width:760px){.studio-window[data-presentation="fullscreen"]{--window-titlebar-offset:59px;--window-titlebar-total:102px}.window-titlebar-leading{left:8px;gap:5px}.window-controls{right:10px}.window-history-controls button{width:39px;height:32px}.window-module-navigation{gap:4px}.window-active-module{max-width:72px;font-size:11px}.window-more-apps{width:31px;min-height:29px;padding:0}.window-more-apps span{display:none}.window-more-apps svg{flex:0 0 auto}.window-title{max-width:34vw}}
 
 /* Reduce shell hover, overview, delivery and status animations consistently. */
 @media(prefers-reduced-motion:reduce){.desktop *, .desktop *::before, .desktop *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}

@@ -39,3 +39,7 @@ The M13 contract now specifies one shared toolbar shape: main app name in the OS
 ## User-reported install and run review — 2026-10-20
 
 The user reports installing and running all eleven M13 version 1.0.0 shells in Dental OS. This supersedes earlier pending install/open notes for those packages. The retained Follow-ups install artifact predates the reported launch and still shows its pre-launch state; the current package registry's automatic known-good health receipt has not been independently re-read. The user did not explicitly confirm installing Finance and Lab Tracker's sequence-21 version 1.0.1 updates or reviewing module switching, so those checks remain open.
+
+## Multi-module navigation moved into shared OS title bar — 2026-10-24
+
+The earlier M13 toolbar placement is historical and is superseded by ADR-033. For current multi-module packages, the shared Dental OS title bar owns the active module label and **More Apps** control beside page Back/Forward. It derives the label and choices from verified package metadata filtered for the signed-in role. The existing acknowledged module-selection bridge remains in use; Back/Forward continues to navigate pages inside the selected module. Finance removes its duplicate in-body toolbar. Lab Tracker already implements the selection callback and needs no app-source change for this shell capability.

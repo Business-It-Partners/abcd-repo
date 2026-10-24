@@ -19,6 +19,13 @@ try{
  await explorer.getByRole('button',{name:'Patient payments',exact:true}).click();await runtimeReady();
  const guest=app.context().pages().find(page=>page.url().startsWith(`dental-fixture://${id}/`));assert.ok(guest,'module package guest is open');
  await guest.getByRole('heading',{name:'Patient payments',exact:true}).waitFor();await waitNativeVisible(true);
+ const financeFrame=shell.locator(`[data-window-id="${id}"]`),financeModule=financeFrame.getByTestId('window-active-module'),financeMore=financeFrame.getByRole('button',{name:'More Finance apps',exact:true});
+ await shell.waitForFunction(({id,label})=>document.querySelector(`[data-window-id="${id}"] [data-testid="window-active-module"]`)?.textContent===label,{id,label:'Patient payments'});
+ check('Finance module identity and More Apps appear in the OS title bar beside page navigation',await financeModule.innerText()==='Patient payments'&&await financeMore.isVisible()&&await financeMore.evaluate(button=>!!button.closest('.window-titlebar-leading')?.querySelector('.window-history-controls')));
+ await financeMore.click();await shell.locator('.app-explorer').getByRole('button',{name:'Transaction Record',exact:true}).click();
+ await guest.getByRole('heading',{name:'Transaction Record',exact:true}).waitFor();
+ await shell.waitForFunction(({id,label})=>document.querySelector(`[data-window-id="${id}"] [data-testid="window-active-module"]`)?.textContent===label,{id,label:'Transaction Record'});
+ check('OS More Apps switches Finance in the same window and waits for the app acknowledgement',await financeFrame.getAttribute('data-phase')==='visible'&&await financeModule.innerText()==='Transaction Record');
  await shell.locator(`[data-runtime="${id}"] .isolated-mirror`).waitFor();
  check('a 2.2-second module acknowledgement still starts the selected sub-app instead of stopping its app');
 
@@ -39,6 +46,14 @@ try{
  await explorer.getByRole('button',{name:'Lab Tracker',exact:true}).click();
  await shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',secondId,{timeout:15000});
  const secondGuest=app.context().pages().find(page=>page.url().startsWith(`dental-fixture://${secondId}/`));assert.ok(secondGuest,'second module package guest is open');
+ await secondGuest.getByRole('heading',{name:'Lab Tracker',exact:true}).waitFor();
+ const labFrame=shell.locator(`[data-window-id="${secondId}"]`),labModule=labFrame.getByTestId('window-active-module'),labMore=labFrame.getByRole('button',{name:'More Lab Tracker apps',exact:true});
+ await shell.waitForFunction(id=>document.querySelector(`[data-window-id="${id}"] [data-testid="window-active-module"]`)?.textContent==='Lab Tracker',secondId);
+ await labMore.click();await shell.locator('.app-explorer').getByRole('button',{name:'Lab supplier record',exact:true}).click();
+ await secondGuest.getByRole('heading',{name:'Lab supplier record',exact:true}).waitFor();
+ await shell.waitForFunction(id=>document.querySelector(`[data-window-id="${id}"] [data-testid="window-active-module"]`)?.textContent==='Lab supplier record',secondId);
+ check('Lab Tracker uses the same OS title bar switcher and keeps its parent window',await labFrame.getAttribute('data-phase')==='visible'&&await labMore.isVisible()&&await labModule.innerText()==='Lab supplier record');
+ await labMore.click();await shell.locator('.app-explorer').getByRole('button',{name:'Lab Tracker',exact:true}).click();
  await secondGuest.getByRole('heading',{name:'Lab Tracker',exact:true}).waitFor();
  await waitNativeVisible(true,secondId);
  check('the two signed multi-module apps keep independent native runtimes',!!(await nativeView())&&!!(await nativeView(secondId)));

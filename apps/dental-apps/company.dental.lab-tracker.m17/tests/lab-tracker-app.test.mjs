@@ -23,6 +23,12 @@ test('Lab Tracker package has its own 1.0.3 update identity and two first-party 
   assert.deepEqual(manifest.capabilities, ['clinic.app.lab-tracker', 'clinic.api.request', 'session.context']);
 });
 
+test('Lab Tracker is compatible with the OS-owned module switcher and has no duplicate toolbar', async () => {
+  const main = await readText('src/main.tsx');
+  assert.match(main, /sdk\.onModuleSelected\(/);
+  assert.doesNotMatch(main, /More Lab Tracker apps|More Apps|openAppExplorer|app-toolbar/);
+});
+
 test('filterable Lab Tracker pages use the Standard Window 1 table layout', async () => {
   const tracker = await readText('src/features/labs/components/LabTrackerView.tsx');
   const suppliers = await readText('src/features/labs/components/LabsPanel.tsx');

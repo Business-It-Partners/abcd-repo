@@ -201,29 +201,6 @@ function App() {
       <ClinicLoadingProvider>
         <ClinicPageRefreshProvider>
         <main className="finance-app-shell" data-dental-os-app={APP_ID}>
-          <header className="finance-app-toolbar" aria-label="Finance app toolbar">
-            <div className="finance-app-toolbar-start">
-              <span id="finance-active-module" aria-live="polite">{FINANCE_MODULES[moduleId].label}</span>
-              <button
-                type="button"
-                className="finance-more-apps"
-                aria-label="More Finance apps"
-                onClick={() => {
-                  void window.dentalApp?.openAppExplorer().then((result) => {
-                    if (!result.ok && result.error) setModuleMessage(result.error.message);
-                  }).catch((cause: unknown) => setModuleMessage(errorMessage(cause)));
-                }}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <rect x="1" y="1" width="5" height="5" rx="1" />
-                  <rect x="10" y="1" width="5" height="5" rx="1" />
-                  <rect x="1" y="10" width="5" height="5" rx="1" />
-                  <rect x="10" y="10" width="5" height="5" rx="1" />
-                </svg>
-                <span>More Apps</span>
-              </button>
-            </div>
-          </header>
           <section className="finance-app-content">
             {moduleMessage && <p className="finance-module-message" role="alert">{moduleMessage}</p>}
             {moduleId === "transaction-record" ? (

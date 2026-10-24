@@ -1,7 +1,8 @@
 import { createPublicKey, verify } from 'node:crypto';
 import { parseCanonical, canonical, limits, maxCompanyAppCount, sha256, appTrust, isCompanyAppId, type TrustPolicy } from '../packages/format';
 import { operations, type Operation } from '../sdk/contracts';
-export type Release = { id: string; title: string; description: string; version: string; notes: string; capabilities: Operation[]; platforms: ('linux' | 'win32')[]; sdkMajor: 1; apiMajor: 1; objectKey: string; packageSha256: string; packageBytes: number; payloadDigest: string; status: 'approved' | 'withdrawn'; minimumVersion: string };
+export type StoreArtworkRef = { objectKey: string; sha256: string; bytes: number; mime: 'image/png' };
+export type Release = { id: string; title: string; description: string; version: string; notes: string; capabilities: Operation[]; platforms: ('linux' | 'win32')[]; sdkMajor: 1; apiMajor: 1; objectKey: string; packageSha256: string; packageBytes: number; payloadDigest: string; status: 'approved' | 'withdrawn'; minimumVersion: string; icon?: StoreArtworkRef };
 export type Catalogue = { format: 1; environment: 'cloudfare-staging'; channel: 'staging'; sequence: number; issuedAt: number; expiresAt: number; releases: Release[] };
 export type Watermark = { sequence: number; digest: string; observedAt: number };
 export const noWatermark: Watermark = { sequence: 0, digest: '', observedAt: 0 };
@@ -24,7 +25,15 @@ export function verifyCatalogue(bytes: Buffer, policy: TrustPolicy, watermark: W
   if (!Array.isArray(c.releases) || c.releases.length > maxCompanyAppCount) throw new Error('Catalogue count');
   const seen = new Set<string>();
   for (const r of c.releases) {
-    shape(r, ['id', 'title', 'description', 'version', 'notes', 'capabilities', 'platforms', 'sdkMajor', 'apiMajor', 'objectKey', 'packageSha256', 'packageBytes', 'payloadDigest', 'status', 'minimumVersion']);
+    const releaseKeys = Object.keys(r ?? {}).sort().join();
+    const requiredReleaseKeys = ['id', 'title', 'description', 'version', 'notes', 'capabilities', 'platforms', 'sdkMajor', 'apiMajor', 'objectKey', 'packageSha256', 'packageBytes', 'payloadDigest', 'status', 'minimumVersion'];
+    if (releaseKeys !== requiredReleaseKeys.slice().sort().join() && releaseKeys !== [...requiredReleaseKeys, 'icon'].sort().join()) throw new Error('Invalid catalogue schema');
+    if (Object.hasOwn(r, 'icon')) {
+      const icon: any = r.icon;
+      shape(icon, ['objectKey', 'sha256', 'bytes', 'mime']);
+      if (icon.mime !== 'image/png' || !hash(icon.sha256) || !Number.isSafeInteger(icon.bytes) || icon.bytes < 8 || icon.bytes > 2 * 1024 * 1024
+        || icon.objectKey !== `artwork/${r.id}/${r.version}/${icon.sha256}.png`) throw new Error('Invalid artwork reference');
+    }
     const app = typeof r.id === 'string' && isCompanyAppId(r.id) ? appTrust(policy, r.id) : undefined;
     if (!app || app.publisher !== key.publisher || seen.has(r.id) || !text(r.title, 80) || !text(r.description, 300) || !text(r.notes, 500) || !version(r.version) || !version(r.minimumVersion) || compareVersion(r.version, r.minimumVersion) < 0 || !hash(r.packageSha256) || !hash(r.payloadDigest) || !Number.isSafeInteger(r.packageBytes) || r.packageBytes < 1 || r.packageBytes > limits.wire || r.objectKey !== `releases/${r.id}/${r.version}/${r.packageSha256}.dentalpkg` || !['approved', 'withdrawn'].includes(r.status)) throw new Error('Invalid company release');
     if (!Array.isArray(r.capabilities) || r.capabilities.length > operations.length || new Set(r.capabilities).size !== r.capabilities.length || r.capabilities.some((op: Operation) => !operations.includes(op) || !app.capabilities.includes(op))) throw new Error('Release grants');
