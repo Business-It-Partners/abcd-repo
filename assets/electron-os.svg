@@ -1,6 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#79add7"/><stop offset="1" stop-color="#3d679e"/></linearGradient></defs>
-<rect x="5" y="5" width="118" height="118" rx="28" fill="url(#bg)"/>
-<path d="M30 48 64 30 98 48 64 66Z" fill="#fff" fill-opacity=".95"/>
-<path d="m30 65 34 18 34-18M30 82l34 18 34-18" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <defs>
+    <linearGradient id="enamel" x1="65" y1="39" x2="128" y2="147" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF6"/><stop offset=".45" stop-color="#EDF8F5"/><stop offset="1" stop-color="#9BC6CE"/>
+    </linearGradient>
+    <linearGradient id="growth" x1="75" y1="123" x2="120" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#28788B"/><stop offset=".5" stop-color="#2F9E9A"/><stop offset="1" stop-color="#79D8BD"/>
+    </linearGradient>
+    <filter id="tooth-shadow" x="35" y="30" width="126" height="140" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#061D35" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <g transform="translate(96 92.5) scale(1.55) translate(-96 -92.5)" filter="url(#tooth-shadow)">
+    <path d="M73 43C58 40 47 50 48 65C49 79 55 90 59 105C63 121 68 145 77 145C86 145 85 116 96 116C107 116 106 145 115 145C124 145 129 121 133 105C137 90 143 79 144 65C145 50 134 40 119 43C109 45 103 49 96 49C89 49 83 45 73 43Z" fill="url(#enamel)" stroke="#57929A" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M55 65C55 54 63 48 73 49C83 50 88 54 96 54" stroke="#FFF" stroke-opacity=".8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M78 117C96 126 116 112 108 100C102 91 80 98 81 84C82 74 98 69 115 72" stroke="#164B65" stroke-opacity=".13" stroke-width="10" stroke-linecap="round"/>
+    <path d="M77 114C95 123 115 109 107 97C101 88 79 95 80 81C81 71 97 66 114 69" stroke="url(#growth)" stroke-width="8" stroke-linecap="round"/>
+  </g>
 </svg>
