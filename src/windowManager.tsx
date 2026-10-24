@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { fitBounds, initialBounds, WINDOW_IDS, windowSpec, type Size, type WindowId } from './windowGeometry';
+import { fitBounds, fitContentWidthBounds, initialBounds, WINDOW_IDS, windowSpec, type Size, type WindowId } from './windowGeometry';
 import type { Rect } from './motion';
 
 export type Phase = 'closed' | 'visible' | 'minimizing' | 'minimized' | 'restoring';
@@ -8,11 +8,11 @@ export type WindowNavigation = { entries: string[]; index: number };
 const MAX_WINDOW_NAVIGATION_ENTRIES = 64;
 export type ManagedWindow = {
   id: WindowId; title: string; phase: Phase; presentation: 'normal' | 'fullscreen'; normalBounds: Rect;
-  busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing'; navigation: WindowNavigation;
+  busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing'; userResized: boolean; navigation: WindowNavigation;
 };
 export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean };
 export function createDesktop(size: Size): DesktopState {
-  const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', navigation: { entries: [], index: -1 } });
+  const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } });
   return { size, windows: Object.fromEntries([...WINDOW_IDS, 'image-viewer'].map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false };
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
@@ -20,11 +20,12 @@ export function activeWindow(state: DesktopState): WindowId | undefined {
 }
 export type WindowAction =
   | { type: 'register'; id: WindowId; title: string }
+  | { type: 'fit-content-width'; id: WindowId; preferredContentWidth: number; hasModuleSidebar: boolean }
   | { type: 'unregister'; id: WindowId }
   | { type: 'overview'; open: boolean }
   | { type: 'focus'; id: WindowId }
   | { type: 'phase'; id: WindowId; phase: Phase }
-  | { type: 'patch'; id: WindowId; patch: Partial<Pick<ManagedWindow, 'normalBounds' | 'busy' | 'modal' | 'interaction'>> }
+  | { type: 'patch'; id: WindowId; patch: Partial<Pick<ManagedWindow, 'normalBounds' | 'busy' | 'modal' | 'interaction' | 'userResized'>> }
   | { type: 'navigation-push'; id: WindowId; entry: string }
   | { type: 'navigation-reset'; id: WindowId; entry: string }
   | { type: 'navigation-sync'; id: WindowId; navigation: WindowNavigation }
@@ -44,6 +45,12 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
     if (!prior || prior.phase !== 'closed') return state;
     const windows = { ...state.windows }; delete windows[action.id];
     return { ...state, windows, order: state.order.filter(id => id !== action.id) };
+  }
+  if (action.type === 'fit-content-width') {
+    const win = state.windows[action.id];
+    if (!win || win.phase !== 'closed' || win.userResized) return state;
+    return { ...state, windows: { ...state.windows, [action.id]: { ...win,
+      normalBounds: fitContentWidthBounds(win.normalBounds, state.size, windowSpec(action.id).minimum, action.preferredContentWidth, action.hasModuleSidebar) } } };
   }
   if (action.type === 'overview') return { ...state, overview: action.open };
   if (action.type === 'viewport') {
@@ -93,7 +100,7 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
 }
 
 function createWindow(id: WindowId, title: string, size: Size): ManagedWindow {
-  return { id, title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', navigation: { entries: [], index: -1 } };
+  return { id, title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } };
 }
 
 type Manager = { state: DesktopState; getState(): DesktopState; dispatch(action: WindowAction): void };

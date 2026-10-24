@@ -10,6 +10,7 @@ import { celebrateStoreArrival } from './storeArrival';
 import { DeliveryStore, useDeliveryStore } from './DeliveryStore';
 import { sampleWindows } from '../electron/distribution/contracts';
 import { packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/contracts';
+import { defaultTableContentWidth } from './windowGeometry';
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
@@ -183,6 +184,11 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     try{
       const result=await window.desktop?.runtime.discoverApp(id);
       if(!result?.ok){setLaunchNotice(result?.error?.message??'This app is not available for your current clinic role.');return;}
+      const app=result.value;
+      const preferredContentWidth=app?.preferredContentWidth??(app?defaultTableContentWidth(app.appId):undefined);
+      if(app?.runtimeId===id&&preferredContentWidth!==undefined){
+        dispatch({type:'fit-content-width',id:app.runtimeId,preferredContentWidth,hasModuleSidebar:app.modules.length>1});
+      }
       setLaunchNotice('');
       openStoreApp(id);
     }catch{

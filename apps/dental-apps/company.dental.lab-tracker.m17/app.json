@@ -7,6 +7,7 @@
   "anyCapabilities": ["lab_tracker.access"],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 1080,
   "modules": [
     {
       "id": "lab-tracker",

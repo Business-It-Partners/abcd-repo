@@ -9,6 +9,7 @@
   ],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 900,
   "modules": [
     {
       "id": "work-entry",

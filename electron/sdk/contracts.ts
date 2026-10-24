@@ -25,7 +25,7 @@ export type ClinicSessionContext = {
   clinic: { tenantId: string; displayName: string; timezone: string; currency: string; defaultBranchId: string | null; hasActiveTrial: boolean };
   branches: Array<{ branchId: string; branchCode: string; name: string }>;
 };
-export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[] };
+export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[]; preferredContentWidth?: number };
 /** Random opaque UUIDs only; page data and business identifiers stay in the app renderer. */
 export type AppNavigationSnapshot = { entries: string[]; index: number };
 export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string; discard?: boolean };

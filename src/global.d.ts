@@ -16,7 +16,7 @@ declare global {
           ok: boolean;
           value?: {
             runtimeId: string; appId: string; title: string; description: string; iconDataUrl: string;
-            modules: { id: string; label: string; tab: string; capability: string }[];
+            modules: { id: string; label: string; tab: string; capability: string }[]; preferredContentWidth?: number;
           } | null;
           error?: { code: string; message: string; outcome: 'not_sent' };
         }>;

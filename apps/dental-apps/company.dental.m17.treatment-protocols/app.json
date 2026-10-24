@@ -7,6 +7,7 @@
   "anyCapabilities": ["treatment_protocols.manage"],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 1000,
   "modules": [
     {
       "id": "treatment-protocols",

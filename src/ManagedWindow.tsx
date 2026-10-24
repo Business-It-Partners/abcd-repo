@@ -100,7 +100,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     if (size.width !== g.size.width || size.height !== g.size.height) { endGesture(); return; }
     const next = g.edge ? resizeBounds(g.bounds, g.edge, dx, dy, size, windowSpec(id).minimum)
       : moveBounds({ ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy }, size);
-    patch({ type: 'patch', id, patch: { normalBounds: next } });
+    patch({ type: 'patch', id, patch: { normalBounds: next, ...(g.edge ? { userResized: true } : {}) } });
   }
 
   async function transition(minimizing: boolean) {

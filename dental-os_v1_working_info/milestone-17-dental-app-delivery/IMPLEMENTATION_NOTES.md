@@ -1,5 +1,9 @@
 # M17 Implementation Notes
 
+### 2026-10-24 — Table-aware app window sizing metadata
+
+Added optional `preferredContentWidth` hints to the M17 source metadata for the table-based apps. The OS reads this from verified package metadata when present; its current app-ID defaults cover existing installed Dental packages that do not yet include the field. The app's own table container continues to own horizontal scrolling after a user narrows the window. These metadata edits are local source only: package versions, signed releases, and the staging Store feed were not changed or published.
+
 This file records current M17 decisions, source pins, implementation deltas, and platform dependencies. Follow-ups, Appointments, Calendar and Treatment Progress source is now integrated in the M15 worktree; verification outcomes belong in [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 
 ## Current user-directed scope — 2026-10-22

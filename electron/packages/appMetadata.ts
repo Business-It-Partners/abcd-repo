@@ -11,6 +11,8 @@ export type DentalAppMetadata = Readonly<{
   excludedRoles: readonly ('admin' | 'doctor' | 'reception')[];
   allowedRoles: readonly ('admin' | 'doctor' | 'reception')[];
   modules: readonly DentalAppModule[];
+  /** App content width needed to show its widest primary table without horizontal scrolling. */
+  preferredContentWidth?: number;
 }>;
 export type DentalAppInfo = Readonly<{
   appId: string;
@@ -18,6 +20,7 @@ export type DentalAppInfo = Readonly<{
   description: string;
   iconDataUrl: string;
   modules: readonly DentalAppModule[];
+  preferredContentWidth?: number;
 }>;
 
 const roles = ['admin', 'doctor', 'reception'];
@@ -29,9 +32,13 @@ export function parseDentalAppMetadata(pkg: VerifiedPackage): DentalAppMetadata 
   if (!source) return undefined;
   let value: any;
   try { value = JSON.parse(source.toString('utf8')); } catch { throw new Error('Invalid app metadata JSON'); }
-  const keys = ['format', 'appId', 'title', 'description', 'icon', 'anyCapabilities', 'excludedRoles', 'allowedRoles', 'modules'];
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).sort().join() !== keys.sort().join()) throw new Error('Invalid app metadata shape');
+  const keys = ['format', 'appId', 'title', 'description', 'icon', 'anyCapabilities', 'excludedRoles', 'allowedRoles', 'modules'].sort();
+  const keysWithWidth = [...keys, 'preferredContentWidth'].sort();
+  const actualKeys = value && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value).sort().join() : '';
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+      (actualKeys !== keys.join() && actualKeys !== keysWithWidth.join())) throw new Error('Invalid app metadata shape');
   if (value.format !== 1 || value.appId !== pkg.manifest.appId || !text(value.title, 80) || !text(value.description, 300) || !text(value.icon, 120) || !/^assets\/[a-z0-9][a-z0-9._/-]*\.(png|svg)$/.test(value.icon)) throw new Error('Invalid app metadata identity');
+  if (value.preferredContentWidth !== undefined && (!Number.isSafeInteger(value.preferredContentWidth) || value.preferredContentWidth < 520 || value.preferredContentWidth > 2400)) throw new Error('Invalid app content width');
   if (!Array.isArray(value.anyCapabilities) || value.anyCapabilities.length < 1 || value.anyCapabilities.length > 10 || new Set(value.anyCapabilities).size !== value.anyCapabilities.length || !value.anyCapabilities.every((v: unknown) => text(v, 100) && /^[a-z][a-z0-9_.-]*$/.test(v))) throw new Error('Invalid app visibility policy');
   if (!list(value.excludedRoles, roles, 3) || !list(value.allowedRoles, roles, 3) || value.excludedRoles.some((v: string) => value.allowedRoles.includes(v))) throw new Error('Invalid app role policy');
   if (!Array.isArray(value.modules) || value.modules.length < 1 || value.modules.length > 8) throw new Error('Invalid app modules');
@@ -52,5 +59,6 @@ export function appInfo(pkg: VerifiedPackage, metadata = parseDentalAppMetadata(
   if (!modules.length) return undefined;
   const icon = pkg.files.get(metadata.icon)!;
   const mime = metadata.icon.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-  return { appId: metadata.appId, title: metadata.title, description: metadata.description, iconDataUrl: `data:${mime};base64,${icon.toString('base64')}`, modules };
+  return { appId: metadata.appId, title: metadata.title, description: metadata.description, iconDataUrl: `data:${mime};base64,${icon.toString('base64')}`, modules,
+    ...(metadata.preferredContentWidth !== undefined ? { preferredContentWidth: metadata.preferredContentWidth } : {}) };
 }

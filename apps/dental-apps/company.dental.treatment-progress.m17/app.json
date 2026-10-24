@@ -7,6 +7,7 @@
   "anyCapabilities": ["treatment_progress.access"],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 1100,
   "modules": [
     {
       "id": "treatment-progress",

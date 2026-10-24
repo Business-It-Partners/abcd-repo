@@ -9,6 +9,7 @@
   ],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 1200,
   "modules": [
     {
       "id": "patient-record",

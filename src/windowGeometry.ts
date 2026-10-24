@@ -29,6 +29,22 @@ export type WindowId = StaticWindowId | (string & {});
 export const WINDOW_IDS = Object.keys(WINDOW_SPECS) as WindowId[];
 export type WindowSpec = { title: string; preferred: Size; minimum: Size };
 const companyAppSpec: WindowSpec = { title: 'Company App', preferred: { width: 980, height: 620 }, minimum: { width: 520, height: 360 } };
+// Defaults for the currently shipped Dental apps. New app releases can supply
+// a signed preferredContentWidth in app.json; these keep existing installs
+// useful until that metadata reaches their installed package.
+const tableContentWidths: Readonly<Record<string, number>> = {
+  'company.dental.appointments': 1160, 'company.dental.appointments.m17': 1160,
+  'company.dental.finance': 1120, 'company.dental.finance.m17': 1120,
+  'company.dental.followups': 1120, 'company.dental.followups.m17': 1120,
+  'company.dental.lab-tracker': 1080, 'company.dental.lab-tracker.m17': 1080,
+  'company.dental.patient-payments': 1120,
+  'company.dental.patient-record': 1200, 'company.dental.patient-record.m17': 1200,
+  'company.dental.staff': 1120, 'company.dental.staff.m17': 1120,
+  'company.dental.treatment-progress': 1100, 'company.dental.treatment-progress.m17': 1100,
+  'company.dental.treatment-protocols': 1000, 'company.dental.m17.treatment-protocols': 1000,
+  'company.dental.work-entry': 900, 'company.dental.work-entry.m17': 900,
+};
+export function defaultTableContentWidth(appId: string): number | undefined { return tableContentWidths[appId]; }
 export function windowSpec(id: WindowId): WindowSpec {
   if(id==='image-viewer')return {title:'Image Viewer',preferred:{width:800,height:570},minimum:{width:420,height:300}};
   return Object.hasOwn(WINDOW_SPECS, id) ? WINDOW_SPECS[id as keyof typeof WINDOW_SPECS] : companyAppSpec;
@@ -55,6 +71,27 @@ export function fitBounds(bounds: Rect, size: Size, minimum: Size): Rect {
   const width = clamp(bounds.width, Math.min(minimum.width, area.width), area.width);
   const height = clamp(bounds.height, Math.min(minimum.height, area.height), area.height);
   return { x: clamp(bounds.x, area.x, area.x + area.width - width), y: clamp(bounds.y, area.y, area.y + area.height - height), width, height };
+}
+
+/**
+ * Grow a newly opened app window enough to honor its verified content-width hint.
+ * The hint describes the app surface; the OS module sidebar is added by the shell.
+ * Any user resize is tracked by the window manager and bypasses this fit on reopen.
+ */
+export function fitContentWidthBounds(bounds: Rect, size: Size, minimum: Size, contentWidth: number, hasModuleSidebar: boolean): Rect {
+  const area = workArea(size);
+  const content = clamp(contentWidth, 520, 2400);
+  let width = Math.max(bounds.width, content);
+  if (hasModuleSidebar) {
+    // Keep in sync with .studio-window[data-module-sidebar] in style.css.
+    for (let pass = 0; pass < 3; pass++) {
+      const sidebar = Math.min(width <= 760 ? 164 : 188, width * .3);
+      width = Math.max(bounds.width, content + sidebar);
+    }
+  }
+  width = Math.min(width, area.width);
+  const centerX = bounds.x + bounds.width / 2;
+  return fitBounds({ ...bounds, x: centerX - width / 2, width }, size, minimum);
 }
 
 /** Let a dragged window tuck behind the bottom/side edges while leaving a 30% grab area. */

@@ -9,6 +9,7 @@
   ],
   "excludedRoles": [],
   "allowedRoles": [],
+  "preferredContentWidth": 1120,
   "modules": [
     {
       "id": "followups",
