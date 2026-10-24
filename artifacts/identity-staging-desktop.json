@@ -4,11 +4,11 @@
   "failureClass": null,
   "checks": [
     "real staging mode starts gated",
-    "actual desktop sign-in reaches Worker-authorized staging workspace without remember-me",
+    "actual desktop sign-in reaches Worker-authorized staging workspace with default protected persistence",
     "real session lock clears context and advances generation",
     "real desktop sign-out clears clinic context and advances generation",
     "fresh sign-in succeeds after sign-out",
-    "second sign-out returns to the signed-out gate"
+    "final sign-out returns to the signed-out gate and clears clinic context"
   ],
   "authStatus": "ready",
   "authFailureStage": null,
