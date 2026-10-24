@@ -1,5 +1,5 @@
 // Prepare one M17 app first release or immutable version update locally. Never uploads or activates it.
-// node tools/app-packages/prepare-m17-app-release.mjs --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--retire-finance-1.7.0]
+// node tools/app-packages/prepare-m17-app-release.mjs --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--grant-work-entry-media] [--retire-finance-1.7.0]
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, createPrivateKey, createPublicKey, sign } from 'node:crypto';
@@ -37,12 +37,15 @@ const definitions = {
   'company.dental.lab-tracker.m17': { title: 'Lab Tracker', moduleIds: ['lab-tracker', 'lab-suppliers'], family: 'clinic.app.lab-tracker' },
   'company.dental.staff.m17': { title: 'Staff', moduleIds: ['staff'], family: 'clinic.app.staff' },
 };
-const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput, retirementMode] = process.argv.slice(2);
+const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput, ...modes] = process.argv.slice(2);
 const sequence = Number(rawSequence);
-const retireFinance170 = retirementMode === '--retire-finance-1.7.0';
-if (guard !== '--staging-only' || process.argv.length !== (retirementMode ? 10 : 9)
-  || retirementMode && !retireFinance170 || !Number.isSafeInteger(sequence) || sequence < 1 || !definitions[appId]) {
-  throw Error('Expected --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--retire-finance-1.7.0]');
+const retireFinance170 = modes.includes('--retire-finance-1.7.0');
+const grantWorkEntryMedia = modes.includes('--grant-work-entry-media');
+const supportedModes = new Set(['--retire-finance-1.7.0', '--grant-work-entry-media']);
+if (guard !== '--staging-only' || modes.some(mode => !supportedModes.has(mode))
+  || new Set(modes).size !== modes.length || retireFinance170 && grantWorkEntryMedia
+  || !Number.isSafeInteger(sequence) || sequence < 1 || !definitions[appId]) {
+  throw Error('Expected --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--grant-work-entry-media | --retire-finance-1.7.0]');
 }
 
 const checkout = path.resolve(import.meta.dirname, '../..');
@@ -127,6 +130,9 @@ if (new Set(catalogueIds).size !== catalogueIds.length || new Set(policyIds).siz
 const priorRelease = priorCatalogue.releases.find(release => release.id === appId);
 const priorAppPolicy = priorPolicy.apps.find(app => app.id === appId);
 if (Boolean(priorRelease) !== Boolean(priorAppPolicy)) throw Error('Existing M17 catalogue and update-policy identity do not match');
+if (grantWorkEntryMedia && (appId !== 'company.dental.work-entry.m17' || !priorAppPolicy)) {
+  throw Error('Work Entry media grant mode applies only to an existing Work Entry staging app');
+}
 if (!priorRelease && (priorCatalogue.releases.length >= maxCompanyAppCount || priorPolicy.apps.length >= maxCompanyAppCount)) throw Error('Signed staging app limit would be exceeded');
 if (priorPolicy.revokedKeys.includes(m17StagingKeyId)) throw Error('M17 staging signer is revoked');
 
@@ -160,7 +166,24 @@ if (retireFinance170 && (appId !== 'company.dental.finance.m17' || version !== '
   || !priorAppPolicy.releases.some(entry => entry.version === previousVersion))) {
   throw Error('The scoped Finance 1.7.0 retirement does not match the reviewed sequence-84 release state');
 }
-const minimumVersion = retireFinance170 ? '1.7.1' : priorRelease?.minimumVersion ?? initialVersion;
+let minimumVersion = retireFinance170 ? '1.7.1' : priorRelease?.minimumVersion ?? initialVersion;
+if (priorAppPolicy) {
+  const priorGrantRows = priorPolicy.format === 2
+    ? priorAppPolicy.releases
+    : priorRelease ? [{ version: priorRelease.version }] : [];
+  const grantVersions = [
+    ...priorGrantRows.filter(entry => !retiredVersions.includes(entry.version)).map(entry => entry.version),
+    version,
+  ].sort(compareVersionStrings);
+  const automaticRetirementCount = Math.max(0, grantVersions.length - maxRetainedReleaseGrants);
+  retiredVersions.push(...grantVersions.slice(0, automaticRetirementCount));
+  const retainedGrantVersions = grantVersions.slice(automaticRetirementCount);
+  const oldestRetainedVersion = retainedGrantVersions[0];
+  if (oldestRetainedVersion && compareVersionStrings(minimumVersion, oldestRetainedVersion) < 0) {
+    minimumVersion = oldestRetainedVersion;
+  }
+  retiredVersions.sort();
+}
 if (!parsedVersion || packageMetadata.name !== appId || manifest.appId !== appId || manifest.publisher !== 'company' || manifest.version !== version
   || manifest.entry !== 'index.html' || manifest.sdkMajor !== 1 || manifest.apiMajor !== 1
   || !Array.isArray(manifest.capabilities) || !manifest.capabilities.includes('clinic.api.request')
@@ -178,8 +201,18 @@ if (appMetadata.appId !== appId || appMetadata.title !== definition.title
   throw Error('Unexpected M17 app metadata');
 }
 if (releaseKind === 'update') {
-  if (!priorAppPolicy.capabilities.every(value => manifest.capabilities.includes(value))
-    || !manifest.capabilities.every(value => priorAppPolicy.capabilities.includes(value))) throw Error('M17 app update cannot change its signed capability grants');
+  const addedCapabilities = manifest.capabilities.filter(value => !priorAppPolicy.capabilities.includes(value)).sort();
+  const removedCapabilities = priorAppPolicy.capabilities.filter(value => !manifest.capabilities.includes(value)).sort();
+  const exactWorkEntryMediaGrant = grantWorkEntryMedia
+    && appId === 'company.dental.work-entry.m17'
+    && JSON.stringify(addedCapabilities) === JSON.stringify(['clinic.media.read', 'clinic.media.upload'])
+    && removedCapabilities.length === 0;
+  if (grantWorkEntryMedia && !exactWorkEntryMediaGrant) {
+    throw Error('Work Entry media grant requires exactly clinic.media.read and clinic.media.upload additions with no removals');
+  }
+  if (!exactWorkEntryMediaGrant && (addedCapabilities.length || removedCapabilities.length)) {
+    throw Error('M17 app update cannot change its signed capability grants without the exact Work Entry media grant mode');
+  }
   const priorGrant = priorAppPolicy.releases?.find(entry => entry.version === priorRelease.version);
   if (priorPolicy.format === 2 && (!priorGrant || priorGrant.packageSha256 !== priorRelease.packageSha256
     || priorGrant.payloadDigest !== priorRelease.payloadDigest)) throw Error('Current package grant does not match the signed prior catalogue');
@@ -267,18 +300,20 @@ if (priorAppPolicy) {
   if (target.releases.some(entry => entry.version === version || entry.packageSha256 === packageSha256)) {
     throw Error('M17 update version or package digest already exists in signed update policy');
   }
-  if (retireFinance170) {
-    target.releases = target.releases.filter(entry => !retiredVersions.includes(entry.version));
-    target.minimumVersion = minimumVersion;
-  }
+  const explicitlyRetiredGrants = target.releases.filter(entry => retiredVersions.includes(entry.version));
+  retiredReleaseGrants.push(...explicitlyRetiredGrants);
+  if (retiredVersions.length) target.releases = target.releases.filter(entry => !retiredVersions.includes(entry.version));
+  if (grantWorkEntryMedia) target.capabilities = [...manifest.capabilities];
+  target.minimumVersion = minimumVersion;
   target.releases.push(grant);
   target.releases.sort((left, right) => compareVersionStrings(left.version, right.version));
   if (target.releases.length > maxRetainedReleaseGrants) {
-    retiredReleaseGrants = target.releases.splice(0, target.releases.length - maxRetainedReleaseGrants);
+    retiredReleaseGrants.push(...target.releases.splice(0, target.releases.length - maxRetainedReleaseGrants));
     if (target.rollback && retiredReleaseGrants.some(entry => [target.rollback.from, target.rollback.to].includes(entry.payloadDigest))) {
       throw Error('Cannot retire a release grant referenced by rollback policy');
     }
   }
+  retiredReleaseGrants.sort((left, right) => compareVersion(left.version, right.version));
 } else {
   nextApps.push({
     id: appId,
@@ -350,6 +385,7 @@ const releaseInfo = {
   priorUpdatePolicySha256: sha256(priorPolicyBytes),
   updatePolicyFormat: nextPolicy.format,
   exactApiOperations: grant.apiOperations,
+  addedCapabilities: grantWorkEntryMedia ? ['clinic.media.read', 'clinic.media.upload'] : [],
   retiredReleaseGrants,
 };
 writeNew(path.join(output, 'release.json'), Buffer.from(JSON.stringify(releaseInfo, null, 2) + '\n'));

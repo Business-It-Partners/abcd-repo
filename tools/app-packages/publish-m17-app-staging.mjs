@@ -150,21 +150,19 @@ const removedGrantVersions = (priorAppPolicy?.releases ?? [])
   .map(previous => previous.version)
   .sort();
 const expectedRetiredVersions = expectedRetiredReleaseGrants.map(previous => previous.version).sort();
-const financeMinimumVersionRetirement = appId === 'company.dental.finance.m17'
-  && release.version === '1.7.7'
-  && canonical(retiredVersions) === canonical(['1.7.0'])
-  && priorReleaseRow?.minimumVersion === '1.7.0'
-  && priorAppPolicy?.minimumVersion === '1.7.0'
-  && release.minimumVersion === '1.7.1'
-  && appPolicy?.minimumVersion === '1.7.1'
-  && (priorAppPolicy?.releases.length ?? 0) === 7;
+const retainedGrantFloor = expectedReleaseGrants[0]?.version;
+const expectedMinimumVersion = priorAppPolicy
+  ? retainedGrantFloor && compareVersion(priorAppPolicy.minimumVersion, retainedGrantFloor) < 0
+    ? retainedGrantFloor
+    : priorAppPolicy.minimumVersion
+  : release.minimumVersion;
 const exactGrantRetirement = canonical(removedGrantVersions) === canonical(expectedRetiredVersions)
+  && canonical(retiredVersions) === canonical(expectedRetiredVersions)
   && (release.releaseKind === 'new'
-    ? retiredVersions.length === 0 && expectedRetiredVersions.length === 0 && release.minimumVersion === releaseRow?.minimumVersion
-    : retiredVersions.length === 0
-      ? release.minimumVersion === priorReleaseRow?.minimumVersion
-        && appPolicy?.minimumVersion === priorAppPolicy?.minimumVersion
-      : financeMinimumVersionRetirement);
+    ? expectedRetiredVersions.length === 0 && release.minimumVersion === releaseRow?.minimumVersion
+    : release.minimumVersion === expectedMinimumVersion
+      && releaseRow?.minimumVersion === expectedMinimumVersion
+      && appPolicy?.minimumVersion === expectedMinimumVersion);
 const unchangedCatalogueRows = priorCatalogue.releases.filter(row => row.id !== appId).every(previous => {
   const next = catalogue.releases.find(row => row.id === previous.id);
   return !!next && canonical(next) === canonical(previous);
@@ -183,7 +181,19 @@ const retiredGrantWindowValid = Array.isArray(release.retiredReleaseGrants)
 const sameTargetPolicy = !priorAppPolicy || (() => {
   const { releases: _priorReleases, minimumVersion: _priorMinimumVersion, ...priorFields } = priorAppPolicy;
   const { releases: _nextReleases, minimumVersion: _nextMinimumVersion, ...nextFields } = appPolicy ?? {};
-  return canonical(priorFields) === canonical(nextFields);
+  const priorCapabilities = priorFields.capabilities ?? [];
+  const nextCapabilities = nextFields.capabilities ?? [];
+  const { capabilities: _priorCapabilities, ...priorFieldsExceptCapabilities } = priorFields;
+  const { capabilities: _nextCapabilities, ...nextFieldsExceptCapabilities } = nextFields;
+  const addedCapabilities = nextCapabilities.filter(value => !priorCapabilities.includes(value)).sort();
+  const removedCapabilities = priorCapabilities.filter(value => !nextCapabilities.includes(value)).sort();
+  const exactWorkEntryMediaGrant = appId === 'company.dental.work-entry.m17'
+    && canonical(release.addedCapabilities ?? []) === canonical(['clinic.media.read', 'clinic.media.upload'])
+    && canonical(addedCapabilities) === canonical(['clinic.media.read', 'clinic.media.upload'])
+    && removedCapabilities.length === 0;
+  const capabilitiesUnchanged = canonical(priorCapabilities) === canonical(nextCapabilities);
+  return canonical(priorFieldsExceptCapabilities) === canonical(nextFieldsExceptCapabilities)
+    && (capabilitiesUnchanged || exactWorkEntryMediaGrant);
 })();
 if (priorCatalogue.sequence !== release.priorSequence || priorPolicy.sequence !== release.priorSequence
   || catalogue.sequence !== release.sequence || policy.sequence !== release.sequence
