@@ -201,7 +201,7 @@ export class FixtureRuntime {
     if(!info||modules.length<2){delete entry.state.moduleNavigation;return;}
     const active=modules.find(module=>module.id===entry.moduleId)??modules[0];
     entry.moduleId=active.id;
-    entry.state.moduleNavigation={activeModuleId:active.id,activeLabel:active.label,moduleCount:modules.length};
+    entry.state.moduleNavigation={activeModuleId:active.id,activeLabel:active.label,modules:modules.map(({id,label})=>({id,label}))};
   }
   private installedAppInfo(id: RuntimeId): DentalAppInfo | undefined {
     try {
@@ -229,8 +229,7 @@ export class FixtureRuntime {
   openExplorer(event: IpcMainInvokeEvent) {
     const entry=this.callerEntry(event),info=entry&&this.visibleAppInfo(entry);
     if(!entry||!info||info.modules.length<2)return{ok:false as const,error:{code:'ACCESS_DENIED',message:'There are no additional apps available for this window.',outcome:'not_sent' as const}};
-    this.win.webContents.send('runtime:app-explorer',{runtimeId:entry.state.id,...info});
-    return{ok:true as const,value:{opened:true}};
+    return{ok:false as const,error:{code:'UNAVAILABLE',message:'Choose a module from this window’s sidebar.',outcome:'not_sent' as const}};
   }
   private sendModuleSelection(entry:Entry,moduleId:string):Promise<boolean>{
     const wc=entry.view.webContents;

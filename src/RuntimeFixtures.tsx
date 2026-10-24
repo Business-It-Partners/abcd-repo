@@ -6,16 +6,17 @@ import { runtimeIds, runtimeIdForPackage, type RuntimeState, type RuntimeId, typ
 import type { StoreApp } from '../electron/distribution/contracts';
 import { dockZoneTop, type WindowId } from './windowGeometry';
 import { StoreArtwork } from './StoreArtwork';
+import type { WindowModuleNavigation } from './WindowModuleSidebar';
 
 type ControllerRef = MutableRefObject<WindowController>;
 type DynamicApp = StoreApp & { target: RefObject<HTMLButtonElement | null> };
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
-export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, onOpenAppExplorer }: {
+export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, onSelectModule }: {
   controllers: Record<string, WindowController>; apps?: StoreApp[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
   onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean;
-  onOpenAppExplorer?(id: RuntimeId, trigger: HTMLElement): void;
+  onSelectModule?(id: RuntimeId, moduleId: string): void | Promise<void>;
 }) {
   const generation = useSessionGeneration();
   const { state, dispatch } = useWindowManager();
@@ -28,6 +29,8 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
   const launchVisibleDuration=useRef(new Map<RuntimeId,number>()), launchVisibleSince=useRef(new Map<RuntimeId,number>());
   liveControllers.current=controllers;
   const front=activeWindow(state);
+  const immersive=!!front&&state.windows[front]?.presentation==='fullscreen';
+  const immersiveRef=useRef(immersive);immersiveRef.current=immersive;
   const dockTop=dockZoneTop(state.size);
   const dynamicApps:DynamicApp[]=apps.filter(app=>!!app.installedVersion&&!['company.sample.alpha','company.sample.beta'].includes(app.id)).flatMap(app=>{const id=runtimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{...app,id,target}]:[];});
   const appSignature=dynamicApps.map(app=>`${app.id}:${app.title}`).sort().join('|');
@@ -97,12 +100,13 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       setEntries(next);
       for(const entry of next)dispatch({type:'navigation-sync',id:entry.id,navigation:entry.navigation??{entries:[],index:-1}});
     }
-    else if(kind==='app-explorer')window.dispatchEvent(new CustomEvent('runtime:app-explorer',{detail:value}));
     else if(kind==='key')window.dispatchEvent(new KeyboardEvent('keydown',value as KeyboardEventInit));
     else if(kind==='close-blocked'){const id=(value as {id:RuntimeId}).id;const controller=liveControllers.current[id];if(controller){controller.open();setConfirm(id);}}
     else if(kind==='edge') {
       const point=value as {x:number;y:number};
-      if(point.y>=innerHeight-170){
+      // A normal window already ends above the dock. Only a fullscreen native
+      // surface must be hidden so the renderer can reveal the dock over it.
+      if(point.y>=innerHeight-170&&immersiveRef.current){
         // A native WebContentsView paints above the shell. Hide it in the same
         // IPC turn as dock reveal so Windows cannot leave it covering the dock
         // while React schedules the peek-state layout update.
@@ -146,17 +150,17 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
       return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
-        moduleNavigation={entry?.moduleNavigation ? { activeLabel: entry.moduleNavigation.activeLabel, moduleCount: entry.moduleNavigation.moduleCount } : undefined}
-        onOpenModuleExplorer={trigger=>onOpenAppExplorer?.(id,trigger)}/>;
+        moduleNavigation={entry?.moduleNavigation}
+        onSelectModule={moduleId=>onSelectModule?.(id,moduleId)}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onOpenModuleExplorer}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:{activeLabel:string;moduleCount:number};onOpenModuleExplorer?(trigger:HTMLElement):void}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
   const navigationDisabled=entry?.phase!=='ready'||!!entry?.dirty||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
-  return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled} moduleNavigation={moduleNavigation} onOpenModuleExplorer={onOpenModuleExplorer}
+  return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled} moduleNavigation={moduleNavigation} onSelectModule={onSelectModule}
     onNavigationBack={()=>void window.desktop?.runtime.navigate(id,'back',generation)}
     onNavigationForward={()=>void window.desktop?.runtime.navigate(id,'forward',generation)}>
     <Surface id={id} title={title} controller={controller} entry={entry} confirm={confirm} requestConfirm={requestConfirm} cancel={cancel} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>

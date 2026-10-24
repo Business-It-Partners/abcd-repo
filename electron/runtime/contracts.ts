@@ -14,8 +14,8 @@ export type RuntimeState = {
   modal: boolean;
   writeState?: 'none' | 'pending' | 'unknown';
   navigation?: { entries: string[]; index: number };
-  /** OS-owned title-bar context derived only from verified, role-filtered package metadata. */
-  moduleNavigation?: { activeModuleId: string; activeLabel: string; moduleCount: number };
+  /** OS-owned sidebar context derived only from verified, role-filtered package metadata. */
+  moduleNavigation?: { activeModuleId: string; activeLabel: string; modules: readonly { id: string; label: string }[] };
   reason?: string;
   snapshot?: string;
 };

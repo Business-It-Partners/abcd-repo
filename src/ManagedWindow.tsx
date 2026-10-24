@@ -4,7 +4,8 @@ import { flushSync } from 'react-dom';
 import { prepareGenie } from './genie';
 import { dockZoneTop, fitBounds, maximizedBounds, moveBounds, resizeBounds, windowSpec, type ResizeEdge, type Size, type WindowId } from './windowGeometry';
 import { activeWindow, useWindowManager } from './windowManager';
-import { WindowTitleBar, type WindowModuleNavigation } from './WindowTitleBar';
+import { WindowTitleBar } from './WindowTitleBar';
+import { WindowModuleSidebar, type WindowModuleNavigation } from './WindowModuleSidebar';
 import type { Rect } from './motion';
 
 const edges: ResizeEdge[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
@@ -153,22 +154,25 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;
 
-export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, navigationDisabled = false, moduleNavigation, onOpenModuleExplorer, onNavigationBack, onNavigationForward }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; navigationDisabled?:boolean; moduleNavigation?:WindowModuleNavigation; onOpenModuleExplorer?:(trigger:HTMLElement)=>void; onNavigationBack?:()=>void; onNavigationForward?:()=>void }) {
+export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, navigationDisabled = false, moduleNavigation, onSelectModule, onNavigationBack, onNavigationForward }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; navigationDisabled?:boolean; moduleNavigation?:WindowModuleNavigation; onSelectModule?:(moduleId:string)=>void|Promise<void>; onNavigationBack?:()=>void; onNavigationForward?:()=>void }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
+  const hasModuleSidebar = !!moduleNavigation && moduleNavigation.modules.length > 1;
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
   const order = manager.state.order.indexOf(c.id);
   const clippedBottom = Math.max(0, c.bounds.y + c.bounds.height - dockZoneTop(manager.state.size));
   return <>
-    <section ref={c.windowRef} className={`studio-window ${c.id === 'records' ? 'records-window' : ''}`} data-testid={`${c.id}-window`}
+    <section ref={c.windowRef} className={`studio-window ${c.id === 'records' ? 'records-window' : ''}`} data-module-sidebar={hasModuleSidebar || undefined} data-testid={`${c.id}-window`}
       data-window-id={c.id} data-phase={c.win.phase} data-presentation={c.win.presentation} data-interaction={c.win.interaction} data-active={c.active}
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} navigationDisabled={navigationDisabled} inert={c.win.modal}
-        moduleNavigation={moduleNavigation} onOpenModuleExplorer={onOpenModuleExplorer}
         onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}
         canGoBack={c.win.navigation.index > 0} canGoForward={c.win.navigation.index < c.win.navigation.entries.length - 1} onBack={onNavigationBack ?? c.goBack} onForward={onNavigationForward ?? c.goForward}/>
-      {children}
+      {hasModuleSidebar && moduleNavigation ? <>
+        <WindowModuleSidebar title={c.win.title} navigation={moduleNavigation} disabled={c.anyBusy || navigationDisabled || c.win.modal} onSelect={onSelectModule ?? (()=>{})}/>
+        <div className="window-module-content">{children}</div>
+      </> : children}
       {!fullscreen && !c.anyBusy && !c.win.modal && edges.map(edge => <div key={edge} className={`window-resize-handle resize-${edge}`} data-resize={edge}
         aria-hidden="true" onPointerDown={event => c.startGesture(event, edge)}/>)}
     </section>
