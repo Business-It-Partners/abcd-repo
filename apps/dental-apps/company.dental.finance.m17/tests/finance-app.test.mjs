@@ -19,13 +19,13 @@ const modules = [
   "supplier-payments",
 ];
 
-test("Finance M17 has one 1.7.7 package with all eight ordered Finance modules", async () => {
+test("Finance M17 has one 1.7.11 package with all eight ordered Finance modules", async () => {
   const packageJson = await readJson("package.json");
   const manifest = await readJson("app.manifest.json");
   const app = await readJson("app.json");
 
   assert.equal(packageJson.name, "company.dental.finance.m17");
-  assert.equal(packageJson.version, "1.7.7");
+  assert.equal(packageJson.version, "1.7.11");
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ["clinic.app.finance", "clinic.api.request", "session.context"]);
@@ -33,6 +33,22 @@ test("Finance M17 has one 1.7.7 package with all eight ordered Finance modules",
   assert.equal(app.title, "Finance");
   assert.deepEqual(app.modules.map((module) => module.id), modules);
   assert.deepEqual(app.anyCapabilities, ["finance.manage", "patient_payments.outstanding.read"]);
+});
+
+test("purchase invoice lines omit pagination and support row-based keyboard entry", async () => {
+  const purchaseForm = await readText("src/features/finance/purchases/PurchaseForm.tsx");
+  const styles = await readText("src/styles.css");
+
+  assert.match(purchaseForm, /paginate=\{false\}/);
+  assert.match(purchaseForm, /<PageHeader title=\{purchase \? "Correct purchase invoice" : "New purchase"\} \/>/);
+  assert.doesNotMatch(purchaseForm, /purchase-add-line|Add item line/);
+  assert.match(purchaseForm, /aria-label="Add invoice line"/);
+  assert.match(purchaseForm, /ArrowDown[\s\S]*options\.length \+ 1/);
+  assert.match(purchaseForm, /onAdvance=\{\(\) => focusLineField\(line\.key, "quantity"\)\}/);
+  assert.match(purchaseForm, /if \(field === "quantity"\) \{ focusLineField\(key, "unit"\); return; \}/);
+  assert.match(purchaseForm, /if \(field === "unit"\) \{ focusLineField\(key, "rate"\); return; \}/);
+  assert.match(purchaseForm, /else addLine\(\);/);
+  assert.match(styles, /\.purchase-add-row[^\n]*background: #16a34a/);
 });
 
 test("Finance delegates module identity and switching to the Dental OS window title bar", async () => {
@@ -79,17 +95,37 @@ test("Finance pages keep operational states but omit redundant page and summary 
   assert.doesNotMatch(transactionRecord, /Revenue, spending and outstanding balances|All dates/);
 });
 
-test("only Product and Supplier detail pages enter shared app-window history", async () => {
+test("purchase form and review use shared app-window history with draft-safe Back", async () => {
   const main = await readText("src/main.tsx");
-  const product = await readText("src/features/finance/product-list/ProductListWorkspace.tsx");
-  const supplier = await readText("src/features/finance/supplier-list/SupplierListWorkspace.tsx");
-
   assert.match(main, /sdk\.createHistory<FinancePage>/);
-  assert.match(main, /history\.push\(\{ moduleId: "product-list", screen: "product-detail", productId \}\)/);
-  assert.match(main, /history\.push\(\{ moduleId: "supplier-list", screen: "supplier-detail", supplierId \}\)/);
+  assert.match(main, /screen: "purchase-form"/);
+  assert.match(main, /screen: "purchase-review"/);
+  assert.match(main, /screen === "purchase-review"/);
+  assert.match(main, /screen === "main"/);
+  assert.match(main, /onReviewPurchase=\{reviewPurchase\}/);
   assert.match(main, /history\.reset\(mainPage\(selected\)\)/);
   assert.match(main, /financeNavigationLocked/);
   assert.doesNotMatch(main, /window\.history|popstate|location\.hash/);
+});
+
+test("purchase list removes its subtitle and category while constraining scan columns", async () => {
+  const purchases = await readText("src/features/finance/purchases/PurchasesView.tsx");
+  const styles = await readText("src/styles.css");
+  assert.doesNotMatch(purchases, /purchase-notice|header: "Category"/);
+  assert.match(purchases, /join\(" \| "\)/);
+  assert.match(purchases, /purchase-invoice-summary/);
+  assert.match(purchases, /purchase-supplier-summary/);
+  assert.match(purchases, /purchase-total-single-line/);
+  assert.match(styles, /-webkit-line-clamp: 2/);
+  assert.match(styles, /\.purchase-total-single-line\s*\{[^}]*white-space: nowrap/);
+});
+
+test("Product and Supplier details remain in their shared app-window history", async () => {
+  const main = await readText("src/main.tsx");
+  const product = await readText("src/features/finance/product-list/ProductListWorkspace.tsx");
+  const supplier = await readText("src/features/finance/supplier-list/SupplierListWorkspace.tsx");
+  assert.match(main, /history\.push\(\{ moduleId: "product-list", screen: "product-detail", productId \}\)/);
+  assert.match(main, /history\.push\(\{ moduleId: "supplier-list", screen: "supplier-detail", supplierId \}\)/);
   assert.match(product, /onOpenProduct/);
   assert.match(supplier, /onOpenSupplier/);
 });

@@ -30,6 +30,7 @@ const FINANCE_MODULES = {
 type FinanceModuleId = keyof typeof FINANCE_MODULES;
 type FinancePage =
   | { moduleId: FinanceModuleId; screen: "main" }
+  | { moduleId: "purchases"; screen: "purchase-form" | "purchase-review"; purchaseId?: string }
   | { moduleId: "product-list"; screen: "product-detail"; productId: string }
   | { moduleId: "supplier-list"; screen: "supplier-detail"; supplierId: string };
 
@@ -82,6 +83,23 @@ function App() {
     if (current.moduleId === "supplier-list" && current.screen === "main") {
       history.push({ moduleId: "supplier-list", screen: "supplier-detail", supplierId });
     }
+  }, []);
+  const openPurchaseForm = useCallback((purchaseId?: string) => {
+    const history = historyRef.current;
+    if (!history) return;
+    const current = history.current();
+    if (current.moduleId === "purchases" && current.screen === "main") {
+      history.push({ moduleId: "purchases", screen: "purchase-form", ...(purchaseId ? { purchaseId } : {}) });
+    }
+  }, []);
+  const reviewPurchase = useCallback(() => {
+    const history = historyRef.current;
+    const current = history?.current();
+    if (!history || current?.moduleId !== "purchases" || current.screen !== "purchase-form") return;
+    history.push({ moduleId: "purchases", screen: "purchase-review", ...(current.purchaseId ? { purchaseId: current.purchaseId } : {}) });
+  }, []);
+  const exitPurchaseForm = useCallback(() => {
+    historyRef.current?.reset(mainPage("purchases"));
   }, []);
   const closeDetail = useCallback((owner: "product-list" | "supplier-list") => {
     const history = historyRef.current;
@@ -169,7 +187,11 @@ function App() {
       const selected = nextCapabilities.includes(FINANCE_MODULES[preferredModule].capability)
         ? preferredModule
         : initialModule;
-      const appHistory = sdk.createHistory<FinancePage>(mainPage(selected), () => !financeNavigationLocked.current);
+      const appHistory = sdk.createHistory<FinancePage>(
+        mainPage(selected),
+        () => !financeNavigationLocked.current,
+        (current) => current.moduleId === "purchases" && current.screen === "purchase-review",
+      );
       history = appHistory;
       historyRef.current = appHistory;
       unsubscribeHistory = appHistory.subscribe(applyHistoryPage);
@@ -229,7 +251,15 @@ function App() {
                 onInvalidSupplier={resetMissingSupplier}
               />
             ) : moduleId === "purchases" ? (
-              <PurchasesWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
+              <PurchasesWorkspace
+                client={client}
+                onNavigationLockChange={setFinanceNavigationLock}
+                screen={page?.moduleId === "purchases" ? page.screen : "main"}
+                purchaseId={page?.moduleId === "purchases" && page.screen !== "main" ? page.purchaseId : undefined}
+                onOpenPurchaseForm={openPurchaseForm}
+                onReviewPurchase={reviewPurchase}
+                onExitPurchaseForm={exitPurchaseForm}
+              />
             ) : (
               <SupplierPaymentsWorkspace client={client} onNavigationLockChange={setFinanceNavigationLock} />
             )}

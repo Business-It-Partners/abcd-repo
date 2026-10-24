@@ -3,6 +3,7 @@ import { Eye, Pencil, Plus, Receipt, Search, Trash2 } from "lucide-react";
 import { ClinicClient, ClinicError, type ClinicCommand } from "@/sdk/client";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { formatDateShort, isInBSMonth, todayBSMonth, todayISO } from "@/shared/dates/nepaliDate";
 import MonthPicker from "@/shared/dates/MonthPicker";
 import { DataTable, EmptyState, Field, Input, ModalError, Page, PageHeader, RowActions, SearchBox, type Column } from "@/shared/ui/workspace-primitives";
@@ -40,11 +41,16 @@ export default function PurchasesView({
   purchases,
   products,
   suppliers,
+  screen,
+  purchaseId,
   purchasesLoading,
   referencesLoading,
   purchasesError,
   referencesError,
   onNavigationLockChange,
+  onOpenPurchaseForm,
+  onReviewPurchase,
+  onExitPurchaseForm,
   onRefresh,
   onProductCreated,
   onSupplierCreated,
@@ -59,11 +65,16 @@ export default function PurchasesView({
   purchases: ClinicPurchase[];
   products: ClinicProduct[];
   suppliers: ClinicSupplier[];
+  screen: "main" | "purchase-form" | "purchase-review";
+  purchaseId?: string;
   purchasesLoading: boolean;
   referencesLoading: boolean;
   purchasesError: string | null;
   referencesError: string | null;
   onNavigationLockChange: (locked: boolean) => void;
+  onOpenPurchaseForm: (purchaseId?: string) => void;
+  onReviewPurchase: () => void;
+  onExitPurchaseForm: () => void;
   onRefresh: () => Promise<void>;
   onProductCreated: (product: ClinicProduct) => void;
   onSupplierCreated: (supplier: ClinicSupplier) => void;
@@ -73,8 +84,6 @@ export default function PurchasesView({
 }) {
   const [term, setTerm] = useState("");
   const [month, setMonth] = useState(() => todayBSMonth());
-  const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<ClinicPurchase | null>(null);
   const [viewing, setViewing] = useState<ClinicPurchase | null>(null);
   const [voidingPurchase, setVoidingPurchase] = useState<ClinicPurchase | null>(null);
   const [voidReason, setVoidReason] = useState("");
@@ -82,9 +91,11 @@ export default function PurchasesView({
   const [voidCommand, setVoidCommand] = useState<VoidWrite | null>(null);
   const [voidSaving, setVoidSaving] = useState(false);
   const [voidConflict, setVoidConflict] = useState(false);
-  const [notice, setNotice] = useState("");
-  const formOpen = adding || Boolean(editing);
-  const modalOpen = formOpen || Boolean(viewing) || Boolean(voidingPurchase);
+  const [purchaseFormModalOpen, setPurchaseFormModalOpen] = useState(false);
+  const snackbar = useClinicSnackbar();
+  const formOpen = screen !== "main";
+  const editing = purchaseId ? purchases.find((purchase) => purchase.purchaseId === purchaseId) ?? null : null;
+  const modalOpen = purchaseFormModalOpen || Boolean(viewing) || Boolean(voidingPurchase);
   const navigationLocked = formOpen || Boolean(viewing) || Boolean(voidingPurchase);
 
   useEffect(() => {
@@ -107,21 +118,20 @@ export default function PurchasesView({
   [activePurchases, month, query]);
 
   const columns: Column<ClinicPurchase>[] = [
-    { key: "sn", header: "S.N.", align: "center", width: 44, render: (_purchase, index) => <span style={{ color: "var(--ink-3)" }}>{index + 1}</span> },
-    { key: "date", header: "Date", sortable: true, nowrap: true, value: (purchase) => purchase.purchaseDate, render: (purchase) => formatDateShort(purchase.purchaseDate) },
-    { key: "invoice", header: "Invoice #", sortable: true, nowrap: true, value: (purchase) => purchase.invoiceNumber ?? "", render: (purchase) => purchase.invoiceNumber || "—" },
-    { key: "supplier", header: "Supplier", sortable: true, value: (purchase) => purchase.supplierName, render: (purchase) => purchase.supplierName },
-    { key: "category", header: "Category", nowrap: true, value: (purchase) => purchase.purchaseType, render: (purchase) => purchase.purchaseType === "lab_service" ? "Lab work" : "Products" },
-    { key: "items", header: "Items", value: (purchase) => purchase.lines.map((line) => line.itemName).join(", "), render: (purchase) => {
-      const summary = purchase.lines.map((line) => line.itemName).join(", ");
+    { key: "sn", header: "S.N.", align: "center", width: 52, render: (_purchase, index) => <span style={{ color: "var(--ink-3)" }}>{index + 1}</span> },
+    { key: "date", header: "Date", sortable: true, nowrap: true, width: 102, value: (purchase) => purchase.purchaseDate, render: (purchase) => formatDateShort(purchase.purchaseDate) },
+    { key: "invoice", header: "Invoice #", sortable: true, nowrap: true, width: 118, value: (purchase) => purchase.invoiceNumber ?? "", render: (purchase) => <span title={purchase.invoiceNumber || "—"} className="purchase-invoice-summary">{purchase.invoiceNumber || "—"}</span> },
+    { key: "supplier", header: "Supplier", sortable: true, width: 150, value: (purchase) => purchase.supplierName, render: (purchase) => <span title={purchase.supplierName} className="purchase-supplier-summary">{purchase.supplierName}</span> },
+    { key: "items", header: "Items", width: 225, value: (purchase) => purchase.lines.map((line) => line.itemName).join(" | "), render: (purchase) => {
+      const summary = purchase.lines.map((line) => line.itemName).join(" | ");
       return <span title={summary} className="purchase-items-summary">{summary}</span>;
     } },
-    { key: "total", header: "Total", align: "right", sortable: true, total: true, value: (purchase) => purchase.totalAmount, totalFormat: (sum) => <strong>{formatNpr(sum)}</strong>, render: (purchase) => formatNpr(purchase.totalAmount) },
-    { key: "actions", header: "Action", align: "center", width: 190, render: (purchase) => (
+    { key: "total", header: "Total", align: "right", sortable: true, nowrap: true, width: 125, total: true, value: (purchase) => purchase.totalAmount, totalFormat: (sum) => <strong className="purchase-total-single-line">{formatNpr(sum)}</strong>, render: (purchase) => <span className="purchase-total-single-line">{formatNpr(purchase.totalAmount)}</span> },
+    { key: "actions", header: "Action", align: "center", width: 190, nowrap: true, render: (purchase) => (
       <RowActions>
         <div className="purchase-row-actions">
           <ClinicActionButton size="compact" onClick={() => setViewing(purchase)} title="View purchase details"><Eye size={13} /> Detail</ClinicActionButton>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setNotice(""); setEditing(purchase); }} title="Correct purchase invoice"><Pencil size={13} /> Correct</button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpenPurchaseForm(purchase.purchaseId)} title="Correct purchase invoice"><Pencil size={13} /> Correct</button>
           <button type="button" className="btn btn-icon btn-ghost btn-sm" onClick={() => { setVoidReason(""); setVoidError(""); setVoidCommand(null); setVoidConflict(false); setVoidingPurchase(purchase); }} title="Void purchase invoice" aria-label={`Void purchase ${purchase.invoiceNumber || purchase.purchaseId}`} style={{ color: "var(--danger, #b42318)" }}><Trash2 size={13} /></button>
         </div>
       </RowActions>
@@ -136,7 +146,7 @@ export default function PurchasesView({
       onVoided(response.purchase.purchaseId);
       setVoidingPurchase(null);
       setVoidCommand(null);
-      setNotice("Purchase invoice voided. The supplier payment, if any, remains separate.");
+      snackbar.showSuccess("Purchase invoice voided. Any supplier payment remains separate.");
       void onRefresh().catch(() => undefined);
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
@@ -168,9 +178,13 @@ export default function PurchasesView({
     void completeVoid({ purchase: voidingPurchase, reason, command: api.void(voidingPurchase.purchaseId, { reason }) });
   };
 
+  if (formOpen && purchaseId && !editing && !purchasesLoading) {
+    return <Page sheet fillSheet standardPage><ModalError>The selected purchase could not be found. Return to the purchase list and refresh.</ModalError></Page>;
+  }
+
   if (formOpen) {
     return (
-      <Page sheet fillSheet>
+      <Page sheet fillSheet standardPage>
         <PurchaseForm
           api={api}
           productApi={productApi}
@@ -181,13 +195,16 @@ export default function PurchasesView({
           referencesLoading={referencesLoading}
           referencesError={referencesError}
           purchase={editing}
+          reviewing={screen === "purchase-review"}
           onProductCreated={onProductCreated}
           onSupplierCreated={onSupplierCreated}
-          onCancel={() => { setAdding(false); setEditing(null); }}
+          onCancel={onExitPurchaseForm}
+          onReview={onReviewPurchase}
+          onModalOpenChange={setPurchaseFormModalOpen}
           onRefresh={onRefresh}
           onCreated={onCreated}
           onCorrected={onCorrected}
-          onNotice={setNotice}
+          onNotice={snackbar.showSuccess}
         />
       </Page>
     );
@@ -196,16 +213,16 @@ export default function PurchasesView({
   return (
     <Page sheet standardPage>
       <PageHeader title="Purchases" icon={<Receipt size={17} style={{ color: "var(--acc)" }} />}>
-        <ClinicActionButton onClick={() => { setNotice(""); setAdding(true); }}><Plus size={14} /> New purchase</ClinicActionButton>
+        <ClinicActionButton onClick={() => onOpenPurchaseForm()}><Plus size={14} /> New purchase</ClinicActionButton>
       </PageHeader>
-      {notice ? <p className="purchase-notice" role="status">{notice}</p> : null}
       {referencesError ? <p className="purchase-reference-warning" role="alert">Product and supplier choices could not be fully loaded — {referencesError}. Refresh and retry before recording or correcting an invoice.</p> : null}
+      <div className="purchase-list-table">
       <DataTable<ClinicPurchase>
         rows={rows}
         rowKey={(purchase) => purchase.purchaseId}
         noun="purchases"
         standardPage
-        minWidth={1050}
+        minWidth={970}
         totalsLabel="Total purchased"
         filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <MonthPicker value={month} onChange={setMonth} max={todayISO().slice(0, 7)} />
@@ -218,6 +235,7 @@ export default function PurchasesView({
         empty={<EmptyState icon={activePurchases.length === 0 ? <Receipt size={26} /> : <Search size={26} />} message={activePurchases.length === 0 ? "No purchases yet." : "No purchase matches this search."} />}
         columns={columns}
       />
+      </div>
       {viewing ? <PurchaseDetailsDialog purchase={viewing} onClose={() => setViewing(null)} /> : null}
       {voidingPurchase ? (
         <ClinicModal title="Void purchase invoice?" description="The invoice leaves purchase totals and the supplier balance but remains in the audit trail. Any supplier payment stays recorded separately." onClose={() => { if (!voidSaving && !voidCommand) setVoidingPurchase(null); }} closeDisabled={voidSaving || Boolean(voidCommand)} size="small" verticalAlign="center">

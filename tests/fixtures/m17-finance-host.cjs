@@ -18,11 +18,53 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { 
 const appId = 'company.dental.finance.m17';
 const capabilities = ['finance.manage', 'patient_payments.outstanding.read'];
 const calls = [];
+const syntheticProduct = {
+  productId: '10000000-0000-4000-8000-000000000001', name: 'Synthetic gauze', category: 'consumable', unit: 'box',
+  note: null, active: true, createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z', rowVersion: 1,
+};
+const keyboardProducts = Array.from({ length: 12 }, (_, index) => ({
+  ...syntheticProduct,
+  productId: `10000000-0000-4000-8000-${String(index + 10).padStart(12, '0')}`,
+  name: `Keyboard choice ${String(index + 1).padStart(2, '0')}`,
+}));
+const syntheticSupplier = {
+  supplierId: '20000000-0000-4000-8000-000000000001', name: 'Synthetic supplier', supplierType: 'goods',
+  contactPerson: null, phone: null, email: null, address: null, openingBalanceAmount: 0, openingBalanceAsOf: '2026-10-01',
+  active: true, currentDueAmount: 0, createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z', rowVersion: 1,
+};
 const overview = {
   patientOutstandingDueAmount: 0, generalExpenseAmount: 0, purchaseAmount: 0,
   supplierPayoutAmount: 0, salaryPayoutAmount: 0, currentSupplierOutstandingAmount: 0,
   labPurchaseAmount: 0, labPayoutAmount: 0, currentLabOutstandingAmount: 0,
 };
+const purchaseDate = new Date().toISOString().slice(0, 10);
+const syntheticPurchases = [
+  {
+    purchaseId: '30000000-0000-4000-8000-000000000001', supplierId: '20000000-0000-4000-8000-000000000001',
+    supplierName: 'Himalayan Dental Supplies and Instruments Company Limited', branchId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    purchaseDate, invoiceNumber: null, purchaseType: 'product', subtotalAmount: 77, discountAmount: 0, totalAmount: 77,
+    note: null, status: 'recorded', recordedAt: '2026-10-24T08:00:00.000Z', correctsPurchaseId: null, voidedAt: null, voidReason: null,
+    lines: [{ purchaseLineId: '40000000-0000-4000-8000-000000000001', productId: syntheticProduct.productId, itemName: 'M18-FIN-20261024-BB86171A product', quantity: 1, unit: 'piece', rate: 77, amount: 77, note: null }],
+  },
+  {
+    purchaseId: '30000000-0000-4000-8000-000000000002', supplierId: '20000000-0000-4000-8000-000000000001',
+    supplierName: 'Everest Medical Traders', branchId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    purchaseDate, invoiceNumber: '2222', purchaseType: 'product', subtotalAmount: 14999, discountAmount: 0, totalAmount: 14999,
+    note: null, status: 'recorded', recordedAt: '2026-10-24T07:00:00.000Z', correctsPurchaseId: null, voidedAt: null, voidReason: null,
+    lines: [
+      { purchaseLineId: '40000000-0000-4000-8000-000000000002', productId: syntheticProduct.productId, itemName: 'Universal Composite Resin A2', quantity: 10, unit: 'tube', rate: 1000, amount: 10000, note: null },
+      { purchaseLineId: '40000000-0000-4000-8000-000000000003', productId: syntheticProduct.productId, itemName: 'Approne', quantity: 1, unit: 'piece', rate: 2999, amount: 2999, note: null },
+      { purchaseLineId: '40000000-0000-4000-8000-000000000004', productId: syntheticProduct.productId, itemName: 'Disposable Surgical Masks', quantity: 4, unit: 'box', rate: 500, amount: 2000, note: null },
+    ],
+  },
+  {
+    purchaseId: '30000000-0000-4000-8000-000000000003', supplierId: '20000000-0000-4000-8000-000000000001',
+    supplierName: 'M18-FIN-20261024-BB86171A supplier', branchId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    purchaseDate, invoiceNumber: 'M18-FIN-20261024-BB86171A-INVOICE-REFERENCE', purchaseType: 'product', subtotalAmount: 10, discountAmount: 0, totalAmount: 10,
+    note: null, status: 'recorded', recordedAt: '2026-10-24T06:00:00.000Z', correctsPurchaseId: null, voidedAt: null, voidReason: null,
+    lines: [{ purchaseLineId: '40000000-0000-4000-8000-000000000005', productId: syntheticProduct.productId, itemName: 'M18-FIN-20261024-BB86171A product', quantity: 1, unit: 'piece', rate: 10, amount: 10, note: null }],
+  },
+];
 let runtime;
 global.fetch = async (url, init = {}) => {
   const target = new URL(url), headers = new Headers(init.headers);
@@ -33,6 +75,15 @@ global.fetch = async (url, init = {}) => {
   }
   if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/patient-payments') {
     return Response.json({ received: [], outstanding: [] });
+  }
+  if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/clinic/purchases') {
+    return Response.json({ purchases: syntheticPurchases });
+  }
+  if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/clinic/products') {
+    return Response.json({ products: [syntheticProduct, ...keyboardProducts] });
+  }
+  if ((init.method ?? 'GET') === 'GET' && target.pathname === '/v1/clinic/suppliers') {
+    return Response.json({ suppliers: [syntheticSupplier] });
   }
   return Response.json({ code: 'route_not_found' }, { status: 404 });
 };
@@ -82,11 +133,15 @@ app.whenReady().then(async () => {
   ipcMain.handle('runtime:app-info', event => runtime.appInfo(event));
   ipcMain.handle('runtime:open-explorer', event => runtime.openExplorer(event));
   ipcMain.on('runtime:report', (event, value) => runtime.report(event, value));
+  ipcMain.on('runtime:navigation-report', (event, value) => runtime.navigationReport(event, value));
   const moduleAcks = [];
   ipcMain.on('runtime:module-selection-ack', (event, value) => { moduleAcks.push(value); runtime.acknowledgeModule(event, value); });
   global.m17Finance = {
     calls, moduleAcks,
     selectModule: moduleId => runtime.selectModule(appId, moduleId),
+    navigate: (direction, discardDirty = false, preserveDraft = false) => runtime.navigate(appId, direction, discardDirty, preserveDraft),
+    navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
+    lifecycle: () => ({ dirty: runtime.entries.get(appId)?.state.dirty, modal: runtime.entries.get(appId)?.state.modal }),
     package: { appId, version: manifest.version, wireBytes: bytes.length, assetCount: pkg.files.size },
   };
   runtime.sync([{ id: appId, open: true, visible: true, rect: { x: 0, y: 0, width: win.getContentSize()[0], height: win.getContentSize()[1] } }]);

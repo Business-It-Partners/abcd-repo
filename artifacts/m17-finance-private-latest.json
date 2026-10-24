@@ -6,14 +6,30 @@
     "Finance renders its initial page instead of a blank app window",
     "Finance completes its initial transaction report request",
     "Finance shows the loaded empty state with no renderer errors",
-    "OS module-selection event moves Finance to Patient payments and receives its acknowledgement"
+    "OS module-selection event moves Finance to Patient payments and receives its acknowledgement",
+    "purchase list removes the Category column and keeps the simplified scan layout",
+    "supplier and item labels wrap to two lines, invoice stays single-line, and totals stay single-line",
+    "long invoice references clip to one line with ellipsis",
+    "purchase list no longer shows the success note as a page subtitle",
+    "ArrowDown scrolls the highlighted product option into view",
+    "keyboard product selection advances focus to quantity",
+    "Enter from the last rate field appends and focuses the next product row",
+    "invoice lines have no pagination strip",
+    "green row plus appends a line and focuses its product field",
+    "OS history marks purchase review as a safe Back step while retaining the unsaved draft",
+    "OS Back returns to the editable purchase form without discarding its draft",
+    "purchase draft fields remain intact after OS Back from review",
+    "purchase confirmation presents supplier, invoice number, date and type as clearly labeled fields",
+    "purchase confirmation removes the long explanation and heading checkmark",
+    "purchase confirmation frames invoice items and emphasizes the net total",
+    "purchase confirmation has no redundant bottom Back button"
   ],
   "errors": [],
   "package": {
     "appId": "company.dental.finance.m17",
-    "version": "1.7.4",
-    "wireBytes": 1521121,
+    "version": "1.7.11",
+    "wireBytes": 1517294,
     "assetCount": 5
   },
-  "scope": "Private headless GNOME/Electron startup check using an ephemeral test key and in-memory synthetic transaction report. No live clinic data or publication."
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test key and in-memory synthetic Finance data, including purchase-row keyboard interaction. No live clinic data or publication."
 }

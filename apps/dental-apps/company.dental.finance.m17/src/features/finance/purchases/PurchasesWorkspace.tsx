@@ -20,9 +20,19 @@ function readableError(cause: unknown, noun: string): string {
 export function PurchasesWorkspace({
   client,
   onNavigationLockChange,
+  screen,
+  purchaseId,
+  onOpenPurchaseForm,
+  onReviewPurchase,
+  onExitPurchaseForm,
 }: {
   client: ClinicClient;
   onNavigationLockChange: (locked: boolean) => void;
+  screen: "main" | "purchase-form" | "purchase-review";
+  purchaseId?: string;
+  onOpenPurchaseForm: (purchaseId?: string) => void;
+  onReviewPurchase: () => void;
+  onExitPurchaseForm: () => void;
 }) {
   const [purchases, setPurchases] = useState<ClinicPurchase[]>([]);
   const [products, setProducts] = useState<ClinicProduct[]>([]);
@@ -124,6 +134,11 @@ export function PurchasesWorkspace({
       purchasesError={purchasesError}
       referencesError={productsError || suppliersError}
       onNavigationLockChange={onNavigationLockChange}
+      screen={screen}
+      purchaseId={purchaseId}
+      onOpenPurchaseForm={onOpenPurchaseForm}
+      onReviewPurchase={onReviewPurchase}
+      onExitPurchaseForm={onExitPurchaseForm}
       onRefresh={reload}
       onProductCreated={onProductCreated}
       onSupplierCreated={onSupplierCreated}

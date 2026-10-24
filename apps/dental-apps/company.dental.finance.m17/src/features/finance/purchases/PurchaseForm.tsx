@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Check, Loader2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { createPortal } from "react-dom";
+import { Check, Loader2, Plus, Trash2 } from "lucide-react";
 import { ClinicError, type ClinicCommand } from "@/sdk/client";
 import { todayISO, formatDateShort } from "@/shared/dates/nepaliDate";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
@@ -57,20 +58,26 @@ function lineAmount(line: DraftLine): number {
 function ProductPicker({
   products,
   selectedId,
+  lineKey,
   disabled,
   onSelect,
+  onAdvance,
   onAddNew,
 }: {
   products: ClinicProduct[];
   selectedId: string;
+  lineKey: number;
   disabled: boolean;
   onSelect: (product: ClinicProduct | null) => void;
+  onAdvance: () => void;
   onAddNew: () => void;
 }) {
   const [query, setQuery] = useState(() => products.find((product) => product.productId === selectedId)?.name ?? "");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [optionsPosition, setOptionsPosition] = useState<{ left: number; width: number; maxHeight: number; top?: number; bottom?: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionsRef = useRef<HTMLDivElement>(null);
   const selected = products.find((product) => product.productId === selectedId);
   const options = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
@@ -78,6 +85,61 @@ function ProductPicker({
   }, [products, query]);
 
   useEffect(() => { setQuery(selected?.name ?? ""); }, [selected?.name, selectedId]);
+
+  useLayoutEffect(() => {
+    if (!open || disabled) return;
+    const positionOptions = () => {
+      const input = inputRef.current;
+      if (!input) return;
+      const bounds = input.getBoundingClientRect();
+      const gutter = 8;
+      const width = Math.min(Math.max(bounds.width, 280), Math.max(0, window.innerWidth - gutter * 2));
+      const left = Math.max(gutter, Math.min(bounds.left, window.innerWidth - width - gutter));
+      const below = Math.max(0, window.innerHeight - bounds.bottom - gutter);
+      const above = Math.max(0, bounds.top - gutter);
+      const placeAbove = below < Math.min(180, optionsRef.current?.scrollHeight ?? 240) && above > below;
+      const availableHeight = placeAbove ? above : below;
+      const maxHeight = Math.max(48, Math.min(240, availableHeight));
+      setOptionsPosition({
+        left,
+        width,
+        maxHeight,
+        ...(placeAbove ? { bottom: window.innerHeight - bounds.top + 4 } : { top: bounds.bottom + 4 }),
+      });
+    };
+
+    positionOptions();
+    const handleScroll = (event: Event) => {
+      const list = optionsRef.current;
+      const target = event.target;
+      // The list is portaled to <body>, so the capture listener also sees its own scroll
+      // events. Reposition only when the input's page/ancestor scrolls; otherwise the
+      // highlighted-option effect can snap the list back and make the mouse wheel appear stuck.
+      if (list && target instanceof Node && list.contains(target)) return;
+      positionOptions();
+    };
+
+    window.addEventListener("resize", positionOptions);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      window.removeEventListener("resize", positionOptions);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [disabled, open, options.length, query]);
+
+  useLayoutEffect(() => {
+    const list = optionsRef.current;
+    const activeOption = list?.querySelector<HTMLElement>(`[data-option-index="${highlight}"]`);
+    if (!open || !list || !activeOption) return;
+
+    const listBounds = list.getBoundingClientRect();
+    const optionBounds = activeOption.getBoundingClientRect();
+    if (optionBounds.top < listBounds.top) {
+      list.scrollTop -= listBounds.top - optionBounds.top;
+    } else if (optionBounds.bottom > listBounds.bottom) {
+      list.scrollTop += optionBounds.bottom - listBounds.bottom;
+    }
+  }, [highlight, open, options.length, optionsPosition]);
 
   const choose = (product: ClinicProduct) => {
     onSelect(product);
@@ -87,12 +149,13 @@ function ProductPicker({
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") { setOpen(false); return; }
-    if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setHighlight((value) => Math.min(value + 1, options.length)); }
-    if (event.key === "ArrowUp") { event.preventDefault(); setOpen(true); setHighlight((value) => Math.max(value - 1, 0)); }
+    if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setHighlight((value) => (value + 1) % (options.length + 1)); }
+    if (event.key === "ArrowUp") { event.preventDefault(); setOpen(true); setHighlight((value) => (value - 1 + options.length + 1) % (options.length + 1)); }
     if (event.key === "Enter" && open) {
       event.preventDefault();
+      event.stopPropagation();
       if (highlight === options.length) { setOpen(false); onAddNew(); }
-      else if (options[highlight]) choose(options[highlight]);
+      else if (options[highlight]) { choose(options[highlight]); onAdvance(); }
     }
   };
 
@@ -107,6 +170,8 @@ function ProductPicker({
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
+        data-purchase-line={lineKey}
+        data-purchase-field="item"
         onFocus={() => { setOpen(true); setHighlight(0); }}
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         onKeyDown={onKeyDown}
@@ -118,15 +183,15 @@ function ProductPicker({
           if (!value.trim() && selectedId) onSelect(null);
         }}
       />
-      {open && !disabled ? (
-        <div className="purchase-product-options" role="listbox">
+      {open && !disabled && optionsPosition ? createPortal(
+        <div ref={optionsRef} className="purchase-product-options purchase-product-options-portal" role="listbox" style={{ position: "fixed", zIndex: 1200, left: optionsPosition.left, width: optionsPosition.width, maxHeight: optionsPosition.maxHeight, ...(optionsPosition.top !== undefined ? { top: optionsPosition.top } : { bottom: optionsPosition.bottom }) }}>
           {options.length ? options.map((product, index) => (
-            <button key={product.productId} type="button" role="option" aria-selected={product.productId === selectedId} className={index === highlight ? "purchase-product-option highlighted" : "purchase-product-option"} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(product)}>
+            <button key={product.productId} type="button" role="option" data-option-index={index} aria-selected={product.productId === selectedId} className={index === highlight ? "purchase-product-option highlighted" : "purchase-product-option"} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(product)}>
               <span>{product.name}</span><small>{product.unit}</small>
             </button>
           )) : <p className="purchase-product-no-match">No product matching “{query}”</p>}
-          <button type="button" className={highlight === options.length ? "purchase-product-add highlighted" : "purchase-product-add"} onMouseDown={(event) => event.preventDefault()} onClick={() => { setOpen(false); onAddNew(); }}><Plus size={13} /> New product…</button>
-        </div>
+          <button type="button" data-option-index={options.length} className={highlight === options.length ? "purchase-product-add highlighted" : "purchase-product-add"} onMouseDown={(event) => event.preventDefault()} onClick={() => { setOpen(false); onAddNew(); }}><Plus size={13} /> New product…</button>
+        </div>, document.body
       ) : null}
     </div>
   );
@@ -142,9 +207,12 @@ export default function PurchaseForm({
   referencesLoading,
   referencesError,
   purchase,
+  reviewing,
   onProductCreated,
   onSupplierCreated,
   onCancel,
+  onReview,
+  onModalOpenChange,
   onRefresh,
   onCreated,
   onCorrected,
@@ -159,9 +227,12 @@ export default function PurchaseForm({
   referencesLoading: boolean;
   referencesError: string | null;
   purchase: ClinicPurchase | null;
+  reviewing: boolean;
   onProductCreated: (product: ClinicProduct) => void;
   onSupplierCreated: (supplier: ClinicSupplier) => void;
   onCancel: () => void;
+  onReview: () => void;
+  onModalOpenChange: (open: boolean) => void;
   onRefresh: () => Promise<void>;
   onCreated: (purchase: ClinicPurchase) => void;
   onCorrected: (purchase: ClinicPurchase) => void;
@@ -177,7 +248,6 @@ export default function PurchaseForm({
   const [lines, setLines] = useState<DraftLine[]>(() => purchase?.lines.length
     ? purchase.lines.map((line, index) => ({ key: index, productId: line.productId ?? "", itemName: line.itemName, quantity: String(line.quantity), unit: line.unit ?? "", rate: String(line.rate) }))
     : [blankLine(0)]);
-  const [reviewing, setReviewing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [unknownWrite, setUnknownWrite] = useState(false);
   const [conflicted, setConflicted] = useState(false);
@@ -190,6 +260,8 @@ export default function PurchaseForm({
   const command = useRef<ClinicCommand<PurchaseWriteResponse> | null>(null);
   const nextLineKey = useRef(lines.length);
   const pendingProductLine = useRef<number | null>(null);
+  const linesCardRef = useRef<HTMLDivElement>(null);
+  const pendingLineFocus = useRef<{ key: number; field: string } | null>(null);
   const currentFingerprint = JSON.stringify({ purchaseType, supplierId, date, invoiceNumber, note, discount, correctionReason, lines });
   const initialFingerprint = useRef(currentFingerprint);
   const locked = saving || unknownWrite || conflicted;
@@ -226,10 +298,52 @@ export default function PurchaseForm({
   const tooLargeForBroker = requestBytes > MAX_REQUEST_BODY_BYTES;
   const canReview = Boolean(selectedSupplier && date && lines.length > 0 && totalAmount > 0 && !referencesLoading && !referencesError && !locked && !tooLargeForBroker);
 
+  useEffect(() => {
+    const modalOpen = Boolean(validationDialog || riskWarnings.length || discardDialog || quickProductFor !== null || quickSupplier);
+    onModalOpenChange(modalOpen);
+    return () => onModalOpenChange(false);
+  }, [discardDialog, onModalOpenChange, quickProductFor, quickSupplier, riskWarnings.length, validationDialog]);
+
   const setLine = (key: number, patch: Partial<DraftLine>) => setLines((current) => current.map((line) => line.key === key ? { ...line, ...patch } : line));
+  const focusLineField = (key: number, field: string) => {
+    const input = linesCardRef.current?.querySelector<HTMLInputElement>(`[data-purchase-line="${key}"][data-purchase-field="${field}"]`);
+    if (input) {
+      input.focus();
+      if (field !== "item") input.select();
+      return;
+    }
+    pendingLineFocus.current = { key, field };
+  };
   const addLine = () => {
     if (lines.length >= MAX_PURCHASE_LINES) return;
-    setLines((current) => [...current, blankLine(nextLineKey.current++)]);
+    const key = nextLineKey.current++;
+    pendingLineFocus.current = { key, field: "item" };
+    setLines((current) => [...current, blankLine(key)]);
+  };
+
+  useLayoutEffect(() => {
+    const pending = pendingLineFocus.current;
+    if (!pending) return;
+    const input = linesCardRef.current?.querySelector<HTMLInputElement>(`[data-purchase-line="${pending.key}"][data-purchase-field="${pending.field}"]`);
+    if (!input) return;
+    pendingLineFocus.current = null;
+    input.focus();
+  }, [lines]);
+
+  const handleLinesKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" || event.defaultPrevented || !(event.target instanceof HTMLInputElement)) return;
+    const target = event.target;
+    const field = target.dataset.purchaseField;
+    const key = Number(target.dataset.purchaseLine);
+    if (!Number.isInteger(key) || !["item", "quantity", "unit", "rate"].includes(field ?? "")) return;
+    event.preventDefault();
+    if (field === "item") { focusLineField(key, "quantity"); return; }
+    if (field === "quantity") { focusLineField(key, "unit"); return; }
+    if (field === "unit") { focusLineField(key, "rate"); return; }
+    const currentIndex = lines.findIndex((line) => line.key === key);
+    const nextLine = lines[currentIndex + 1];
+    if (nextLine) focusLineField(nextLine.key, "item");
+    else addLine();
   };
 
   const validate = (): string | null => {
@@ -274,7 +388,7 @@ export default function PurchaseForm({
     if (totalAmount >= HIGH_VALUE_PURCHASE_NPR) warnings.push(`This invoice is ${formatNpr(totalAmount)}. Confirm that the amount and zeros are correct.`);
     if (warnings.length) { setRiskWarnings(warnings); return; }
     setError("");
-    setReviewing(true);
+    onReview();
   };
 
   const save = async () => {
@@ -337,31 +451,43 @@ export default function PurchaseForm({
   };
 
   const tableColumns: Column<DraftLine>[] = [
-    { key: "item", header: isLab ? "Item name *" : "Item name *", render: (line) => isLab ? <Input value={line.itemName} maxLength={200} placeholder="e.g. Zirconia Crown" disabled={locked} onChange={(event) => setLine(line.key, { itemName: event.target.value })} /> : <ProductPicker products={activeProducts} selectedId={line.productId} disabled={locked} onSelect={(product) => setLine(line.key, { productId: product?.productId ?? "", itemName: product?.name ?? "", unit: product?.unit ?? line.unit })} onAddNew={() => { pendingProductLine.current = line.key; setQuickProductFor(line.key); }} /> },
-    { key: "quantity", header: "Qty *", align: "right", render: (line) => <Input inputMode="decimal" value={line.quantity} disabled={locked} onChange={(event) => setLine(line.key, { quantity: decimalInput(event.target.value, 3) })} style={{ width: 82, textAlign: "right" }} /> },
-    { key: "unit", header: "Unit", render: (line) => <Input value={line.unit} maxLength={40} placeholder="Unit" disabled={locked} onChange={(event) => setLine(line.key, { unit: event.target.value })} style={{ width: 90 }} /> },
-    { key: "rate", header: "Rate (NPR)", align: "right", render: (line) => <Input inputMode="decimal" value={line.rate} disabled={locked} onChange={(event) => setLine(line.key, { rate: decimalInput(event.target.value, 2) })} style={{ width: 110, textAlign: "right" }} /> },
+    { key: "item", header: "Item name *", render: (line) => isLab ? <Input data-purchase-line={line.key} data-purchase-field="item" value={line.itemName} maxLength={200} placeholder="e.g. Zirconia Crown" disabled={locked} onChange={(event) => setLine(line.key, { itemName: event.target.value })} /> : <ProductPicker products={activeProducts} selectedId={line.productId} lineKey={line.key} disabled={locked} onSelect={(product) => setLine(line.key, { productId: product?.productId ?? "", itemName: product?.name ?? "", unit: product?.unit ?? line.unit })} onAdvance={() => focusLineField(line.key, "quantity")} onAddNew={() => { pendingProductLine.current = line.key; setQuickProductFor(line.key); }} /> },
+    { key: "quantity", header: "Qty *", align: "right", render: (line) => <Input data-purchase-line={line.key} data-purchase-field="quantity" inputMode="decimal" value={line.quantity} disabled={locked} onChange={(event) => setLine(line.key, { quantity: decimalInput(event.target.value, 3) })} style={{ width: 82, textAlign: "right" }} /> },
+    { key: "unit", header: "Unit", render: (line) => <Input data-purchase-line={line.key} data-purchase-field="unit" value={line.unit} maxLength={40} placeholder="Unit" disabled={locked} onChange={(event) => setLine(line.key, { unit: event.target.value })} style={{ width: 90 }} /> },
+    { key: "rate", header: "Rate (NPR)", align: "right", render: (line) => <Input data-purchase-line={line.key} data-purchase-field="rate" inputMode="decimal" value={line.rate} disabled={locked} onChange={(event) => setLine(line.key, { rate: decimalInput(event.target.value, 2) })} style={{ width: 110, textAlign: "right" }} /> },
     { key: "amount", header: "Total (NPR)", align: "right", render: (line) => <strong>{formatNpr(lineAmount(line))}</strong> },
-    { key: "actions", header: "", align: "center", render: (line) => <button type="button" className="btn btn-icon btn-ghost btn-sm" title="Remove row" aria-label={`Remove invoice line ${line.itemName || ""}`} disabled={locked || lines.length <= 1} onClick={() => setLines((current) => current.filter((row) => row.key !== line.key))}><Trash2 size={15} /></button> },
+    { key: "actions", header: "", align: "center", render: (line, index) => <div className="purchase-line-actions">
+      {index === lines.length - 1 ? <button type="button" className="purchase-add-row" title="Add row" aria-label="Add invoice line" disabled={locked || lines.length >= MAX_PURCHASE_LINES} onClick={addLine}><Plus size={17} /></button> : null}
+      { (index !== lines.length - 1 || lines.length > 1) ? <button type="button" className="btn btn-icon btn-ghost btn-sm" title="Remove row" aria-label={`Remove invoice line ${line.itemName || ""}`} disabled={locked || lines.length <= 1} onClick={() => setLines((current) => current.filter((row) => row.key !== line.key))}><Trash2 size={15} /></button> : null}
+    </div> },
   ];
 
   if (reviewing) {
     const metadata = [
-      ["SUPPLIER", selectedSupplier?.name ?? "—"], ["INVOICE NO.", invoiceNumber.trim() || "—"], ["DATE", formatDateShort(date)], ["PURCHASE TYPE", isLab ? "Lab service" : "Products"],
+      ["Supplier", selectedSupplier?.name ?? "—"],
+      ["Invoice number", invoiceNumber.trim() || "—"],
+      ["Invoice date", formatDateShort(date)],
+      ["Purchase type", isLab ? "Lab service" : "Products"],
     ];
     return (
-      <div className="purchase-form-page">
-        <PageHeader title={purchase ? "Confirm Invoice Correction" : "Confirm Purchase Order"} icon={<Check size={17} style={{ color: "var(--acc)" }} />} />
+      <div className="purchase-form-page purchase-review-page">
+        <PageHeader title={purchase ? "Confirm Invoice Correction" : "Confirm Purchase Order"} />
         <div className="purchase-review-card">
-          <p className="purchase-review-intro">{purchase ? "Review the corrected invoice. The original remains in the audit trail." : "Review supplier items, invoice details, and totals before updating purchases and the supplier ledger."}</p>
-          <div className="purchase-review-metadata">{metadata.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
-          <div className="purchase-review-heading"><h3>Items Summary</h3></div>
-          <TableWrap>
-            <Table minWidth={580}>
-              <thead><Tr><Th>Item name</Th><Th align="right">Qty</Th><Th align="center">Unit</Th><Th align="right">Rate (NPR)</Th><Th align="right">Total (NPR)</Th></Tr></thead>
-              <tbody>{validLines.map((line, index) => <Tr key={`${line.itemName}-${index}`}><Td style={{ fontWeight: 550 }}>{line.itemName}</Td><Td align="right">{line.quantity}</Td><Td align="center">{line.unit || "unit"}</Td><Td align="right">{formatNpr(line.rate)}</Td><Td align="right" style={{ fontWeight: 550 }}>{formatNpr(roundMoney(line.quantity * line.rate))}</Td></Tr>)}</tbody>
-            </Table>
-          </TableWrap>
+          <dl className="purchase-review-context" aria-label="Invoice details">
+            {metadata.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          </dl>
+          <section className="purchase-review-items" aria-labelledby="purchase-review-items-heading">
+            <div className="purchase-review-section-heading">
+              <h3 id="purchase-review-items-heading">Invoice items</h3>
+              <span>{validLines.length} {validLines.length === 1 ? "item" : "items"}</span>
+            </div>
+            <TableWrap>
+              <Table minWidth={620} aria-label="Purchase invoice items" data-sajilo-standard-table>
+                <thead><Tr><Th scope="col" align="center" style={{ width: 44 }}>#</Th><Th scope="col">Item name</Th><Th scope="col" align="right">Qty</Th><Th scope="col" align="center">Unit</Th><Th scope="col" align="right">Rate (NPR)</Th><Th scope="col" align="right">Total (NPR)</Th></Tr></thead>
+                <tbody>{validLines.map((line, index) => <Tr key={`${line.itemName}-${index}`}><Td align="center" style={{ width: 44, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</Td><Td style={{ fontWeight: 550 }}>{line.itemName}</Td><Td align="right">{line.quantity}</Td><Td align="center">{line.unit || "unit"}</Td><Td align="right">{formatNpr(line.rate)}</Td><Td align="right" style={{ fontWeight: 550 }}>{formatNpr(roundMoney(line.quantity * line.rate))}</Td></Tr>)}</tbody>
+              </Table>
+            </TableWrap>
+          </section>
           <div className="purchase-review-totals">
             <div><span>Sub total</span><strong>{formatNpr(lineSubtotal)}</strong></div>
             <div><span>Discount</span><strong>{formatNpr(discountAmount)}</strong></div>
@@ -369,11 +495,9 @@ export default function PurchaseForm({
           </div>
           {note.trim() ? <p className="purchase-review-note"><strong>Note/Remarks:</strong> {note.trim()}</p> : null}
           {purchase ? <p className="purchase-correction-notice"><strong>Correction reason:</strong> {correctionReason.trim()}</p> : null}
-          <p className="purchase-review-reminder">{purchase ? "This correction replaces the active invoice while preserving the original. Supplier payments remain separate financial facts." : "Review the invoice carefully. The supplier ledger updates automatically, and the purchase can be corrected later from the Purchases list."}</p>
           {tooLargeForBroker ? <ModalError>This purchase exceeds the Dental OS 12,000-byte SDK request-body limit. Do not split the invoice; reduce line details or wait for a reviewed host/API size change.</ModalError> : null}
           {error ? <ModalError>{error}</ModalError> : null}
           <div className="purchase-form-actions">
-            <button type="button" className="btn btn-secondary" onClick={() => setReviewing(false)} disabled={saving || unknownWrite}><ArrowLeft size={15} /> Back</button>
             <ClinicActionButton onClick={() => void save()} disabled={saving || conflicted || (!unknownWrite && !canReview)}>{saving ? <><Loader2 size={15} className="spin" /> {purchase ? "Saving correction…" : "Saving purchase…"}</> : unknownWrite ? "Retry original save" : purchase ? "Confirm & Save Correction" : "Confirm & Save Purchase"}</ClinicActionButton>
           </div>
         </div>
@@ -383,9 +507,7 @@ export default function PurchaseForm({
 
   return (
     <div className="purchase-form-page">
-      <PageHeader title={purchase ? "Correct purchase invoice" : "New purchase"} icon={<Check size={17} style={{ color: "var(--acc)" }} />}>
-        <button type="button" className="btn btn-secondary" onClick={requestExit} disabled={saving || unknownWrite}><ArrowLeft size={14} /> Back to Purchases</button>
-      </PageHeader>
+      <PageHeader title={purchase ? "Correct purchase invoice" : "New purchase"} />
       {referencesLoading ? <p className="purchase-reference-warning" role="status">Loading product and supplier choices…</p> : null}
       {referencesError ? <ModalError>Product and supplier choices are incomplete: {referencesError}. Refresh before recording or correcting a purchase.</ModalError> : null}
       {conflicted ? <ModalError>This purchase changed in the clinic. The purchase list was refreshed; close this form and reopen the current invoice before editing.</ModalError> : null}
@@ -409,17 +531,17 @@ export default function PurchaseForm({
       </div>
       {purchaseType === "lab_service" && selectedSupplier && selectedSupplier.supplierType === "goods" ? <p className="purchase-reference-warning" role="alert">A lab-service purchase requires a Lab or Both supplier. The selected supplier type is Goods.</p> : null}
       {purchaseType === "product" && selectedSupplier && selectedSupplier.supplierType === "lab" ? <p className="purchase-reference-warning" role="alert">A product purchase requires a Goods or Both supplier. The selected supplier type is Lab.</p> : null}
-      <div className="purchase-lines-card">
+      <div className="purchase-lines-card" ref={linesCardRef} onKeyDown={handleLinesKeyDown}>
         <div className="purchase-lines-heading"><h3>Invoice items</h3><span>{lines.length} / {MAX_PURCHASE_LINES} lines</span></div>
         <DataTable<DraftLine>
           rows={lines}
           rowKey={(line) => String(line.key)}
           noun="invoice lines"
           minWidth={760}
+          paginate={false}
           columns={tableColumns}
           empty={<EmptyState message="Add at least one invoice line." />}
         />
-        <button type="button" className="btn btn-secondary purchase-add-line" onClick={addLine} disabled={locked || lines.length >= MAX_PURCHASE_LINES}><Plus size={14} /> Add item line</button>
       </div>
       <div className="purchase-bottom-bar">
         <div><span>SUB TOTAL</span><strong>{formatNpr(lineSubtotal)}</strong></div>
@@ -431,7 +553,7 @@ export default function PurchaseForm({
         <ClinicActionButton onClick={prepareReview} disabled={saving || unknownWrite || conflicted || referencesLoading || Boolean(referencesError)}> <Check size={15} /> Review Purchase</ClinicActionButton>
       </div>
       {validationDialog ? <ClinicModal title="Required information missing" onClose={() => setValidationDialog("")} size="small" verticalAlign="center"><p>{validationDialog}</p><div className="purchase-form-actions"><ClinicActionButton onClick={() => setValidationDialog("")}>OK</ClinicActionButton></div></ClinicModal> : null}
-      {riskWarnings.length > 0 ? <ClinicModal title="Review purchase warning" onClose={() => setRiskWarnings([])} size="small" verticalAlign="center"><div className="purchase-risk-list">{riskWarnings.map((warning) => <p key={warning}>{warning}</p>)}</div><div className="purchase-form-actions"><button type="button" className="btn btn-secondary" onClick={() => setRiskWarnings([])}>Cancel</button><ClinicActionButton onClick={() => { setRiskWarnings([]); setError(""); setReviewing(true); }}>Continue to review</ClinicActionButton></div></ClinicModal> : null}
+      {riskWarnings.length > 0 ? <ClinicModal title="Review purchase warning" onClose={() => setRiskWarnings([])} size="small" verticalAlign="center"><div className="purchase-risk-list">{riskWarnings.map((warning) => <p key={warning}>{warning}</p>)}</div><div className="purchase-form-actions"><button type="button" className="btn btn-secondary" onClick={() => setRiskWarnings([])}>Cancel</button><ClinicActionButton onClick={() => { setRiskWarnings([]); setError(""); onReview(); }}>Continue to review</ClinicActionButton></div></ClinicModal> : null}
       {discardDialog ? <ClinicModal title={purchase ? "Discard unsaved correction?" : "Discard unsaved purchase?"} onClose={() => setDiscardDialog(false)} size="small" verticalAlign="center"><p>Your changes on this form have not been saved. Return without saving them?</p><div className="purchase-form-actions"><button type="button" className="btn btn-secondary" onClick={() => setDiscardDialog(false)}>Keep editing</button><button type="button" className="btn btn-danger" onClick={() => { setDiscardDialog(false); onCancel(); }}>Discard &amp; go back</button></div></ClinicModal> : null}
       {quickProductFor !== null ? <ProductFormModal api={productApi} onClose={() => { setQuickProductFor(null); pendingProductLine.current = null; }} onSaved={acceptQuickProduct} onConflict={async () => { try { await onRefresh(); } catch { /* Product form retains its conflict state. */ } }} /> : null}
       {quickSupplier ? <SupplierFormModal api={supplierApi} onClose={() => setQuickSupplier(false)} onSaved={acceptQuickSupplier} onConflict={async () => { try { await onRefresh(); } catch { /* Supplier form retains its conflict state. */ } }} /> : null}
