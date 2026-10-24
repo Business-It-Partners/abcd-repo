@@ -25,7 +25,7 @@ try {
  await frame.getByRole('button',{name:'Create follow-up',exact:true}).click();
  await frame.getByLabel('Patient name',{exact:true}).fill('Packaged draft');
  await page.evaluate(()=>window.desktop.onHostTransition(value=>{window.packageHostTransition=value;}));
- await page.getByRole('button',{name:'Minimize Electron OS',exact:true}).click();
+ await page.getByRole('button',{name:'Minimize Sajilo Dental',exact:true}).click();
  await page.waitForTimeout(150);
  check('Packaged native minimize works on the isolated Linux host',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMinimized()));
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].restore());

@@ -9,7 +9,7 @@
 
 Permanent scope: company first-party apps only, Windows/Linux, existing Dental SaaS authority. The prototype instructions below describe current source, not completion of the production roadmap. Validate documentation with `python3 tools/check-dental-docs.py`.
 
-On this Linux desktop, **Electron OS** is installed in the Applications menu and pinned to the host Ubuntu dock. Click its blue layered icon to launch. The launcher uses this project directory's built files and dependencies, so keep the directory in place. Launcher: `/home/master-x/.local/share/applications/electron-os.desktop`.
+On this Linux desktop, **Sajilo Dental** is installed in the Applications menu and pinned to the host Ubuntu dock. Click its Sajilo Dental tooth mark to launch. The launcher uses this worktree's built files and dependencies, so keep the directory in place. Launcher: `/home/master-x/.local/share/applications/electron-os.desktop`.
 
 The active Electron + React + TypeScript desktop project. It ports FEWA's shared dock field and Genie mesh geometry; no Flutter or business services are included.
 

@@ -75,6 +75,7 @@ let fileTransfer: FileTransferCoordinator | undefined;
 let shellTransferActivation=0;
 let viewerSession: {id:string;generation:number;sender:Electron.WebContents;frame:Electron.WebFrameMain;items:Array<{id:string;name:string}>;index:number}|undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
+const appIconPath = path.join(__dirname, '../assets/electron-os.png');
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
 
@@ -91,7 +92,7 @@ function createWindow() {
   const display = screen.getPrimaryDisplay();
   const win = new BrowserWindow({
     ...display.bounds,
-    title: 'Sajilo Dental', frame: false, fullscreen: true, fullscreenable: true, resizable: true, backgroundColor: '#10162e',
+    title: 'Sajilo Dental', icon: appIconPath, frame: false, fullscreen: true, fullscreenable: true, resizable: true, backgroundColor: '#10162e',
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
   });
@@ -189,7 +190,7 @@ const supportReviewText=(report:ReturnType<typeof supportView>)=>{
  const events=report.events??[];
  const recent=events.slice(-5);
  return [
-  `Dental OS ${report.appVersion} · Electron ${report.electron}`,
+  `Sajilo Dental ${report.appVersion} · Dental OS · Electron ${report.electron}`,
   `${report.platform} ${report.arch} · Diagnostics storage: ${report.persistence}`,
   `Recent events (${recent.length} shown of ${events.length}):`,
   ...(recent.length?recent.map(entry=>`• ${new Date(entry.time).toLocaleString()}  ${entry.code} (${entry.target})`):['• No events recorded']),
@@ -209,7 +210,7 @@ ipcMain.handle('support:action',async(event,kind:unknown)=>{
    const review=await dialog.showMessageBox(owner,{type:'info',title:'Safe support diagnostics',message:'Review safe support diagnostics',detail:supportReviewText(supportView()),buttons:['Close','Save diagnostics file'],defaultId:0,cancelId:0});
    if(review.response!==1)return {ok:false,cancelled:true};
   }
-  const result=await dialog.showSaveDialog(owner,{title:'Save safe Dental OS diagnostics',defaultPath:'dental-os-support.json',filters:[{name:'JSON',extensions:['json']}]});
+  const result=await dialog.showSaveDialog(owner,{title:'Save Sajilo Dental support diagnostics',defaultPath:'sajilo-dental-support.json',filters:[{name:'JSON',extensions:['json']}]});
   if(result.canceled||!result.filePath)return {ok:false,cancelled:true};
   writeFileSync(result.filePath,JSON.stringify(supportView(),null,2),{flag:'wx',mode:0o600});
   diagnostics?.record('support-exported');return {ok:true};
@@ -431,12 +432,12 @@ if (primary) void app.whenReady().then(async () => {
     bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); if (identity) void identity.restore();
   } catch {
     bootPhase = 'recovery';diagnostics?.record('boot-recovery');
-    const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Dental OS recovery', webPreferences: { preload:path.join(__dirname,'recoveryPreload.js'),sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck:false } });
+    const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Sajilo Dental recovery', icon: appIconPath, webPreferences: { preload:path.join(__dirname,'recoveryPreload.js'),sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck:false } });
     recoveryWindow=recovery;
     recovery.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     recovery.webContents.on('will-navigate', event => event.preventDefault());
     activateExisting = () => { if (!recovery.isDestroyed()) { recovery.show(); recovery.focus(); } };
-    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Dental OS recovery</title><h1>Dental OS needs recovery</h1><p>Local OS state or installed applications could not be opened safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the application user-data directory. No reset was performed.</p><p>Support can inspect the preserved OS state and restore a verified copy after this application is closed. Do not delete identity files or replace clinical records.</p><button id="show-files">Show local files</button><button id="export-support">Preview safe diagnostics</button><pre id="support-preview"></pre><button id="save-support" hidden>Save diagnostics file</button><p id="support-status" role="status"></p>`));
+    await recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'"><title>Sajilo Dental recovery</title><h1>Sajilo Dental needs recovery</h1><p>Sajilo Dental could not open local state or installed applications safely. Your files have been preserved.</p><p>Close this window and contact support to inspect the application user-data directory. No reset was performed.</p><p>Support can inspect the preserved OS state and restore a verified copy after this application is closed. Do not delete identity files or replace clinical records.</p><button id="show-files">Show local files</button><button id="export-support">Preview safe diagnostics</button><pre id="support-preview"></pre><button id="save-support" hidden>Save diagnostics file</button><p id="support-status" role="status"></p>`));
   }
 });
 let quitFlushed = false;

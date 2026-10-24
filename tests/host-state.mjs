@@ -22,8 +22,8 @@ try {
  check('disabled shortcut does not open overview',await page.locator('.window-overview').count()===0);
  await app.close();app=undefined;
  const file=path.join(profile,'state','preferences.json');const raw='{invalid settings';await fs.writeFile(file,raw);
- page=await launch();await page.getByRole('heading',{name:'Dental OS needs recovery'}).waitFor();
- check('corrupt state shows explicit recovery',await page.title()==='Dental OS recovery');
+ page=await launch();await page.getByRole('heading',{name:'Sajilo Dental needs recovery'}).waitFor();
+ check('corrupt state shows explicit recovery',await page.title()==='Sajilo Dental recovery');
  check('recovery has no privileged preload',await page.evaluate(()=>window.desktop===undefined));
  check('corrupt file preserved',await fs.readFile(file,'utf8')===raw);
  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});

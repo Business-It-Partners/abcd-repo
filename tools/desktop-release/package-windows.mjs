@@ -10,7 +10,7 @@ if(process.platform==='linux') {
  const {WineVmManager}=require('app-builder-lib/out/vm/WineVm.js');
  const {UninstallerReader}=require('app-builder-lib/out/targets/nsis/nsisUtil.js');
  const version=require(path.join(root,'package.json')).version;
- const expected=path.join(root,`release/windows/Dental-OS-Setup-${version}-x64.exe`);
+ const expected=path.join(root,`release/windows/Sajilo-Dental-Setup-${version}-x64.exe`);
  WineVmManager.prototype.exec=async function(file,args,options) {
   if(path.resolve(file)!==expected||args.length!==0||options?.env?.__COMPAT_LAYER!=='RunAsInvoker')throw new Error('Unexpected Windows helper invocation refused.');
   const output=path.join(path.dirname(file),`${path.basename(file,'exe')}__uninstaller.exe`);

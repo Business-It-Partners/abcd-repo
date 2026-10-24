@@ -77,9 +77,9 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
         </span>
         <time className="statusbar-date" dateTime={now.toISOString()}>{formatDate}</time>
         <time className="statusbar-time" dateTime={now.toISOString()}>{formatTime}</time>
-        <div className="statusbar-window-controls" role="group" aria-label="Dental OS window controls">
-          <button type="button" aria-label="Minimize Dental OS" title="Minimize Dental OS" onClick={() => void window.desktop?.control('minimize')}><Minus size={16} strokeWidth={2} aria-hidden="true"/></button>
-          <button className="statusbar-window-close" type="button" aria-label="Close Dental OS" title="Close Dental OS" onClick={onRequestClose}><X size={16} strokeWidth={2} aria-hidden="true"/></button>
+        <div className="statusbar-window-controls" role="group" aria-label="Sajilo Dental window controls">
+          <button type="button" aria-label="Minimize Sajilo Dental" title="Minimize Sajilo Dental" onClick={() => void window.desktop?.control('minimize')}><Minus size={16} strokeWidth={2} aria-hidden="true"/></button>
+          <button className="statusbar-window-close" type="button" aria-label="Close Sajilo Dental" title="Close Sajilo Dental" onClick={onRequestClose}><X size={16} strokeWidth={2} aria-hidden="true"/></button>
         </div>
       </div>
     </header>

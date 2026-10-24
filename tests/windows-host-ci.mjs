@@ -22,7 +22,7 @@ try {
  check('preference survives restart',!(await page.evaluate(()=>window.desktop.preferences())).overviewShortcutEnabled);
  await app.close();app=undefined;
  const file=path.join(profile,'state','preferences.json');await writeFile(file,'corrupt');
- page=await launch();await page.getByRole('heading',{name:'Dental OS needs recovery'}).waitFor();
+ page=await launch();await page.getByRole('heading',{name:'Sajilo Dental needs recovery'}).waitFor();
  check('safe recovery without preload',await page.evaluate(()=>window.desktop===undefined));
  check('corrupt state retained',(await readFile(file,'utf8'))==='corrupt');
 } finally {

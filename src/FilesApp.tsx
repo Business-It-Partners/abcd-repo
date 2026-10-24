@@ -97,7 +97,7 @@ const statusText = (reason: unknown): string => {
   const message = reason instanceof Error ? reason.message : String(reason ?? '');
   if (message.includes('RESOURCE_LIMIT')) return 'This folder contains too many items for safe browsing. Choose a smaller folder.';
   if (message.includes('STALE_SELECTION')) return 'This folder changed while browsing. Refresh to see the latest files.';
-  if (message.includes('FORBIDDEN')) return 'Dental OS cannot access this location. Check its permissions.';
+  if (message.includes('FORBIDDEN')) return 'Sajilo Dental cannot access this location. Check its permissions.';
   if (message.includes('NOT_FOUND')) return 'This folder is no longer available. Choose another location.';
   if (message.includes('Workspace')) return 'Your session changed. Reopen Files after signing in.';
   return 'Files are temporarily unavailable. Try refreshing this folder.';

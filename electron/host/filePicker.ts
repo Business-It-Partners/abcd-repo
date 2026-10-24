@@ -65,7 +65,7 @@ export class FilePickerCoordinator {
     try{
       // This is user-approved native selection, parented to the actual fullscreen OS.
       const selected=await dialog.showOpenDialog(this.win,{
-        title:'Choose local files for Dental OS',
+        title:'Choose local files for Sajilo Dental',
         buttonLabel:'Choose',
         properties:p.prompt.maxSelections>1?['openFile','multiSelections']:['openFile'],
         filters:p.prompt.fileTypes==='all'?[]:p.prompt.fileTypes==='documents'

@@ -143,7 +143,7 @@ export class DistributionService {
    this.fence(controller.signal, s.generation); return { ok: true };
   } catch {
    const current = this.identity.snapshot(); if (current.active && current.generation === s.generation) { this.message = controller.signal.aborted ? 'Operation timed out or was cancelled. Review your installed apps below.' : 'Store operation unavailable. Review your installed apps below.';
-    try { const current = new Map<string, string>(); for (const id of Object.keys(this.registry.inspect().apps)) { const info = this.registry.describe(id); current.set(id, info.version); } this.installed = current; } catch { this.phase = 'unavailable'; this.message = 'Local app state needs recovery. Close and relaunch Dental OS; your files are preserved.'; }
+    try { const current = new Map<string, string>(); for (const id of Object.keys(this.registry.inspect().apps)) { const info = this.registry.describe(id); current.set(id, info.version); } this.installed = current; } catch { this.phase = 'unavailable'; this.message = 'Local app state needs recovery. Close and relaunch Sajilo Dental; your files are preserved.'; }
     this.canInstall = false; if (this.phase === 'refreshing') this.phase = 'unavailable'; }
    return { ok: false, code: controller.signal.aborted ? 'CANCELLED' : 'UNAVAILABLE' };
   } finally { clearTimeout(timer); if (aborted) controller.signal.removeEventListener('abort', aborted); if (this.action === controller) { this.action = undefined; this.job = null; this.emit(); } }

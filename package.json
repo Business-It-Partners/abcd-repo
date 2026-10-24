@@ -50,9 +50,9 @@
     "test:staging-media-dock": "node tools/run-ui-test.mjs tests/media-staging-dock.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "Sajilo Dental",
   "license": "UNLICENSED",
-  "description": "Independent Electron dock and Genie motion prototype",
+  "description": "Sajilo Dental desktop workspace for clinic teams",
   "dependencies": {
     "lucide-react": "^1.56.0",
     "nepali-date-utils": "1.0.0",

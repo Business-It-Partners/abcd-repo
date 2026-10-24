@@ -7,6 +7,8 @@ import { StoreArtwork } from './StoreArtwork';
 import type { WindowController } from './ManagedWindow';
 import './DeliveryStore.css';
 
+const brandMarkUrl = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
+
 export const emptyStore: StoreView = { phase: 'idle', apps: [], canInstall: false, job: null, message: '' };
 type DeliveryAction = 'refresh' | 'cancel' | 'install' | 'uninstall';
 type StoreApp = StoreView['apps'][number];
@@ -172,7 +174,10 @@ export function DeliveryStore({ view, action, open, locked, controller, settling
 
  return <div className="store-body store-body--delivery" data-testid="store-window">
   <header className="delivery-store-header">
-   <h1>App Store</h1>
+   <div className="delivery-store-brand">
+    <img src={brandMarkUrl} alt="" aria-hidden="true" />
+    <div><span>Sajilo Dental</span><h1>App Store</h1></div>
+   </div>
    <button className="delivery-store-refresh" type="button" aria-label="Refresh company apps" disabled={busy} onClick={() => action('refresh')}><RefreshCw size={15} aria-hidden="true"/>Refresh</button>
   </header>
   {notice && <div className="delivery-store-notice" data-state={unavailable ? 'unavailable' : view.phase === 'refreshing' ? 'refreshing' : 'message'} role={unavailable ? 'alert' : 'status'} aria-live={unavailable ? 'assertive' : 'polite'} aria-atomic="true">

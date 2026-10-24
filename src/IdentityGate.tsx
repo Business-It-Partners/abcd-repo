@@ -53,9 +53,9 @@ export function IdentityGate(){
  function updateRememberEmail(enabled: boolean) {rememberEmailRef.current=enabled;setRememberEmail(enabled);persistEmailPreference(enabled,email);}
  useEffect(()=>{
   let mounted=true,revision=0;
-  if(!window.desktop?.identity){setError('Platform session is unavailable. Close and reopen Dental OS.');setStartupResolved(true);return()=>{mounted=false;};}
+  if(!window.desktop?.identity){setError('Sajilo Dental session is unavailable. Close and reopen the app.');setStartupResolved(true);return()=>{mounted=false;};}
   const unsubscribe=window.desktop?.identity.subscribe(value=>{revision++;if(mounted){setView(value);if(value.phase!=='restoring')setStartupResolved(true);setPassword('');if(!rememberEmailRef.current&&['locked','signed-out','expired'].includes(value.phase)){setEmail('');}}});
-  const requested=revision;void window.desktop?.identity.view().then(value=>{if(mounted&&revision===requested){setView(value);if(value.phase!=='restoring')setStartupResolved(true);}}).catch(()=>{if(mounted){setError('Platform session is unavailable. Close and reopen Dental OS.');setStartupResolved(true);}});
+  const requested=revision;void window.desktop?.identity.view().then(value=>{if(mounted&&revision===requested){setView(value);if(value.phase!=='restoring')setStartupResolved(true);}}).catch(()=>{if(mounted){setError('Sajilo Dental session is unavailable. Close and reopen the app.');setStartupResolved(true);}});
   void window.desktop?.identity.devCredentialsAvailable().then(value=>{if(mounted)setDevLoginAvailable(value);}).catch(()=>{});
   return()=>{mounted=false;unsubscribe?.();};
  },[]);

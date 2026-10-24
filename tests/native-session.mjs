@@ -29,7 +29,7 @@ async function cycle(name,route){
  }
  
  const traceStart=await app.evaluate(()=>globalThis.sessionTrace.length);
- await page.getByRole('button',{name:'Minimize Electron OS',exact:true}).click();
+ await page.getByRole('button',{name:'Minimize Sajilo Dental',exact:true}).click();
  let minimized=false;
  for(let n=0;n<40;n++){minimized=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isMinimized());if(minimized)break;await new Promise(r=>setTimeout(r,50));}
  check(`${name}: environment minimized without closing`,minimized&&!page.isClosed());

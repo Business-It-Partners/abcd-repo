@@ -31,7 +31,7 @@ public static class M16NativeWindow {
       var caption = new StringBuilder(260); GetWindowText(hwnd, caption, caption.Capacity);
       var klass = new StringBuilder(120); GetClassName(hwnd, klass, klass.Capacity);
       string title = caption.ToString(), cls = klass.ToString();
-      bool exact = title.IndexOf("Choose local files for Dental OS", StringComparison.OrdinalIgnoreCase)>=0;
+      bool exact = title.IndexOf("Choose local files for Sajilo Dental", StringComparison.OrdinalIgnoreCase)>=0;
       bool native = cls=="#32770" && (title=="Open" || title=="Choose" || title.Contains("Choose local files"));
       if(exact || (process==mainProcess && native)) { result=hwnd; return false; }
       return true;

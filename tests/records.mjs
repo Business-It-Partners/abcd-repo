@@ -73,8 +73,8 @@ try {
   await page.waitForFunction(() => document.querySelector('.dock-region').inert);
   await page.mouse.move(viewport.width / 2, viewport.height - 2);
   await page.waitForFunction(() => !document.querySelector('.dock-region').inert);
-  await page.getByRole('button', { name: 'Shut down Electron OS', exact: true }).hover();
-  check('Direct environment controls stay usable in the revealed fullscreen dock', await page.getByRole('button', { name: 'Minimize Electron OS', exact: true }).isEnabled() && await page.locator('.dock-region').evaluate(e => !e.inert));
+  await page.getByRole('button', { name: 'Shut down Sajilo Dental', exact: true }).hover();
+  check('Direct environment controls stay usable in the revealed fullscreen dock', await page.getByRole('button', { name: 'Minimize Sajilo Dental', exact: true }).isEnabled() && await page.locator('.dock-region').evaluate(e => !e.inert));
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
   await page.waitForFunction(() => document.querySelector('.dock-region').inert);
   check('Dock hides again after leaving its direct controls', await page.locator('.dock-region').evaluate(e => e.inert));

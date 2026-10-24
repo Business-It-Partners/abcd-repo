@@ -29,7 +29,7 @@ try {
       bounds.x === display.x && bounds.y === display.y &&
       bounds.width === display.width && bounds.height === display.height;
   }));
-  check('Environment bar is removed and system controls live in the dock', await page.locator('.system-bar,.host-controls,.bar-reveal-edge').count() === 0 && await page.getByRole('button', { name: 'Minimize Electron OS', exact: true }).count() === 1);
+  check('Environment bar is removed and system controls live in the dock', await page.locator('.system-bar,.host-controls,.bar-reveal-edge').count() === 0 && await page.getByRole('button', { name: 'Minimize Sajilo Dental', exact: true }).count() === 1);
   evidence.environment = await application.evaluate(({ app, screen }) => ({ electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, app: app.getVersion(), display: screen.getPrimaryDisplay() }));
   await page.mouse.move(30, 70);
   await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36 * Math.max(.72,Math.min(1.15,innerWidth/1366))) < .1);
@@ -97,9 +97,9 @@ try {
   check('Internal restore returns to the prior rectangle', Math.abs((await page.getByTestId('studio-window').boundingBox()).width - normal.width) < 1);
   await page.getByRole('button', { name: 'Close Motion Studio', exact: true }).click(); await phase('closed');
   check('Internal close returns to desktop');
-  const minimizeButton = page.getByRole('button', { name: 'Minimize Electron OS', exact: true });
-  const shutdownButton = page.getByRole('button', { name: 'Shut down Electron OS', exact: true });
-  check('Dock exposes two distinct environment controls without a menu', await minimizeButton.count() === 1 && await shutdownButton.count() === 1 && await page.getByRole('menu').count() === 0 && await page.getByRole('button', { name: 'Electron OS menu', exact: true }).count() === 0);
+  const minimizeButton = page.getByRole('button', { name: 'Minimize Sajilo Dental', exact: true });
+  const shutdownButton = page.getByRole('button', { name: 'Shut down Sajilo Dental', exact: true });
+  check('Dock exposes two distinct environment controls without a menu', await minimizeButton.count() === 1 && await shutdownButton.count() === 1 && await page.getByRole('menu').count() === 0 && await page.getByRole('button', { name: 'Sajilo Dental menu', exact: true }).count() === 0);
   await minimizeButton.focus(); await page.keyboard.press('Tab');
   check('Keyboard users can reach the shutdown button directly', await shutdownButton.evaluate(e => e === document.activeElement));
   await page.mouse.move(20,20); await page.screenshot({ path: path.join(root, 'artifacts/direct-dock-controls.png') });
@@ -118,7 +118,7 @@ try {
   evidence.errors = errors;
   await Promise.all([
     page.waitForEvent('close'),
-    page.getByRole('button', { name: 'Shut down Electron OS', exact: true }).click().catch(error => {
+    page.getByRole('button', { name: 'Shut down Sajilo Dental', exact: true }).click().catch(error => {
       if (!page.isClosed()) throw error;
     }),
   ]);

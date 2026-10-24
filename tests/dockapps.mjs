@@ -46,7 +46,7 @@ try{
  for(const width of [800,480]){
   await cdp.send('Emulation.setDeviceMetricsOverride',{width,height:600,deviceScaleFactor:1,mobile:false});await page.mouse.move(20,20);await page.waitForTimeout(400);check(`Full app collection fits a ${width}px display`,await fits());
   check(`${width}px resize retains all minimized snapshots`,await page.locator('.dock-preview img[alt$=" snapshot"]').count()===9);
-  for(const name of ['Minimize Electron OS','Shut down Electron OS','Calendar']){const button=page.getByRole('button',{name,exact:true});await button.hover();await page.waitForTimeout(400);check(`${width}px dock stays inside screen while hovering ${name}`,await fits());}
+  for(const name of ['Minimize Sajilo Dental','Shut down Sajilo Dental','Calendar']){const button=page.getByRole('button',{name,exact:true});await button.hover();await page.waitForTimeout(400);check(`${width}px dock stays inside screen while hovering ${name}`,await fits());}
  }
  await cdp.send('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:1,mobile:false});await page.mouse.move(20,20);await page.waitForTimeout(400);
  // Actual gesture smoke check for a new app (focus another title without hitting controls).
