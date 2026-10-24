@@ -6,11 +6,11 @@ import path from 'node:path';
 
 const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
 const app=await electron.launch({args:[root,...profileArgs,'--identity-fixtures','--distribution-fixtures','--distribution-unavailable-fixtures'],env,timeout:30000});
-const shell=await app.firstWindow(),checks=[],errors=[];
+const shell=await app.firstWindow(),checks=[],errors=[];let closed=false;
 shell.setDefaultTimeout(15000);shell.on('pageerror',error=>errors.push(error.message));
 const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const phase=value=>shell.waitForFunction(value=>document.querySelector('[data-window-id="studio"]')?.dataset.phase===value,value);
-const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'App Store'}).waitFor();};
+const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.locator('[data-window-id="store"] .window-history-controls').getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'App Store'}).waitFor();};
 
 try{
  await shell.getByRole('heading',{name:'Sign in to your clinic'}).waitFor();
@@ -35,7 +35,8 @@ try{
  await refresh.click();
  const unavailable=shell.locator('.delivery-store-notice[data-state="unavailable"]');
  await unavailable.waitFor();
- check('catalogue outage is an accessible, clear Store alert',await unavailable.getAttribute('role')==='alert'&&await unavailable.innerText().then(text=>text.includes('Store operation unavailable')&&text.includes('installed apps remain available')));
+ const outageText=(await unavailable.innerText()).toLocaleLowerCase();
+ check('catalogue outage is an accessible, clear Store alert',await unavailable.getAttribute('role')==='alert'&&outageText.includes('store operation unavailable')&&outageText.includes('installed apps remain available'));
  const studioCard=shell.locator('.store-grid article').filter({hasText:'Motion Studio'});
  check('outage keeps the verified installed app in the catalog',await studioCard.getByRole('button',{name:'Open',exact:true}).isEnabled());
  const recordsCard=shell.locator('.store-grid article').filter({hasText:'Records'});
@@ -43,14 +44,18 @@ try{
  check('new installs are disabled while clinic catalogue authority is unavailable',await recordsGet.isDisabled());
  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
  await phase('visible');
- check('installed app remains openable during Store outage and keeps its draft',await shell.locator('.statusbar-active').innerText()==='Motion Studio'&&await studio.getByLabel('Your draft').inputValue()==='Keep this work while Store is unavailable');
+ check('installed app remains openable during Store outage and keeps its draft',await shell.locator('[data-window-id="studio"]').getAttribute('data-active')==='true'&&await studio.getByLabel('Your draft').inputValue()==='Keep this work while Store is unavailable');
 
  await fs.rm(unavailableFile);
  await openCatalog();
  await refresh.click();
- await shell.waitForFunction(()=>{const article=[...document.querySelectorAll('.store-grid article')].find(item=>item.textContent?.includes('Records'));const get=article?.querySelector('.store-get');return !document.querySelector('.delivery-store-notice')&&get instanceof HTMLButtonElement&&!get.disabled;});
+ await shell.waitForFunction(()=>{const article=[...document.querySelectorAll('.store-grid article')].find(item=>item.textContent?.includes('Records'));const get=[...(article?.querySelectorAll('button')??[])].find(button=>button.textContent?.trim()==='Install');return !document.querySelector('.delivery-store-notice')&&get instanceof HTMLButtonElement&&!get.disabled;});
  check('refresh clears the outage state and restores authorized Store actions',await shell.locator('.delivery-store-notice').count()===0&&await recordsGet.isEnabled());
  check('delivery-state transitions have no renderer errors',errors.length===0);
  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
  await fs.writeFile(path.join(root,'artifacts','delivery-states-verification.json'),JSON.stringify({checks,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));
-}finally{await app.close();}
+ const closeWindow=app.waitForEvent('close',{timeout:5000});
+ await shell.getByRole('button',{name:'Close Sajilo Dental'}).click();
+ await shell.getByRole('alertdialog',{name:'Are you sure you want to leave Sajilo Dental?'}).getByRole('button',{name:'OK',exact:true}).click();
+ await closeWindow;closed=true;
+}finally{if(!closed)await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}

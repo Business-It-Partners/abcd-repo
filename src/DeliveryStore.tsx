@@ -144,7 +144,7 @@ export function DeliveryStore({ view, action, open, locked, controller, settling
   if (job) {
    const progress = jobDescription(job);
    return <div className="store-action delivery-store-progress" aria-label={`${item.title} installation progress`}>
-    <div className="delivery-store-progress-label"><span>{progress.label}</span><strong>{progress.percent}%</strong></div>
+    <div className="delivery-store-progress-label" role="status" aria-live="polite"><span>{progress.label}</span><strong>{progress.percent}%</strong></div>
     <progress aria-label={`${item.title} progress`} max={Math.max(1, job.total)} value={job.received}/>
     <button className="delivery-store-cancel" type="button" onClick={() => action('cancel')}>Cancel</button>
    </div>;

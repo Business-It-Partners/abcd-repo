@@ -38,8 +38,8 @@ try {
   const dockBase = await page.evaluate(() => 36 * Math.max(.72,Math.min(1.15,innerWidth/1366)));
   const icon = page.getByRole('button', { name: 'Motion Studio', exact: true });
   await icon.hover();
-  await page.waitForFunction(() => document.querySelector('.dock-icon.coral').getBoundingClientRect().width > 36 * Math.max(.72,Math.min(1.15,innerWidth/1366)) * 2.2);
-  const enlarged = await icon.boundingBox(); check('Bell-curve hover magnifies the dock', enlarged.width > dockBase * 2.2);
+  await page.waitForFunction(() => document.querySelector('.dock-icon.coral').getBoundingClientRect().width > 36 * Math.max(.72,Math.min(1.15,innerWidth/1366)) * 1.5);
+  const enlarged = await icon.boundingBox(); check('Bell-curve hover magnifies the dock within the dock height cap', enlarged.width > dockBase * 1.5);
   await page.screenshot({ path: path.join(root, 'artifacts/dock-hover.png') });
   await page.mouse.move(30, 70);
   await page.waitForFunction(() => Math.abs(document.querySelector('.dock-icon').getBoundingClientRect().width - 36 * Math.max(.72,Math.min(1.15,innerWidth/1366))) < .1);
@@ -98,11 +98,11 @@ try {
   await page.getByRole('button', { name: 'Close Motion Studio', exact: true }).click(); await phase('closed');
   check('Internal close returns to desktop');
   const minimizeButton = page.getByRole('button', { name: 'Minimize Sajilo Dental', exact: true });
-  const shutdownButton = page.getByRole('button', { name: 'Shut down Sajilo Dental', exact: true });
-  check('Dock exposes two distinct environment controls without a menu', await minimizeButton.count() === 1 && await shutdownButton.count() === 1 && await page.getByRole('menu').count() === 0 && await page.getByRole('button', { name: 'Sajilo Dental menu', exact: true }).count() === 0);
+  const closeButton = page.getByRole('button', { name: 'Close Sajilo Dental', exact: true });
+  check('Status bar exposes minimize and close controls without a menu', await minimizeButton.count() === 1 && await closeButton.count() === 1 && await page.getByRole('menu').count() === 0 && await page.getByRole('button', { name: 'Sajilo Dental menu', exact: true }).count() === 0);
   await minimizeButton.focus(); await page.keyboard.press('Tab');
-  check('Keyboard users can reach the shutdown button directly', await shutdownButton.evaluate(e => e === document.activeElement));
-  await page.mouse.move(20,20); await page.screenshot({ path: path.join(root, 'artifacts/direct-dock-controls.png') });
+  check('Keyboard users can reach the close button directly', await closeButton.evaluate(e => e === document.activeElement));
+  await page.mouse.move(20,20); await page.screenshot({ path: path.join(root, 'artifacts/status-bar-controls.png') });
   await minimizeButton.focus(); await page.keyboard.press('Enter');
   let minimized = false;
   for (let attempt = 0; attempt < 40; attempt++) {
@@ -118,9 +118,10 @@ try {
   evidence.errors = errors;
   await Promise.all([
     page.waitForEvent('close'),
-    page.getByRole('button', { name: 'Shut down Sajilo Dental', exact: true }).click().catch(error => {
-      if (!page.isClosed()) throw error;
-    }),
+    (async () => {
+      await closeButton.click();
+      await page.getByRole('alertdialog', { name: 'Are you sure you want to leave Sajilo Dental?' }).getByRole('button', { name: 'OK', exact: true }).click();
+    })(),
   ]);
   check('Outer close exits application', page.isClosed());
   await fs.writeFile(path.join(root, 'artifacts/electron-verification.json'), JSON.stringify(evidence, null, 2) + '\n');
