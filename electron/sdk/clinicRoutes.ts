@@ -55,6 +55,7 @@ route(care, ['GET', 'POST'], '/v1/patients/:id/canal-measurements', {}, ['work_e
 route(care, ['GET'], '/v1/patients/:id/media', { chiefComplaintId: identifier });
 // Upload intents/content/finalise and private binary views require the separate media contract.
 route(patient, ['POST'], '/v1/patient-media/:id/withdraw');
+route(work, ['POST'], '/v1/patient-media/:id/withdraw', {}, ['work_entry.access']);
 route(['patient-record', 'lab-tracker'], ['GET'], '/v1/patients/:id/lab-orders');
 route(['patient-record', 'work-entry', 'lab-tracker'], ['GET'], '/v1/lab-orders');
 route(patient, ['POST'], '/v1/lab-orders', {}, ['lab_tracker.access']);

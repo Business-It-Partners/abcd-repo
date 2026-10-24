@@ -1,4 +1,4 @@
-export type EncounterDraftScope = "work-entry" | "new-case";
+export type EncounterDraftScope = "work-entry" | "work-entry-case-update" | "new-case";
 
 interface DraftStorage {
   getItem(key: string): string | null;

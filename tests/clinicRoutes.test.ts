@@ -21,6 +21,8 @@ describe('closed clinic JSON route contract', () => {
     ['appointments', 'PATCH', `/v1/appointments/${id}`],
     ['patient-record', 'PUT', `/v1/patients/${id}/profile`],
     ['work-entry', 'POST', '/v1/work-entry/commit'],
+    ['work-entry', 'GET', `/v1/patients/${id}/media`],
+    ['work-entry', 'POST', `/v1/patient-media/${id}/withdraw`],
     ['work-entry', 'GET', `/v1/patients/${id}/ledger`],
     ['work-entry', 'GET', '/v1/follow-ups'],
     ['work-entry', 'GET', '/v1/clinic/suppliers?scope=lab'],
@@ -75,6 +77,7 @@ describe('closed clinic JSON route contract', () => {
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access', 'patient_billing_ledger.read'], `/v1/patients/${id}/ledger`, 'GET')).toBe(true);
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access'], '/v1/follow-ups', 'GET')).toBe(false);
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access', 'followups.access'], '/v1/follow-ups', 'GET')).toBe(true);
+    expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access'], `/v1/patient-media/${id}/withdraw`, 'POST')).toBe(true);
     expect(clinicRequestAllowed(app('finance'), 'reception', ['finance.manage', 'staff.manage'], '/v1/clinic/staff', 'GET')).toBe(false);
     expect(clinicRequestAllowed(app('patient-payments'), 'doctor', ['patient_payments.outstanding.read'], '/v1/patient-payments', 'GET')).toBe(false);
   });

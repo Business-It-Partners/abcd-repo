@@ -8,14 +8,14 @@ import { staging } from '../electron/sdk/environment';
 const recordId = '11111111-1111-4111-8111-111111111111', assetId = '22222222-2222-4222-8222-222222222222';
 const bytes = new Uint8Array([1, 2, 3]);
 const checksum = (data: Uint8Array) => createHash('sha256').update(data).digest('hex');
-function fixture(kind: MediaKind = 'patient_media') {
+function fixture(kind: MediaKind = 'patient_media', selectedFamily?: 'patient-record' | 'work-entry') {
   const asset: Record<string, unknown> = { [kind === 'patient_media' ? 'mediaAssetId' : 'staffDocumentId']: assetId, [kind === 'patient_media' ? 'patientId' : 'staffId']: recordId, status: 'active', byteSize: 3, checksum: checksum(bytes), mimeType: kind === 'patient_media' ? 'image/png' : 'application/pdf' };
   let body = bytes, requests = 0, granted = true, signed = true, active = true, credentials = 0, responseStatus = 200, redirected = false;
   let stalled = false;
   let afterMetadata: (() => void) | undefined;
   const urls: string[] = [], sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://media/index.html' };
-  const appId = kind === 'patient_media' ? 'company.dental.m17-patient-record' : 'company.dental.m17-staff';
-  const family: Operation = kind === 'patient_media' ? 'clinic.app.patient-record' : 'clinic.app.staff';
+  const appId = kind === 'patient_media' ? `company.dental.m17-${selectedFamily ?? 'patient-record'}` : 'company.dental.m17-staff';
+  const family: Operation = kind === 'patient_media' ? `clinic.app.${selectedFamily ?? 'patient-record'}` as Operation : 'clinic.app.staff';
   const identity: Identity = { snapshot: () => ({ generation: 1, active, userLabel: 'Synthetic', clinicLabel: 'Synthetic' }), allowed: () => true,
     allowedMediaRead: (_, requested) => granted && requested === kind, credential: async () => { credentials++; return 'synthetic-only'; } };
   const transport = async (url: string, init: RequestInit) => {
@@ -70,6 +70,12 @@ describe('media envelope and declared transfer bounds', () => {
     const asset = { [kind === 'patient_media' ? 'mediaAssetId' : 'staffDocumentId']: assetId, [kind === 'patient_media' ? 'patientId' : 'staffId']: recordId, status: 'active', byteSize: size, mimeType: 'image/png', checksum: checksum(body) }; let calls = 0;
     const value = await readClinicMedia({ kind, recordId, assetId }, { apiBase: staging.apiBase, token: 'synthetic-only', signal: new AbortController().signal, requestId: 'media-test-0001', assertCurrent() {}, rejected() {}, transport: async () => ++calls === 1 ? Response.json({ [kind === 'patient_media' ? 'media' : 'documents']: [asset] }) : new Response(body, { headers: { 'content-type': 'image/png' } }) });
     expect(value.body.length).toBe(size); expect(checksum(value.body)).toBe(asset.checksum);
+  });
+  it('allows Work Entry to read patient radiographs through its matching signed media family', async () => {
+    const f = fixture('patient_media', 'work-entry');
+    expect(await f.request()).toMatchObject({ ok: true, value: { status: 200, contentType: 'image/png' } });
+    expect(f.urls[1]).toContain(`/v1/patient-media/${assetId}/view`);
+    f.broker.dispose();
   });
 });
 

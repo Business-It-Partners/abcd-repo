@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Stethoscope,
-  FlaskConical,
   Plus,
   Trash2,
   Wallet,
@@ -53,7 +52,6 @@ import {
 } from "@/features/work-entry/model/caseData";
 import NewPatientStylePrescription from "@/features/patients/components/NewPatientStylePrescription";
 import { type ToothHistoryEntry, type ToothPerioData, type XrayDraft } from "@/features/work-entry/model/chartData";
-import LabOrderBlock from "@/features/labs/components/LabOrderBlock";
 import { unpersistedLabOrderDrafts } from "@/features/work-entry/labOrderReview";
 import ReasonPicker from "./ReasonPicker";
 import PeriodontalChart from "@/features/work-entry/components/PeriodontalChart";
@@ -80,6 +78,7 @@ import AddTreatmentPlanModal, { type TreatmentPlanStepDraft } from "@/features/w
 import { type PlanAppendDraft } from "@/features/work-entry/model/draftTypes";
 import ConfirmDialog from "@/shared/ui/ConfirmDialog";
 import { repairTitledGroupTeeth, toothForExtraStage, toothFromPlanGroup } from "@/features/work-entry/model/workEntryTooth";
+import styles from "../WorkEntryWorkspace.module.css";
 
 export interface EncounterLine {
   procedure: string;
@@ -287,16 +286,15 @@ const stepBadge: React.CSSProperties = {
 };
 
 const CORE_STEPS = [
-  { n: 1, displayN: 1, label: "Patient", icon: User },
-  { n: 2, displayN: 2, label: "Work", icon: Stethoscope },
-  { n: 4, displayN: 3, label: "Perio Chart", icon: Activity },
-  { n: 5, displayN: 4, label: "Imaging, Rx & Lab", icon: FlaskConical },
+  { n: 1, displayN: 1, label: "Patient" },
+  { n: 2, displayN: 2, label: "Work" },
+  { n: 4, displayN: 3, label: "Perio Chart" },
+  { n: 5, displayN: 4, label: "Imaging, Rx & Lab" },
 ] as const;
 
 export default function WorkEntryView({
   patients,
   doctorsList,
-  labs,
   procedureCatalog,
   protocols,
   feeSchedule,
@@ -339,8 +337,8 @@ export default function WorkEntryView({
   const recallStep = canCollectPayment ? 7 : 6;
   const reviewStep = canCollectPayment ? 8 : 7;
   const workflowSteps = canCollectPayment
-    ? [...CORE_STEPS, { n: 6, displayN: 5, label: "Payment", icon: Wallet }, { n: 7, displayN: 6, label: "Recall", icon: BellRing }, { n: 8, displayN: 7, label: "Review & commit", icon: Check }]
-    : [...CORE_STEPS, { n: 6, displayN: 5, label: "Recall", icon: BellRing }, { n: 7, displayN: 6, label: "Review & commit", icon: Check }];
+    ? [...CORE_STEPS, { n: 6, displayN: 5, label: "Payment" }, { n: 7, displayN: 6, label: "Recall" }, { n: 8, displayN: 7, label: "Review & commit" }]
+    : [...CORE_STEPS, { n: 6, displayN: 5, label: "Recall" }, { n: 7, displayN: 6, label: "Review & commit" }];
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
@@ -818,6 +816,12 @@ export default function WorkEntryView({
     !allergyConflict;
 
   const effStep = selectedId ? step : 1;
+  const stepStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    stepStripRef.current
+      ?.querySelector<HTMLButtonElement>("[data-active-step='true']")
+      ?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [effStep]);
 
   // A follow-up choice belongs to one patient encounter. Never carry an
   // explicit "no follow-up" choice (or a partially entered recall) to the
@@ -1301,61 +1305,36 @@ export default function WorkEntryView({
             <>
               {/* Streamlined Compact Stepper Bar */}
               {selectedId && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", background: "#f8fafc", padding: "8px 12px", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)", width: "100%", boxSizing: "border-box" }}>
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                <div className={styles.stepBar}>
+                  <div ref={stepStripRef} data-work-entry-step-tabs className={styles.stepTabs}>
                     {(onCommitWorkEntry ? workflowSteps : workflowSteps.filter(({ n }) => n !== reviewStep)).map((originalStep) => {
                       const s = originalStep.n === 1 && patientStepLabel
                         ? { ...originalStep, label: patientStepLabel }
                         : originalStep;
                       const active = effStep === s.n;
                       const locked = (s.n > 1 && !selectedId) || (!onCommitWorkEntry && s.n > effStep && currentStepHasUnsavedChanges);
-                      const StepIcon = s.icon;
                       return (
                         <button
                           key={s.n}
                           type="button"
                           disabled={locked}
                           onClick={() => goToStep(s.n as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8)}
+                          data-active-step={active ? "true" : undefined}
+                          data-work-entry-step={s.n}
+                          aria-current={active ? "step" : undefined}
                           title={!onCommitWorkEntry && s.n > effStep && currentStepHasUnsavedChanges ? "Save this section before moving forward." : undefined}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "7px 14px",
-                            borderRadius: "10px",
-                            border: active ? "1.5px solid #0284c7" : "1px solid #cbd5e1",
-                            background: active ? "#e0f2fe" : "#f8fafc",
-                            color: active ? "#0369a1" : locked ? "#94a3b8" : "#334155",
-                            fontSize: "13px",
-                            fontWeight: active ? "700" : "600",
-                            cursor: locked ? "not-allowed" : "pointer",
-                            transition: "all 0.15s ease",
-                          }}
+                          className={active ? `${styles.stepButton} ${styles.stepButtonActive}` : styles.stepButton}
                         >
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "20px",
-                              height: "20px",
-                              borderRadius: "50%",
-                              background: active ? "#0284c7" : "#e2e8f0",
-                              color: active ? "#ffffff" : locked ? "#94a3b8" : "#475569",
-                              fontSize: "11px",
-                              fontWeight: "700",
-                            }}
-                          >
+                          <span className={active ? `${styles.stepNumber} ${styles.stepNumberActive}` : styles.stepNumber}>
                             {s.displayN}
                           </span>
-                          <StepIcon size={14} style={{ color: active ? "#0369a1" : locked ? "#94a3b8" : "#475569" }} />
                           <span>{s.label}</span>
                         </button>
                       );
                     })}
                   </div>
                   {fixedPatientFlow && (
-                    <div className="clinicWizardHeaderActions" style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
+                    <div className={`clinicWizardHeaderActions ${styles.stepActions}`} data-work-entry-step-actions>
                       {effStep === 1 && (renderPatientStep ? (
                         <button type="button" className="btn btn-primary" onClick={() => goToStep(2)}>
                           Next <ArrowRight size={14} />
@@ -2296,49 +2275,39 @@ export default function WorkEntryView({
                     />
                   )}
 
-                  {/* Mirrors the New Patient imaging step: clinical attachments on the left,
-                      lab work on the right. Each stays an independent white compartment. */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", alignItems: "start" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                      <div style={{ ...card, padding: "16px" }}>
-                        <RadiographUploader
-                          drafts={xrayDrafts}
-                          setDrafts={setXrayDrafts}
-                          patientId={existing?.id}
-                          chiefComplaintId={initialChiefComplaintId}
-                          defaultType="IOPA"
-                          dateLabel={formatDateShort(dateISO)}
-                          capturedOn={dateISO}
-                          onUploaded={onMediaChanged}
-                          savedUploads={savedRadiographUploads}
-                          onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
-                          onRemoveSavedUpload={onRemoveXray ? async (mediaAssetId, reason) => {
-                            showLoading("Removing image…");
-                            try {
-                              await onRemoveXray(mediaAssetId, reason);
-                              showToast("Image removed successfully.");
-                            } catch (cause) {
-                              const message = cause instanceof Error ? cause.message : "Could not remove this image. Please try again.";
-                              showToast(message, "error");
-                              throw cause;
-                            }
-                          } : undefined}
-                          onSavedUploadRemoved={(mediaAssetId) => setSavedRadiographUploads((current) => current.filter((upload) => upload.mediaAssetId !== mediaAssetId))}
-                        />
-                      </div>
-                      <div style={{ ...card, padding: "16px" }}>
-                        <NewPatientStylePrescription drugs={prescriptions} onChange={setPrescriptions} onDraftDirtyChange={setPrescriptionDraftDirty} />
-                      </div>
-                    </div>
-                    <div style={{ ...card, padding: "16px" }}>
-                      <LabOrderBlock
-                        orders={labOrders}
-                        onChange={setLabOrders}
-                        defaultTooth={openCase?.stages.find((stage) => stage.status === "pending")?.tooth || undefined}
-                        labs={labs}
-                        deferPersistence
-                        handoffPreview
+                  {/* Radiographs and prescriptions share one balanced row; lab requirements are omitted from this step. */}
+                  <div
+                    data-work-entry-imaging-layout
+                    style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))", gap: "14px", alignItems: "start" }}
+                  >
+                    <div data-work-entry-radiographs style={{ ...card, padding: "16px", minWidth: 0 }}>
+                      <RadiographUploader
+                        drafts={xrayDrafts}
+                        setDrafts={setXrayDrafts}
+                        patientId={existing?.id}
+                        chiefComplaintId={initialChiefComplaintId}
+                        defaultType="IOPA"
+                        dateLabel={formatDateShort(dateISO)}
+                        capturedOn={dateISO}
+                        onUploaded={onMediaChanged}
+                        savedUploads={savedRadiographUploads}
+                        onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
+                        onRemoveSavedUpload={onRemoveXray ? async (mediaAssetId, reason) => {
+                          showLoading("Removing image…");
+                          try {
+                            await onRemoveXray(mediaAssetId, reason);
+                            showToast("Image removed successfully.");
+                          } catch (cause) {
+                            const message = cause instanceof Error ? cause.message : "Could not remove this image. Please try again.";
+                            showToast(message, "error");
+                            throw cause;
+                          }
+                        } : undefined}
+                        onSavedUploadRemoved={(mediaAssetId) => setSavedRadiographUploads((current) => current.filter((upload) => upload.mediaAssetId !== mediaAssetId))}
                       />
+                    </div>
+                    <div data-work-entry-prescription style={{ ...card, padding: "16px", minWidth: 0 }}>
+                      <NewPatientStylePrescription drugs={prescriptions} onChange={setPrescriptions} onDraftDirtyChange={setPrescriptionDraftDirty} />
                     </div>
                   </div>
                 </section>

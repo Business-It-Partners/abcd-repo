@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readExact, type MediaKind } from './mediaRead';
 import type { ErrorCode, Outcome } from './contracts';
 import type { ClinicAppFamily } from './appPolicy';
-export const uploadKindForFamily = (family: ClinicAppFamily | undefined): MediaKind | undefined => family === 'clinic.app.patient-record' ? 'patient_media' : family === 'clinic.app.staff' ? 'staff_document' : undefined;
+export const uploadKindForFamily = (family: ClinicAppFamily | undefined): MediaKind | undefined => family === 'clinic.app.patient-record' || family === 'clinic.app.work-entry' ? 'patient_media' : family === 'clinic.app.staff' ? 'staff_document' : undefined;
 export class MediaUploadError extends Error { constructor(readonly code: ErrorCode, readonly outcome: Outcome = 'not_sent') { super(code); } }
 type Transfer = { replacement?: { assetId: string; reason: string }; id: string; kind: MediaKind; recordId: string; metadata: Record<string, unknown>; key: string; fingerprint: string; bytes: Uint8Array; offset: number; busy: boolean; expired: boolean; intended: boolean; assetId?: string; timer: ReturnType<typeof setTimeout> };
 type Context = { apiBase: string; token: string; signal: AbortSignal; requestId: string; assertCurrent(): void; dispatched(): void; rejected(status: 401 | 403): void; transport(url: string, init: RequestInit): Promise<Response> };

@@ -214,6 +214,21 @@ function displayStatus(status: "open" | "in_progress" | "complete" | "completed"
   return status[0].toUpperCase() + status.slice(1);
 }
 
+async function readWithBrokerCapacityRetry<T>(read: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await read();
+    } catch (cause) {
+      const capacityRejected = !!cause && typeof cause === "object" && "code" in cause
+        && (cause as { code?: unknown }).code === "BUSY";
+      if (!capacityRejected || attempt >= 2) throw cause;
+      // A BUSY result is rejected before dispatch. These calls are GETs, so a
+      // short bounded retry is safe while a batch keeps below the broker cap.
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+    }
+  }
+}
+
 function worklistStatusFor(caseItem: WorkEntryCaseRow["cases"][number]) {
   // Staging can briefly serve a previous Worker version during a frontend
   // rollout. Keep the worklist usable until its response includes the new
@@ -434,15 +449,21 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
     try {
       const idToken = await token();
       const workEntryCase = normaliseWorkEntryCase(await workEntryApi.workEntryCase(idToken, chiefComplaintId));
-      const [patientResult, ledger, marks, labSuppliers, periodontalChart, canalMeasurements, followUps] = await Promise.all([
-        patientsApi.patientCore(idToken, workEntryCase.patientId),
-        loadPatientLedger(idToken, workEntryCase.patientId),
-        patientOdontogramOrEmpty(idToken, workEntryCase.patientId),
-        canChooseLabSupplier ? suppliersApi.listSuppliers(idToken, "lab") : Promise.resolve<ClinicSupplier[]>([]),
-        clinicalChartsApi.patientPeriodontalChart(idToken, workEntryCase.patientId),
-        clinicalChartsApi.patientCanalMeasurements(idToken, workEntryCase.patientId),
-        followUpsApi.listFollowUps(idToken),
+      const patientId = workEntryCase.patientId;
+      // ApiBroker caps each app at four in-flight calls (and the whole OS at
+      // eight). Keep this chart/context fan-out to three concurrent GETs and
+      // retry a local BUSY rejection rather than failing the entire case open.
+      const [patientResult, ledger, marks] = await Promise.all([
+        readWithBrokerCapacityRetry(() => patientsApi.patientCore(idToken, patientId)),
+        readWithBrokerCapacityRetry(() => loadPatientLedger(idToken, patientId)),
+        readWithBrokerCapacityRetry(() => patientOdontogramOrEmpty(idToken, patientId)),
       ]);
+      const [labSuppliers, periodontalChart, canalMeasurements] = await Promise.all([
+        readWithBrokerCapacityRetry(() => canChooseLabSupplier ? suppliersApi.listSuppliers(idToken, "lab") : Promise.resolve<ClinicSupplier[]>([])),
+        readWithBrokerCapacityRetry(() => clinicalChartsApi.patientPeriodontalChart(idToken, patientId)),
+        readWithBrokerCapacityRetry(() => clinicalChartsApi.patientCanalMeasurements(idToken, patientId)),
+      ]);
+      const followUps = await readWithBrokerCapacityRetry(() => followUpsApi.listFollowUps(idToken));
       if (requestVersion !== caseOpenVersion.current || closingCaseRef.current) return;
       const patient = normalisePatientCore(patientResult);
       setSelectedPatientCore(patient);
@@ -626,7 +647,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
   };
 
   if (selectedCase && selectedPatientCore && selectedFlow === "continue") return <section className={styles.continuationWorkspace} key="work-entry-continuation">
-    <ClinicDetailBackButton label="Work Entry" onClick={exitSelectedCase} />
     <InProgressWorkEntry
       patient={legacyPatient(selectedPatientCore, selectedLedger?.summary.outstandingDue ?? 0)}
       workEntryCase={selectedCase}
@@ -720,7 +740,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
       }}
       onMediaChanged={async () => undefined}
       onRemoveXray={async (mediaAssetId, reason) => {
-        await patientMediaApi.withdrawPatientMedia(await token(), mediaAssetId, reason);
+        await patientMediaApi.withdrawPatientMedia(mediaAssetId, reason);
       }}
       onSaveCanalData={async (data) => {
         const protocol = selectedCase.protocols.find((item) => item.toothCode === data.tooth && protocols.find((template) => template.protocolId === item.sourceProtocolId)?.recordsCanalMeasurements);
@@ -854,7 +874,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
       onExit={exitSelectedCase}
       onMediaChanged={async () => undefined}
       onRemoveXray={async (mediaAssetId, reason) => {
-        await patientMediaApi.withdrawPatientMedia(await token(), mediaAssetId, reason);
+        await patientMediaApi.withdrawPatientMedia(mediaAssetId, reason);
       }}
       onCreateCase={saveSelectedPatientCase}
       onSavePerioChart={async (teeth) => {

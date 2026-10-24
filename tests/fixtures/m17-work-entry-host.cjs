@@ -13,6 +13,7 @@ const { buildPackage, verifyPackage, sha256, canonical } = require(path.join(roo
 const { verifyUpdatePolicy, apiOperationsForPackage, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue, allowUpdatedPackage } = require(path.join(root, 'dist-electron/distribution/updatePolicy.js'));
 const { verifyCatalogue, noWatermark } = require(path.join(root, 'dist-electron/distribution/catalogue.js'));
 const { clinicRequestAllowed } = require(path.join(root, 'dist-electron/sdk/appPolicy.js'));
+const { staging } = require(path.join(root, 'dist-electron/sdk/environment.js'));
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const appId = 'company.dental.work-entry.m17';
@@ -22,6 +23,10 @@ const protocolId = '33333333-3333-4333-8333-333333333333';
 const stageId = '44444444-4444-4444-8444-444444444444';
 const patientProtocolId = '55555555-5555-4555-8555-555555555555';
 const staffId = '66666666-6666-4666-8666-666666666666';
+const mediaAssetId = '88888888-8888-4888-8888-888888888888';
+const mediaAssetIds = [mediaAssetId, '99999999-9999-4999-8999-999999999999', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'];
+const mediaAssets = new Map();
+let nextMediaAssetIndex = 0;
 const calls = [];
 const roleDenied = process.env.M17_DENY_ROLE === '1';
 const caps = roleDenied ? [] : ['work_entry.access', 'patient_payments.collect', 'lab_tracker.access', 'staff.reference.read', 'treatment_protocols.reference.read', 'patient_billing_ledger.read', 'followups.access'];
@@ -51,8 +56,28 @@ function clone(value) { return structuredClone(value); }
 global.fetch = async (url, init = {}) => {
   const target = new URL(url), headers = new Headers(init.headers);
   if (headers.get('authorization') !== 'Bearer synthetic-m17-host-only') throw Error('Missing fixture host credential');
-  const entry = { path: target.pathname + target.search, method: init.method ?? 'GET', operationId: headers.get('idempotency-key'), body: init.body ? JSON.parse(init.body) : null };
+  const entry = { path: target.pathname + target.search, method: init.method ?? 'GET', operationId: headers.get('idempotency-key'), body: typeof init.body === 'string' ? JSON.parse(init.body) : null };
   calls.push(entry);
+  if (entry.method === 'GET' && target.pathname === `/v1/patients/${patientId}/media`) return json({ media: [...mediaAssets.values()].map(clone) });
+  if (entry.method === 'POST' && target.pathname === '/v1/patient-media/upload-intents') {
+    const uploadMediaAssetId = mediaAssetIds[nextMediaAssetIndex++ % mediaAssetIds.length];
+    const asset = { ...entry.body, mediaAssetId: uploadMediaAssetId, patientId, branchId: patientId, assetType: 'xray', status: 'pending', createdAt: '2026-10-24T00:00:00.000Z', updatedAt: '2026-10-24T00:00:00.000Z', rowVersion: 1, replacesMediaAssetId: null };
+    mediaAssets.set(uploadMediaAssetId, asset);
+    return json({ uploadIntent: { media: asset, uploadUrl: `${staging.apiBase}/v1/patient-media/${uploadMediaAssetId}/content`, uploadHeaders: { 'content-type': asset.mimeType } } }, 201);
+  }
+  const contentUploadId = /^\/v1\/patient-media\/([^/]+)\/content$/.exec(target.pathname)?.[1];
+  if (entry.method === 'PUT' && contentUploadId && mediaAssets.has(contentUploadId)) return new Response(null, { status: 204 });
+  const finaliseId = /^\/v1\/patient-media\/([^/]+)\/finalise$/.exec(target.pathname)?.[1];
+  if (entry.method === 'POST' && finaliseId && mediaAssets.has(finaliseId)) {
+    const asset = { ...mediaAssets.get(finaliseId), status: 'active', updatedAt: '2026-10-24T00:01:00.000Z' };
+    mediaAssets.set(finaliseId, asset);
+    return json({ media: asset });
+  }
+  const withdrawId = /^\/v1\/patient-media\/([^/]+)\/withdraw$/.exec(target.pathname)?.[1];
+  if (entry.method === 'POST' && withdrawId && mediaAssets.has(withdrawId)) {
+    mediaAssets.set(withdrawId, { ...mediaAssets.get(withdrawId), status: 'withdrawn', updatedAt: '2026-10-24T00:02:00.000Z' });
+    return json({ withdrawn: true });
+  }
   if (entry.method === 'GET' && target.pathname === '/v1/work-entry/cases') return json({ cases: [{ ...summary,
     cases: [{ chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: 'in_progress' }],
     latestCase: { chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: 'in_progress' },
@@ -89,7 +114,7 @@ app.whenReady().then(async () => {
   const trust = { keys: { [keyId]: { publisher: 'company', publicKey: keys.publicKey.export({ type: 'spki', format: 'pem' }).toString() } }, apps: { [appId]: { publisher: 'company', capabilities: manifest.capabilities } } };
   const bytes = buildPackage(manifest, collect(path.join(source, 'dist')), keyId, keys.privateKey), pkg = verifyPackage(bytes, trust), digest = sha256(bytes), now = Date.now();
   const stamp = { environment: 'cloudfare-staging', channel: 'staging', sequence: 1, issuedAt: now, expiresAt: now + 3600000 };
-  const grant = { version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, apiOperations: ['clinic.api.request'] };
+  const grant = { version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, apiOperations: ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'] };
   const catalogue = { format: 1, ...stamp, releases: [{ id: appId, title: 'Work Entry', description: 'Private synthetic fixture', version: manifest.version,
     notes: 'Test only', capabilities: manifest.capabilities, platforms: ['linux', 'win32'], sdkMajor: 1, apiMajor: 1,
     objectKey: `releases/${appId}/${manifest.version}/${digest}.dentalpkg`, packageSha256: digest, packageBytes: bytes.length,
@@ -109,6 +134,8 @@ app.whenReady().then(async () => {
   await win.loadURL('data:text/html,<title>Private M17 Work Entry host</title>');
   const identity = {
     allowed: () => true,
+    allowedMediaRead: (family, kind) => family === 'clinic.app.work-entry' && kind === 'patient_media',
+    allowedMediaUpload: (family, kind) => family === 'clinic.app.work-entry' && kind === 'patient_media',
     allowedClinicRequest: (id, route, method) => clinicRequestAllowed(id, 'admin', caps, route, method),
     snapshot: () => ({ generation: 1, active: true, userLabel: 'Synthetic user', clinicLabel: 'Synthetic clinic', clinicSession: {
       clinicUser: { clinicUserId: staffId, displayName: 'Synthetic user', role: 'admin', capabilities: [...caps] },

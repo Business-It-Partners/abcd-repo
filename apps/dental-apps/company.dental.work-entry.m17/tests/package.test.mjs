@@ -7,12 +7,13 @@ import { fileURLToPath } from 'node:url';
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relative => fs.readFileSync(path.join(app, relative), 'utf8');
 
-test('M17 Work Entry has its current release identity and only its approved host capabilities', () => {
+test('M17 Work Entry declares its host-mediated patient radiograph capabilities', () => {
   const manifest = JSON.parse(read('app.manifest.json'));
+  const packageMetadata = JSON.parse(read('package.json'));
   const metadata = JSON.parse(read('app.json'));
   assert.equal(manifest.appId, 'company.dental.work-entry.m17');
-  assert.equal(manifest.version, '1.0.3');
-  assert.deepEqual(manifest.capabilities, ['clinic.app.work-entry', 'clinic.api.request', 'session.context']);
+  assert.equal(manifest.version, packageMetadata.version);
+  assert.deepEqual(manifest.capabilities, ['clinic.app.work-entry', 'clinic.api.request', 'clinic.media.read', 'clinic.media.upload', 'session.context']);
   assert.equal(metadata.appId, manifest.appId);
   assert.equal(metadata.modules[0].id, 'work-entry');
   assert.deepEqual(metadata.anyCapabilities, ['work_entry.access']);
@@ -33,10 +34,25 @@ test('Work Entry business adapters use the host SDK and preserve the atomic comm
   assert.doesNotMatch(source, /getIdToken|clinicAuth|firebaseAuth|fetch\s*\(/i);
 });
 
-test('radiograph UI makes the current host media limitation explicit', () => {
+test('existing-case edits and the final clinical commit use separate persisted command keys', () => {
+  const source = read('src/features/work-entry/components/CaseEntryView.tsx');
+  assert.match(source, /commandId:\s*encounterDraftCommandId\("work-entry-case-update"\)/);
+  assert.match(source, /encounterCommandIdRef\.current\s*=\s*encounterDraftCommandId\("work-entry"\)/);
+  assert.match(source, /clearEncounterDraftId\("work-entry-case-update"\)/);
+});
+
+test('radiographs are uploaded, previewed, listed, and withdrawn through approved host APIs', () => {
   const source = read('src/features/patients/media/RadiographUploader.tsx');
-  assert.match(source, /Radiograph upload and withdrawal are not enabled/);
-  assert.doesNotMatch(source, /type="file"|\.upload\(/i);
+  const mediaApi = read('src/features/patients/media/api.ts');
+  assert.match(source, /type="file"/);
+  assert.match(source, /uploadPatientMedia/);
+  assert.match(source, /viewPatientMedia/);
+  assert.match(source, /Removed by clinician from Work Entry/);
+  assert.match(source, /preview will disappear after the service confirms/);
+  assert.match(mediaApi, /clinic\.media\.upload/);
+  assert.match(mediaApi, /clinic\.media\.read/);
+  assert.match(mediaApi, /\/v1\/patient-media\//);
+  assert.doesNotMatch(mediaApi, /fetch\s*\(|getIdToken|clinicAuth|firebaseAuth/i);
 });
 
 test('source import record pins the production SaaS revision and records adaptations', () => {

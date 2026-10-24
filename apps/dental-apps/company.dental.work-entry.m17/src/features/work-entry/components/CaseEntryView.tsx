@@ -656,8 +656,7 @@ export default function CaseEntryView({
   // overridable before the clinician confirms it into the plan.
   const [suggestSel, setSuggestSel] = useState<Record<string, string>>({});
 
-  // Radiographs captured during this intake are browser-only previews until the later
-  // Worker-authorised patient-media workflow is available.
+  // Radiographs use the host-authorised patient-media workflow and remain scoped to this patient.
   const [xrayDrafts, setXrayDrafts] = useState<XrayDraft[]>([]);
   const [savedRadiographUploads, setSavedRadiographUploads] = useState<SavedRadiographUpload[]>([]);
 
@@ -1243,7 +1242,9 @@ export default function CaseEntryView({
 
   const existingCaseEntry = (): CaseEntryData => ({
     encounterId: encounterDraftId("work-entry"),
-    commandId: encounterDraftCommandId("work-entry"),
+    // Case edits and the final clinical commit are separate brokered writes and
+    // must keep separate idempotency keys for the life of this draft.
+    commandId: encounterDraftCommandId("work-entry-case-update"),
     patientId: existing?.id ?? null,
     patientName,
     isNewPatient: false,
@@ -1280,6 +1281,7 @@ export default function CaseEntryView({
     setCreateError("");
     try {
       await onCreateCase(existingCaseEntry());
+      clearEncounterDraftId("work-entry-case-update");
       clearEncounterDraftId("work-entry");
       savedExistingCaseDraftFingerprint.current = existingCaseDraftFingerprint;
       setCreateStatus("idle");
@@ -1398,6 +1400,7 @@ export default function CaseEntryView({
       // Everything drafted in the clinical tabs is sent to one final command.
       if (existingCaseHasUnsavedChanges) {
         await onCreateCase(existingCaseEntry());
+        clearEncounterDraftId("work-entry-case-update");
         savedExistingCaseDraftFingerprint.current = existingCaseDraftFingerprint;
       }
       await onCommitTodayWork({
@@ -2065,7 +2068,7 @@ export default function CaseEntryView({
                         <RadiographUploader
                           drafts={xrayDrafts}
                           setDrafts={setXrayDrafts}
-                          patientId={existingCaseWorkflow ? existing?.id : undefined}
+                          patientId={existing?.id}
                           chiefComplaintId={existingCaseWorkflow ? initialChiefComplaintId ?? null : null}
                           defaultType={imagingType}
                           dateLabel={formatDateShort(dateISO)}

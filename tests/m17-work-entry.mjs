@@ -14,9 +14,10 @@ for (const key of ['ELECTRON_RUN_AS_NODE', 'DEBUG', 'PWDEBUG', 'M17_DENY_ROLE'])
 const stamp = new Date().toISOString().replaceAll(':', '-');
 const reportPath = path.join(root, 'artifacts', `m17-work-entry-private-${stamp}.json`);
 const screenshotPath = path.join(root, 'artifacts', `m17-work-entry-private-${stamp}.png`);
+const pickedImageScreenshotPath = path.join(root, 'artifacts', `m17-work-entry-picked-image-private-${stamp}.png`);
 const checks = [], errors = [], hostLogs = [];
 const check = (label, value = true) => { assert.ok(value, label); checks.push(label); console.log('PASS', label); };
-let app, page, deniedApp, passed = false, packageInfo, failure, screenshotWritten = false, deniedProfile;
+let app, page, deniedApp, passed = false, packageInfo, failure, screenshotWritten = false, pickedImageScreenshotWritten = false, deniedProfile;
 const waitForGuest = async target => {
   for (let attempt = 0; attempt < 160; attempt++) {
     const candidate = target.context().pages().find(item => item.url().startsWith('dental-fixture://company.dental.work-entry.m17/'));
@@ -32,6 +33,7 @@ const inspect = target => target.evaluate(() => ({
 }));
 
 try {
+  const expectedAppVersion = JSON.parse(await fs.readFile(path.join(root, 'apps/dental-apps/company.dental.work-entry.m17/app.manifest.json'), 'utf8')).version;
   app = await electron.launch({ args: [hostApp, ...profileArgs], env, timeout: 30000 });
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
@@ -39,7 +41,7 @@ try {
   await assertStandardPageScroll(page, check, 'Work Entry');
   await page.getByText('Synthetic Work Entry Patient', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has Work Entry identity, version 1.0.2, and packaged assets', packageInfo.appId === 'company.dental.work-entry.m17' && packageInfo.version === '1.0.2' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024 && packageInfo.assetCount >= 5);
+  check(`private signed package has Work Entry identity, version ${expectedAppVersion}, and packaged assets`, packageInfo.appId === 'company.dental.work-entry.m17' && packageInfo.version === expectedAppVersion && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024 && packageInfo.assetCount >= 5);
   check('renderer receives the SDK bridge without a credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
     return ['cancel', 'connect', 'getAppInfo', 'request', 'report'].every(method => methods.includes(method))
@@ -50,9 +52,6 @@ try {
   check('worklist preserves the SaaS patient, complaint, protocol-count, and in-progress state',
     await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).getByText('Synthetic molar pain').count() === 1
       && await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).getByText('In progress').count() === 1);
-  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-  await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'wx' }); screenshotWritten = true;
-
   await app.evaluate(() => globalThis.m17WorkEntry.module());
   for (let index = 0; index < 40 && !(await inspect(app)).moduleAcks.length; index++) await new Promise(resolve => setTimeout(resolve, 50));
   const module = await inspect(app);
@@ -69,9 +68,74 @@ try {
   await page.getByRole('button', { name: /Patient & case/ }).click();
   await page.getByText('Synthetic Work Entry Patient', { exact: true }).waitFor();
   await page.getByRole('button', { name: /Imaging, Rx & Lab/ }).click();
-  await page.getByText('Radiograph upload and withdrawal are not enabled', { exact: false }).waitFor();
-  check('X-ray upload is visibly unavailable while this host release has no Work Entry upload grant',
-    (await page.getByText('Radiograph upload and withdrawal are not enabled', { exact: false }).count()) === 1);
+  await page.getByRole('button', { name: /Add Image/ }).waitFor();
+  check('the imaging step exposes the patient radiograph gallery and upload control',
+    await page.locator('[aria-label="Radiographs"] input[type="file"]').count() === 1);
+  check('the continuation view does not duplicate the window navigation with a Back to Work Entry button',
+    await page.getByRole('button', { name: 'Back to Work Entry', exact: true }).count() === 0);
+  check('the workflow tabs stay on one row and the Next action remains visible beside them', await page.locator('[data-work-entry-step-tabs]').evaluate(strip => {
+    const tabs = [...strip.querySelectorAll('[data-work-entry-step]')];
+    const tabRows = new Set(tabs.map(tab => Math.round(tab.getBoundingClientRect().top)));
+    const nextAction = strip.parentElement.querySelector('[data-work-entry-step-actions] button');
+    return tabs.length > 0 && tabRows.size === 1 && nextAction?.getBoundingClientRect().width > 0;
+  }));
+  check('workflow tabs show step numbers and labels without decorative icons', await page.locator('[data-work-entry-step-tabs]').evaluate(strip => {
+    const tabs = [...strip.querySelectorAll('[data-work-entry-step]')];
+    return tabs.length > 0 && tabs.every(tab => tab.querySelector('svg') === null
+      && tab.querySelector('span')?.textContent?.trim()
+      && tab.textContent?.trim());
+  }));
+  check('the removed Lab requirement panel is absent from this step', await page.getByText('Lab requirement', { exact: true }).count() === 0);
+  check('Radiographs and Prescription occupy the same row', await page.locator('[data-work-entry-imaging-layout]').evaluate(layout => {
+    const xray = layout.querySelector('[data-work-entry-radiographs]').getBoundingClientRect();
+    const prescription = layout.querySelector('[data-work-entry-prescription]').getBoundingClientRect();
+    return xray.width > 0 && prescription.width > 0 && Math.abs(xray.top - prescription.top) < 2 && xray.left < prescription.left;
+  }));
+  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+  await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'wx' }); screenshotWritten = true;
+
+  const imageBase64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 384;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not create the private preview image.');
+    const background = context.createRadialGradient(256, 190, 25, 256, 190, 310);
+    background.addColorStop(0, '#666b70'); background.addColorStop(1, '#171a1e');
+    context.fillStyle = background; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = 'rgba(238, 241, 242, 0.8)'; context.lineWidth = 5;
+    for (let index = 0; index < 4; index++) {
+      const x = 92 + index * 108;
+      context.fillStyle = 'rgba(223, 227, 228, 0.62)';
+      context.beginPath(); context.ellipse(x, 158, 31, 57, (index - 1.5) * 0.04, 0, Math.PI * 2); context.fill();
+      context.beginPath(); context.moveTo(x - 16, 194); context.quadraticCurveTo(x - 22, 263, x - 10, 300);
+      context.moveTo(x + 15, 194); context.quadraticCurveTo(x + 22, 260, x + 10, 302); context.stroke();
+    }
+    context.strokeStyle = 'rgba(235, 238, 238, 0.25)'; context.lineWidth = 2;
+    context.beginPath(); context.moveTo(25, 223); context.quadraticCurveTo(256, 185, 487, 223); context.stroke();
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  const imageBytes = Buffer.from(imageBase64, 'base64');
+  const radiograph = 'm17-work-entry-radiograph-1.png';
+  const radiographs = [radiograph, 'm17-work-entry-radiograph-2.png', 'm17-work-entry-radiograph-3.png'];
+  await page.locator('[aria-label="Radiographs"] input[type="file"]').setInputFiles(radiographs.map(name => ({ name, mimeType: 'image/png', buffer: imageBytes })));
+  await page.getByRole('button', { name: `Preview ${radiographs[2]}` }).waitFor();
+  check('the radiograph gallery lays out three image cards before its Add Image tile', await page.locator('[aria-label="Radiographs"] article').count() === 3);
+  await fs.writeFile(pickedImageScreenshotPath, await page.screenshot(), { flag: 'wx' });
+  pickedImageScreenshotWritten = true;
+  const afterUpload = await inspect(app);
+  const uploadCalls = afterUpload.calls.filter(call => call.path.includes('/v1/patient-media/'));
+  check('the selected radiograph is uploaded and finalised through the host media bridge',
+    uploadCalls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/upload-intents')
+      && uploadCalls.some(call => call.method === 'PUT' && call.path === '/v1/patient-media/88888888-8888-4888-8888-888888888888/content')
+      && uploadCalls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/88888888-8888-4888-8888-888888888888/finalise'));
+  await page.getByRole('button', { name: `Remove ${radiograph}` }).click();
+  await page.getByRole('button', { name: 'Remove image', exact: true }).click();
+  await page.getByRole('button', { name: `Preview ${radiograph}` }).waitFor({ state: 'detached' });
+  const afterWithdrawal = await inspect(app);
+  const withdrawal = afterWithdrawal.calls.find(call => call.method === 'POST' && call.path === '/v1/patient-media/88888888-8888-4888-8888-888888888888/withdraw');
+  check('the preview disappears only after the host-mediated audited withdrawal succeeds',
+    Boolean(withdrawal && withdrawal.body.reason === 'Removed by clinician from Work Entry.')
+      && await page.getByRole('button', { name: `Preview ${radiograph}` }).count() === 0);
   check('opening the patient case performs no clinic writes', opened.effects === 0 && opened.calls.every(call => call.method === 'GET'));
   check('renderer errors stayed clear through worklist and clinical context views', errors.length === 0);
   await app.close(); app = undefined;
@@ -105,7 +169,9 @@ try {
   await fs.mkdir(path.dirname(reportPath), { recursive: true });
   await fs.writeFile(reportPath, JSON.stringify({ passed, failure: failure ?? null, checks, errors, package: packageInfo,
     scope: 'Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.',
-    screenshot: screenshotWritten ? path.basename(screenshotPath) : null }, null, 2), { flag: 'wx' });
+    screenshot: screenshotWritten ? path.basename(screenshotPath) : null,
+    pickedImageScreenshot: pickedImageScreenshotWritten ? path.basename(pickedImageScreenshotPath) : null }, null, 2), { flag: 'wx' });
   console.log('ARTIFACT', reportPath);
   if (screenshotWritten) console.log('ARTIFACT', screenshotPath);
+  if (pickedImageScreenshotWritten) console.log('ARTIFACT', pickedImageScreenshotPath);
 }

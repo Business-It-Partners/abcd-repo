@@ -100,7 +100,7 @@ describe('single platform session',()=>{
 });
 describe('session-scoped media upload gate',()=>{
  it('authorizes only the matching first-party app and media kind from trusted clinic claims',async()=>{
-  const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access','staff.manage']})});
+  const h=await harness({resolve:async()=>({...clinic,role:'admin',capabilities:['patient_record.access','work_entry.access','staff.manage']})});
   try{
    expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(false);
    expect((await h.session.login(input)).ok).toBe(true);
@@ -108,7 +108,7 @@ describe('session-scoped media upload gate',()=>{
    expect(h.session.allowedMediaUpload('clinic.app.patient-record','staff_document')).toBe(false);
    expect(h.session.allowedMediaUpload('clinic.app.staff','staff_document')).toBe(true);
    expect(h.session.allowedMediaUpload('clinic.app.staff','patient_media')).toBe(false);
-   expect(h.session.allowedMediaUpload('clinic.app.work-entry','patient_media')).toBe(false);
+   expect(h.session.allowedMediaUpload('clinic.app.work-entry','patient_media')).toBe(true);
    expect(h.session.allowedMediaUpload('clinic.app.calendar','patient_media')).toBe(false);
    h.session.lock();
    expect(h.session.allowedMediaUpload('clinic.app.patient-record','patient_media')).toBe(false);

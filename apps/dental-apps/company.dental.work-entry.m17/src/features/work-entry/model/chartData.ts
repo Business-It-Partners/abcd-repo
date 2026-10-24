@@ -443,6 +443,7 @@ export interface XrayDraft {
   previewUrl: string;
   mimeType?: string;
   byteSize?: number;
+  progress?: number;
   checksum?: string;
   sourceFilename?: string;
   status: "uploading" | "done" | "error";
