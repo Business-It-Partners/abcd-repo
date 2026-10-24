@@ -123,6 +123,8 @@ interface CaseEntryViewProps {
   embedded?: boolean;
   /** In embedded mode, the "done / back" affordance the host provides (e.g. return to Work Entry). */
   onExit?: () => void;
+  /** Keep the wizard's exit callback but let the owning OS window provide its Back control. */
+  hideHeaderBack?: boolean;
   /** Patient Record begins with a focused intake page instead of the full wizard tab strip. */
   hideStepTabs?: boolean;
   /** Read-only preview; the Worker allocates the authoritative patient number when Save succeeds. */
@@ -421,6 +423,7 @@ export default function CaseEntryView({
   initialPatientId,
   embedded,
   onExit,
+  hideHeaderBack = false,
   hideStepTabs = false,
   nextPatientNumber = null,
   patientStepOnly = false,
@@ -1466,7 +1469,7 @@ export default function CaseEntryView({
         <PageHeader
           title={prefilled ? "New case intake" : "New patient registration"}
           subtitle={prefilled ? `${clinic?.name || "Smile Dental Clinic"} · patient intake & treatment plan creation` : undefined}
-          back={onExit ? { label: "Patient Record", onClick: onExit } : undefined}
+          back={onExit && !hideHeaderBack ? { label: "Patient Record", onClick: onExit } : undefined}
         >{hideStepTabs && <button type="button" className="btn btn-primary" style={{ marginTop: "var(--sp-2)" }} onClick={savePatientOnly} disabled={!intakeTaken || createStatus === "saving"}>Save patient</button>}</PageHeader>
       )}
 

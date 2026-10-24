@@ -419,16 +419,16 @@ export class FixtureRuntime {
     e.state.navigation = input as AppNavigationSnapshot;
     this.emit();
   }
-  navigate(id: unknown, direction: unknown): boolean {
+  navigate(id: unknown, direction: unknown, discardDirty = false): boolean {
     if (!isRuntimeId(id) || (direction !== 'back' && direction !== 'forward')) return false;
     const e = this.entries.get(id), navigation = e?.state.navigation;
-    if (!e || !navigation || e.state.phase !== 'ready' || e.state.dirty || e.state.modal ||
+    if (!e || !navigation || e.state.phase !== 'ready' || e.state.dirty && !discardDirty || e.state.modal ||
         !!e.state.writeState && e.state.writeState !== 'none') return false;
     const index = navigation.index + (direction === 'back' ? -1 : 1);
     if (index < 0 || index >= navigation.entries.length) return false;
     const entry = navigation.entries[index];
     if (e.view.webContents.isDestroyed()) return false;
-    e.view.webContents.send('runtime:navigate', { direction, entry });
+    e.view.webContents.send('runtime:navigate', { direction, entry, ...(discardDirty ? { discard: true } : {}) });
     return true;
   }
   private reportState(e: Entry, v: { dirty: boolean; modal: boolean }) {

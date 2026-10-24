@@ -1,11 +1,11 @@
 import type { PointerEventHandler } from 'react';
-import { ArrowLeft, ArrowRight, Maximize2, Minimize2, Minus, X } from 'lucide-react';
+import { ArrowLeft, Maximize2, Minimize2, Minus, X } from 'lucide-react';
 
 /** Shared macOS-style chrome for every internal app window. */
-export function WindowTitleBar({ title, active, maximized, disabled = false, navigationDisabled = false, inert = false, onDrag, onClose, onMinimize, onToggleMaximize, hideMinimize = false, canGoBack, canGoForward, onBack, onForward }: {
+export function WindowTitleBar({ title, active, maximized, disabled = false, navigationDisabled = false, inert = false, onDrag, onClose, onMinimize, onToggleMaximize, hideMinimize = false, canGoBack, onBack }: {
   title: string; active: boolean; maximized: boolean; disabled?: boolean; navigationDisabled?: boolean; inert?: boolean;
   onDrag: PointerEventHandler<HTMLElement>; onClose(): void; onMinimize(): void; onToggleMaximize(): void; hideMinimize?:boolean;
-  canGoBack: boolean; canGoForward: boolean; onBack(): void; onForward(): void;
+  canGoBack: boolean; onBack(): void;
 }) {
   return <header className={`studio-title mac-titlebar ${active ? 'is-active' : 'is-inactive'}`} inert={inert}
     onPointerDown={onDrag} onDoubleClick={event => {
@@ -21,7 +21,6 @@ export function WindowTitleBar({ title, active, maximized, disabled = false, nav
     <div className="window-titlebar-leading">
       <div className="window-history-controls" role="group" aria-label="Page navigation">
         <button type="button" aria-label="Back" title="Back" disabled={disabled || navigationDisabled || !canGoBack} onClick={onBack}><ArrowLeft size={19} strokeWidth={1.8}/></button>
-        <button type="button" aria-label="Forward" title="Forward" disabled={disabled || navigationDisabled || !canGoForward} onClick={onForward}><ArrowRight size={19} strokeWidth={1.8}/></button>
       </div>
     </div>
     <span className="window-title">{title}</span>

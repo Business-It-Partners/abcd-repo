@@ -12,7 +12,7 @@ export async function verifyOnboarding(profileArgs,reportName){
  let app,shell,profile,failureDetails;
  const wait=async(predicate,label='state')=>{for(let n=0;n<150;n++){try{const value=await predicate();if(value)return value;}catch{}await new Promise(resolve=>setTimeout(resolve,100));}throw Error(`Timed out waiting for ${label}`);};
  const registry=async profile=>JSON.parse(await fs.readFile(path.join(profile,'packages/registry.json'),'utf8'));
- const openStore=async shell=>{await shell.getByRole('button',{name:'App Store',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
+ const openStore=async shell=>{await shell.getByRole('button',{name:'App Store',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'App Store'}).waitFor();};
  const detail=async(shell)=>{await openStore(shell);await shell.getByRole('button',{name:'Details Dental Workspace Preview',exact:true}).click();await shell.getByRole('heading',{name:'Dental Workspace Preview'}).waitFor();};
  const verifyPage=async(version)=>{
   const page=await wait(async()=>{
@@ -33,7 +33,7 @@ export async function verifyOnboarding(profileArgs,reportName){
   check('signed Store catalog includes a third first-party app without app-specific shell code',await shell.getByRole('button',{name:'Details Motion Studio',exact:true}).count()===1&&await shell.getByRole('button',{name:'Details Records',exact:true}).count()===1&&await shell.getByRole('button',{name:'Details Dental Workspace Preview',exact:true}).count()===1);
   await shell.getByRole('button',{name:'Details Dental Workspace Preview',exact:true}).click();
   await shell.getByRole('heading',{name:'Dental Workspace Preview'}).waitFor();
-  await shell.getByRole('button',{name:'Get',exact:true}).click();
+  await shell.getByRole('button',{name:'Install',exact:true}).click();
   await shell.getByRole('button',{name:'Open',exact:true}).waitFor();
   await shell.locator('.store-arrival').waitFor();
   check('new company app artwork flies from its Store detail page toward the dock',await shell.locator('.store-arrival svg').count()===1);
@@ -54,9 +54,9 @@ export async function verifyOnboarding(profileArgs,reportName){
    await fs.writeFile(path.join(profile,'update-fixture.json'),JSON.stringify({version:'1.0.0',gammaVersion:version,offset:version==='1.1.0'?1:2}));
    await detail(shell);
    await shell.getByRole('button',{name:'Refresh company apps',exact:true}).click();
-   await wait(async()=>await shell.locator('.store-facts').textContent().then(text=>text.includes(version)),'new catalogue version');
-   check(`${version} appears in Store as an independent update`,await shell.locator('.store-facts').textContent().then(text=>text.includes(`Active${previous}`)&&text.includes(`PendingNone`)&&text.includes(`Store version${version}`)));
-   await shell.getByRole('button',{name:'Download update',exact:true}).click();
+   await wait(async()=>await shell.locator('.delivery-store-versions').textContent().then(text=>text.includes(version)),'new catalogue version');
+   check(`${version} appears in Store as an independent update`,await shell.locator('.delivery-store-versions').textContent().then(text=>text.includes(`Installed version${previous}`)&&!text.includes('Update')&&text.includes(`Store version${version}`)));
+   await shell.getByRole('button',{name:'Update',exact:true}).click();
    await shell.locator('.delivery-update-state').filter({hasText:`Update ready · ${version}`}).waitFor();
    saved=await registry(profile);installed=saved.apps[appId];
    check(`${version} stages separately while ${previous} remains active and running`,installed.active===priorDigest&&!!installed.pending&&installed.versions.length===previousVersionCount+1&&!guest.isClosed()&&await guest.getByRole('heading',{name:expected.get(previous),exact:true}).isVisible());

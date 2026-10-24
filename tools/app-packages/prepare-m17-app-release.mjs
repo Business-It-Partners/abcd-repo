@@ -1,5 +1,5 @@
 // Prepare one M17 app first release or immutable version update locally. Never uploads or activates it.
-// node tools/app-packages/prepare-m17-app-release.mjs --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy>
+// node tools/app-packages/prepare-m17-app-release.mjs --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--retire-finance-1.7.0]
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, createPrivateKey, createPublicKey, sign } from 'node:crypto';
@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const {
   buildPackage, canonical, parseCanonical, sha256, verifyPackage, limits, maxCompanyAppCount,
 } = require('../../dist-electron/packages/format.js');
-const { noWatermark, verifyCatalogue } = require('../../dist-electron/distribution/catalogue.js');
+const { compareVersion: compareVersionStrings, noWatermark, verifyCatalogue } = require('../../dist-electron/distribution/catalogue.js');
 const {
   verifyUpdatePolicy, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue,
 } = require('../../dist-electron/distribution/updatePolicy.js');
@@ -17,6 +17,9 @@ const { apiOperations } = require('../../dist-electron/sdk/contracts.js');
 const { stagingDistribution, m17StagingKeyId } = require('../../dist-electron/distribution/staging.js');
 
 const M17_FINGERPRINT = 'e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709';
+// Keep this release-window limit aligned with updatePolicy.ts. Older package signatures remain immutable,
+// but only the newest seven exact-release API grants can stay active in the signed policy.
+const maxRetainedReleaseGrants = 7;
 const definitions = {
   'company.dental.followups.m17': { title: 'Follow-ups', moduleIds: ['followups'], family: 'clinic.app.followups' },
   'company.dental.work-entry.m17': { title: 'Work Entry', moduleIds: ['work-entry'], family: 'clinic.app.work-entry' },
@@ -34,10 +37,12 @@ const definitions = {
   'company.dental.lab-tracker.m17': { title: 'Lab Tracker', moduleIds: ['lab-tracker', 'lab-suppliers'], family: 'clinic.app.lab-tracker' },
   'company.dental.staff.m17': { title: 'Staff', moduleIds: ['staff'], family: 'clinic.app.staff' },
 };
-const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput] = process.argv.slice(2);
+const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput, retirementMode] = process.argv.slice(2);
 const sequence = Number(rawSequence);
-if (guard !== '--staging-only' || process.argv.length !== 9 || !Number.isSafeInteger(sequence) || sequence < 1 || !definitions[appId]) {
-  throw Error('Expected --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy>');
+const retireFinance170 = retirementMode === '--retire-finance-1.7.0';
+if (guard !== '--staging-only' || process.argv.length !== (retirementMode ? 10 : 9)
+  || retirementMode && !retireFinance170 || !Number.isSafeInteger(sequence) || sequence < 1 || !definitions[appId]) {
+  throw Error('Expected --staging-only <external-m17-key> <higher-sequence> <m17-app-id> <new-output-dir> <prior-catalogue> <prior-update-policy> [--retire-finance-1.7.0]');
 }
 
 const checkout = path.resolve(import.meta.dirname, '../..');
@@ -146,6 +151,16 @@ const parsedVersion = parseVersion(version);
 const previousVersion = priorRelease?.version ?? null;
 const parsedPreviousVersion = previousVersion ? parseVersion(previousVersion) : null;
 const releaseKind = priorRelease ? 'update' : 'new';
+const retiredVersions = retireFinance170 ? ['1.7.0'] : [];
+if (retireFinance170 && (appId !== 'company.dental.finance.m17' || version !== '1.7.7'
+  || previousVersion !== '1.7.6' || priorRelease?.minimumVersion !== '1.7.0'
+  || priorAppPolicy?.minimumVersion !== '1.7.0'
+  || !priorAppPolicy.releases.some(entry => entry.version === '1.7.0')
+  || priorAppPolicy.releases.length !== 7
+  || !priorAppPolicy.releases.some(entry => entry.version === previousVersion))) {
+  throw Error('The scoped Finance 1.7.0 retirement does not match the reviewed sequence-84 release state');
+}
+const minimumVersion = retireFinance170 ? '1.7.1' : priorRelease?.minimumVersion ?? initialVersion;
 if (!parsedVersion || packageMetadata.name !== appId || manifest.appId !== appId || manifest.publisher !== 'company' || manifest.version !== version
   || manifest.entry !== 'index.html' || manifest.sdkMajor !== 1 || manifest.apiMajor !== 1
   || !Array.isArray(manifest.capabilities) || !manifest.capabilities.includes('clinic.api.request')
@@ -206,7 +221,7 @@ const release = {
   packageBytes: packageBytes.length,
   payloadDigest,
   status: 'approved',
-  minimumVersion: priorRelease?.minimumVersion ?? initialVersion,
+  minimumVersion,
   icon: { objectKey: artworkObjectKey, sha256: artworkSha256, bytes: artworkBytes.length, mime: 'image/png' },
 };
 const catalogueReleases = priorRelease
@@ -229,6 +244,7 @@ const catalogueBytes = Buffer.from(canonical({
 verifyCatalogue(catalogueBytes, stagingDistribution.policy, noWatermark, now);
 
 let nextApps;
+let retiredReleaseGrants = [];
 if (priorPolicy.format === 2) {
   nextApps = priorPolicy.apps.map(app => ({ ...app, releases: app.releases.map(entry => ({ ...entry, apiOperations: [...entry.apiOperations] })) }));
 } else {
@@ -251,7 +267,18 @@ if (priorAppPolicy) {
   if (target.releases.some(entry => entry.version === version || entry.packageSha256 === packageSha256)) {
     throw Error('M17 update version or package digest already exists in signed update policy');
   }
+  if (retireFinance170) {
+    target.releases = target.releases.filter(entry => !retiredVersions.includes(entry.version));
+    target.minimumVersion = minimumVersion;
+  }
   target.releases.push(grant);
+  target.releases.sort((left, right) => compareVersionStrings(left.version, right.version));
+  if (target.releases.length > maxRetainedReleaseGrants) {
+    retiredReleaseGrants = target.releases.splice(0, target.releases.length - maxRetainedReleaseGrants);
+    if (target.rollback && retiredReleaseGrants.some(entry => [target.rollback.from, target.rollback.to].includes(entry.payloadDigest))) {
+      throw Error('Cannot retire a release grant referenced by rollback policy');
+    }
+  }
 } else {
   nextApps.push({
     id: appId,
@@ -308,6 +335,8 @@ const releaseInfo = {
   previousVersion,
   previousPackageSha256: priorRelease?.packageSha256 ?? null,
   version,
+  minimumVersion,
+  retiredVersions,
   objectKey,
   packageSha256,
   packageBytes: packageBytes.length,
@@ -321,6 +350,7 @@ const releaseInfo = {
   priorUpdatePolicySha256: sha256(priorPolicyBytes),
   updatePolicyFormat: nextPolicy.format,
   exactApiOperations: grant.apiOperations,
+  retiredReleaseGrants,
 };
 writeNew(path.join(output, 'release.json'), Buffer.from(JSON.stringify(releaseInfo, null, 2) + '\n'));
 console.log(JSON.stringify({ prepared: true, ...releaseInfo, assetCount: files.size, output }, null, 2));

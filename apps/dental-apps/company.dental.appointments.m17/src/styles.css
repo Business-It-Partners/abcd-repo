@@ -57,7 +57,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .appointmentTable td > strong { color: #18314b; font-size: 13px; font-weight: 650; }
 .appointmentTable td > span:not(.appointmentStatusToggle) { margin-top: 2px; color: #59758b; font-size: 11px; }
 .appointmentTable td.appointmentCenter { text-align: center; }
-.appointmentTable td[data-label="Reason"], .appointmentTable td[data-label="Doctor"] { min-width: 145px; line-height: 1.45; overflow-wrap: anywhere; }
+.appointmentTable td[data-label="Reason"] { min-width: 145px; line-height: 1.45; overflow-wrap: anywhere; }
 .appointmentSort { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .appointmentSort:hover { color: #0284c7; }
 .appointmentSort svg { color: #73899a; }

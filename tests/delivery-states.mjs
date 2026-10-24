@@ -10,7 +10,7 @@ const shell=await app.firstWindow(),checks=[],errors=[];
 shell.setDefaultTimeout(15000);shell.on('pageerror',error=>errors.push(error.message));
 const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const phase=value=>shell.waitForFunction(value=>document.querySelector('[data-window-id="studio"]')?.dataset.phase===value,value);
-const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
+const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'App Store'}).waitFor();};
 
 try{
  await shell.getByRole('heading',{name:'Sign in to your clinic'}).waitFor();
@@ -20,7 +20,7 @@ try{
  await shell.getByRole('region',{name:'Clinic and signed-in user'}).waitFor();
  await openCatalog();
  await shell.getByRole('button',{name:'Details Motion Studio',exact:true}).click();
- await shell.getByRole('button',{name:'Get',exact:true}).click();
+ await shell.getByRole('button',{name:'Install',exact:true}).click();
  await shell.getByRole('button',{name:'Open',exact:true}).waitFor();
  await shell.getByRole('button',{name:'Open',exact:true}).click();
  await shell.waitForFunction(()=>document.querySelector('[data-runtime="studio"]')?.dataset.runtimePhase==='ready');
@@ -39,7 +39,7 @@ try{
  const studioCard=shell.locator('.store-grid article').filter({hasText:'Motion Studio'});
  check('outage keeps the verified installed app in the catalog',await studioCard.getByRole('button',{name:'Open',exact:true}).isEnabled());
  const recordsCard=shell.locator('.store-grid article').filter({hasText:'Records'});
- const recordsGet=recordsCard.getByRole('button',{name:'Get',exact:true});
+ const recordsGet=recordsCard.getByRole('button',{name:'Install',exact:true});
  check('new installs are disabled while clinic catalogue authority is unavailable',await recordsGet.isDisabled());
  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
  await phase('visible');

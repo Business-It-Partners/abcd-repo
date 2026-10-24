@@ -222,7 +222,7 @@ app.whenReady().then(async () => {
     calls, mediaWrites, getEffects: () => writeEffects, getPackage: () => ({ appId, version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, wireBytes: packageBytes.length, assetCount: pkg.files.size, grants }),
     setCapabilities: values => { capabilities.splice(0, capabilities.length, ...values); },
     selectModule: async () => runtime.selectModule(appId, 'patient-record'),
-    navigate: direction => runtime.navigate(appId, direction),
+    navigate: (direction, discardDirty = false) => runtime.navigate(appId, direction, discardDirty),
     navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
     snapshot: () => ({ patient: clone(patient), media: clone(mediaItem), profileAttempts, writeEffects }),
   };

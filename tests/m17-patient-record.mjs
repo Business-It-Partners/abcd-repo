@@ -72,8 +72,8 @@ try {
     && careWorkspaceGeometry.shellLeft === 0 && careWorkspaceGeometry.shellRight === 0 && careWorkspaceGeometry.padding === '0px');
   await page.getByText('Synthetic Patient', { exact: false }).first().waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('updated package is Patient Record 1.0.5 with app assets and JSON/media grants',
-    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.5'
+  check('updated package is Patient Record 1.0.10 with app assets and JSON/media grants',
+    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.10'
       && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5
       && ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'].every(op => packageInfo.grants.includes(op)));
   check('renderer receives the SDK bridge without credential or direct-network accessors', await page.evaluate(() => {
@@ -100,14 +100,17 @@ try {
   const nextPatientCode = page.locator('input[aria-label="Next Patient Code"]');
   await nextPatientCode.waitFor();
   await page.waitForFunction(() => document.querySelector('input[aria-label="Next Patient Code"]')?.value === 'SYN-PR-002');
-  check('registration opens the pinned SaaS CaseEntryView with its production back and save controls',
-    await page.getByRole('button', { name: 'Back to Patient Record', exact: true }).count() === 1
+  check('registration uses the OS window navigation and keeps its production save control',
+    await page.getByRole('button', { name: 'Back to Patient Record', exact: true }).count() === 0
       && await page.getByRole('button', { name: 'Save patient', exact: true }).count() === 1);
   const intakeCalls = await inspect(app);
   check('SaaS registration displays the patient number returned by its scoped intake-context route',
     intakeCalls.calls.some(call => call.method === 'GET' && call.path === '/v1/patient-intakes/context'));
   await fs.writeFile(intakeScreenshotPath, await page.screenshot(), { flag: 'wx' }); intakeScreenshotWritten = true;
-  await page.getByRole('button', { name: 'Back to Patient Record', exact: true }).click();
+  check('OS Back requires the discard confirmation while registration is unfinished',
+    !(await app.evaluate(() => globalThis.m17PatientRecord.navigate('back'))));
+  check('confirmed OS Back discards the unfinished registration and returns to the directory',
+    await app.evaluate(() => globalThis.m17PatientRecord.navigate('back', true)));
   await page.getByRole('heading', { name: 'Patient Record', exact: true }).waitFor();
 
   await page.getByRole('button', { name: 'Detail', exact: true }).click();
@@ -120,6 +123,8 @@ try {
   check('OS Forward restores the patient detail page', await app.evaluate(() => globalThis.m17PatientRecord.navigate('forward')));
   await page.getByRole('button', { name: 'Patient Profile', exact: true }).waitFor();
   check('patient detail no longer renders its own Back button', await page.getByRole('button', { name: /^Back/ }).count() === 0);
+  const sidebarWidth = await page.locator('[data-patient-record-layout]').evaluate(layout => layout.children[0]?.getBoundingClientRect().width);
+  check('patient detail sidebar uses the slightly narrower 190px width', Math.round(sidebarWidth) === 190);
   await fs.writeFile(detailScreenshotPath, await page.screenshot(), { flag: 'wx' }); detailScreenshotWritten = true;
   const profileRead = await inspect(app);
   check('SaaS patient profile reads the authoritative clinic record through ClinicClient',
@@ -146,6 +151,34 @@ try {
       && JSON.stringify(profileWrites[0].body) === JSON.stringify(profileWrites[1].body)
       && profileWrites[1].body.expectedPatientRowVersion === 4 && profileWrites[1].body.expectedMedicalProfileRowVersion === 3
       && afterRetry.snapshot.writeEffects === 1);
+
+  await page.getByRole('button', { name: 'Periodontal Chart', exact: true }).click();
+  await page.getByText('Pocket Probing Depth', { exact: false }).waitFor();
+  const independentScroll = await page.evaluate(() => {
+    const layout = document.querySelector('[data-patient-record-layout]');
+    const sidebar = layout?.children[0];
+    const content = layout?.children[1];
+    if (!(sidebar instanceof HTMLElement) || !(content instanceof HTMLElement)) return null;
+    const sidebarOverflow = getComputedStyle(sidebar).overflowY;
+    const contentOverflow = getComputedStyle(content).overflowY;
+    const sidebarStyle = sidebar.getAttribute('style');
+    sidebar.style.height = '180px';
+    sidebar.style.flex = '0 0 180px';
+    const sidebarCanScroll = sidebar.scrollHeight > sidebar.clientHeight;
+    const contentCanScroll = content.scrollHeight > content.clientHeight;
+    const windowScrollBefore = window.scrollY;
+    content.scrollTop = Math.min(120, content.scrollHeight - content.clientHeight);
+    const contentMovesAlone = content.scrollTop > 0 && sidebar.scrollTop === 0 && window.scrollY === windowScrollBefore;
+    content.scrollTop = 0;
+    sidebar.scrollTop = Math.min(70, sidebar.scrollHeight - sidebar.clientHeight);
+    const sidebarMovesAlone = sidebar.scrollTop > 0 && content.scrollTop === 0 && window.scrollY === windowScrollBefore;
+    if (sidebarStyle === null) sidebar.removeAttribute('style'); else sidebar.setAttribute('style', sidebarStyle);
+    return { sidebarOverflow, contentOverflow, sidebarCanScroll, contentCanScroll, contentMovesAlone, sidebarMovesAlone };
+  });
+  check('patient sidebar and clinical content scroll independently without moving the page',
+    !!independentScroll && independentScroll.sidebarOverflow === 'auto' && independentScroll.contentOverflow === 'auto'
+      && independentScroll.sidebarCanScroll && independentScroll.contentCanScroll
+      && independentScroll.contentMovesAlone && independentScroll.sidebarMovesAlone);
 
   await page.getByRole('button', { name: 'Clinical Timeline', exact: true }).click();
   await page.getByText('Synthetic tooth pain', { exact: true }).waitFor();

@@ -10,7 +10,7 @@ const shell=await app.firstWindow(),checks=[],errors=[];
 shell.setDefaultTimeout(15000);shell.on('pageerror',error=>errors.push(error.message));
 const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
 const phase=(id,value)=>shell.waitForFunction(({id,value})=>document.querySelector(`[data-window-id="${id}"]`)?.dataset.phase===value,{id,value});
-const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();await phase('store','visible');const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'Your apps. One workspace.'}).waitFor();};
+const openCatalog=async()=>{await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();await phase('store','visible');const back=shell.getByRole('button',{name:'Back',exact:true});if(await back.isEnabled())await back.click();await shell.getByRole('heading',{name:'App Store'}).waitFor();};
 
 try{
  await shell.getByRole('heading',{name:'Sign in to your clinic'}).waitFor();
@@ -28,7 +28,7 @@ try{
 
  const install=async(title,id)=>{
   await shell.getByRole('button',{name:`Details ${title}`,exact:true}).click();
-  await shell.getByRole('button',{name:'Get',exact:true}).click();
+  await shell.getByRole('button',{name:'Install',exact:true}).click();
   const progress=shell.getByRole('progressbar',{name:`${title} progress`,exact:true});
   await progress.waitFor();
   await shell.getByRole('status').filter({hasText:/^Downloading /}).waitFor();

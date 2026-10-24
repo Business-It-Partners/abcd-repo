@@ -12,6 +12,7 @@ export interface FreshnessStore { load(): Watermark; save(value: Watermark): voi
 export class DistributionService {
  private updatePolicy?:UpdatePolicy; private policyBytes?:Buffer; private catalogueBytes?:Buffer; private updateTimer?:ReturnType<typeof setInterval>; private initialTimer?:ReturnType<typeof setTimeout>; private checking=false;
  private pendingVersions=new Map<string,string>(); private trialVersions=new Map<string,string>(); private knownGoodVersions=new Map<string,string>(); private pendingReady=new Set<string>(); private quarantined=new Set<string>();
+ private artworkCache=new Map<string,{dataUrl:string;bytes:number}>(); private artworkCacheBytes=0;
  private catalogue?: Catalogue; private canInstall = false; private phase: StoreView['phase'] = 'idle'; private message = ''; private job: StoreView['job'] = null;
  private action?: AbortController; private installed = new Map<string, string>(); private listeners = new Set<(v: StoreView) => void>(); private lastProgress = 0;
  constructor(private config: DistributionConfig, private registry: PackageRegistry, private identity: Identity, private freshness: FreshnessStore, private transport: typeof fetch = fetch, private now = Date.now, private platform = process.platform, private timeout = 45000) {
@@ -36,7 +37,7 @@ export class DistributionService {
   });
   const apps = releases.map(r => {
    const pendingVersion=this.pendingVersions.get(r.id)??null;
-   return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
+   return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, ...(r.icon ? { iconSha256: r.icon.sha256 } : {}), available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
   });
   for (const [id, version] of this.installed) {
    if (apps.some(a => a.id === id)) continue;
@@ -52,7 +53,7 @@ export class DistributionService {
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }
  private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32') && r.capabilities.every(capability => this.identity.allowed?.(capability) !== false); }
  invalidate() { this.action?.abort(); this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
- dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); }
+ dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); this.artworkCache.clear(); this.artworkCacheBytes=0; }
  private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),trials=new Map<string,string>(),knownGood=new Map<string,string>(),pendingReady=new Set<string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.activeVersion);if(v.pendingVersion){pending.set(id,v.pendingVersion);try{if(this.registry.pendingActivationVersion(id)===v.pendingVersion)pendingReady.add(id);}catch{/* Keep showing the staged identity without claiming it can trial. */}}if(v.trialVersion)trials.set(id,v.trialVersion);if(v.knownGoodVersion)knownGood.set(id,v.knownGoodVersion);}this.installed=installed;this.pendingVersions=pending;this.trialVersions=trials;this.knownGoodVersions=knownGood;this.pendingReady=pendingReady;this.quarantined=quarantined;}
  changed(){this.reloadInstalled();this.emit();}
  startUpdates(){if(!this.config.updates||this.updateTimer)return;this.initialTimer=setTimeout(()=>void this.checkUpdates(),15000);this.updateTimer=setInterval(()=>void this.checkUpdates(),15*60*1000);this.updateTimer.unref?.();this.initialTimer.unref?.();}
@@ -175,5 +176,22 @@ export class DistributionService {
   return this.run(async (signal, generation) => { if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied'); this.fence(signal, generation); this.registry.uninstall(id); this.reloadInstalled(); this.message = 'App uninstalled. Clinic records remain on the server.'; });
  }
  cancel() { this.action?.abort(); return { ok: true } as const; }
+ async artwork(id:unknown, expectedSha256:unknown, generation:unknown):Promise<string|null>{
+  if(!isCompanyAppId(id)||expectedSha256!==undefined&&(typeof expectedSha256!=='string'||!/^[a-f0-9]{64}$/.test(expectedSha256))||typeof generation!=='number'||!Number.isSafeInteger(generation))return null;
+  const release=this.catalogue?.releases.find(item=>item.id===id),icon=release?.icon;
+  if(!icon||expectedSha256!==undefined&&icon.sha256!==expectedSha256)return null;
+  const cached=this.artworkCache.get(icon.sha256);if(cached)return cached.dataUrl;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+  try{
+   const response=await this.response(`${this.config.apiBase}/v1/dental-os/${icon.objectKey}`,controller.signal,generation,false);
+   if(response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase()!=='image/png')throw Error('Artwork content type');
+   const bytes=await this.bytes(response,controller.signal,generation,icon.bytes);
+   if(bytes.length!==icon.bytes||sha256(bytes)!==icon.sha256||bytes.length<8||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw Error('Artwork integrity');
+   const dataUrl=`data:image/png;base64,${bytes.toString('base64')}`;
+   if(this.artworkCacheBytes+bytes.length>16*1024*1024){this.artworkCache.clear();this.artworkCacheBytes=0;}
+   this.artworkCache.set(icon.sha256,{dataUrl,bytes:bytes.length});this.artworkCacheBytes+=bytes.length;
+   return dataUrl;
+  }catch{return null;}finally{clearTimeout(timer);}
+ }
 }
 const canonicalCaps = (values: readonly string[]) => [...values].sort().join(',');

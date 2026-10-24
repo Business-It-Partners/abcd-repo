@@ -7,14 +7,14 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readText = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
-test('Follow-ups M17 package has its own first-release identity', () => {
+test('Follow-ups M17 package has its own current release identity', () => {
   const pkg = JSON.parse(readText('package.json'));
   const manifest = JSON.parse(readText('app.manifest.json'));
   const metadata = JSON.parse(readText('app.json'));
   assert.equal(pkg.name, 'company.dental.followups.m17');
-  assert.equal(pkg.version, '1.0.0');
+  assert.equal(pkg.version, '1.0.3');
   assert.equal(manifest.appId, pkg.name);
-  assert.equal(manifest.version, '1.0.0');
+  assert.equal(manifest.version, '1.0.3');
   assert.equal(metadata.appId, pkg.name);
   assert.equal(metadata.title, 'Follow-ups');
   assert.deepEqual(manifest.capabilities, ['clinic.app.followups', 'clinic.api.request', 'session.context']);

@@ -118,6 +118,53 @@ const updateShapeValid = release.releaseKind === 'new'
     && priorCurrentGrant.payloadDigest === priorReleaseRow.payloadDigest
     && !priorAppPolicy.revokedDigests.includes(priorReleaseRow.payloadDigest)
     && catalogue.releases.length === priorCatalogue.releases.length && policy.apps.length === priorPolicy.apps.length;
+const maxRetainedReleaseGrants = 7;
+const compareVersion = (left, right) => {
+  const a = left.split('.').map(Number), b = right.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return 0;
+};
+const legacyCurrentApiOperations = priorPolicy.format === 1 && priorReleaseRow
+  ? priorReleaseRow.capabilities.filter(operation => apiOperations.includes(operation) && priorAppPolicy?.capabilities.includes(operation))
+  : [];
+const legacyCurrentGrant = legacyCurrentApiOperations.length ? [{
+  version: priorReleaseRow.version,
+  packageSha256: priorReleaseRow.packageSha256,
+  payloadDigest: priorReleaseRow.payloadDigest,
+  apiOperations: legacyCurrentApiOperations,
+}] : [];
+const sourcePriorGrants = priorPolicy.format === 2 ? (priorAppPolicy?.releases ?? []) : legacyCurrentGrant;
+const sortedPriorGrants = [...sourcePriorGrants].sort((left, right) => compareVersion(left.version, right.version));
+const retiredCount = Math.max(0, sortedPriorGrants.length + 1 - maxRetainedReleaseGrants);
+const expectedRetiredReleaseGrants = sortedPriorGrants.slice(0, retiredCount);
+const expectedRetainedPriorGrants = sortedPriorGrants.slice(retiredCount);
+const expectedReleaseGrants = [...expectedRetainedPriorGrants, {
+  version: release.version,
+  packageSha256: release.packageSha256,
+  payloadDigest: release.payloadDigest,
+  apiOperations: verifiedPackage.manifest.capabilities.filter(operation => apiOperations.includes(operation)),
+}];
+const retiredVersions = release.retiredVersions ?? [];
+const removedGrantVersions = (priorAppPolicy?.releases ?? [])
+  .filter(previous => !appPolicy?.releases?.some(next => next.version === previous.version))
+  .map(previous => previous.version)
+  .sort();
+const expectedRetiredVersions = expectedRetiredReleaseGrants.map(previous => previous.version).sort();
+const financeMinimumVersionRetirement = appId === 'company.dental.finance.m17'
+  && release.version === '1.7.7'
+  && canonical(retiredVersions) === canonical(['1.7.0'])
+  && priorReleaseRow?.minimumVersion === '1.7.0'
+  && priorAppPolicy?.minimumVersion === '1.7.0'
+  && release.minimumVersion === '1.7.1'
+  && appPolicy?.minimumVersion === '1.7.1'
+  && (priorAppPolicy?.releases.length ?? 0) === 7;
+const exactGrantRetirement = canonical(removedGrantVersions) === canonical(expectedRetiredVersions)
+  && (release.releaseKind === 'new'
+    ? retiredVersions.length === 0 && expectedRetiredVersions.length === 0 && release.minimumVersion === releaseRow?.minimumVersion
+    : retiredVersions.length === 0
+      ? release.minimumVersion === priorReleaseRow?.minimumVersion
+        && appPolicy?.minimumVersion === priorAppPolicy?.minimumVersion
+      : financeMinimumVersionRetirement);
 const unchangedCatalogueRows = priorCatalogue.releases.filter(row => row.id !== appId).every(previous => {
   const next = catalogue.releases.find(row => row.id === previous.id);
   return !!next && canonical(next) === canonical(previous);
@@ -126,11 +173,16 @@ const unchangedPolicyApps = priorPolicy.apps.filter(row => row.id !== appId).eve
   const next = policy.apps.find(row => row.id === previous.id);
   return !!next && canonical(next) === canonical(previous);
 });
-const priorGrantsPreserved = !priorAppPolicy || (priorAppPolicy.releases ?? []).every(previous =>
+const priorGrantsPreserved = expectedRetainedPriorGrants.every(previous =>
   appPolicy?.releases?.some(next => canonical(next) === canonical(previous)));
+const retiredGrantWindowValid = Array.isArray(release.retiredReleaseGrants)
+  && canonical(release.retiredReleaseGrants) === canonical(expectedRetiredReleaseGrants)
+  && canonical(appPolicy?.releases ?? []) === canonical(expectedReleaseGrants)
+  && !expectedRetiredReleaseGrants.some(previous => priorAppPolicy?.rollback
+    && [priorAppPolicy.rollback.from, priorAppPolicy.rollback.to].includes(previous.payloadDigest));
 const sameTargetPolicy = !priorAppPolicy || (() => {
-  const { releases: _priorReleases, ...priorFields } = priorAppPolicy;
-  const { releases: _nextReleases, ...nextFields } = appPolicy ?? {};
+  const { releases: _priorReleases, minimumVersion: _priorMinimumVersion, ...priorFields } = priorAppPolicy;
+  const { releases: _nextReleases, minimumVersion: _nextMinimumVersion, ...nextFields } = appPolicy ?? {};
   return canonical(priorFields) === canonical(nextFields);
 })();
 if (priorCatalogue.sequence !== release.priorSequence || priorPolicy.sequence !== release.priorSequence
@@ -140,9 +192,10 @@ if (priorCatalogue.sequence !== release.priorSequence || priorPolicy.sequence !=
   || catalogueEnvelope.keyId !== m17StagingKeyId || policyEnvelope.keyId !== m17StagingKeyId
   || catalogue.environment !== 'cloudfare-staging' || policy.environment !== 'cloudfare-staging'
   || catalogue.channel !== 'staging' || policy.channel !== 'staging'
-  || !updateShapeValid || !unchangedCatalogueRows || !unchangedPolicyApps || !priorGrantsPreserved || !sameTargetPolicy
+  || !updateShapeValid || !exactGrantRetirement || !unchangedCatalogueRows || !unchangedPolicyApps || !priorGrantsPreserved || !retiredGrantWindowValid || !sameTargetPolicy
   || packageInfo.appId !== appId || packageInfo.version !== release.version || verifiedPackage.release.keyId !== m17StagingKeyId
   || verifiedPackage.release.digest !== release.payloadDigest || !releaseRow || releaseRow.version !== release.version
+  || releaseRow.minimumVersion !== release.minimumVersion
   || releaseRow.packageSha256 !== release.packageSha256 || releaseRow.objectKey !== release.objectKey
   || releaseRow.payloadDigest !== release.payloadDigest || !grant || grant.packageSha256 !== release.packageSha256
   || grant.payloadDigest !== release.payloadDigest || canonical(grant.apiOperations) !== canonical(verifiedPackage.manifest.capabilities.filter(operation => apiOperations.includes(operation)))

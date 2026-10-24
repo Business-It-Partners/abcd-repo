@@ -221,14 +221,23 @@ body {
   }
 }
 
-.finance-metric-grid {
+.finance-overview { display: grid; margin-bottom: var(--sp-4); }
+.finance-primary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
+.finance-primary-card { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; min-height: 94px; padding: 12px 14px; border: 1px solid #c7d3df; border-radius: 13px; background: #fff; color: #52667a; }
+.finance-primary-copy { display: grid; align-content: center; gap: 2px; min-width: 0; }
+.finance-primary-copy > span { color: #52667a; font-size: 13px; }
+.finance-primary-copy > strong { overflow: hidden; color: #18314b; font-size: 21px; line-height: 1.2; font-weight: 650; font-variant-numeric: tabular-nums; text-overflow: ellipsis; }
+.finance-primary-copy > small { color: #627b90; font-size: 11px; line-height: 1.3; }
+.finance-primary-icon { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #eaf4fa; color: #2876a2; }
+.finance-primary-card.is-negative .finance-primary-copy > strong { color: #b42318; }
+.finance-primary-card.is-positive .finance-primary-copy > strong { color: #256b4b; }
 
-.finance-metric-grid .card :is(span, div) {
-  color: var(--ink-1) !important;
+@media (max-width: 900px) {
+  .finance-primary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .patientPaymentsMonthFilter {
@@ -457,17 +466,7 @@ body {
 .purchase-detail-note p { margin-bottom: 0; white-space: pre-wrap; }
 .purchase-void-form { display: flex; flex-direction: column; gap: var(--sp-2); }
 
-@media (max-width: 1180px) {
-  .finance-metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 720px) {
-  .finance-metric-grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
   .patientPaymentSummaryGrid {
     grid-template-columns: 1fr;
   }
@@ -477,4 +476,8 @@ body {
   .purchase-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .purchase-bottom-bar { gap: 10px; padding: 10px 12px; }
+}
+
+@media (max-width: 420px) {
+  .finance-primary-grid { grid-template-columns: 1fr; }
 }

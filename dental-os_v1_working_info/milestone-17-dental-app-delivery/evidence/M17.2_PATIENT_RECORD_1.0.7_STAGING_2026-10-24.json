@@ -1,0 +1,80 @@
+{
+  "milestone": "M17.2",
+  "appId": "company.dental.patient-record.m17",
+  "version": "1.0.7",
+  "environment": "cloudfare-staging",
+  "priorSequence": 79,
+  "sequence": 80,
+  "protectedLocalReceipt": "/home/master-x/.local/share/dental-os/staging-releases/m17-patient-record-1.0.7-20261024",
+  "publication": {
+    "published": true,
+    "httpStatus": 200,
+    "packageObjectKey": "releases/company.dental.patient-record.m17/1.0.7/2567c2b27db8aeb1585f3a4c1ac02e14636b4e267d43ba66e0aa629b9bfa5f55.dentalpkg",
+    "packageSha256": "2567c2b27db8aeb1585f3a4c1ac02e14636b4e267d43ba66e0aa629b9bfa5f55",
+    "packageBytes": 1797647,
+    "payloadDigest": "71059ff1db2fb3989453c4398e26cc65a56cb5e8d7095e1a6108bbab9df451e3",
+    "catalogueSha256": "ad031718ace86d0a6e010b35506c4b8a2da1067fa11a05f824ec2d19a4d17128",
+    "updatePolicySha256": "190c0670c9742d855c2560011d5fa28481d0f68e2fd69cf8b10b54e91afb672f",
+    "priorCatalogueSha256": "e30cab7efcf577a19b198e110026f78bba60c6c34464d21c1c844add16b5f4f6",
+    "priorUpdatePolicySha256": "277ff4cb24c351d066a6fd78ed55dda1c4e4525a79534bfc55c47cd3c56b0d27",
+    "keyId": "company-staging-m17-20261022",
+    "publicKeySha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709",
+    "artworkSha256": "8d23fb02674a891828676423ea486f5d05c7bc52f7cbb502a5c4af5475203bcd",
+    "apiOperations": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ],
+    "anonymousPublishDenied": true,
+    "replayDenied": true,
+    "temporaryPublisherWorkerCleanedUp": true
+  },
+  "releaseGrantRetention": {
+    "platformMaximum": 7,
+    "retainedVersions": [
+      "1.0.1",
+      "1.0.2",
+      "1.0.3",
+      "1.0.4",
+      "1.0.5",
+      "1.0.6",
+      "1.0.7"
+    ],
+    "retiredGrant": {
+      "version": "1.0.0",
+      "packageSha256": "6294ef5caeb032b262c5b5718fe6392b6387e58802b79bcf2d53f29ffb2376c4",
+      "payloadDigest": "47a2f796a1b55d4ecfd06850064463107f220bfd95cbe9b930cc3220c1e5be73",
+      "packageObjectDeleted": false
+    }
+  },
+  "verification": {
+    "patientAppTypecheck": "passed",
+    "patientAppBuild": "passed",
+    "rootBuild": "passed",
+    "rootUnitTests": {
+      "passed": 528,
+      "failed": 0,
+      "filesPassed": 37
+    },
+    "privateHeadlessPatientRecord": {
+      "passed": true,
+      "checks": 26,
+      "report": "artifacts/m17-patient-record-private-2026-10-24T03-23-18.088Z.json",
+      "detailScreenshot": "artifacts/m17-patient-record-detail-private-2026-10-24T03-23-18.088Z.png"
+    },
+    "publicReadback": {
+      "passed": true,
+      "checks": 35,
+      "sequence": 80,
+      "verifiedM17Packages": 10,
+      "report": "artifacts/m17-staging-packages-readonly-2026-10-24T03-27-35.826Z.json"
+    }
+  },
+  "scope": {
+    "productionChanged": false,
+    "authenticatedStoreInstallTested": false,
+    "liveClinicWorkflowTested": false,
+    "runningDentalOsRestarted": false,
+    "gitCommittedOrPushed": false
+  }
+}

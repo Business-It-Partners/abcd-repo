@@ -42,12 +42,14 @@ try {
   await assertStandardPageScroll(page, check, 'Appointments');
   await page.getByText('Synthetic M17 Appointment', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('ephemeral signed package has the declared 1.0.3 update identity and stays below the package asset cap', packageInfo.version === '1.0.3' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral signed package has the declared 1.0.4 update identity and stays below the package asset cap', packageInfo.version === '1.0.4' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   const tableHeaders = await page.locator('.appointmentTable thead th').allTextContents();
   check('appointments screen follows the SaaS day-book layout with summary cards, date controls, and the same status columns',
     await page.locator('.appointmentSummaryCard').count() === 4
       && await page.getByRole('button', { name: 'Previous day' }).count() === 1
-      && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Doctor|Phone|Arrived|No-show|Cancel|Action');
+      && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Phone|Arrived|No-show|Cancel|Action');
+  check('Doctor is absent from table cells while remaining available as a schedule filter', await page.locator('.appointmentTable [data-label="Doctor"]').count() === 0 && await page.getByRole('combobox', { name: 'Doctor', exact: true }).isVisible());
+  check('the initial schedule is the current day rather than the cancelled summary bucket', await page.locator('.appointmentSummaryCard[aria-pressed="true"]').count() === 0 && (initial.calls.find(call => call.method === 'GET' && call.path.startsWith('/v1/appointments?'))?.path.includes('date=') ?? false));
   check('renderer receives only the current SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,navigation,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
   check('initial reads use only the registered appointment and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/appointments|/v1/appointments/summary|/v1/clinic/staff-references');
   check('the active-doctor filter excludes inactive doctors and non-doctor staff', await page.getByRole('combobox', { name: 'Doctor', exact: true }).locator('option').allTextContents().then(values => values.includes('Synthetic Doctor') && !values.some(value => /Inactive|Helper/.test(value))));

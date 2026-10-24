@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-23",
+  "objective": "Bring the M17 app artwork from milestone source into the seven current app bundles, increase each app version, rebuild, and publish the Store updates.",
+  "artworkSource": {
+    "repository": "/home/master-x/Desktop/fewa_business_os",
+    "branch": "codex/milestone-15",
+    "note": "All seven optimized app-package icons are present in M15. Six also match the app-specific M13 images; M13 Follow-ups was only available as larger dock artwork. The published Follow-ups icon is the optimized M15 app icon.",
+    "icons": [
+      { "appId": "company.dental.followups.m17", "source": "apps/dental-apps/company.dental.followups.m17/assets/followups.png", "destination": "apps/dental-apps/company.dental.followups.m17/assets/followups.png", "sha256": "c853a855aefc1de9d9676e8c3027bfc15ead5f9920c8ab1663be133f947a9ea2" },
+      { "appId": "company.dental.appointments.m17", "source": "apps/dental-apps/company.dental.appointments.m17/assets/appointments.png", "destination": "apps/dental-apps/company.dental.appointments.m17/assets/appointments.png", "sha256": "a64ac745c1ca44dc23e1ec90a22c41e73a18e6e3de62ae2ac697e452ff463d92" },
+      { "appId": "company.dental.work-entry.m17", "source": "apps/dental-apps/company.dental.work-entry.m17/assets/workentry.png", "destination": "apps/dental-apps/company.dental.work-entry.m17/assets/workentry.png", "sha256": "b6c4fbe787fa32e934011516459038b820fc32b1a2baaa8ca412d48892a0b415" },
+      { "appId": "company.dental.patient-record.m17", "source": "apps/dental-apps/company.dental.patient-record.m17/assets/patients.png", "destination": "apps/dental-apps/company.dental.patient-record.m17/assets/patients.png", "sha256": "8d23fb02674a891828676423ea486f5d05c7bc52f7cbb502a5c4af5475203bcd" },
+      { "appId": "company.dental.treatment-progress.m17", "source": "apps/dental-apps/company.dental.treatment-progress.m17/assets/treatment.png", "destination": "apps/dental-apps/company.dental.treatment-progress.m17/assets/treatment.png", "sha256": "4722250a0528a5f8391b144e73032ece3c75efc07634ee1ad4afd316b0f1a39d" },
+      { "appId": "company.dental.m17.treatment-protocols", "source": "apps/dental-apps/company.dental.m17.treatment-protocols/assets/protocols.png", "destination": "apps/dental-apps/company.dental.m17.treatment-protocols/assets/protocols.png", "sha256": "22ad81506d945b7a64c4ec182941d67d22bdfb85e19f00496213422340369c8d" },
+      { "appId": "company.dental.calendar.m17", "source": "apps/dental-apps/company.dental.calendar.m17/assets/calendar.png", "destination": "apps/dental-apps/company.dental.calendar.m17/assets/calendar.png", "sha256": "9515733612cf313f5be829a04b9293c07178f61fb00773ad3fdbf6f089d3a80d" }
+    ]
+  },
+  "signer": {
+    "keyId": "company-staging-m17-20261022",
+    "environment": "Cloudflare staging"
+  },
+  "releases": [
+    { "sequence": 61, "appId": "company.dental.followups.m17", "version": "1.0.3", "packageSha256": "2e94ba56072a0ca1feb6e52057de0440738ddc1bcc368156bfafc0b40ffada39", "packageBytes": 1246894, "payloadDigest": "ea2a0012d46c9bb0aee5215e699c65010d1d476b73d0c4f1967ecd5bacf1372f", "published": true },
+    { "sequence": 62, "appId": "company.dental.appointments.m17", "version": "1.0.5", "packageSha256": "32d870d3684f91f9cf296bfdc66b2c471191fdcfc80a43606bf88dc0894545fb", "packageBytes": 1241449, "payloadDigest": "65a47490f8beca4cee0386b1e0590b29439bab10801dde3e01ec30d925bdcca7", "published": true },
+    { "sequence": 63, "appId": "company.dental.work-entry.m17", "version": "1.0.3", "packageSha256": "361706cacf71bfc20f1372450c9a47b94fd92f422a3701195abb6a43f76a2e29", "packageBytes": 1779415, "payloadDigest": "a61120e1ac56c4529fd5e9282e94e699363d0fcaa44651f5a5d981dde2518884", "published": true },
+    { "sequence": 64, "appId": "company.dental.patient-record.m17", "version": "1.0.6", "packageSha256": "84009af32c8ca5518da5fa81909bab4ae14335344e6508ecf7c73adc4a81bd33", "packageBytes": 1795483, "payloadDigest": "12f1dbd642e249b395da8bc75acbabbaf4ceb51e19605aeed8e75f0fe994f465", "published": true },
+    { "sequence": 65, "appId": "company.dental.treatment-progress.m17", "version": "1.0.6", "packageSha256": "5533b1a3567f03b845bf55c10d7b8e4f52f9d39456fcff829f551cda213d6541", "packageBytes": 1144851, "payloadDigest": "f9a7d8a0fcd31fd219bf75e5527ac405fa3295a632f4a013656916012d42a4a0", "published": true },
+    { "sequence": 66, "appId": "company.dental.m17.treatment-protocols", "version": "1.0.6", "packageSha256": "3ec7226c4d54efac157e3686b13644ccc22e7adf7b3d603d2087ea816ddca277", "packageBytes": 1456268, "payloadDigest": "843f1f4fc8731aef7796523a579c9d4017ba04a4d5a2df3393eecea77b08d082", "published": true },
+    { "sequence": 67, "appId": "company.dental.calendar.m17", "version": "1.0.4", "packageSha256": "533c7f85be7e1bb83cbb1ae0f7de9783e701040d407c4c7fd69615f4e195b2ae", "packageBytes": 1109697, "payloadDigest": "187a1176ac274d674490eb347ba0c411487094a095db62b988f3522c4d39662c", "published": true }
+  ],
+  "hostPolicy": "Raised the retained signed app-release grant limit to seven, preserving prior exact grants as Patient Record, Treatment Progress and Treatment Protocols reached release 1.0.6.",
+  "verification": {
+    "allSevenPackageBuildsAfterArtworkCopy": "passed",
+    "stagingValidationAndPublication": "passed for sequences 61-67; HTTP 200; anonymous publication and replay denied; temporary publisher Workers cleaned up",
+    "publicReadback": "passed at sequence 67: signatures, package bytes, exact versions, historical grants, and all seven packaged artwork hashes verified",
+    "isolatedPackageRegistry": "all seven packages installed, launched, marked healthy and uninstalled successfully",
+    "publicReadbackArtifact": "../../../artifacts/m17-staging-packages-readonly-2026-10-23T17-50-08.027Z.json",
+    "worktreeOsPreview": "Running from the updated worktree with the seven-grant policy in a fresh profile at /home/master-x/.config/dental-os-app-store-artwork-20261023; earlier sessions were left untouched. Sign in to view the Store feed.",
+    "authenticatedStoreInstall": "not performed",
+    "liveClinicBusinessWrites": "not performed"
+  }
+}

@@ -3,7 +3,7 @@ import './LeaveConfirmationDialog.css';
 
 const brandMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
 
-export function LeaveConfirmationDialog({ onCancel, onConfirm }: { onCancel(): void; onConfirm(): void }) {
+export function LeaveConfirmationDialog({ onCancel, onConfirm, title = 'Are you sure you want to leave Sajilo Dental?', detail, confirmLabel = 'OK' }: { onCancel(): void; onConfirm(): void; title?: string; detail?: string; confirmLabel?: string }) {
   const cancelButton = useRef<HTMLButtonElement>(null);
   const confirmButton = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -38,12 +38,13 @@ export function LeaveConfirmationDialog({ onCancel, onConfirm }: { onCancel(): v
   };
 
   return <div className="leave-confirm-backdrop">
-    <section className="leave-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="leave-confirm-title" onKeyDown={handleKeys}>
+    <section className="leave-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="leave-confirm-title" aria-describedby={detail ? 'leave-confirm-detail' : undefined} onKeyDown={handleKeys}>
       <img className="leave-confirm-mark" src={brandMark} alt=""/>
-      <h2 id="leave-confirm-title">Are you sure you want to leave Sajilo Dental?</h2>
+      <h2 id="leave-confirm-title">{title}</h2>
+      {detail && <p id="leave-confirm-detail" className="leave-confirm-detail">{detail}</p>}
       <div className="leave-confirm-actions">
         <button ref={cancelButton} className="leave-confirm-cancel" type="button" onClick={onCancel}>Cancel</button>
-        <button ref={confirmButton} className="leave-confirm-ok" type="button" onClick={onConfirm}>OK</button>
+        <button ref={confirmButton} className="leave-confirm-ok" type="button" onClick={onConfirm}>{confirmLabel}</button>
       </div>
     </section>
   </div>;

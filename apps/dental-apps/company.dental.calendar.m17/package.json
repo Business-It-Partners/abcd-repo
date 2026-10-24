@@ -1,6 +1,6 @@
 {
   "name": "company.dental.calendar.m17",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Calendar app package for Dental OS.",
   "type": "module",

@@ -43,6 +43,7 @@ function LoginClock() {
 
 export function IdentityGate(){
  const [leaveConfirmationOpen,setLeaveConfirmationOpen]=useState(false);
+ const [signOutConfirmationOpen,setSignOutConfirmationOpen]=useState(false);
  const [passwordVisible,setPasswordVisible]=useState(false);
  const [rememberEmail,setRememberEmail]=useState(readRememberEmailPreference);
  const rememberEmailRef=useRef(rememberEmail);
@@ -62,8 +63,9 @@ export function IdentityGate(){
  async function fillDevelopmentLogin(){setError('');const credentials=await window.desktop?.identity.devCredentials().catch(()=>undefined);if(!credentials){setDevLoginAvailable(false);setError('Development sign-in details are unavailable.');return;}updateEmail(credentials.email);setPassword(credentials.password);}
  if(!startupMinimumElapsed||!startupResolved)return <BrandSplash stage={!startupResolved?'checking':error?'unavailable':view?.phase==='ready'?'workspace':'sign-in'}/>;
  if(view?.phase==='ready')return <>
-  <SessionGeneration.Provider value={view.generation}><App key={view.generation} session={view} leaveConfirmationOpen={leaveConfirmationOpen} onRequestClose={()=>setLeaveConfirmationOpen(true)} sessionControls={view.mode!=='demo-fixture'&&<div className="identity-menu-actions" role="group" aria-label="Session controls"><button onClick={()=>void window.desktop?.support()}>Support diagnostics</button><button onClick={()=>void window.desktop?.identity.action('lock')}>Lock</button><button onClick={()=>void window.desktop?.identity.action('logout')}>Switch account</button><button onClick={()=>void window.desktop?.identity.action('logout')}>Sign out</button></div>}/></SessionGeneration.Provider>
+  <SessionGeneration.Provider value={view.generation}><App key={view.generation} session={view} leaveConfirmationOpen={leaveConfirmationOpen||signOutConfirmationOpen} onRequestClose={()=>setLeaveConfirmationOpen(true)} onRequestSignOut={view.mode!=='demo-fixture'?()=>setSignOutConfirmationOpen(true):undefined} sessionControls={view.mode!=='demo-fixture'&&<div className="identity-menu-actions" role="group" aria-label="Session controls"><button onClick={()=>void window.desktop?.support()}>Support diagnostics</button><button onClick={()=>void window.desktop?.identity.action('lock')}>Lock</button><button onClick={()=>void window.desktop?.identity.action('logout')}>Switch account</button><button onClick={()=>setSignOutConfirmationOpen(true)}>Sign out</button></div>}/></SessionGeneration.Provider>
   {leaveConfirmationOpen&&<LeaveConfirmationDialog onCancel={()=>setLeaveConfirmationOpen(false)} onConfirm={()=>void window.desktop?.control('close')}/>}
+  {signOutConfirmationOpen&&<LeaveConfirmationDialog title="Sign out of Sajilo Dental?" detail="You will return to the sign-in screen." confirmLabel="Sign out" onCancel={()=>setSignOutConfirmationOpen(false)} onConfirm={()=>{setSignOutConfirmationOpen(false);void window.desktop?.identity.action('logout');}}/>}
  </>;
  const busy=!view||view.phase==='restoring'||view.phase==='signing-in';
  return (

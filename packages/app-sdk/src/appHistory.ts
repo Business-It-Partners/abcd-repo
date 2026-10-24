@@ -17,10 +17,12 @@ export class AppHistory<T> {
     this.entries = [{ id: crypto.randomUUID(), page: initialPage }];
     this.unsubscribe = bridge.navigation.onRequest(request => {
       const target = this.entries.findIndex(entry => entry.id === request.entry);
-      if (target < 0 || target === this.index || !this.canNavigate()) return;
+      const discard = request.discard === true;
+      if (target < 0 || target === this.index || !discard && !this.canNavigate()) return;
       if (request.direction === 'back' && target >= this.index) return;
       if (request.direction === 'forward' && target <= this.index) return;
       this.index = target;
+      if (discard && request.direction === 'back') this.entries = this.entries.slice(0, target + 1);
       this.publish();
       this.notify();
     });

@@ -166,6 +166,7 @@ export function SaaSPatientIntake({ onBack, onSaved }: { onBack: () => void; onS
     protocols={protocols}
     cases={{} as Record<string, Case[]>}
     onExit={() => { onSaved(); onBack(); }}
+    hideHeaderBack
     hideStepTabs
     nextPatientNumber={nextPatientNumber}
     successTitle="Patient record saved successfully"

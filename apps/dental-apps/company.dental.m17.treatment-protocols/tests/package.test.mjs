@@ -7,13 +7,13 @@ import { fileURLToPath } from 'node:url';
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relative => fs.readFileSync(path.join(appRoot, relative), 'utf8');
 
-test('M17 package has the version 1.0.5 update identity and the treatment protocol SDK family', () => {
+test('M17 package has the version 1.0.6 update identity and the treatment protocol SDK family', () => {
   const app = JSON.parse(read('app.json'));
   const manifest = JSON.parse(read('app.manifest.json'));
   const pkg = JSON.parse(read('package.json'));
   assert.equal(app.appId, 'company.dental.m17.treatment-protocols');
   assert.equal(manifest.appId, app.appId);
-  assert.equal(manifest.version, '1.0.5');
+  assert.equal(manifest.version, '1.0.6');
   assert.equal(pkg.name, app.appId);
   assert.equal(pkg.version, manifest.version);
   assert.deepEqual(manifest.capabilities, ['clinic.app.treatment-protocols', 'clinic.api.request', 'session.context']);

@@ -1406,86 +1406,87 @@ export default function PatientDrawer({
   return (
     <>
       <div className={styles.patientDetailPage}>
-        <div className={styles.fullPageSheet}>
+        <div className={styles.fullPageSheet} data-patient-record-layout>
         {/* Left Sidebar */}
         <div className={styles.patientSidebar}>
-          <nav ref={navRef} className={styles.tabBar}>
+          <nav ref={navRef} className={styles.tabBar} aria-label="Patient record sections">
+            <div className={styles.sidebarHeading}>Patient record</div>
             {showBackButton ? <button
               className={`${styles.tabBtn} ${styles.sidebarBackButton}`}
               onClick={onClose}
               type="button"
             >
-              <ChevronLeft aria-hidden="true" size={15} /> Back
+              <ChevronLeft aria-hidden="true" size={17} /> Back
             </button> : null}
             <button
               data-tab="profile"
               className={`${styles.tabBtn} ${activeSubTab === "profile" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("profile")}
             >
-              <User size={15} /> Patient Profile
+              <User size={17} /> Patient Profile
             </button>
             <button
               data-tab="cases"
               className={`${styles.tabBtn} ${activeSubTab === "cases" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("cases")}
             >
-              <FileText size={15} /> Chief Complaints
+              <FileText size={17} /> Chief Complaints
             </button>
             <button
               data-tab="notes"
               className={`${styles.tabBtn} ${activeSubTab === "notes" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("notes")}
             >
-              <FileText size={15} /> Patient Notes
+              <FileText size={17} /> Patient Notes
             </button>
             <button
               data-tab="timeline"
               className={`${styles.tabBtn} ${activeSubTab === "timeline" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("timeline")}
             >
-              <Clock size={15} /> Clinical Timeline
+              <Clock size={17} /> Clinical Timeline
             </button>
             <button
               data-tab="periodontal"
               className={`${styles.tabBtn} ${activeSubTab === "periodontal" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("periodontal")}
             >
-              <Activity size={15} /> Periodontal Chart
+              <Activity size={17} /> Periodontal Chart
             </button>
             <button
               data-tab="plan"
               className={`${styles.tabBtn} ${activeSubTab === "plan" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("plan")}
             >
-              <FileText size={15} /> Treatment Plan
+              <FileText size={17} /> Treatment Plan
             </button>
             <button
               data-tab="lab"
               className={`${styles.tabBtn} ${activeSubTab === "lab" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("lab")}
             >
-              <FlaskConical size={15} /> Lab
+              <FlaskConical size={17} /> Lab
             </button>
             <button
               data-tab="xrays"
               className={`${styles.tabBtn} ${activeSubTab === "xrays" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("xrays")}
             >
-              <ImageIcon size={15} /> X-Ray Imaging
+              <ImageIcon size={17} /> X-Ray Imaging
             </button>
             <button
               data-tab="prescriptions"
               className={`${styles.tabBtn} ${activeSubTab === "prescriptions" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("prescriptions")}
             >
-              <Pill size={15} /> Prescriptions
+              <Pill size={17} /> Prescriptions
             </button>
             <button
               data-tab="followups"
               className={`${styles.tabBtn} ${activeSubTab === "followups" ? styles.tabBtnActive : ""}`}
               onClick={() => selectSubTab("followups")}
             >
-              <BellRing size={15} /> Follow-Ups
+              <BellRing size={17} /> Follow-Ups
             </button>
             {canViewBillingLedger ? (
               <button
@@ -1493,7 +1494,7 @@ export default function PatientDrawer({
                 className={`${styles.tabBtn} ${activeSubTab === "ledger" ? styles.tabBtnActive : ""}`}
                 onClick={() => selectSubTab("ledger")}
               >
-                <WalletCards size={15} /> Billing Ledger
+                <WalletCards size={17} /> Billing Ledger
               </button>
             ) : null}
           </nav>

@@ -12,7 +12,7 @@ test('Calendar keeps its unique app identity and existing app capability', async
   const manifest = JSON.parse(await readText('app.manifest.json'));
   const metadata = JSON.parse(await readText('app.json'));
   assert.equal(packageJson.name, 'company.dental.calendar.m17');
-  assert.equal(packageJson.version, '1.0.3');
+  assert.equal(packageJson.version, '1.0.4');
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ['clinic.app.calendar', 'clinic.api.request', 'session.context']);

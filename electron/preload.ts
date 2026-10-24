@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('desktop', {
   support:()=>ipcRenderer.invoke('support:action','preview'),
   store: {
     action: (kind: string, input?: unknown, generation?: number) => ipcRenderer.invoke('store:action', kind, input, generation),
+    artwork: (appId: string, expectedSha256?: string, generation?: number) => ipcRenderer.invoke('store:artwork', appId, expectedSha256, generation),
     subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('store:state', listener); return () => ipcRenderer.removeListener('store:state', listener); },
   },
   identity: {
@@ -34,7 +35,7 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   runtime: {
     sync: (value: unknown, generation?: number) => ipcRenderer.invoke('runtime:sync', value, generation),
-    navigate: (id: string, direction: 'back' | 'forward', generation?: number) => ipcRenderer.invoke('runtime:navigate', id, direction, generation) as Promise<boolean>,
+    navigate: (id: string, direction: 'back' | 'forward', generation?: number, discardDirty?: boolean) => ipcRenderer.invoke('runtime:navigate', id, direction, generation, discardDirty) as Promise<boolean>,
     hideAll: (generation?: number) => ipcRenderer.sendSync('runtime:hide-all', generation) === true,
     restart: (id: string, generation?: number) => ipcRenderer.invoke('runtime:restart', id, generation),
     selectModule: (id: string, moduleId: string) => ipcRenderer.invoke('runtime:select-module', id, moduleId),
@@ -44,9 +45,8 @@ contextBridge.exposeInMainWorld('desktop', {
       const key = (_event: unknown, value: unknown) => callback('key', value);
       const edge = (_event: unknown, value: unknown) => callback('edge', value);
       const closeBlocked = (_event: unknown,value:unknown)=>callback('close-blocked',value);
-      const appExplorer=(_event:unknown,value:unknown)=>callback('app-explorer',value);
-      ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge); ipcRenderer.on('runtime:close-blocked',closeBlocked); ipcRenderer.on('runtime:app-explorer',appExplorer);
-      return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); ipcRenderer.removeListener('runtime:app-explorer',appExplorer); };
+      ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge); ipcRenderer.on('runtime:close-blocked',closeBlocked);
+      return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); };
     },
   },
   files: {

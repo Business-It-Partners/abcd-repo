@@ -4,11 +4,11 @@ declare global {
   interface Window {
     desktop?: {
       support():Promise<{ok:boolean;cancelled?:boolean}>;
-      store: { action(kind: 'view', input?: undefined, generation?: number): Promise<import('../electron/distribution/contracts').StoreView>; action(kind: 'refresh' | 'cancel' | 'install' | 'uninstall' | 'update-now', input?: string, generation?: number): Promise<import('../electron/distribution/contracts').StoreResult>; subscribe(callback: (value: import('../electron/distribution/contracts').StoreView) => void): () => void };
+      store: { action(kind: 'view', input?: undefined, generation?: number): Promise<import('../electron/distribution/contracts').StoreView>; action(kind: 'refresh' | 'cancel' | 'install' | 'uninstall' | 'update-now', input?: string, generation?: number): Promise<import('../electron/distribution/contracts').StoreResult>; artwork(appId: string, expectedSha256?: string, generation?: number): Promise<string | null>; subscribe(callback: (value: import('../electron/distribution/contracts').StoreView) => void): () => void };
       identity: { view(): Promise<import('../electron/identity/contracts').SessionView>; action(kind: 'login' | 'lock' | 'logout', input?: unknown): Promise<import('../electron/identity/contracts').ActionResult>; devCredentialsAvailable(): Promise<boolean>; devCredentials(): Promise<{ email: string; password: string } | undefined>; subscribe(callback: (value: import('../electron/identity/contracts').SessionView) => void): () => void };
       runtime: {
         sync(value: unknown, generation?: number): Promise<void>;
-        navigate(id: string, direction: 'back' | 'forward', generation?: number): Promise<boolean>;
+        navigate(id: string, direction: 'back' | 'forward', generation?: number, discardDirty?: boolean): Promise<boolean>;
         hideAll(generation?: number): boolean;
         restart(id: string, generation?: number): Promise<void>;
         selectModule(id: string, moduleId: string): Promise<{ ok: boolean; code?: string }>;

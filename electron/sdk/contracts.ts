@@ -28,7 +28,7 @@ export type ClinicSessionContext = {
 export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[] };
 /** Random opaque UUIDs only; page data and business identifiers stay in the app renderer. */
 export type AppNavigationSnapshot = { entries: string[]; index: number };
-export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string };
+export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string; discard?: boolean };
 export type Request = { version: 1; connection: string; generation: number; requestId: string; operation: Operation; input: Record<string, unknown> };
 export type Cancel = Pick<Request, 'version' | 'connection' | 'generation' | 'requestId'>;
 export type AppSdk = {
@@ -58,7 +58,12 @@ export function appNavigationSnapshot(value: unknown): value is AppNavigationSna
     Number.isSafeInteger(value.index) && (value.index as number) >= 0 && (value.index as number) < value.entries.length;
 }
 export function appNavigationRequest(value: unknown): value is AppNavigationRequest {
-  return shape(value, ['direction', 'entry']) && (value.direction === 'back' || value.direction === 'forward') && uuid(value.entry);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  const keys = Object.keys(v).sort().join();
+  if (keys !== 'direction,entry' && keys !== 'direction,discard,entry') return false;
+  return (v.direction === 'back' || v.direction === 'forward') && uuid(v.entry) &&
+    (!('discard' in v) || v.discard === true);
 }
 const integer = (v: unknown) => Number.isSafeInteger(v) && (v as number) > 0;
 export const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);

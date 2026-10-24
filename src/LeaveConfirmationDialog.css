@@ -37,6 +37,8 @@
   letter-spacing: -.015em;
 }
 
+.leave-confirm-detail { margin: 10px 0 0; color: #526675; font-size: 14px; line-height: 1.5; }
+
 .leave-confirm-actions {
   display: flex;
   justify-content: flex-end;

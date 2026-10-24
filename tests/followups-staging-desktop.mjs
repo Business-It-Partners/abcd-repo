@@ -70,13 +70,13 @@ try {
 
   phase = 'store-discovery';
   await shell.getByRole('button', { name: 'App Store', exact: true }).click();
-  await shell.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
+  await shell.getByRole('heading', { name: 'App Store' }).waitFor();
   await shell.getByRole('button', { name: 'Details Follow-ups', exact: true }).click();
   await shell.getByRole('heading', { name: 'Follow-ups', exact: true }).waitFor();
-  check('signed staging Store offers Follow-ups 1.1.0 as not installed', await shell.locator('.store-facts').innerText().then(text => text.includes(version) && text.includes('Not installed')));
+  check('signed staging Store offers Follow-ups 1.1.0 as not installed', await shell.locator('.delivery-store-versions').innerText().then(text => text.includes(version) && text.includes('Not installed')));
 
   phase = 'authenticated-install';
-  await shell.getByRole('button', { name: 'Get', exact: true }).click();
+  await shell.getByRole('button', { name: 'Install', exact: true }).click();
   await shell.locator('.store-arrival').waitFor({ timeout: 25000 });
   check('authenticated Store install starts the package-to-dock arrival', await shell.locator('.store-arrival').count() === 1 && await shell.locator(`[data-dock-app="${appId}"]`).count() === 1);
   await shell.locator('.store-celebration').waitFor({ state: 'detached', timeout: 10000 });

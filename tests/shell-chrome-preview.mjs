@@ -19,9 +19,9 @@ try {
   for (const title of ['Motion Studio', 'Records', 'Dental Workspace Preview']) {
     await page.getByRole('button', { name: 'App Store', exact: true }).click();
     const store = page.getByTestId('store-window');
-    await store.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
+    await store.getByRole('heading', { name: 'App Store' }).waitFor();
     await store.getByRole('button', { name: `Details ${title}`, exact: true }).click();
-    await store.getByRole('button', { name: 'Get', exact: true }).click();
+    await store.getByRole('button', { name: 'Install', exact: true }).click();
     await store.getByRole('button', { name: 'Open', exact: true }).waitFor();
     await page.locator('.store-celebration').waitFor({ state: 'detached' });
     await store.getByRole('button', { name: 'Back', exact: true }).click();

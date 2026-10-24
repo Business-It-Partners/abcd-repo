@@ -7,11 +7,11 @@ import { fileURLToPath } from 'node:url';
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relative => fs.readFileSync(path.join(app, relative), 'utf8');
 
-test('M17 Work Entry has a unique first-release identity and only its approved host capabilities', () => {
+test('M17 Work Entry has its current release identity and only its approved host capabilities', () => {
   const manifest = JSON.parse(read('app.manifest.json'));
   const metadata = JSON.parse(read('app.json'));
   assert.equal(manifest.appId, 'company.dental.work-entry.m17');
-  assert.equal(manifest.version, '1.0.0');
+  assert.equal(manifest.version, '1.0.3');
   assert.deepEqual(manifest.capabilities, ['clinic.app.work-entry', 'clinic.api.request', 'session.context']);
   assert.equal(metadata.appId, manifest.appId);
   assert.equal(metadata.modules[0].id, 'work-entry');

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Minus, Wifi, WifiOff, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, LogOut, Minus, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
 import type { SessionView } from '../electron/identity/contracts';
@@ -14,6 +14,7 @@ type Props = {
   onOpenApps?: () => void;
   onShowWindows?: () => void;
   onSupport?: () => void;
+  onRequestSignOut?: () => void;
   onRequestClose(): void;
 };
 
@@ -22,7 +23,7 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport, onRequestClose }: Props) {
+export function DesktopChrome({ session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
@@ -71,14 +72,14 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
       </nav>
       <div className="statusbar-right">
         <span className={`statusbar-network ${online ? 'is-online' : 'is-offline'}`} aria-label={`Network ${online ? 'online' : 'offline'}`} title={online ? 'The system reports a network connection; this does not confirm clinic services are reachable.' : 'The system reports no network connection.'}>
-          {online ? <Wifi size={14} aria-hidden="true" /> : <WifiOff size={14} aria-hidden="true" />}
+          {online ? <Wifi size={16} aria-hidden="true" /> : <WifiOff size={16} aria-hidden="true" />}
           <span>{online ? 'Online' : 'Offline'}</span>
         </span>
         <time className="statusbar-date" dateTime={now.toISOString()}>{formatDate}</time>
         <time className="statusbar-time" dateTime={now.toISOString()}>{formatTime}</time>
         <div className="statusbar-window-controls" role="group" aria-label="Dental OS window controls">
-          <button type="button" aria-label="Minimize Dental OS" title="Minimize Dental OS" onClick={() => void window.desktop?.control('minimize')}><Minus size={14} strokeWidth={2} aria-hidden="true"/></button>
-          <button className="statusbar-window-close" type="button" aria-label="Close Dental OS" title="Close Dental OS" onClick={onRequestClose}><X size={14} strokeWidth={2} aria-hidden="true"/></button>
+          <button type="button" aria-label="Minimize Dental OS" title="Minimize Dental OS" onClick={() => void window.desktop?.control('minimize')}><Minus size={16} strokeWidth={2} aria-hidden="true"/></button>
+          <button className="statusbar-window-close" type="button" aria-label="Close Dental OS" title="Close Dental OS" onClick={onRequestClose}><X size={16} strokeWidth={2} aria-hidden="true"/></button>
         </div>
       </div>
     </header>
@@ -90,6 +91,7 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
         <span>{session.userLabel || 'Signed-in user'}</span>
         {session.role && <small>{roleLabel(session.role)}</small>}
       </div>
+      {onRequestSignOut && <button className="clinic-widget-signout" type="button" aria-label="Sign out" title="Sign out" onClick={onRequestSignOut}><LogOut size={15} aria-hidden="true"/><span>Sign out</span></button>}
     </section>}
 
     <section className="desktop-widget-collection" aria-label="Calendar and time widgets">

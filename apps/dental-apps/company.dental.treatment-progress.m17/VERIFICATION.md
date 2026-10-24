@@ -1,9 +1,9 @@
 # M17.5 Treatment Progress verification
 
-**M17 release:** `company.dental.treatment-progress.m17` first release `1.0.0`; current signed staging release `1.0.5` at sequence 57
+**M17 release:** `company.dental.treatment-progress.m17` first release `1.0.0`; current signed staging release `1.0.6` at sequence 65
 
 **SaaS source:** `Business-It-Partners/dental-saas` at `f0d059d36540b4b6907cace089085ce0df62d454`
-**Current status:** M15-source version 1.0.5 is signed and published to Cloudflare staging at sequence 57. App typecheck, four package tests, package build, 29 private UI checks, the 527-test root suite and public signature/package/grant readback passed. The screenshot supplied by the user predates this publication. Authenticated Store installation/runtime health and live synthetic clinic acceptance remain open; publishing does not update an app instance already running.
+**Current status:** Version 1.0.6 is published at sequence 65. Its artwork and package were verified in the source worktree as part of the seven-package readback and isolated registry launch. The 1.0.5 app checks remain historical evidence. The combined M15 package typecheck and build passed after importing 1.0.6; package and private UI tests were not rerun. Authenticated Store installation/runtime health and live synthetic clinic acceptance remain open.
 
 The app is a fresh Dental OS implementation of the pinned Treatment Progress worklist. It reads the server-calculated active, incomplete treatment projection through `ClinicClient`; supports patient/record/plan/doctor search, doctor filtering, sortable paginated rows, and manual refresh; and shows server-projected stage counts, outstanding balance, and next return date. Assigned doctors remain available to search/filter but are no longer shown in a table column. Long treatment plan labels wrap to a maximum of two lines. It does not add a local clinical database or patient-detail navigation.
 
@@ -63,3 +63,8 @@ Private acceptance used synthetic in-memory data and an ephemeral test-only pack
 - Publication advanced both signed metadata objects to sequence 34; the temporary publisher Worker was ready, denied anonymous and replay publication, returned HTTP 200 for the authorized write, and was cleaned up.
 - Public readback verified the new signature, package bytes, exact `clinic.api.request` grant, and the prior 1.0.0 grant. The isolated local registry installed, launched, and removed the package. No authenticated Store profile, live clinic API, business write, GitHub Action, or production target was used.
 - See the [M17.5 staging update evidence](../../../dental-os_v1_working_info/milestone-17-dental-app-delivery/evidence/M17.5_TREATMENT_PROGRESS_STAGING_UPDATE_2026-10-23.json). The user's running OS was not restarted or modified; it must already trust the M17 signer to discover/install this staging release.
+
+
+## Artwork refresh — version 1.0.6
+
+The source worktree rebuilt Treatment Progress 1.0.6 and published it at sequence 65. Public readback verified its package bytes, retained grants, and M15-sourced artwork hash; all seven refreshed packages passed isolated registry install/launch/uninstall. See [artwork refresh evidence](../../../dental-os_v1_working_info/milestone-17-dental-app-delivery/evidence/M17_APP_ARTWORK_REFRESH_STAGING_2026-10-23.json). This M15 integration imports the 1.0.6 app source and version metadata; its package typecheck/build passed, while package and private UI tests were not rerun. Store installation and live clinic acceptance remain open.

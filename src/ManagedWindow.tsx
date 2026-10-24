@@ -154,7 +154,7 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
 }
 export type WindowController = ReturnType<typeof useManagedWindow>;
 
-export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, navigationDisabled = false, moduleNavigation, onSelectModule, onNavigationBack, onNavigationForward }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; navigationDisabled?:boolean; moduleNavigation?:WindowModuleNavigation; onSelectModule?:(moduleId:string)=>void|Promise<void>; onNavigationBack?:()=>void; onNavigationForward?:()=>void }) {
+export function ManagedWindowFrame({ controller: c, children, onClose, hideMinimize = false, navigationDisabled = false, moduleNavigation, onSelectModule, onNavigationBack }: { controller: WindowController; children: ReactNode; onClose?:()=>void; hideMinimize?:boolean; navigationDisabled?:boolean; moduleNavigation?:WindowModuleNavigation; onSelectModule?:(moduleId:string)=>void|Promise<void>; onNavigationBack?:()=>void }) {
   const fullscreen = c.win.presentation === 'fullscreen', visible = c.win.phase === 'visible';
   const hasModuleSidebar = !!moduleNavigation && moduleNavigation.modules.length > 1;
   const sessionGeneration = useSessionGeneration();
@@ -168,7 +168,7 @@ export function ManagedWindowFrame({ controller: c, children, onClose, hideMinim
       style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} navigationDisabled={navigationDisabled} inert={c.win.modal}
         onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}
-        canGoBack={c.win.navigation.index > 0} canGoForward={c.win.navigation.index < c.win.navigation.entries.length - 1} onBack={onNavigationBack ?? c.goBack} onForward={onNavigationForward ?? c.goForward}/>
+        canGoBack={c.win.navigation.index > 0} onBack={onNavigationBack ?? c.goBack}/>
       {hasModuleSidebar && moduleNavigation ? <>
         <WindowModuleSidebar title={c.win.title} navigation={moduleNavigation} disabled={c.anyBusy || navigationDisabled || c.win.modal} onSelect={onSelectModule ?? (()=>{})}/>
         <div className="window-module-content">{children}</div>

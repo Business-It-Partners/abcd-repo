@@ -36,7 +36,7 @@ const signIn = async shell => {
 };
 const openStore = async shell => {
   await shell.getByRole('button', { name: 'App Store', exact: true }).click();
-  await shell.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
+  await shell.getByRole('heading', { name: 'App Store' }).waitFor();
   await shell.getByRole('button', { name: 'Details Dental Workspace Preview', exact: true }).click();
   await shell.getByRole('heading', { name: 'Dental Workspace Preview', exact: true }).waitFor();
 };
@@ -69,9 +69,9 @@ try {
   const freshProfile = await app.evaluate(({ app }) => app.getPath('userData'));
   await signIn(shell);
   await openStore(shell);
-  check('live signed catalogue lists the not-yet-installed first-party app', await shell.locator('.store-facts').innerText().then(text => text.includes('1.2.0') && text.includes('Not installed')));
+  check('live signed catalogue lists the not-yet-installed first-party app', await shell.locator('.delivery-store-versions').innerText().then(text => text.includes('1.2.0') && text.includes('Not installed')));
   phase = 'fresh-install';
-  await shell.getByRole('button', { name: 'Get', exact: true }).click();
+  await shell.getByRole('button', { name: 'Install', exact: true }).click();
   await shell.locator('.store-arrival').waitFor({ timeout: 25000 });
   check('authenticated live Store install starts the Store-to-dock thumbnail flight', await shell.locator('.store-arrival svg').count() === 1 && await shell.locator('[data-dock-app]').last().getAttribute('data-dock-app') === appId);
   check('new dock icon remains hidden until the live package arrival lands', ((await shell.locator(`[data-dock-app="${appId}"]`).getAttribute('style')) ?? '').includes('visibility: hidden'));
@@ -105,9 +105,9 @@ try {
   if (path.resolve(actualProfile) !== path.resolve(updateProfile)) throw Error('Disposable profile binding mismatch');
   await signIn(shell);
   await openStore(shell);
-  check('live Store offers 1.2.0 Update for the installed 1.0.0 app', await shell.locator('.store-facts').innerText().then(text => text.includes('1.0.0') && text.includes('1.2.0')));
+  check('live Store offers 1.2.0 Update for the installed 1.0.0 app', await shell.locator('.delivery-store-versions').innerText().then(text => text.includes('1.0.0') && text.includes('1.2.0')));
   phase = 'authenticated-update-download';
-  await shell.getByRole('button', { name: 'Download update', exact: true }).click();
+  await shell.getByRole('button', { name: 'Update', exact: true }).click();
   await shell.locator('.delivery-update-state').filter({ hasText: 'Update ready · 1.2.0' }).waitFor({ timeout: 25000 });
   state = await registryState(updateProfile);
   check('live authenticated Store stages 1.2.0 over the verified 1.0.0 installation', state.apps[appId]?.active === oldDigest && !!state.apps[appId]?.pending && state.apps[appId]?.versions.length === 2);

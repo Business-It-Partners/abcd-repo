@@ -7,11 +7,13 @@ import type { StoreApp } from '../electron/distribution/contracts';
 import { dockZoneTop, type WindowId } from './windowGeometry';
 import { StoreArtwork } from './StoreArtwork';
 import type { WindowModuleNavigation } from './WindowModuleSidebar';
+import { AlertTriangle } from 'lucide-react';
 
 type ControllerRef = MutableRefObject<WindowController>;
 type DynamicApp = StoreApp & { target: RefObject<HTMLButtonElement | null> };
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
+type RuntimeConfirm = { id: RuntimeId; action: 'close' | 'back' };
 export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, onSelectModule }: {
   controllers: Record<string, WindowController>; apps?: StoreApp[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
@@ -20,7 +22,7 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
 }) {
   const generation = useSessionGeneration();
   const { state, dispatch } = useWindowManager();
-  const [entries,setEntries]=useState<RuntimeState[]>([]), [confirm,setConfirm]=useState<RuntimeId>();
+  const [entries,setEntries]=useState<RuntimeState[]>([]), [confirm,setConfirm]=useState<RuntimeConfirm>();
   const [peek,setPeek]=useState(false), [error,setError]=useState('');
   const [launchFeedback,setLaunchFeedback]=useState<Record<string,LaunchFeedback>>({});
   const surfaces=useRef(new Map<RuntimeId,HTMLDivElement>()), liveControllers=useRef(controllers);
@@ -101,7 +103,7 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       for(const entry of next)dispatch({type:'navigation-sync',id:entry.id,navigation:entry.navigation??{entries:[],index:-1}});
     }
     else if(kind==='key')window.dispatchEvent(new KeyboardEvent('keydown',value as KeyboardEventInit));
-    else if(kind==='close-blocked'){const id=(value as {id:RuntimeId}).id;const controller=liveControllers.current[id];if(controller){controller.open();setConfirm(id);}}
+    else if(kind==='close-blocked'){const id=(value as {id:RuntimeId}).id;const controller=liveControllers.current[id];if(controller){controller.open();setConfirm({id,action:'close'});}}
     else if(kind==='edge') {
       const point=value as {x:number;y:number};
       // A normal window already ends above the dock. Only a fullscreen native
@@ -144,34 +146,40 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
     void window.desktop?.runtime.sync(layouts, generation).catch(()=>setError('Runtime layout unavailable. Close and reopen the app.'));
   },[controllers,state,front,blocked,peek,confirm,generation,dockTop,launchFeedback]);
   return <>
-    {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)}/></ManagedWindowFrame>:null;})}
+    {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirmAction={confirm?.id===id?'close':undefined} requestConfirm={()=>setConfirm({id,action:'close'})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)}/></ManagedWindowFrame>:null;})}
     {dynamicApps.filter(app=>state.windows[app.id]).map(app=>{
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
-      const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirm={confirm===id} requestConfirm={()=>setConfirm(id)} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
+      const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm?.id===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
         moduleNavigation={entry?.moduleNavigation}
         onSelectModule={moduleId=>onSelectModule?.(id,moduleId)}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,generation,confirm,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirmAction?:RuntimeConfirm['action'];requestConfirm(action:RuntimeConfirm['action']):void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
-  const navigationDisabled=entry?.phase!=='ready'||!!entry?.dirty||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
+  const navigationDisabled=entry?.phase!=='ready'||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
+  const requestBack=()=>{if(entry?.dirty)requestConfirm('back');else void window.desktop?.runtime.navigate(id,'back',generation);};
+  const acceptBack=()=>{
+    if(entry?.writeState&&entry.writeState!=='none')return;
+    cancel();
+    controller.setModal(false);
+    void window.desktop?.runtime.navigate(id,'back',generation,true);
+  };
   return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled} moduleNavigation={moduleNavigation} onSelectModule={onSelectModule}
-    onNavigationBack={()=>void window.desktop?.runtime.navigate(id,'back',generation)}
-    onNavigationForward={()=>void window.desktop?.runtime.navigate(id,'forward',generation)}>
-    <Surface id={id} title={title} controller={controller} entry={entry} confirm={confirm} requestConfirm={requestConfirm} cancel={cancel} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>
+    onNavigationBack={requestBack}>
+    <Surface id={id} title={title} controller={controller} entry={entry} confirmAction={confirmAction} requestConfirm={()=>requestConfirm('close')} cancel={cancel} acceptConfirm={confirmAction==='back'?acceptBack:undefined} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>
   </ManagedWindowFrame>;
 }
 
-function Surface({id,title,controller:c,entry,confirm,requestConfirm,cancel,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirm:boolean;requestConfirm():void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {
+function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cancel,acceptConfirm,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirmAction?:RuntimeConfirm['action'];requestConfirm():void;cancel():void;acceptConfirm?():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {
   const generation=useSessionGeneration();
   const dirty=useRef(false);dirty.current=entry?.dirty??false;const unsafe=useRef(false);unsafe.current=!!entry?.writeState&&entry.writeState!=='none';
   useEffect(()=>{c.setCloseGuard(()=>{if(dirty.current||unsafe.current){requestConfirm();return false;}return true;});return()=>c.setCloseGuard();},[id]);
-  useEffect(()=>{c.setModal(!!entry?.modal||confirm);},[entry?.modal,confirm]);
+  useEffect(()=>{c.setModal(!!entry?.modal||!!confirmAction);},[entry?.modal,confirmAction]);
   const managedApp=launchFeedback!==undefined;
   const launchWaiting=managedApp&&c.win.phase!=='closed'&&(launchFeedback?.handoff??'waiting')==='waiting'&&entry?.phase!=='failed'&&entry?.phase!=='unresponsive';
   return <div ref={surface} className="isolated-surface" data-runtime={id} data-runtime-phase={entry?.phase??'closed'} data-runtime-reason={entry?.reason??''} data-launch-handoff={managedApp?(launchFeedback?.handoff??'waiting'):undefined} data-launch-minimum-elapsed={managedApp?launchFeedback?.minimumElapsed??false:undefined} data-launch-count-state={managedApp?launchCountState:undefined} data-dirty={entry?.dirty??false} data-write-state={entry?.writeState??'none'} onPointerDown={()=>{c.focus();activate();}} tabIndex={-1} data-app-focus>
@@ -180,6 +188,11 @@ function Surface({id,title,controller:c,entry,confirm,requestConfirm,cancel,surf
     {!launchWaiting&&!entry?.snapshot&&entry?.phase==='loading'&&<p className="runtime-message">Starting app…</p>}
     {!entry?.snapshot&&entry?.phase!=='loading'&&entry?.phase!=='ready'&&<p className="runtime-message">{error||'Open the app from its dock icon.'}</p>}
     {(entry?.phase==='failed'||entry?.phase==='unresponsive')&&<div className="runtime-failure" role="alert"><h2>{entry.phase==='unresponsive'?'App is not responding':'App stopped'}</h2><p>{entry.phase==='unresponsive'?'The app has not responded yet. Wait a moment for it to recover, or restart it.':entry.reason==='restart-limit'?'This app stopped repeatedly. Wait one minute before trying again.':entry.reason==='package-verification-failed'?'The app files could not be verified. Restore a verified copy or contact support.':'The app could not continue. You can try restarting it.'} In-memory work may be lost. Other apps remain available.</p><button onClick={()=>void window.desktop?.runtime.restart(id, generation).catch(()=>{})}>Restart app</button></div>}
-    {confirm&&<div className="runtime-confirm" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();cancel();}else if(event.key==='Tab'){event.preventDefault();const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];const current=buttons.indexOf(document.activeElement as HTMLButtonElement);buttons[(current+(event.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus();}}} role="dialog" aria-label={unsafe.current?'Pending server change':'Unsaved app work'}><h2>{unsafe.current?'Reconcile the server change first':'Discard unfinished app work?'}</h2><p>{unsafe.current?'A change may have reached the server. Wait for it to finish, or check its saved result in the app before closing this workspace.':'This app has no durable draft storage.'}</p><button autoFocus onClick={cancel}>Keep working</button>{!unsafe.current&&<button onClick={()=>{dirty.current=false;c.setModal(false);cancel();c.close();}}>Discard and close</button>}</div>}
+    {confirmAction&&<div className="runtime-confirm-backdrop"><section className="runtime-confirm" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();cancel();}else if(event.key==='Tab'){event.preventDefault();const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])')];const current=buttons.indexOf(document.activeElement as HTMLButtonElement);buttons[(current+(event.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus();}}} role="alertdialog" aria-modal="true" aria-label={unsafe.current?'Pending server change':id==='company.dental.patient-record.m17'?'Discard unsaved patient details?':'Discard unfinished app work?'}>
+      <div className="runtime-confirm-icon" aria-hidden="true"><AlertTriangle size={22}/></div>
+      <h2>{unsafe.current?'Reconcile the server change first':id==='company.dental.patient-record.m17'?'Discard unsaved patient details?':'Discard unfinished app work?'}</h2>
+      <p>{unsafe.current?'A change may have reached the clinic. Keep this window open and check the save result in the app before leaving.':id==='company.dental.patient-record.m17'?'The patient details on this page have not been saved. If you leave now, they will be discarded.':'This app has unfinished work that has not been saved. If you leave now, it will be discarded.'}</p>
+      <div className="runtime-confirm-actions"><button autoFocus className="runtime-confirm-cancel" onClick={cancel}>Cancel</button>{!unsafe.current&&<button className="runtime-confirm-ok" onClick={acceptConfirm??(()=>{dirty.current=false;c.setModal(false);cancel();c.close();})}>OK</button>}</div>
+    </section></div>}
   </div>;
 }

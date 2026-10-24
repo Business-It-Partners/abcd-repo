@@ -1,0 +1,75 @@
+{
+  "milestone": "M17.2",
+  "appId": "company.dental.patient-record.m17",
+  "version": "1.0.10",
+  "environment": "cloudfare-staging",
+  "priorSequence": 85,
+  "sequence": 86,
+  "uiChange": {
+    "removedDuplicateNewPatientBackButton": true,
+    "hostConfirmedDiscardNavigation": true
+  },
+  "package": {
+    "sha256": "45211018a4c2b880b39e3adb51c06d3c2b31a57c372d9205902d34e6bf56d2cd",
+    "payloadDigest": "c0a973948162caf9c4adb27bf68b560626b2b0b771193cd69bce8bea6bca9fdf",
+    "bytes": 1799052,
+    "objectKey": "releases/company.dental.patient-record.m17/1.0.10/45211018a4c2b880b39e3adb51c06d3c2b31a57c372d9205902d34e6bf56d2cd.dentalpkg"
+  },
+  "signer": {
+    "keyId": "company-staging-m17-20261022",
+    "publicKeySha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709"
+  },
+  "metadata": {
+    "catalogueSha256": "57e530746d9f4cae738845ea17fafb9866e8d8db21d9fb1c6ef3fa09376c04a0",
+    "updatePolicySha256": "cccfdd41a19c39e3f617bcd3dd285a58b2fba2ba7c02038f4677852fed131f12",
+    "priorCatalogueSha256": "fc6348027cf9ab5027baddd73762e41fbc1dc61085201a5c900bf3bbecac6e30",
+    "priorUpdatePolicySha256": "7ff5e97fd8741b154a85ce710c72804d32e28f35e9ea54de0e6f5eb046cb47db"
+  },
+  "releaseGrantRetention": {
+    "platformMaximum": 7,
+    "retainedVersions": ["1.0.4", "1.0.5", "1.0.6", "1.0.7", "1.0.8", "1.0.9", "1.0.10"],
+    "retiredGrant": {
+      "version": "1.0.3",
+      "packageSha256": "5b9d80dd9ece37b0bd8cfd1133631f70d370e6109319e8b528c071fb1795f6e1",
+      "payloadDigest": "22571fce3cae69b2591e22da53db3908312a6effc5c76f214bc7b841c9752840",
+      "packageObjectDeleted": false
+    }
+  },
+  "verification": {
+    "patientAppTypecheck": "passed",
+    "patientAppBuild": "passed",
+    "rootBuild": "passed",
+    "rootUnitTests": {"passed": 528, "failed": 0, "filesPassed": 37},
+    "privateHeadlessPatientRecord": {
+      "passed": true,
+      "checks": 30,
+      "report": "artifacts/m17-patient-record-private-2026-10-24T04-47-16.731Z.json",
+      "screenshots": [
+        "artifacts/m17-patient-record-private-2026-10-24T04-47-16.731Z.png",
+        "artifacts/m17-patient-record-intake-private-2026-10-24T04-47-16.731Z.png",
+        "artifacts/m17-patient-record-detail-private-2026-10-24T04-47-16.731Z.png",
+        "artifacts/m17-patient-record-lab-private-2026-10-24T04-47-16.731Z.png"
+      ]
+    },
+    "publicReadback": {
+      "passed": true,
+      "sequence": 86,
+      "exactCataloguePolicyPackageAndSignature": "verified",
+      "exactApiGrant": ["clinic.api.request", "clinic.media.read", "clinic.media.upload"],
+      "isolatedRegistryInstallLaunchHealthUninstall": "passed",
+      "currentM17PackageSet": {"verified": 10, "checks": 35},
+      "report": "../../../../artifacts/m17-patient-record-1.0.10-public-readback-2026-10-24.json",
+      "allM17PackagesReport": "../../../../artifacts/m17-staging-packages-readonly-2026-10-24T05-00-17.198Z.json"
+    }
+  },
+  "scope": {
+    "publicationConfirmedByPublicReadback": true,
+    "productionChanged": false,
+    "authenticatedStoreInstallTested": false,
+    "liveClinicWorkflowTested": false,
+    "desktopShellDiscardModalIncludedInAppPackage": false,
+    "runningDentalOsRestarted": false,
+    "gitCommittedOrPushed": false
+  },
+  "publicationNote": "The final public catalogue, signed update policy, exact downloaded package bytes/signature and isolated registry behavior confirm publication. The publisher could not write its final local result file on retry because that output already existed from the earlier failed attempt; no release conclusion is based on that file. The temporary publisher Worker was confirmed absent after publication."
+}

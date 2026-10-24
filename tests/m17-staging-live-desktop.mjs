@@ -24,8 +24,8 @@ if (!credentials || Object.keys(credentials).sort().join(',') !== 'email,passwor
 
 const apps = [
   { id: 'company.dental.followups.m17', title: 'Follow-ups', version: '1.0.2', payloadDigest: 'a2b047bf7a36008dc0ab27fbf3ae1c70ad9a7b957df6096b940c0cc632fb0156' },
-  { id: 'company.dental.appointments.m17', title: 'Appointments', version: '1.0.3', payloadDigest: 'f1fbaa01f85ac67a2582538e55440e8f125fa53d5456785308d87a452195fa0d' },
-  { id: 'company.dental.calendar.m17', title: 'Calendar', version: '1.0.2', payloadDigest: '39e019ca056b88464ca34815435b5b0c9ea086eb68fdb4df3750048a478e5aea' },
+  { id: 'company.dental.appointments.m17', title: 'Appointments', version: '1.0.4', payloadDigest: 'bc0d1de25adf652fee585b8dc869613eaf7cd657bd130639be1d35547dffe392' },
+  { id: 'company.dental.calendar.m17', title: 'Calendar', version: '1.0.3', payloadDigest: 'f580fefa938193c842dd7c38929e8999150042f591c0e7e21597ae239e51b4f3' },
 ];
 const env = { ...process.env };
 for (const key of ['ELECTRON_RUN_AS_NODE', 'DEBUG', 'PWDEBUG']) delete env[key];
@@ -81,7 +81,7 @@ try {
     const storeBack = shell.getByRole('button', { name: 'Back', exact: true });
     if (await storeBack.isEnabled()) await storeBack.click();
     phase = 'store-heading-' + target.id;
-    await shell.getByRole('heading', { name: 'Your apps. One workspace.' }).waitFor();
+    await shell.getByRole('heading', { name: 'App Store' }).waitFor();
     phase = 'store-catalogue-' + target.id;
     const storeView = await waitFor(async () => {
       const value = await shell.evaluate(generation => window.desktop.store.action('view', undefined, generation), identity.generation);
@@ -101,9 +101,9 @@ try {
     await shell.getByRole('heading', { name: target.title, exact: true }).waitFor();
     phase = 'store-facts-' + target.id;
     check(`signed Store lists ${target.id} ${target.version} as not installed`,
-      await shell.locator('.store-facts').innerText().then(text => text.includes(target.version) && text.includes('Not installed')));
+      await shell.locator('.delivery-store-versions').innerText().then(text => text.includes(target.version) && text.includes('Not installed')));
     phase = 'store-install-' + target.id;
-    await shell.getByRole('button', { name: 'Get', exact: true }).click();
+    await shell.getByRole('button', { name: 'Install', exact: true }).click();
     await shell.locator('.store-arrival').waitFor({ timeout: 25000 });
     check(`authenticated Store started package arrival for ${target.id}`,
       await shell.locator('.store-arrival').count() === 1 && await shell.locator(`[data-dock-app="${target.id}"]`).count() === 1);

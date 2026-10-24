@@ -5,7 +5,7 @@
   "method": "Directly import the pinned SaaS patient-record presentation and workflow components. Adapt only their app-shell, session, route, JSON API, and media transport seams to the Dental OS SDK.",
   "uiParity": {
     "vendoredFiles": 128,
-    "byteIdenticalFiles": 118,
+    "byteIdenticalFiles": 117,
     "adapterFiles": [
       {
         "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
@@ -49,6 +49,14 @@
       {
         "path": "apps/clinic-web/src/shared/ui/ClinicDataTable.tsx",
         "purpose": "Expose the standard-page toolbar and table markers for the directory's existing filters and table."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
+        "purpose": "Add a semantic patient-record navigation heading and align tab icons with the Files-inspired sidebar while retaining every tab and its behavior."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/patient-record.module.css",
+        "purpose": "Match the Files sidebar's quiet gray surface, compact selected navigation row, and clear divider; keep the sidebar anchored while it and the unchanged patient views scroll independently."
       }
     ],
     "shellLayoutClasses": [

@@ -8,10 +8,6 @@ import {
   Receipt,
   ArrowUpRight,
   ArrowDownLeft,
-  UserRound,
-  ShoppingBag,
-  Landmark,
-  Package,
 } from "lucide-react";
 import {
   formatNpr,
@@ -25,9 +21,6 @@ import MonthPicker from "@/shared/dates/MonthPicker";
 import {
   Page,
   PageHeader,
-  Card,
-  CardHeader,
-  CardBody,
   Tabs,
   type TabDef,
   DataTable,
@@ -85,8 +78,14 @@ export default function TransactionRecordView({
   }, [masterTransactions]);
 
   const { totalRevenue, totalSpend, netCashFlow } = workerSummary;
-  const { patientOutstandingDueAmount: totalPatientOutstanding, generalExpenseAmount: totalGeneralExpenses, purchaseAmount: totalPurchases, supplierPayoutAmount: totalSupplierPayments, salaryPayoutAmount: totalSalaryPaid, currentSupplierOutstandingAmount: totalSupplierOutstanding, labPurchaseAmount: totalLabPurchases, labPayoutAmount: totalLabPayments, currentLabOutstandingAmount: totalLabOutstanding } = workerOverview;
+  const { patientOutstandingDueAmount: totalPatientOutstanding } = workerOverview;
 
+  const primaryMetrics = [
+    { label: "Revenue", value: totalRevenue, hint: "Money received", Icon: ArrowDownLeft, tone: undefined },
+    { label: "Spend", value: totalSpend, hint: "Money paid out", Icon: ArrowUpRight, tone: undefined },
+    { label: "Net cash flow", value: netCashFlow, hint: "Revenue minus spend", Icon: netCashFlow >= 0 ? TrendingUp : TrendingDown, tone: netCashFlow < 0 ? "negative" : "positive" },
+    { label: "Patient outstanding", value: totalPatientOutstanding, hint: "Unpaid patient balances", Icon: Receipt, tone: undefined },
+  ];
   const tabs: TabDef[] = [
     { key: "all", label: `All Transactions (${monthFiltered.length})` },
     { key: "in", label: `Money IN (${monthFiltered.filter((t) => t.flow === "in").length})` },
@@ -99,7 +98,7 @@ export default function TransactionRecordView({
 
   return (
     <Page sheet standardPage>
-      <PageHeader title="Transaction Record" icon={<Wallet size={17} style={{ color: "var(--acc)" }} />} />
+      <PageHeader title="Financial overview" icon={<Wallet size={17} style={{ color: "var(--acc)" }} />} />
 
       {loadError && !loading && (
         <ErrorState
@@ -112,326 +111,18 @@ export default function TransactionRecordView({
 
       {(!loadError || hasSuccessfulReport) && (
       <>
-      {/* One financial-overview compartment. The tiles are status cues inside this
-          section; they do not float independently on the page canvas. */}
-      <Card square>
-        <CardHeader title="Financial overview" style={{ padding: "var(--sp-3) var(--sp-4)" }} />
-        <CardBody>
-      {/* 10 Financial Summary KPI Cards arranged in a responsive grid */}
-      <div className="finance-metric-grid">
-        {/* ROW 1: Macro Summary Cards */}
-        {/* 1. Total Revenue (Money IN) */}
-        <Card square style={{ background: "#bbf7d0", borderColor: "#86efac" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#166534" }}>
-                Total Revenue (Money IN)
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#dcfce7",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#15803d",
-                }}
-              >
-                <ArrowDownLeft size={16} />
-              </div>
+      <section className="finance-overview" aria-label="Financial overview">
+        <div className="finance-primary-grid">
+          {primaryMetrics.map(({ label, value, hint, Icon, tone }) => <article className={`finance-primary-card${tone ? ` is-${tone}` : ""}`} key={label}>
+            <div className="finance-primary-copy">
+              <span>{label}</span>
+              <strong>{formatNpr(value)}</strong>
+              <small>{hint}</small>
             </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#15803d", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalRevenue)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 2. Total Spend (Money OUT) */}
-        <Card square style={{ background: "#fecaca", borderColor: "#fca5a5" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#991b1b" }}>
-                Total Spend (Money OUT)
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#fee2e2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#b91c1c",
-                }}
-              >
-                <ArrowUpRight size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#b91c1c", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalSpend)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 3. Net Cash Flow */}
-        <Card square style={{ background: netCashFlow >= 0 ? "#d4d4d8" : "#fecdd3", borderColor: netCashFlow >= 0 ? "#a1a1aa" : "#fda4af" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "var(--ink-1)" }}>
-                Net Cash Flow
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: netCashFlow >= 0 ? "#e4e4e7" : "#ffe4e6",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: netCashFlow >= 0 ? "var(--acc)" : "#e11d48",
-                }}
-              >
-                {netCashFlow >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: "var(--fs-16)",
-                fontWeight: "var(--fw-bold)",
-                color: netCashFlow >= 0 ? "var(--acc)" : "#e11d48",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {formatNpr(netCashFlow)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 4. Patient Outstanding Dues */}
-        <Card square style={{ background: "#fde68a", borderColor: "#fcd34d" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "var(--ink-1)" }}>
-                Patient Outstanding Dues
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#fef3c7",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#d97706",
-                }}
-              >
-                <Receipt size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#b45309", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalPatientOutstanding)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* ROW 2: Detailed Finance Sub-Books Breakdown */}
-        {/* 5. General Expenses */}
-        <Card square style={{ background: "#fed7aa", borderColor: "#fdba74" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#9a3412" }}>
-                General Expenses
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#ffedd5",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#c2410c",
-                }}
-              >
-                <ShoppingBag size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#c2410c", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalGeneralExpenses)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 6. Purchases */}
-        <Card square style={{ background: "#fde68a", borderColor: "#facc15" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#854d0e" }}>
-                Purchases
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#fef08a",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#a16207",
-                }}
-              >
-                <Package size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#a16207", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalPurchases)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 7. Supplier payments */}
-        <Card square style={{ background: "#ddd6fe", borderColor: "#c4b5fd" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#6b21a8" }}>
-                Supplier Payouts
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#e9d5ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#7e22ce",
-                }}
-              >
-                <Landmark size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#7e22ce", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalSupplierPayments)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 8. Staff & Doctor Payroll */}
-        <Card square style={{ background: "#bae6fd", borderColor: "#7dd3fc" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#075985" }}>
-                Salary Payouts
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#bae6fd",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0284c7",
-                }}
-              >
-                <UserRound size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#0284c7", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalSalaryPaid)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 9. Supplier Outstanding */}
-        <Card square style={{ background: "#d8b4fe", borderColor: "#c084fc" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#6b21a8" }}>
-                Current Supplier Outstanding
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#e9d5ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#7e22ce",
-                }}
-              >
-                <Landmark size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#7e22ce", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalSupplierOutstanding)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 10. Lab purchases */}
-        <Card square style={{ background: "#f5d0fe", borderColor: "#f0abfc" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)", color: "#86198f" }}>
-                Lab Purchases
-              </span>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "#fae8ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#a21caf",
-                }}
-              >
-                <Package size={16} />
-              </div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#a21caf", fontVariantNumeric: "tabular-nums" }}>
-              {formatNpr(totalLabPurchases)}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* 11. Lab payouts */}
-        <Card square style={{ background: "#f5d0fe", borderColor: "#f0abfc" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)" }}>Lab Payouts</span>
-              <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#fae8ff", display: "flex", alignItems: "center", justifyContent: "center" }}><Landmark size={16} /></div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", fontVariantNumeric: "tabular-nums" }}>{formatNpr(totalLabPayments)}</div>
-          </CardBody>
-        </Card>
-
-        {/* 12. Lab outstanding */}
-        <Card square style={{ background: "#e9d5ff", borderColor: "#c4b5fd" }}>
-          <CardBody>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)" }}>Current Lab Outstanding</span>
-              <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#ddd6fe", display: "flex", alignItems: "center", justifyContent: "center" }}><Landmark size={16} /></div>
-            </div>
-            <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", fontVariantNumeric: "tabular-nums" }}>{formatNpr(totalLabOutstanding)}</div>
-          </CardBody>
-        </Card>
-      </div>
-        </CardBody>
-      </Card>
+            <span className="finance-primary-icon" aria-hidden="true"><Icon size={18} /></span>
+          </article>)}
+        </div>
+      </section>
 
       {/* Separate ledger compartment */}
       <DataTable<MasterTransaction>

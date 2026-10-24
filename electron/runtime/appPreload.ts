@@ -29,9 +29,11 @@ const fileListeners = new Set<(value:FileSelection)=>void>();
 const navigationListeners = new Set<(value:AppNavigationRequest)=>void>();
 ipcRenderer.on('runtime:navigate', (_event, value: unknown) => {
   const request = value as AppNavigationRequest | null;
-  if (!request || Object.keys(request).sort().join() !== 'direction,entry' ||
+  const keys = request && typeof request === 'object' ? Object.keys(request).sort().join() : '';
+  if (!request || !['direction,entry', 'direction,discard,entry'].includes(keys) ||
       !['back','forward'].includes(request.direction) ||
-      typeof request.entry !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.entry)) return;
+      typeof request.entry !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.entry) ||
+      request.discard !== undefined && request.discard !== true) return;
   for (const listener of navigationListeners) listener(request);
 });
 ipcRenderer.on('runtime:file-transfer',(_event,value:unknown)=>{

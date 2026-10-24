@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Patient Record uses the shared Standard Window scroll viewport",
+    "Patient Record scroll shell fills the Standard Window page",
+    "Patient Record uses the six-pixel overlay scrollbar four pixels from the page edge",
+    "Patient Record list removes the legacy care-workspace gutter",
+    "updated package is Patient Record 1.0.7 with app assets and JSON/media grants",
+    "renderer receives the SDK bridge without credential or direct-network accessors",
+    "SaaS directory uses the scoped patient search route and validated Nepali-month filters",
+    "production SaaS directory is displayed without the former custom app header or copy",
+    "registration opens the pinned SaaS CaseEntryView with its production back and save controls",
+    "SaaS registration displays the patient number returned by its scoped intake-context route",
+    "patient detail reports only opaque UUID entries to the OS",
+    "OS Back returns from patient detail to the directory",
+    "OS Forward restores the patient detail page",
+    "patient detail no longer renders its own Back button",
+    "SaaS patient profile reads the authoritative clinic record through ClinicClient",
+    "billing navigation stays hidden when the clinic role lacks the ledger capability",
+    "unknown profile-write outcome remains available to retry with its original operation identity",
+    "OS Back is blocked while Patient Record has an unresolved clinic write",
+    "profile retry replays the same payload and original key with expected row versions",
+    "SaaS clinical timeline groups the case events and excludes notes and unscoped work",
+    "SaaS X-ray gallery reads verified private bytes through clinic.media.read",
+    "SaaS radiograph upload uses brokered intent, binary transfer and finalisation",
+    "SaaS patient lab screen dispatches through the clinic API with supplier and expected row version",
+    "renderer completed the tested SaaS workflows without errors or unkeyed clinic mutations",
+    "role without patient_record.access is denied before patient or media routes execute",
+    "role-denied view contains no patient information or renderer errors"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.patient-record.m17",
+    "version": "1.0.7",
+    "packageSha256": "aa81e006efbc02197c87de110a016920f0a2a7fff06a5a7aa67e37f1290d92dc",
+    "payloadDigest": "71059ff1db2fb3989453c4398e26cc65a56cb5e8d7095e1a6108bbab9df451e3",
+    "wireBytes": 1797647,
+    "assetCount": 5,
+    "grants": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ]
+  },
+  "scope": "Private headless Electron acceptance of the pinned SaaS Patient Record screens using only synthetic clinic/media data and test-only signing keys. No live patient data, staging publication or clinic credential was used.",
+  "screenshot": "m17-patient-record-private-2026-10-24T03-23-18.088Z.png",
+  "intakeScreenshot": "m17-patient-record-intake-private-2026-10-24T03-23-18.088Z.png",
+  "detailScreenshot": "m17-patient-record-detail-private-2026-10-24T03-23-18.088Z.png",
+  "labScreenshot": "m17-patient-record-lab-private-2026-10-24T03-23-18.088Z.png"
+}

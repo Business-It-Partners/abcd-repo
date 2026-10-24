@@ -19,13 +19,13 @@ const modules = [
   "supplier-payments",
 ];
 
-test("Finance M17 has one 1.7.4 package with all eight ordered Finance modules", async () => {
+test("Finance M17 has one 1.7.7 package with all eight ordered Finance modules", async () => {
   const packageJson = await readJson("package.json");
   const manifest = await readJson("app.manifest.json");
   const app = await readJson("app.json");
 
   assert.equal(packageJson.name, "company.dental.finance.m17");
-  assert.equal(packageJson.version, "1.7.4");
+  assert.equal(packageJson.version, "1.7.7");
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ["clinic.app.finance", "clinic.api.request", "session.context"]);

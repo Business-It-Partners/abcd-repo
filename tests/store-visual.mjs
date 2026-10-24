@@ -6,7 +6,7 @@ try{
  const page=await app.firstWindow();await page.getByRole('button',{name:'App Store',exact:true}).click();const frame=page.getByTestId('store-window');await frame.getByRole('button',{name:'Details Calendar',exact:true}).click();
  // Pause effects as soon as inserted, so slow software screenshots cannot miss the flight.
  await page.evaluate(()=>{new MutationObserver(()=>{document.querySelectorAll('.store-celebration *').forEach(el=>el.getAnimations().forEach(a=>a.pause()));}).observe(document.body,{childList:true,subtree:true});});
- await frame.getByRole('button',{name:'Get',exact:true}).click();await page.locator('.store-arrival').waitFor();
+ await frame.getByRole('button',{name:'Install',exact:true}).click();await page.locator('.store-arrival').waitFor();
  const samples=[];
  for(const [name,time] of [['lift',250],['flight',950],['landing',1630]]){
   await page.evaluate(t=>document.querySelectorAll('.store-celebration *').forEach(el=>el.getAnimations().forEach(a=>{a.pause();a.currentTime=t;})),time);

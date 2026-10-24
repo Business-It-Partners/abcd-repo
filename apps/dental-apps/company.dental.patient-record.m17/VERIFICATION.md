@@ -1,20 +1,31 @@
 # Patient Record — verification record
 
-**Current candidate:** `company.dental.patient-record.m17` / `1.0.1`
-**Pinned SaaS source:** production `f44d3e30ca6f79cba61e32601c53d58826500201`
-**State:** local build and private synthetic UI acceptance pass. The 1.0.1 staging update is the next release step; the earlier 1.0.0 release at sequence 32 is preserved as historical evidence.
+**Current staging release:** `company.dental.patient-record.m17` / `1.0.10`, signed at staging sequence 86.
+**Package SHA-256:** `45211018a4c2b880b39e3adb51c06d3c2b31a57c372d9205902d34e6bf56d2cd` (1,799,052 bytes).
+**Payload digest:** `c0a973948162caf9c4adb27bf68b560626b2b0b771193cd69bce8bea6bca9fdf`.
+**Signer:** `company-staging-m17-20261022` (pinned M17 staging identity).
 
-## UI parity and local checks
+## UI and implementation
 
-- The patient directory, registration view, patient details and visible tabs use the pinned Dental SaaS view components and CSS. The app wrapper now uses the same `clinicApp`, `clinicWorkspaceCanvas` and `clinicCareWorkspace` classes as the production workspace.
-- File comparison: 121 of 128 vendored files are byte-identical to the pinned source. The remaining seven are SDK/session/routing/media adapters documented in [`SOURCE_IMPORT.json`](SOURCE_IMPORT.json); they do not replace the source view markup or styles.
-- `npm --prefix apps/dental-apps/company.dental.patient-record.m17 run build` — passed after the production shell wrapper change.
-- `npm run test:patient-record` — **17/17** private synthetic checks passed against the rebuilt 1.0.1 app. The flow covers the directory, source intake controls and patient number, profile read/edit retry using the original operation identity, timeline, private image read/upload, lab dispatch, SDK isolation and role denial.
-- Latest private artifacts: [report](../../../artifacts/m17-patient-record-private-2026-10-23T09-43-57.467Z.json), [directory](../../../artifacts/m17-patient-record-private-2026-10-23T09-43-57.467Z.png), [registration](../../../artifacts/m17-patient-record-intake-private-2026-10-23T09-43-57.467Z.png), [patient detail](../../../artifacts/m17-patient-record-detail-private-2026-10-23T09-43-57.467Z.png), [lab tab](../../../artifacts/m17-patient-record-lab-private-2026-10-23T09-43-57.467Z.png).
-- The private fixture uses synthetic records and ephemeral test signing keys. It does not use clinic credentials or real patient data.
+The Files-inspired patient-section sidebar is fixed at 190 px, giving the content pane 16 px more room than the former 206 px width. Sidebar and active content scroll independently. The new-patient page no longer draws its own Back button; its app history supports a discard navigation after the OS confirms it. Patient content, data and sections remain unchanged.
 
-## Staging and remaining acceptance
+The polished discard dialog and confirmed OS Back/Forward dispatch are desktop-shell changes. They are not included in this Patient Record package and require a separate desktop-shell update.
 
-The signed `1.0.0` package published at sequence 32 remains intact. It predates the UI parity correction. The corrected `1.0.1` package must be built, signed with the pinned M17 staging identity, published as a staging-only update and publicly read back before the corrected package is marked staging-published.
+The app continues to render the pinned Dental SaaS `PatientRecordView`, `CaseEntryView`, `PatientDrawer`, and detail tabs. The Dental SaaS Worker remains the business authority; the renderer uses Dental OS `ClinicClient` and media SDKs. No local business database, direct renderer networking, or offline write queue was added.
 
-Authenticated Store installation, live clinic reads/writes, current-source Windows verification, independent review, M15/G15 media-platform closure and final user acceptance remain separate gates. No production publication or GitHub Actions run is part of this app update.
+## Checks
+
+- Patient app typecheck — passed.
+- `npm run build:patient-record` — passed for 1.0.10.
+- `npm run build` — passed.
+- `npm test -- --maxWorkers=1` — 528/528 tests passed across 37 files.
+- `npm run test:patient-record` — 30/30 private headless checks passed against 1.0.10 using synthetic clinic and media data, including confirmed OS Back behavior, the 190 px sidebar and independent scrolling.
+- Public staging readback passed at sequence 86: signed catalogue and policy, exact package bytes and signature, Patient Record's exact API grant, and isolated PackageRegistry install/launch/health/uninstall. No authenticated Store install or clinic API write was performed.
+
+Evidence: [release record](../../../dental-os_v1_working_info/milestone-17-dental-app-delivery/evidence/M17.2_PATIENT_RECORD_1.0.10_STAGING_2026-10-24.json), [public package readback](../../../artifacts/m17-patient-record-1.0.10-public-readback-2026-10-24.json), [private UI report](../../../artifacts/m17-patient-record-private-2026-10-24T04-47-16.731Z.json), and [private intake screenshot](../../../artifacts/m17-patient-record-intake-private-2026-10-24T04-47-16.731Z.png).
+
+## Staging policy and remaining gates
+
+The current update policy retains exact API grants for versions 1.0.4–1.0.10. The platform permits at most seven retained grants per app, so the 1.0.3 API grant was retired to publish 1.0.10. Its immutable package object remains in staging storage.
+
+This publication is to the Cloudflare staging Store only. Authenticated Store installation, live clinic workflow acceptance, current-source Windows verification, independent review, M15/G15 closeout, and final user acceptance remain open. Production was untouched. The already-running Dental OS was not restarted; refresh the staging Store and fully reopen Patient Record to load 1.0.10 there. The separate desktop-shell changes are not delivered by this app package.
