@@ -13,7 +13,7 @@ describe('Constrained window resizing', () => {
     expect(area.y + area.height).toBe(dockZoneTop(screen) - dockWindowGap);
     expect(initialBounds('store', screen)).toMatchObject({ y: area.y, height: area.height });
     expect(initialBounds('records', screen)).toEqual(area);
-    expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: 59, height: workArea({ width: 580, height: 800 }).height });
+    expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: statusBarHeightForWidth(580), height: workArea({ width: 580, height: 800 }).height });
   });
   it('maximizes across the viewport underneath the floating status bar and dock', () => {
     expect(maximizedBounds(screen)).toEqual({ x: 0, y: 0, width: screen.width, height: screen.height });
