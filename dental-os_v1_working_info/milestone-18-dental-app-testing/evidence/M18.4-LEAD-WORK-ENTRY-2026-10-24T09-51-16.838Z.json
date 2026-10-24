@@ -1,0 +1,28 @@
+{
+  "recordType": "m18_work_entry_staging_run",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.4",
+  "payloadDigest": "341990259deb764b6492d2139b4fa1295ed5e5de679b86fd727919dbfffa8d0b",
+  "patientFixtureAppId": "company.dental.patient-record.m17",
+  "patientFixtureVersion": "1.0.10",
+  "patientFixtureDigest": "c0a973948162caf9c4adb27bf68b560626b2b0b771193cd69bce8bea6bca9fdf",
+  "stagingCatalogueSequence": 92,
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "environment": "cloudflare-staging",
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientAndCaseNamesInEvidence": false,
+  "runMode": "existing-staging-test-case-read-only",
+  "phase": "staging-sign-in",
+  "checks": [
+    {
+      "name": "run stopped during staging-sign-in",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 25000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.statusbar-account-menu > summary') to be visible\u001b[22m\n"
+    }
+  ],
+  "uiDiagnostics": [],
+  "apiTrace": [],
+  "failed": true,
+  "passed": false
+}

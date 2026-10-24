@@ -1,0 +1,42 @@
+{
+  "recordType": "m18_finance_staging_workflow_acceptance",
+  "environment": "cloudfare-staging",
+  "date": "2026-10-24T08:24:20.391Z",
+  "sourceHead": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "package": {
+    "appId": "company.dental.finance.m17",
+    "version": "1.7.7",
+    "catalogueSequence": 91,
+    "packageSha256": "96c5c0156e21730424e847ad93781ae2409488cdd3334a2554d7679c55f24c4c",
+    "payloadDigest": "1a224065b7a9aa630fba1496bb101e1ff5479d7b958775d7e42b85164be3bc63"
+  },
+  "isolatedPrivateDesktop": true,
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientPaymentsOpened": false,
+  "salaryWrite": "not-run",
+  "syntheticStaffOptions": 0,
+  "fixtureNamespace": "M18-FIN-20261024-669A2665",
+  "packageInstalled": false,
+  "registryVerified": false,
+  "recordsCreated": {
+    "productCreated": false,
+    "supplierCreated": false,
+    "purchaseCreated": false,
+    "supplierPaymentCreated": false,
+    "expenseCreated": false
+  },
+  "checks": [],
+  "cases": [
+    {
+      "name": "Run stopped at staging-sign-in",
+      "status": "FAIL",
+      "detail": "TimeoutError"
+    }
+  ],
+  "apiTrace": [],
+  "traceRedaction": "No request/response values, credentials, tokens, cookies, clinic/user identifiers, patient data, or staff names are recorded; only normalized route, field/key names, status, content type, array counts and correlation/request ID are retained.",
+  "appPageErrors": 0,
+  "failed": true,
+  "acceptanceStatus": "FAIL"
+}

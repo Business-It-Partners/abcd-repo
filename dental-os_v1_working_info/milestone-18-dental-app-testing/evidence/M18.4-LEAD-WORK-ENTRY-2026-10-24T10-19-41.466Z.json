@@ -1,0 +1,566 @@
+{
+  "recordType": "m18_work_entry_staging_run",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.4",
+  "payloadDigest": "341990259deb764b6492d2139b4fa1295ed5e5de679b86fd727919dbfffa8d0b",
+  "stagingCatalogueSequence": 92,
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "environment": "cloudflare-staging",
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientAndCaseNamesInEvidence": false,
+  "stagingTestNamespace": "M18-WE-20261024-628B2FE0",
+  "runMode": "existing-staging-patient-new-case-end-to-end",
+  "phase": "work-entry-case-read-and-commit",
+  "checks": [
+    {
+      "name": "Dental OS session is authenticated in staging mode",
+      "passed": true
+    },
+    {
+      "name": "Work Entry exact signed version is offered",
+      "passed": true
+    },
+    {
+      "name": "Work Entry staging UI opens and exposes New case action",
+      "passed": true
+    },
+    {
+      "name": "Work Entry active and known-good digests match the signed staging package",
+      "passed": true
+    },
+    {
+      "name": "Work Entry reads /v1/work-entry/cases through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/work-entry/cases",
+        "method": "GET",
+        "requestId": "542cd01d-8096-4d77-b170-aff81d57e379"
+      }
+    },
+    {
+      "name": "Work Entry reads /v1/treatment-protocols through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/treatment-protocols",
+        "method": "GET",
+        "requestId": "dae84e59-2dbf-4ede-9f0b-636f8bd35f04"
+      }
+    },
+    {
+      "name": "Work Entry reads /v1/clinic/staff-references through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/clinic/staff-references",
+        "method": "GET",
+        "requestId": "ec3dc054-0801-43e2-b477-bd21552425ca"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/chief-complaints/:id/work-entry for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/chief-complaints/:id/work-entry",
+        "method": "GET",
+        "requestId": "da8e4540-01e5-479b-b940-c2ea6aa6b9d9"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/patients/:id/core for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/patients/:id/core",
+        "method": "GET",
+        "requestId": "db112810-b27d-4abc-986e-a19dcf21ec91"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/patients/:id/ledger for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/patients/:id/ledger",
+        "method": "GET",
+        "requestId": "f9860503-caaf-4b1c-bdc2-cc2926834055"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/patients/:id/odontogram for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/patients/:id/odontogram",
+        "method": "GET",
+        "requestId": "f8b89aff-315f-495f-960e-24926b380f94"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/patients/:id/periodontal-chart for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/patients/:id/periodontal-chart",
+        "method": "GET",
+        "requestId": "8ebf10cd-a20f-4647-9369-2d5a2b6461c2"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/patients/:id/canal-measurements for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/patients/:id/canal-measurements",
+        "method": "GET",
+        "requestId": "e71b0b71-b98d-4e5d-b084-61a72f05eed9"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/clinic/suppliers for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/clinic/suppliers",
+        "method": "GET",
+        "requestId": "bde3a20b-5a47-4784-95d9-a53a7f3a2d44"
+      }
+    },
+    {
+      "name": "Work Entry loads /v1/follow-ups for the new staging case",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/follow-ups",
+        "method": "GET",
+        "requestId": "d7eca08a-b0f2-41f3-9432-f5c238245d66"
+      }
+    },
+    {
+      "name": "Work Entry offers an active case doctor for staging workflow",
+      "passed": true
+    },
+    {
+      "name": "an active case doctor is selected before clinical work is committed",
+      "passed": true
+    },
+    {
+      "name": "staging provides a supported arch or whole-mouth treatment protocol",
+      "passed": true
+    },
+    {
+      "name": "Work Entry records the explicit no-follow-up choice before review",
+      "passed": true
+    },
+    {
+      "name": "Work Entry saves the selected case doctor through its approved update command",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/chief-complaints/:id/work-entry",
+        "method": "PUT",
+        "requestId": "65e06d4b-9eb6-44b7-b204-60b990c8a91e"
+      }
+    },
+    {
+      "name": "run stopped during work-entry-case-read-and-commit",
+      "passed": false,
+      "detail": "Trace deadline: company.dental.work-entry.m17 POST /v1/work-entry/commit"
+    }
+  ],
+  "uiDiagnostics": [
+    {
+      "appId": "company.dental.work-entry.m17",
+      "alertCount": 1,
+      "alerts": [
+        "[alert text omitted]"
+      ]
+    }
+  ],
+  "apiTrace": [
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/treatment-protocols",
+      "queryKeys": [],
+      "requestId": "dae84e59-2dbf-4ede-9f0b-636f8bd35f04",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "treatmentProtocols"
+      ],
+      "responseArrayCounts": {
+        "treatmentProtocols": 22
+      },
+      "elapsedMs": 476
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/staff-references",
+      "queryKeys": [],
+      "requestId": "ec3dc054-0801-43e2-b477-bd21552425ca",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "staff"
+      ],
+      "responseArrayCounts": {
+        "staff": 11
+      },
+      "elapsedMs": 480
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/work-entry/cases",
+      "queryKeys": [],
+      "requestId": "542cd01d-8096-4d77-b170-aff81d57e379",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "cases"
+      ],
+      "responseArrayCounts": {
+        "cases": 17
+      },
+      "elapsedMs": 758
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/chief-complaints/:id/work-entry",
+      "queryKeys": [],
+      "requestId": "da8e4540-01e5-479b-b940-c2ea6aa6b9d9",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "case"
+      ],
+      "responseArrayCounts": {
+        "case.caseDoctorStaffIds": 1,
+        "case.protocols": 0
+      },
+      "elapsedMs": 741
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/core",
+      "queryKeys": [],
+      "requestId": "db112810-b27d-4abc-986e-a19dcf21ec91",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "patient"
+      ],
+      "responseArrayCounts": {
+        "patient.allergies": 0
+      },
+      "elapsedMs": 697
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/ledger",
+      "queryKeys": [],
+      "requestId": "f9860503-caaf-4b1c-bdc2-cc2926834055",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "ledger"
+      ],
+      "responseArrayCounts": {
+        "ledger.entries": 0
+      },
+      "elapsedMs": 714
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/odontogram",
+      "queryKeys": [],
+      "requestId": "f8b89aff-315f-495f-960e-24926b380f94",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "marks"
+      ],
+      "responseArrayCounts": {
+        "marks": 0
+      },
+      "elapsedMs": 1238
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/suppliers",
+      "queryKeys": [
+        "scope"
+      ],
+      "requestId": "bde3a20b-5a47-4784-95d9-a53a7f3a2d44",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "suppliers"
+      ],
+      "responseArrayCounts": {
+        "suppliers": 1
+      },
+      "elapsedMs": 426
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/periodontal-chart",
+      "queryKeys": [],
+      "requestId": "8ebf10cd-a20f-4647-9369-2d5a2b6461c2",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "chart"
+      ],
+      "responseArrayCounts": {
+        "chart.teeth": 0
+      },
+      "elapsedMs": 1018
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/canal-measurements",
+      "queryKeys": [],
+      "requestId": "e71b0b71-b98d-4e5d-b084-61a72f05eed9",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "sessions"
+      ],
+      "responseArrayCounts": {
+        "sessions": 0
+      },
+      "elapsedMs": 1088
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/follow-ups",
+      "queryKeys": [],
+      "requestId": "d7eca08a-b0f2-41f3-9432-f5c238245d66",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "followUps"
+      ],
+      "responseArrayCounts": {
+        "followUps": 7
+      },
+      "elapsedMs": 389
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "PUT",
+      "route": "/v1/chief-complaints/:id/work-entry",
+      "queryKeys": [],
+      "requestId": "65e06d4b-9eb6-44b7-b204-60b990c8a91e",
+      "idempotencyKeyPresent": true,
+      "requestBodyKeys": [
+        "allergies",
+        "caseDoctorStaffIds",
+        "chiefComplaint",
+        "expectedCaseRowVersion",
+        "expectedMedicalProfileRowVersion",
+        "expectedPatientRowVersion",
+        "medicalProfile",
+        "openedOn",
+        "patient",
+        "patientId"
+      ],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "case",
+        "patient"
+      ],
+      "responseArrayCounts": {
+        "patient.allergies": 0,
+        "case.caseDoctorStaffIds": 1,
+        "case.protocols": 0
+      },
+      "elapsedMs": 2055
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/staff-references",
+      "queryKeys": [],
+      "requestId": "b62f3d19-6582-41f1-8492-e8bedf4eb0b5",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "staff"
+      ],
+      "responseArrayCounts": {
+        "staff": 11
+      },
+      "elapsedMs": 530
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/treatment-protocols",
+      "queryKeys": [],
+      "requestId": "6291a652-4fe5-4c51-8df1-14b317d95e0f",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "treatmentProtocols"
+      ],
+      "responseArrayCounts": {
+        "treatmentProtocols": 22
+      },
+      "elapsedMs": 613
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/work-entry/cases",
+      "queryKeys": [],
+      "requestId": "acfa9a7d-88e1-430f-987a-912f78893fb3",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "cases"
+      ],
+      "responseArrayCounts": {
+        "cases": 17
+      },
+      "elapsedMs": 648
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/chief-complaints/:id/work-entry",
+      "queryKeys": [],
+      "requestId": "40aedb21-e79d-4c03-b392-560b5ced3fd3",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "case"
+      ],
+      "responseArrayCounts": {
+        "case.caseDoctorStaffIds": 1,
+        "case.protocols": 0
+      },
+      "elapsedMs": 737
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/chief-complaints/:id/work-entry",
+      "queryKeys": [],
+      "requestId": "0a0acc58-3d0a-4625-ab1b-5c1ed0eb48ea",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "case"
+      ],
+      "responseArrayCounts": {
+        "case.caseDoctorStaffIds": 1,
+        "case.protocols": 0
+      },
+      "elapsedMs": 738
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients/:id/ledger",
+      "queryKeys": [],
+      "requestId": "63c67a2e-e9e7-43b2-a533-faea619921db",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "ledger"
+      ],
+      "responseArrayCounts": {
+        "ledger.entries": 0
+      },
+      "elapsedMs": 738
+    }
+  ],
+  "failed": true,
+  "passed": false
+}

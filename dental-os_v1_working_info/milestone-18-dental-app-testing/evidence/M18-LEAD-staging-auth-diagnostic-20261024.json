@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "phase": "auth-wait-result",
+  "failureClass": "TimeoutError",
+  "checks": [
+    "real staging mode starts gated"
+  ],
+  "authStatus": "ready",
+  "authFailureStage": "session-install",
+  "authFailureOutcome": "complete",
+  "observedSessionPhase": null,
+  "observedViewPhase": "ready",
+  "observedAlert": false,
+  "observedSubmitDisabled": false,
+  "pageErrorCount": 0,
+  "scope": "Private Linux desktop with approved staging identity; sign-in, lock, sign-out and fresh-login session boundaries; no business operations, user mutations or global revocation."
+}

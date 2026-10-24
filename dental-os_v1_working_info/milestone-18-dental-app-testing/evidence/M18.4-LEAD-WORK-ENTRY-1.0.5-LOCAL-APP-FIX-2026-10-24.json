@@ -1,0 +1,40 @@
+{
+  "recordType": "m18_work_entry_local_app_fix_regression",
+  "date": "2026-10-24",
+  "appId": "company.dental.work-entry.m17",
+  "candidateVersion": "1.0.5",
+  "worktree": "/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os",
+  "branch": "codex/milestone-15",
+  "baseCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "checks": [
+    {
+      "name": "Work Entry TypeScript typecheck",
+      "result": "PASS",
+      "command": "npm --prefix apps/dental-apps/company.dental.work-entry.m17 run typecheck"
+    },
+    {
+      "name": "Work Entry focused package suite",
+      "result": "PASS",
+      "command": "npm --prefix apps/dental-apps/company.dental.work-entry.m17 test",
+      "nodeTestsPassed": 5,
+      "vitestTestsPassed": 13,
+      "failed": 0
+    },
+    {
+      "name": "Work Entry package build",
+      "result": "PASS",
+      "command": "npm --prefix apps/dental-apps/company.dental.work-entry.m17 run build",
+      "warnings": [
+        "Existing Vite module-level use-client directive warnings",
+        "Existing large-chunk warning"
+      ]
+    }
+  ],
+  "fix": "Existing-case updates and the final clinical commit now use distinct persisted idempotency-key scopes; the update scope is cleared after a successful case update.",
+  "stagingPackageSigned": false,
+  "stagingPackagePublished": false,
+  "stagingAcceptance": false,
+  "productionUsed": false,
+  "backendCodeChanged": false,
+  "backendDataChanged": false
+}

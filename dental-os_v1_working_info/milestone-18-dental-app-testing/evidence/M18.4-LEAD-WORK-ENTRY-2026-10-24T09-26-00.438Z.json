@@ -1,0 +1,98 @@
+{
+  "recordType": "m18_work_entry_staging_run",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.3",
+  "payloadDigest": "a61120e1ac56c4529fd5e9282e94e699363d0fcaa44651f5a5d981dde2518884",
+  "patientFixtureAppId": "company.dental.patient-record.m17",
+  "patientFixtureVersion": "1.0.10",
+  "patientFixtureDigest": "c0a973948162caf9c4adb27bf68b560626b2b0b771193cd69bce8bea6bca9fdf",
+  "stagingCatalogueSequence": 91,
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "environment": "cloudflare-staging",
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientFixtureNamespace": "M18-WE-20261024-F0609A75",
+  "patientAndCaseNamesInEvidence": false,
+  "runMode": "read-only-startup",
+  "phase": "work-entry-signed-install-and-read",
+  "checks": [
+    {
+      "name": "Dental OS session is authenticated in staging mode",
+      "passed": true
+    },
+    {
+      "name": "Work Entry exact signed version is offered",
+      "passed": true
+    },
+    {
+      "name": "run stopped during work-entry-signed-install-and-read",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main[data-dental-os-app=\"company.dental.work-entry.m17\"]') to be visible\u001b[22m\n"
+    }
+  ],
+  "uiDiagnostics": [],
+  "apiTrace": [
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.3",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/work-entry/cases",
+      "queryKeys": [],
+      "requestId": "e1a9733d-bdcf-485d-92ff-682574085b5b",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "cases"
+      ],
+      "responseArrayCounts": {
+        "cases": 16
+      },
+      "elapsedMs": 477
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.3",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/treatment-protocols",
+      "queryKeys": [],
+      "requestId": "c5f0dae8-81bc-4ea0-ab46-1bce822b705d",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "treatmentProtocols"
+      ],
+      "responseArrayCounts": {
+        "treatmentProtocols": 20
+      },
+      "elapsedMs": 554
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.3",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/staff-references",
+      "queryKeys": [],
+      "requestId": "b46cf14d-5f45-4ff9-a84b-c59d41412414",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "staff"
+      ],
+      "responseArrayCounts": {
+        "staff": 11
+      },
+      "elapsedMs": 557
+    }
+  ],
+  "failed": true,
+  "passed": false
+}

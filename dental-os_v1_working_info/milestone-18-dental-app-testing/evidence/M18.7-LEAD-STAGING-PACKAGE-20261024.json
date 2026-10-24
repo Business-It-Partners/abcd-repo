@@ -1,0 +1,19 @@
+{
+  "record_type": "signed_staging_package_preflight",
+  "environment": "cloudfare-staging",
+  "catalogueSequence": 91,
+  "appId": "company.dental.finance.m17",
+  "version": "1.7.7",
+  "packageSha256": "96c5c0156e21730424e847ad93781ae2409488cdd3334a2554d7679c55f24c4c",
+  "payloadDigest": "1a224065b7a9aa630fba1496bb101e1ff5479d7b958775d7e42b85164be3bc63",
+  "packageBytes": 1506696,
+  "capabilities": [
+    "clinic.app.finance",
+    "clinic.api.request",
+    "session.context"
+  ],
+  "apiGrantVerified": true,
+  "checkedAt": "2026-10-24T08:17:36.277Z",
+  "sourceHead": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "scope": "Public signed staging metadata and package readback only; no clinic business API calls, records, or writes."
+}

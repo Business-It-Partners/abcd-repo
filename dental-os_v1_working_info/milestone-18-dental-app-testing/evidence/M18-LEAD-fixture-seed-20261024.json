@@ -1,0 +1,42 @@
+{
+  "recordType": "m18_synthetic_fixture_seed",
+  "environment": "cloudfare-staging",
+  "date": "2026-10-24T07:37:19.400Z",
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "privateHeadlessProfile": true,
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "phase": "sign-in",
+  "session": {
+    "ready": false,
+    "mode": null,
+    "role": null
+  },
+  "packages": [],
+  "patient": {
+    "namespace": "M18-TP-20261024-L1",
+    "displayName": "M18-TP-20261024-L1 Synthetic Patient",
+    "synthetic": true,
+    "registered": false,
+    "patientId": null,
+    "patientNumber": null,
+    "phoneIncludedInEvidence": false
+  },
+  "case": {
+    "chiefComplaint": "M18-TP-20261024-L1 synthetic fixture setup",
+    "chiefComplaintId": null,
+    "status": null,
+    "created": false,
+    "protocolName": null,
+    "pendingStages": null,
+    "completedStages": 0
+  },
+  "apiEvidence": {
+    "directRequests": 0,
+    "rawResponsesSaved": false,
+    "httpStatusesCaptured": false
+  },
+  "steps": [],
+  "passed": false,
+  "failureClass": "TimeoutError"
+}

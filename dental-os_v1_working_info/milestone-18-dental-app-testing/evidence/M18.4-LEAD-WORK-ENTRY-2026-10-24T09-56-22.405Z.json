@@ -1,0 +1,141 @@
+{
+  "recordType": "m18_work_entry_staging_run",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.4",
+  "payloadDigest": "341990259deb764b6492d2139b4fa1295ed5e5de679b86fd727919dbfffa8d0b",
+  "stagingCatalogueSequence": 92,
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "environment": "cloudflare-staging",
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientAndCaseNamesInEvidence": false,
+  "stagingTestNamespace": "M18-WE-20261024-D6E69938",
+  "runMode": "existing-staging-patient-new-case-end-to-end",
+  "phase": "work-entry-create-staging-case",
+  "checks": [
+    {
+      "name": "Dental OS session is authenticated in staging mode",
+      "passed": true
+    },
+    {
+      "name": "Work Entry exact signed version is offered",
+      "passed": true
+    },
+    {
+      "name": "Work Entry staging UI opens and exposes New case action",
+      "passed": true
+    },
+    {
+      "name": "Work Entry active and known-good digests match the signed staging package",
+      "passed": true
+    },
+    {
+      "name": "Work Entry reads /v1/work-entry/cases through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/work-entry/cases",
+        "method": "GET",
+        "requestId": "fe2ba890-d439-4ec6-af7a-b33b0a27789a"
+      }
+    },
+    {
+      "name": "Work Entry reads /v1/treatment-protocols through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/treatment-protocols",
+        "method": "GET",
+        "requestId": "3591bd5f-baf8-4107-83e3-6fa88c2f8bde"
+      }
+    },
+    {
+      "name": "Work Entry reads /v1/clinic/staff-references through the Dental OS broker",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "route": "/v1/clinic/staff-references",
+        "method": "GET",
+        "requestId": "2057b902-04d2-409b-84fe-694c6870a7ba"
+      }
+    },
+    {
+      "name": "an existing staging test case is available to select its registered patient",
+      "passed": true
+    },
+    {
+      "name": "the existing staging case exposes a registered patient number",
+      "passed": false
+    },
+    {
+      "name": "run stopped during work-entry-create-staging-case",
+      "passed": false,
+      "detail": "Acceptance check failed: the existing staging case exposes a registered patient number"
+    }
+  ],
+  "uiDiagnostics": [],
+  "apiTrace": [
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/work-entry/cases",
+      "queryKeys": [],
+      "requestId": "fe2ba890-d439-4ec6-af7a-b33b0a27789a",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "cases"
+      ],
+      "responseArrayCounts": {
+        "cases": 16
+      },
+      "elapsedMs": 462
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/treatment-protocols",
+      "queryKeys": [],
+      "requestId": "3591bd5f-baf8-4107-83e3-6fa88c2f8bde",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "treatmentProtocols"
+      ],
+      "responseArrayCounts": {
+        "treatmentProtocols": 22
+      },
+      "elapsedMs": 491
+    },
+    {
+      "appId": "company.dental.work-entry.m17",
+      "appVersion": "1.0.4",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/staff-references",
+      "queryKeys": [],
+      "requestId": "2057b902-04d2-409b-84fe-694c6870a7ba",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "staff"
+      ],
+      "responseArrayCounts": {
+        "staff": 11
+      },
+      "elapsedMs": 520
+    }
+  ],
+  "failed": true,
+  "passed": false
+}

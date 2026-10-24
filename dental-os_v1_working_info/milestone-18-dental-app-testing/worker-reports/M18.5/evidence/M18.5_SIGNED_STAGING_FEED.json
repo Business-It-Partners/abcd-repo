@@ -1,0 +1,31 @@
+{
+  "checkedAtUtc": "2026-10-24T07:14:24.475Z",
+  "environment": "cloudfare-staging",
+  "channel": "staging",
+  "feedSequence": 91,
+  "policySequence": 91,
+  "catalogueIssuedAtUtc": "2026-10-24T06:15:28.745Z",
+  "catalogueExpiresAtUtc": "2026-10-25T06:15:28.745Z",
+  "signingKeyId": "company-staging-m17-20261022",
+  "appId": "company.dental.treatment-progress.m17",
+  "version": "1.0.6",
+  "status": "approved",
+  "packageSha256": "5533b1a3567f03b845bf55c10d7b8e4f52f9d39456fcff829f551cda213d6541",
+  "payloadDigest": "f9a7d8a0fcd31fd219bf75e5527ac405fa3295a632f4a013656916012d42a4a0",
+  "packageBytes": 1144851,
+  "capabilities": [
+    "clinic.app.treatment-progress",
+    "clinic.api.request",
+    "session.context"
+  ],
+  "workerHealth": {
+    "status": 200,
+    "environment": "cloudfare-staging"
+  },
+  "checks": [
+    "catalogue signature/schema/freshness",
+    "update-policy signature/schema/freshness",
+    "catalogue-policy sequence/key match",
+    "Treatment Progress package bytes/signature/manifest/grant match"
+  ]
+}

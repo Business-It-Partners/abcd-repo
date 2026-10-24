@@ -1,0 +1,322 @@
+{
+  "recordType": "m18_finance_staging_workflow_acceptance",
+  "environment": "cloudfare-staging",
+  "date": "2026-10-24T08:32:13.831Z",
+  "sourceHead": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "package": {
+    "appId": "company.dental.finance.m17",
+    "version": "1.7.7",
+    "catalogueSequence": 91,
+    "packageSha256": "96c5c0156e21730424e847ad93781ae2409488cdd3334a2554d7679c55f24c4c",
+    "payloadDigest": "1a224065b7a9aa630fba1496bb101e1ff5479d7b958775d7e42b85164be3bc63"
+  },
+  "isolatedPrivateDesktop": true,
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientPaymentsOpened": false,
+  "salaryWrite": "not-run",
+  "syntheticStaffOptions": 0,
+  "fixtureNamespace": "M18-FIN-20261024-BB86171A",
+  "packageInstalled": true,
+  "registryVerified": true,
+  "recordsCreated": {
+    "productCreated": false,
+    "supplierCreated": false,
+    "purchaseCreated": false,
+    "supplierPaymentCreated": false,
+    "expenseCreated": false
+  },
+  "recordsReused": {
+    "product": true,
+    "supplier": true,
+    "purchase": true
+  },
+  "checks": [
+    {
+      "name": "Dental OS is connected to the authenticated staging session",
+      "passed": true
+    },
+    {
+      "name": "signed staging Store offers Finance 1.7.7 for this isolated profile",
+      "passed": true
+    },
+    {
+      "name": "Finance opens through the managed OS window and loads the transaction report",
+      "passed": true
+    },
+    {
+      "name": "Finance remains one signed app with the expected internal-module navigation",
+      "passed": true
+    },
+    {
+      "name": "installed Finance digest matches the signed staging package and passed runtime health",
+      "passed": true
+    }
+  ],
+  "cases": [
+    {
+      "name": "Dental OS is connected to the authenticated staging session",
+      "status": "PASS"
+    },
+    {
+      "name": "signed staging Store offers Finance 1.7.7 for this isolated profile",
+      "status": "PASS"
+    },
+    {
+      "name": "Finance opens through the managed OS window and loads the transaction report",
+      "status": "PASS"
+    },
+    {
+      "name": "Finance remains one signed app with the expected internal-module navigation",
+      "status": "PASS"
+    },
+    {
+      "name": "installed Finance digest matches the signed staging package and passed runtime health",
+      "status": "PASS"
+    },
+    {
+      "name": "Products: reuse the previously verified synthetic product",
+      "status": "PASS"
+    },
+    {
+      "name": "Suppliers: reuse the previously verified synthetic supplier",
+      "status": "PASS"
+    },
+    {
+      "name": "Purchases: reuse the previously verified synthetic invoice",
+      "status": "PASS"
+    },
+    {
+      "name": "Run stopped at supplier-payments-fill-form",
+      "status": "FAIL",
+      "detail": "Error"
+    }
+  ],
+  "apiTrace": [
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/transaction-record",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "requestId": "b5d1b00d-0a64-478e-9f5d-313b91c6aa5e",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "report"
+      ],
+      "responseArrayCounts": {
+        "report.transactions": 0
+      },
+      "elapsedMs": 561
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/purchases",
+      "queryKeys": [],
+      "requestId": "48e56665-f889-409f-83d8-bad6ba1b0e60",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "purchases"
+      ],
+      "responseArrayCounts": {
+        "purchases": 5
+      },
+      "elapsedMs": 581
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/products",
+      "queryKeys": [],
+      "requestId": "94d2838e-3b95-4bd9-bde7-3baeb8ea2075",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "products"
+      ],
+      "responseArrayCounts": {
+        "products": 5
+      },
+      "elapsedMs": 584
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/suppliers",
+      "queryKeys": [],
+      "requestId": "d48c46a9-a57f-432d-91aa-f90983e5f97a",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "suppliers"
+      ],
+      "responseArrayCounts": {
+        "suppliers": 4
+      },
+      "elapsedMs": 426
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/purchases",
+      "queryKeys": [],
+      "requestId": "c9415558-83a7-493b-9f53-936739d98c32",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "purchases"
+      ],
+      "responseArrayCounts": {
+        "purchases": 5
+      },
+      "elapsedMs": 501
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/products",
+      "queryKeys": [],
+      "requestId": "4b78da05-6cc0-4edd-aa0e-696be8975559",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "products"
+      ],
+      "responseArrayCounts": {
+        "products": 5
+      },
+      "elapsedMs": 500
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/suppliers",
+      "queryKeys": [],
+      "requestId": "e337f591-204f-48c5-8882-71f5cda34ff8",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "suppliers"
+      ],
+      "responseArrayCounts": {
+        "suppliers": 4
+      },
+      "elapsedMs": 532
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/suppliers",
+      "queryKeys": [],
+      "requestId": "b717c5c2-f21c-4169-b2a4-2ad9d7801a98",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "suppliers"
+      ],
+      "responseArrayCounts": {
+        "suppliers": 4
+      },
+      "elapsedMs": 423
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/purchases",
+      "queryKeys": [],
+      "requestId": "0e4d7f9b-52dd-4420-b96d-7af71fc96b6e",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "purchases"
+      ],
+      "responseArrayCounts": {
+        "purchases": 5
+      },
+      "elapsedMs": 423
+    },
+    {
+      "appId": "company.dental.finance.m17",
+      "appVersion": "1.7.7",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/supplier-payments",
+      "queryKeys": [],
+      "requestId": "43b46a57-89c9-4d0e-b2b2-22cb85d4ffe1",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "supplierPayments"
+      ],
+      "responseArrayCounts": {
+        "supplierPayments": 3
+      },
+      "elapsedMs": 1019
+    }
+  ],
+  "traceRedaction": "No request/response values, credentials, tokens, cookies, clinic/user identifiers, patient data, or staff names are recorded; only normalized route, field/key names, status, content type, array counts and correlation/request ID are retained.",
+  "appPageErrors": 0,
+  "authState": {
+    "phase": "ready",
+    "mode": "staging",
+    "sessionPhase": null,
+    "hasAlert": false
+  },
+  "uiDiagnostics": {
+    "activeModule": null,
+    "pageHeading": [
+      "Supplier payments",
+      "Record payment"
+    ],
+    "dialogCount": 1,
+    "paymentButtonDisabled": false,
+    "supplierPickerVisible": true,
+    "roleOptionCount": 0,
+    "alertCount": 0
+  },
+  "failed": true,
+  "acceptanceStatus": "FAIL"
+}

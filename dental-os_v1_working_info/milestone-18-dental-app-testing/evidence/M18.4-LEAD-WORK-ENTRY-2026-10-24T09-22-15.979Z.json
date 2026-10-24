@@ -1,0 +1,156 @@
+{
+  "recordType": "m18_work_entry_staging_run",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.3",
+  "payloadDigest": "a61120e1ac56c4529fd5e9282e94e699363d0fcaa44651f5a5d981dde2518884",
+  "patientFixtureAppId": "company.dental.patient-record.m17",
+  "patientFixtureVersion": "1.0.10",
+  "patientFixtureDigest": "c0a973948162caf9c4adb27bf68b560626b2b0b771193cd69bce8bea6bca9fdf",
+  "stagingCatalogueSequence": 91,
+  "desktopCommit": "fc14e028e80bb1546b2c20c16a57fe4caef2e31e",
+  "environment": "cloudflare-staging",
+  "productionUsed": false,
+  "credentialsSaved": false,
+  "patientFixtureNamespace": "M18-WE-20261024-698722A0",
+  "patientAndCaseNamesInEvidence": false,
+  "phase": "patient-record-synthetic-fixture",
+  "checks": [
+    {
+      "name": "Dental OS session is authenticated in staging mode",
+      "passed": true
+    },
+    {
+      "name": "Patient Record exact signed version is offered",
+      "passed": true
+    },
+    {
+      "name": "Patient Record fixture app active and known-good digests match the signed staging package",
+      "passed": true
+    },
+    {
+      "name": "synthetic patient intake is complete and save is enabled",
+      "passed": true
+    },
+    {
+      "name": "run stopped during patient-record-synthetic-fixture",
+      "passed": false,
+      "detail": "Trace deadline: company.dental.patient-record.m17 POST /v1/patient-intakes"
+    }
+  ],
+  "apiTrace": [
+    {
+      "appId": "company.dental.patient-record.m17",
+      "appVersion": "1.0.10",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients",
+      "queryKeys": [
+        "limit",
+        "monthEnd",
+        "monthStart"
+      ],
+      "requestId": "489e857b-0fc7-4e13-aac0-8ed9bcf0aed4",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "counts",
+        "nextCursor",
+        "patients",
+        "total"
+      ],
+      "responseArrayCounts": {
+        "patients": 5
+      },
+      "elapsedMs": 524
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "appVersion": "1.0.10",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patients",
+      "queryKeys": [
+        "limit"
+      ],
+      "requestId": "6ee13d15-966d-40b8-8f3f-dcd8b9a894c6",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "counts",
+        "nextCursor",
+        "patients",
+        "total"
+      ],
+      "responseArrayCounts": {
+        "patients": 10
+      },
+      "elapsedMs": 499
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "appVersion": "1.0.10",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/staff-references",
+      "queryKeys": [],
+      "requestId": "48e3d5e6-0c44-4372-be8d-6701ecc5f03e",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "staff"
+      ],
+      "responseArrayCounts": {
+        "staff": 11
+      },
+      "elapsedMs": 499
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "appVersion": "1.0.10",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/patient-intakes/context",
+      "queryKeys": [],
+      "requestId": "677e803e-f781-4621-8169-9ff090d3aae4",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "context"
+      ],
+      "responseArrayCounts": {},
+      "elapsedMs": 598
+    },
+    {
+      "appId": "company.dental.patient-record.m17",
+      "appVersion": "1.0.10",
+      "operation": "clinic.api.request",
+      "method": "GET",
+      "route": "/v1/clinic/suppliers",
+      "queryKeys": [
+        "scope"
+      ],
+      "requestId": "a2139ade-38e3-425c-aaa5-13042a27f13d",
+      "idempotencyKeyPresent": false,
+      "requestBodyKeys": [],
+      "status": 200,
+      "responseContentType": "application/json",
+      "responseBodyKeys": [
+        "suppliers"
+      ],
+      "responseArrayCounts": {
+        "suppliers": 1
+      },
+      "elapsedMs": 597
+    }
+  ],
+  "failed": true,
+  "passed": false
+}
