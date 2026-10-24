@@ -164,7 +164,11 @@ function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,re
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
   const navigationDisabled=entry?.phase!=='ready'||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
-  const requestBack=()=>{if(entry?.dirty)requestConfirm('back');else void window.desktop?.runtime.navigate(id,'back',generation);};
+  const preservesDraft=entry?.navigation?.backPreservesDraft===true;
+  const requestBack=()=>{
+    if(entry?.dirty&&!preservesDraft){requestConfirm('back');return;}
+    void window.desktop?.runtime.navigate(id,'back',generation,false,preservesDraft);
+  };
   const acceptBack=()=>{
     if(entry?.writeState&&entry.writeState!=='none')return;
     cancel();

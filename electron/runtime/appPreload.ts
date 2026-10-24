@@ -30,10 +30,11 @@ const navigationListeners = new Set<(value:AppNavigationRequest)=>void>();
 ipcRenderer.on('runtime:navigate', (_event, value: unknown) => {
   const request = value as AppNavigationRequest | null;
   const keys = request && typeof request === 'object' ? Object.keys(request).sort().join() : '';
-  if (!request || !['direction,entry', 'direction,discard,entry'].includes(keys) ||
+  if (!request || !['direction,entry', 'direction,discard,entry', 'direction,entry,preserveDraft'].includes(keys) ||
       !['back','forward'].includes(request.direction) ||
       typeof request.entry !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.entry) ||
-      request.discard !== undefined && request.discard !== true) return;
+      request.discard !== undefined && request.discard !== true ||
+      request.preserveDraft !== undefined && (request.preserveDraft !== true || request.direction !== 'back')) return;
   for (const listener of navigationListeners) listener(request);
 });
 ipcRenderer.on('runtime:file-transfer',(_event,value:unknown)=>{
@@ -89,7 +90,8 @@ contextBridge.exposeInMainWorld('dentalApp', Object.freeze({
   navigation: {
     report(input: AppNavigationSnapshot) {
       const value = cloneBounded(input) as AppNavigationSnapshot;
-      const valid = !!value && Object.keys(value).sort().join() === 'entries,index' && Array.isArray(value.entries) &&
+      const keys = value && typeof value === 'object' ? Object.keys(value).sort().join() : '';
+      const valid = !!value && (keys === 'entries,index' || keys === 'backPreservesDraft,entries,index' && value.backPreservesDraft === true) && Array.isArray(value.entries) &&
         value.entries.length >= 1 && value.entries.length <= 64 && value.entries.every(entry =>
           typeof entry === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(entry)) &&
         new Set(value.entries).size === value.entries.length && Number.isSafeInteger(value.index) &&

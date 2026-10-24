@@ -14,8 +14,8 @@ function bridge() {
       },
     },
   } as Pick<AppSdk, 'navigation'>;
-  return { value, report, request: (direction: 'back' | 'forward', entry: string) => {
-    for (const listener of listeners) listener({ direction, entry });
+  return { value, report, request: (direction: 'back' | 'forward', entry: string, preserveDraft = false) => {
+    for (const listener of listeners) listener({ direction, entry, ...(preserveDraft ? { preserveDraft: true } : {}) });
   } };
 }
 
@@ -68,6 +68,28 @@ describe('SDK 1.6 app page history', () => {
     dirty = false;
     host.request('back', listKey);
     expect(history.current()).toBe('list');
+    history.dispose();
+  });
+
+  it('allows an explicitly draft-preserving Back and retains the forward route', () => {
+    let dirty = false;
+    const host = bridge();
+    const history = new AppHistory(host.value, 'purchases', () => !dirty, page => page === 'purchase-review');
+    history.push('purchase-form');
+    history.push('purchase-review');
+    const report = host.report.mock.lastCall?.[0];
+    const formEntry = report?.entries[1];
+    const reviewEntry = report?.entries[2];
+    expect(report?.backPreservesDraft).toBe(true);
+    expect(appNavigationSnapshot(report)).toBe(true);
+    dirty = true;
+    host.request('back', formEntry!, true);
+    expect(history.current()).toBe('purchase-form');
+    expect(host.report.mock.lastCall?.[0]).toMatchObject({ entries: [report!.entries[0], formEntry, reviewEntry], index: 1 });
+    expect(host.report.mock.lastCall?.[0].backPreservesDraft).toBeUndefined();
+    history.push('purchase-review-again');
+    expect(host.report.mock.lastCall?.[0].entries).toHaveLength(3);
+    expect(host.report.mock.lastCall?.[0].entries).not.toContain(reviewEntry);
     history.dispose();
   });
 });

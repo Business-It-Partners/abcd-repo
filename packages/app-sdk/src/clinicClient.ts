@@ -90,7 +90,9 @@ export class ClinicClient {
   }
   report(value: { dirty: boolean; modal: boolean }) { this.bridge.report(value); }
   onModuleSelected(listener: (value: { moduleId: string }) => void) { return this.bridge.onModuleSelected(listener); }
-  createHistory<T>(initialPage: T, canNavigate?: () => boolean): AppHistory<T> { return new AppHistory<T>(this.bridge, initialPage, canNavigate); }
+  createHistory<T>(initialPage: T, canNavigate?: () => boolean, backPreservesDraft?: (page: T) => boolean): AppHistory<T> {
+    return new AppHistory<T>(this.bridge, initialPage, canNavigate, backPreservesDraft);
+  }
 }
 
 /** One explicit write intent. Retry uses the same immutable payload and operation identity. */

@@ -36,7 +36,7 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   runtime: {
     sync: (value: unknown, generation?: number) => ipcRenderer.invoke('runtime:sync', value, generation),
-    navigate: (id: string, direction: 'back' | 'forward', generation?: number, discardDirty?: boolean) => ipcRenderer.invoke('runtime:navigate', id, direction, generation, discardDirty) as Promise<boolean>,
+    navigate: (id: string, direction: 'back' | 'forward', generation?: number, discardDirty?: boolean, preserveDraft?: boolean) => ipcRenderer.invoke('runtime:navigate', id, direction, generation, discardDirty, preserveDraft) as Promise<boolean>,
     hideAll: (generation?: number) => ipcRenderer.sendSync('runtime:hide-all', generation) === true,
     restart: (id: string, generation?: number) => ipcRenderer.invoke('runtime:restart', id, generation),
     selectModule: (id: string, moduleId: string) => ipcRenderer.invoke('runtime:select-module', id, moduleId),

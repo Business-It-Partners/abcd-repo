@@ -20,6 +20,23 @@ type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: A
 const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
 type Pending = { controller: AbortController; write: boolean; media?: boolean };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
+export type ApiTraceRecord = {
+  appId: string;
+  appVersion: string;
+  operation: string;
+  method: string;
+  route: string;
+  queryKeys: string[];
+  requestId: string;
+  idempotencyKeyPresent: boolean;
+  requestBodyKeys: string[];
+  status: number | null;
+  responseContentType: string | null;
+  responseBodyKeys: string[];
+  responseArrayCounts: Record<string, number>;
+  elapsedMs: number;
+  transportError?: string;
+};
 const messages: Record<ErrorCode, string> = {
   INVALID_REQUEST: 'Invalid SDK request.', UNKNOWN_CALLER: 'Unregistered application frame.', INCOMPATIBLE_SDK: 'Unsupported SDK contract.', STALE_SESSION: 'Session changed; discard this result.', FORBIDDEN: 'Operation is not granted to this app.', BUSY: 'Request capacity reached.', AUTH_REQUIRED: 'Sign in is required.', ACCESS_DENIED: 'Access denied by the service.', CONFLICT: 'The record changed; refresh before deciding.', VALIDATION: 'The service rejected the input.', OFFLINE: 'Service connection failed.', MAINTENANCE: 'Service temporarily unavailable.', TIMEOUT: 'Request deadline exceeded.', CANCELLED: 'Request stopped locally.', UNKNOWN_OUTCOME: 'Write outcome is unknown. Reconcile using the original operation key.', INVALID_RESPONSE: 'Service response did not match the contract.', REDIRECT_DENIED: 'Service redirect refused.', UNAVAILABLE: 'This platform adapter is not available yet.',
 };
@@ -47,7 +64,7 @@ export class ApiBroker {
   private flight?: { generation: number; controller: AbortController; promise: Promise<string> };
   private environment: Environment;
   private generation: number;
-  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits = { timeoutMs: 8000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }, private activity:(appId:string)=>void=()=>{}) {
+  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits = { timeoutMs: 8000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }, private activity:(appId:string)=>void=()=>{}, private apiTrace?:(record:ApiTraceRecord)=>void) {
     this.environment = bindEnvironment(environment); this.generation = identity.snapshot().generation;
   }
   register(input: Omit<Registration, 'preferences' | 'connection' | 'generation'>) {
@@ -163,6 +180,8 @@ export class ApiBroker {
     const controller = new AbortController(); active.set(v.requestId, { controller, write, media: v.operation === 'clinic.media.read' }); this.pending.set(r, active);
     const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'local.files.pick' ? 180_000 : v.operation === 'clinic.media.upload' ? 60_000 : v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
     let dispatched = false;
+    let trace: Omit<ApiTraceRecord,'status'|'responseContentType'|'responseBodyKeys'|'responseArrayCounts'|'elapsedMs'|'transportError'> | undefined;
+    let traceStarted = 0, traceRecorded = false;
     try {
       let value: unknown;
       if (v.operation === 'local.files.pick') {
@@ -218,7 +237,17 @@ export class ApiBroker {
         else if (v.operation === 'appointments.setStatus') headers['content-type'] = 'application/json';
         dispatched = true;
         const body = v.operation === 'clinic.api.request' ? v.input.body as string | null : write ? JSON.stringify({ status: v.input.status, expectedRowVersion: v.input.expectedRowVersion }) : null;
-        const response = await abortable(this.transport(url.href, { method, headers, redirect: 'manual', credentials: 'omit', cache: 'no-store', signal: controller.signal, ...(body !== null ? { body } : {}) }), controller.signal);
+        if (this.apiTrace) {
+          const requestUrl = new URL(url.href);
+          const requestBody = (() => { try { return body ? JSON.parse(body) : null; } catch { return null; } })();
+          const requestBodyKeys = requestBody && typeof requestBody === 'object' && !Array.isArray(requestBody) ? Object.keys(requestBody).sort() : [];
+          trace = { appId: r.appId, appVersion: r.appVersion, operation: v.operation, method, route: requestUrl.pathname.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, ':id'), queryKeys: [...requestUrl.searchParams.keys()].sort(), requestId: v.requestId, idempotencyKeyPresent: !!headers['idempotency-key'], requestBodyKeys };
+          traceStarted = Date.now();
+        }
+        let response: Response;
+        try { response = await abortable(this.transport(url.href, { method, headers, redirect: 'manual', credentials: 'omit', cache: 'no-store', signal: controller.signal, ...(body !== null ? { body } : {}) }), controller.signal); }
+        catch (error) { if (trace) { this.recordApiTrace({ ...trace, status: null, responseContentType: null, responseBodyKeys: [], responseArrayCounts: {}, elapsedMs: Date.now() - traceStarted, transportError: error instanceof Error ? error.name : 'UnknownError' }); traceRecorded = true; } throw error; }
+        if (trace) { const shape = await this.apiResponseShape(response); this.recordApiTrace({ ...trace, status: response.status, responseContentType: response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase() ?? null, ...shape, elapsedMs: Date.now() - traceStarted }); traceRecorded = true; }
         if (!this.connected(r, v)) return failure('STALE_SESSION', write ? 'unknown' : 'not_sent', v);
         if (response.redirected || response.status >= 300 && response.status < 400) { void response.body?.cancel(); throw new TransportError('REDIRECT_DENIED'); }
         if (v.operation === 'clinic.api.request') {
@@ -254,6 +283,7 @@ export class ApiBroker {
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
       return success(value);
     } catch (error) {
+      if (trace && !traceRecorded) { this.recordApiTrace({ ...trace, status: null, responseContentType: null, responseBodyKeys: [], responseArrayCounts: {}, elapsedMs: Date.now() - traceStarted, transportError: error instanceof Error ? error.name : 'UnknownError' }); traceRecorded = true; }
       if (!this.connected(r, v)) return failure('STALE_SESSION', write && dispatched ? 'unknown' : 'not_sent', v);
       if (error instanceof MediaUploadError) return failure(error.code, error.outcome, v);
       if(v.operation==='local.files.pick'){
@@ -267,6 +297,39 @@ export class ApiBroker {
     } finally {
       clearTimeout(timer); if (write) this.writing.delete(v.input.idempotencyKey as string); active.delete(v.requestId); if (!active.size) this.pending.delete(r);
     }
+  }
+  private recordApiTrace(record: ApiTraceRecord) { try { this.apiTrace?.(record); } catch {} }
+  private async apiResponseShape(response: Response): Promise<{ responseBodyKeys: string[]; responseArrayCounts: Record<string, number> }> {
+    try {
+      const contentType = response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase() ?? '';
+      const declaredLength = Number(response.headers.get('content-length'));
+      if (!contentType.includes('json') || Number.isFinite(declaredLength) && declaredLength > this.limits.responseBytes) return { responseBodyKeys: [], responseArrayCounts: {} };
+      const reader = response.clone().body?.getReader(); if (!reader) return { responseBodyKeys: [], responseArrayCounts: {} };
+      const chunks: Uint8Array[] = []; let size = 0;
+      try {
+        while (true) {
+          const part = await reader.read(); if (part.done) break;
+          size += part.value.byteLength;
+          if (size > this.limits.responseBytes) { await reader.cancel(); return { responseBodyKeys: [], responseArrayCounts: {} }; }
+          chunks.push(part.value);
+        }
+      } finally { reader.releaseLock(); }
+      const bytes = new Uint8Array(size); let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      const body: unknown = JSON.parse(new TextDecoder().decode(bytes));
+      const responseBodyKeys = body && typeof body === 'object' && !Array.isArray(body) ? Object.keys(body).sort() : [];
+      const responseArrayCounts: Record<string, number> = {};
+      const scan = (value: unknown, prefix: string, depth: number) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 2) return;
+        for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+          const name = prefix ? `${prefix}.${key}` : key;
+          if (Array.isArray(nested)) responseArrayCounts[name] = nested.length;
+          else scan(nested, name, depth + 1);
+        }
+      };
+      scan(body, '', 0);
+      return { responseBodyKeys, responseArrayCounts };
+    } catch { return { responseBodyKeys: [], responseArrayCounts: {} }; }
   }
   private local(r: Registration, v: Request): unknown {
     switch (v.operation) {

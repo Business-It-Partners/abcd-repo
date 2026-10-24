@@ -13,16 +13,23 @@ export class AppHistory<T> {
   private listeners = new Set<(page: T) => void>();
   private unsubscribe: () => void;
 
-  constructor(private readonly bridge: Pick<AppSdk, 'navigation'>, initialPage: T, private readonly canNavigate: () => boolean = () => true) {
+  constructor(
+    private readonly bridge: Pick<AppSdk, 'navigation'>,
+    initialPage: T,
+    private readonly canNavigate: () => boolean = () => true,
+    private readonly backPreservesDraft: (page: T) => boolean = () => false,
+  ) {
     this.entries = [{ id: crypto.randomUUID(), page: initialPage }];
     this.unsubscribe = bridge.navigation.onRequest(request => {
       const target = this.entries.findIndex(entry => entry.id === request.entry);
       const discard = request.discard === true;
-      if (target < 0 || target === this.index || !discard && !this.canNavigate()) return;
+      const preserveDraft = request.preserveDraft === true && request.direction === 'back' &&
+        this.backPreservesDraft(this.entries[this.index].page);
+      if (target < 0 || target === this.index || !discard && !preserveDraft && !this.canNavigate()) return;
       if (request.direction === 'back' && target >= this.index) return;
       if (request.direction === 'forward' && target <= this.index) return;
       this.index = target;
-      if (discard && request.direction === 'back') this.entries = this.entries.slice(0, target + 1);
+      if (discard && !preserveDraft && request.direction === 'back') this.entries = this.entries.slice(0, target + 1);
       this.publish();
       this.notify();
     });
@@ -74,7 +81,11 @@ export class AppHistory<T> {
   }
 
   private snapshot(): AppNavigationSnapshot {
-    return { entries: this.entries.map(entry => entry.id), index: this.index };
+    return {
+      entries: this.entries.map(entry => entry.id),
+      index: this.index,
+      ...(this.backPreservesDraft(this.entries[this.index].page) ? { backPreservesDraft: true as const } : {}),
+    };
   }
 
   private publish(): void { this.bridge.navigation.report(this.snapshot()); }

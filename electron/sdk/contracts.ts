@@ -27,8 +27,8 @@ export type ClinicSessionContext = {
 };
 export type RuntimeAppInfo = { appId: string; title: string; description: string; iconDataUrl: string; modules: readonly { id: string; label: string; tab: string; capability: string }[]; preferredContentWidth?: number };
 /** Random opaque UUIDs only; page data and business identifiers stay in the app renderer. */
-export type AppNavigationSnapshot = { entries: string[]; index: number };
-export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string; discard?: boolean };
+export type AppNavigationSnapshot = { entries: string[]; index: number; backPreservesDraft?: true };
+export type AppNavigationRequest = { direction: 'back' | 'forward'; entry: string; discard?: boolean; preserveDraft?: true };
 export type Request = { version: 1; connection: string; generation: number; requestId: string; operation: Operation; input: Record<string, unknown> };
 export type Cancel = Pick<Request, 'version' | 'connection' | 'generation' | 'requestId'>;
 export type AppSdk = {
@@ -52,18 +52,22 @@ export function shape(value: unknown, keys: string[]): value is Record<string, u
 export const id = (v: unknown): v is string => typeof v === 'string' && /^[a-zA-Z0-9_-]{8,64}$/.test(v);
 export const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 export function appNavigationSnapshot(value: unknown): value is AppNavigationSnapshot {
-  return shape(value, ['entries', 'index']) && Array.isArray(value.entries) &&
-    value.entries.length >= 1 && value.entries.length <= MAX_NAVIGATION_ENTRIES &&
-    value.entries.every(uuid) && new Set(value.entries).size === value.entries.length &&
-    Number.isSafeInteger(value.index) && (value.index as number) >= 0 && (value.index as number) < value.entries.length;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(value).sort().join();
+  const snapshot = value as Record<string, unknown>;
+  return (keys === 'entries,index' || keys === 'backPreservesDraft,entries,index' && snapshot.backPreservesDraft === true) && Array.isArray(snapshot.entries) &&
+    (snapshot.entries as unknown[]).length >= 1 && (snapshot.entries as unknown[]).length <= MAX_NAVIGATION_ENTRIES &&
+    (snapshot.entries as unknown[]).every(uuid) && new Set(snapshot.entries as string[]).size === (snapshot.entries as unknown[]).length &&
+    Number.isSafeInteger(snapshot.index) && (snapshot.index as number) >= 0 && (snapshot.index as number) < (snapshot.entries as unknown[]).length;
 }
 export function appNavigationRequest(value: unknown): value is AppNavigationRequest {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>;
   const keys = Object.keys(v).sort().join();
-  if (keys !== 'direction,entry' && keys !== 'direction,discard,entry') return false;
+  if (!['direction,entry', 'direction,discard,entry', 'direction,entry,preserveDraft'].includes(keys)) return false;
   return (v.direction === 'back' || v.direction === 'forward') && uuid(v.entry) &&
-    (!('discard' in v) || v.discard === true);
+    (!('discard' in v) || v.discard === true) &&
+    (!('preserveDraft' in v) || v.preserveDraft === true && v.direction === 'back');
 }
 const integer = (v: unknown) => Number.isSafeInteger(v) && (v as number) > 0;
 export const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);

@@ -1,5 +1,5 @@
 import { WebContentsView, session, nativeImage, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent, type NativeImage } from 'electron';
-import { ApiBroker, type Caller, type Identity, type Transport } from '../sdk/broker';
+import { ApiBroker, type ApiTraceRecord, type Caller, type Identity, type Transport } from '../sdk/broker';
 import { clinicAppFamily } from '../sdk/appPolicy';
 import { FilePickerCoordinator } from '../host/filePicker';
 import { FileTransferCoordinator } from '../host/fileTransfer';
@@ -73,14 +73,14 @@ export class FixtureRuntime {
   private lastEmission = '';
   private restartBudget=new RestartBudget();
   private launchFeedbackFixture = false;
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;filePickerFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void}={transport:'fixture'}) {
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;filePickerFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void;apiTrace?:(record:ApiTraceRecord)=>void}={transport:'fixture'}) {
     this.diagnostic=options.diagnostic??(()=>{});
     this.launchFeedbackFixture=!!options.launchFeedbackFixture;
     const baseIdentity=identity??this.services.identity;
     this.identity=options.filePickerFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'doctor',capabilities:['patient_record.access']}}})}:options.launchFeedbackFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['followups.access','appointments.access','work_entry.access','patient_record.access','treatment_progress.access','lab_tracker.access','finance.manage','patient_payments.outstanding.read','staff.manage','treatment_protocols.manage','calendar.access','future_billing.access']}}})}:options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
     const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
     const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
-    this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}});
+    this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}},options.apiTrace);
   }
   private diagnostic:(code:EventCode,target:Target)=>void;
   private emit() {
@@ -419,16 +419,17 @@ export class FixtureRuntime {
     e.state.navigation = input as AppNavigationSnapshot;
     this.emit();
   }
-  navigate(id: unknown, direction: unknown, discardDirty = false): boolean {
+  navigate(id: unknown, direction: unknown, discardDirty = false, preserveDraft = false): boolean {
     if (!isRuntimeId(id) || (direction !== 'back' && direction !== 'forward')) return false;
     const e = this.entries.get(id), navigation = e?.state.navigation;
-    if (!e || !navigation || e.state.phase !== 'ready' || e.state.dirty && !discardDirty || e.state.modal ||
+    const canPreserveDraft = preserveDraft && direction === 'back' && e?.state.dirty === true && navigation?.backPreservesDraft === true;
+    if (!e || !navigation || e.state.phase !== 'ready' || e.state.dirty && !discardDirty && !canPreserveDraft || e.state.modal ||
         !!e.state.writeState && e.state.writeState !== 'none') return false;
     const index = navigation.index + (direction === 'back' ? -1 : 1);
     if (index < 0 || index >= navigation.entries.length) return false;
     const entry = navigation.entries[index];
     if (e.view.webContents.isDestroyed()) return false;
-    e.view.webContents.send('runtime:navigate', { direction, entry, ...(discardDirty ? { discard: true } : {}) });
+    e.view.webContents.send('runtime:navigate', { direction, entry, ...(discardDirty ? { discard: true } : {}), ...(canPreserveDraft ? { preserveDraft: true } : {}) });
     return true;
   }
   private reportState(e: Entry, v: { dirty: boolean; modal: boolean }) {

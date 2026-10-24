@@ -10,6 +10,7 @@ import { FilePickerCoordinator } from './host/filePicker';
 import { FileTransferCoordinator, parseShellTransfer } from './host/fileTransfer';
 import { parseFilesList, parseViewerOpen, parseViewerStep } from './host/filesShell';
 import { FixtureRuntime } from './runtime/manager';
+import type { ApiTraceRecord } from './sdk/broker';
 import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
 import { CredentialStore } from './identity/storage';
@@ -32,6 +33,9 @@ let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
+const m18FinanceApiTraceEnabled = privateRuntimeDisplay && app.commandLine.hasSwitch('identity-staging') && app.commandLine.hasSwitch('m18-finance-api-trace');
+const m18FinanceApiTrace: ApiTraceRecord[] = [];
+if (m18FinanceApiTraceEnabled) Object.defineProperty(globalThis, '__m18FinanceApiTrace', { value: m18FinanceApiTrace, enumerable: false });
 // Private Xvfb test display: narrowly restricted to hosted Linux CI with
 // explicit synthetic-files and private-display flags. Never ordinary desktops.
 const privateX11Ci = process.platform === 'linux' && process.env.GITHUB_ACTIONS === 'true' &&
@@ -94,7 +98,7 @@ function createWindow() {
   hostWindow = win;
   if(localFiles){filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
     fileTransfer=new FileTransferCoordinator(localFiles);}
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,filePickerFixture:filePickerAppFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);}});
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,filePickerFixture:filePickerAppFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
   if(filePicker)runtime?.setFilePicker(filePicker);
   if(fileTransfer)runtime?.setFileTransfer(fileTransfer);
   // M16 UI acceptance harness: unavailable on normal desktops, staging sessions
@@ -333,9 +337,9 @@ ipcMain.handle('os:status', event => {
   return { phase: bootPhase };
 });
 ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.sync(value); });
-ipcMain.handle('runtime:navigate', (event, id: unknown, direction: unknown, generation: unknown, discardDirty: unknown) => {
+ipcMain.handle('runtime:navigate', (event, id: unknown, direction: unknown, generation: unknown, discardDirty: unknown, preserveDraft: unknown) => {
   if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) return false;
-  return runtime.navigate(id, direction, discardDirty === true);
+  return runtime.navigate(id, direction, discardDirty === true, preserveDraft === true);
 });
 ipcMain.on('runtime:hide-all', (event, generation: unknown) => {
   const trustedShell = !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
