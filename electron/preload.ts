@@ -15,6 +15,7 @@ function validShellPickerPrompt(input: unknown): boolean {
 const hostListeners = new Set<(transitioning: boolean) => void>();
 let hostTransitioning = false;
 function publishHostTransition(transitioning: boolean) {
+  if (hostTransitioning === transitioning) return;
   hostTransitioning = transitioning;
   for (const listener of hostListeners) listener(transitioning);
 }
@@ -74,10 +75,8 @@ contextBridge.exposeInMainWorld('desktop', {
     // Suspend layout synchronously before native fullscreen/minimize events.
     if (action !== 'minimize') return ipcRenderer.invoke('window:control', action);
     publishHostTransition(true);
-    // Paint the stable layout/menu dismissal before the host animates the window.
-    return new Promise<void>((resolve, reject) => requestAnimationFrame(() => requestAnimationFrame(() => {
-      ipcRenderer.invoke('window:control', action).then(resolve, error => { publishHostTransition(false); reject(error); });
-    })));
+    // The renderer is already suspended; let the native minimize start immediately.
+    return ipcRenderer.invoke('window:control', action).catch(error => { publishHostTransition(false); throw error; });
   },
   onHostTransition: (listener: (transitioning: boolean) => void) => {
     hostListeners.add(listener); listener(hostTransitioning);

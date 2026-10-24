@@ -160,12 +160,15 @@ export function ManagedWindowFrame({ controller: c, children, onClose, hideMinim
   const sessionGeneration = useSessionGeneration();
   const manager = useWindowManager();
   const order = manager.state.order.indexOf(c.id);
+  const zIndex = 10 + Math.max(order, 0);
   const clippedBottom = Math.max(0, c.bounds.y + c.bounds.height - dockZoneTop(manager.state.size));
   return <>
+    <div className="studio-window-shadow" data-active={c.active} data-presentation={c.win.presentation} aria-hidden="true"
+      style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, zIndex, visibility: visible && !manager.state.overview ? 'visible' : 'hidden' }}/>
     <section ref={c.windowRef} className={`studio-window ${c.id === 'records' ? 'records-window' : ''}`} data-module-sidebar={hasModuleSidebar || undefined} data-testid={`${c.id}-window`}
       data-window-id={c.id} data-phase={c.win.phase} data-presentation={c.win.presentation} data-interaction={c.win.interaction} data-active={c.active}
       inert={!visible || manager.state.overview} aria-hidden={!visible || manager.state.overview} onPointerDown={c.focus}
-      style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex: 10 + Math.max(order, 0), visibility: visible ? 'visible' : 'hidden' }}>
+      style={{ left: c.bounds.x, top: c.bounds.y, width: c.bounds.width, height: c.bounds.height, clipPath: !fullscreen && clippedBottom ? `inset(0px 0px ${clippedBottom}px 0px)` : undefined, borderRadius: fullscreen ? 0 : undefined, borderWidth: fullscreen ? 0 : undefined, zIndex, visibility: visible ? 'visible' : 'hidden' }}>
       <WindowTitleBar title={c.win.title} active={c.active} maximized={fullscreen} disabled={c.anyBusy} navigationDisabled={navigationDisabled} inert={c.win.modal}
         onDrag={event => c.startGesture(event)} onClose={onClose ?? c.close} onMinimize={c.minimize} onToggleMaximize={c.toggleFullscreen} hideMinimize={hideMinimize}
         canGoBack={c.win.navigation.index > 0} onBack={onNavigationBack ?? c.goBack}/>

@@ -149,6 +149,8 @@ function createWindow() {
   win.on('minimize', () => {
     if (settleTimer) clearTimeout(settleTimer);
     restoring = false;
+    // Hide child WebContents without a fresh screenshot; the host window is leaving the screen.
+    runtime?.hideAll(false);
     publish(true);
   });
   win.on('restore', () => {
@@ -217,7 +219,8 @@ ipcMain.handle('window:control', (event, action: unknown) => {
   if (!win || !isShell(event)) throw new Error('Invalid caller');
   if (action === 'close') win.close();
   else if (action === 'minimize') {
-    win.webContents.send('window:host-transition', true);
+    // Do not spend time capturing app mirrors before minimizing the whole OS.
+    runtime?.hideAll(false);
     win.minimize();
   }
   else throw new Error('Unknown control');

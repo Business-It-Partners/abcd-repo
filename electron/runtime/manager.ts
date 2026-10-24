@@ -139,17 +139,17 @@ export class FixtureRuntime {
       return true;
     })()`);}catch{return false;}
   }
-  private hideForMirror(e:Entry) {
+  private hideForMirror(e:Entry,captureSnapshot=true) {
     if (!e.view.getVisible()) return;
     // Keep the last stable app frame in the shell while the replacement is
     // captured. Clearing it first flashes the renderer's empty/loading surface
     // during ordinary handoffs such as revealing the dock.
-    void this.refresh(e,true);
+    if(captureSnapshot)void this.refresh(e,true);
     e.view.setVisible(false);
   }
   /** Hide native child surfaces immediately before the renderer changes its front window. */
-  hideAll() {
-    for (const e of this.entries.values()) this.hideForMirror(e);
+  hideAll(captureSnapshot=true) {
+    for (const e of this.entries.values()) this.hideForMirror(e,captureSnapshot);
   }
   private async refresh(e: Entry, fresh = false) {
     // An explicit shell capture must not return an older frame just because a

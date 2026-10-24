@@ -14,10 +14,10 @@ type DynamicApp = StoreApp & { target: RefObject<HTMLButtonElement | null> };
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
 type RuntimeConfirm = { id: RuntimeId; action: 'close' | 'back' };
-export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, onSelectModule }: {
+export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, hostTransitioning, onSelectModule }: {
   controllers: Record<string, WindowController>; apps?: StoreApp[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
-  onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean;
+  onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean; hostTransitioning: boolean;
   onSelectModule?(id: RuntimeId, moduleId: string): void | Promise<void>;
 }) {
   const generation = useSessionGeneration();
@@ -122,7 +122,9 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
     // Keep the last stable native bounds while the shell is moving/resizing.
     // The full-resolution mirror remains inside the clipped shell window.
     if(blocked){
-      if(lastNativeTarget.current!==undefined)window.desktop?.runtime.hideAll(generation);
+      // The main process hides native children without capturePage on host minimize.
+      // Avoid racing it with the normal mirror capture while the whole OS transitions.
+      if(lastNativeTarget.current!==undefined&&!hostTransitioning)window.desktop?.runtime.hideAll(generation);
       lastNativeTarget.current=undefined;
       return;
     }
@@ -144,7 +146,7 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       lastNativeTarget.current=nextNativeTarget;
     }
     void window.desktop?.runtime.sync(layouts, generation).catch(()=>setError('Runtime layout unavailable. Close and reopen the app.'));
-  },[controllers,state,front,blocked,peek,confirm,generation,dockTop,launchFeedback]);
+  },[controllers,state,front,blocked,hostTransitioning,peek,confirm,generation,dockTop,launchFeedback]);
   return <>
     {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirmAction={confirm?.id===id?'close':undefined} requestConfirm={()=>setConfirm({id,action:'close'})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)}/></ManagedWindowFrame>:null;})}
     {dynamicApps.filter(app=>state.windows[app.id]).map(app=>{
