@@ -180,28 +180,26 @@ export default function GeneralExpensesView({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader
         title="General expenses"
         icon={<Wallet size={17} style={{ color: "var(--acc)" }} />}
-        subtitle="Track day-to-day clinic spending and maintain an auditable expense history."
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)" }}>
-          <MonthPicker value={month} onChange={setMonth} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />
-          <ClinicActionButton onClick={() => setAdding(true)}><Plus size={14} /> Add expense</ClinicActionButton>
-        </div>
+        <ClinicActionButton onClick={() => setAdding(true)}><Plus size={14} /> Add expense</ClinicActionButton>
       </PageHeader>
 
       <DataTable<ClinicOperatingExpense>
         rows={listed}
         rowKey={(expense) => expense.operatingExpenseId}
         noun="expenses"
+        standardPage
         loading={loading}
         loadingLabel="Loading financial records…"
         error={loadError ? `Couldn't load the list — ${loadError}` : undefined}
-        empty={<EmptyState message="Nothing recorded this month." hint={'Use "+ Add expense" above.'} />}
+        empty={<EmptyState message="Nothing recorded this month." />}
         totalsLabel="Total"
         totalsAlign="left"
+        filters={<MonthPicker value={month} onChange={setMonth} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />}
         columns={columns}
       />
 

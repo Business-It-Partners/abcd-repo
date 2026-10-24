@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
-  FileText, FolderLock, Pencil, Stethoscope, Upload, UsersRound, WalletCards,
+  FileText, Pencil, Stethoscope, Upload, UsersRound, WalletCards,
 } from "lucide-react";
 import { ClinicDataTable } from "@/shared/ui/ClinicDataTable";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
@@ -93,7 +93,6 @@ export function StaffDetailPage({
   clinicCapabilities,
   mediaCapabilities,
   media,
-  onBack,
   onUpdated,
   onLifecycle,
 }: {
@@ -103,7 +102,6 @@ export function StaffDetailPage({
   clinicCapabilities: string[];
   mediaCapabilities: string[];
   media: StaffDocumentMediaSdk;
-  onBack: () => void;
   onUpdated: (staff: StaffProfile) => void;
   onLifecycle: (state: LifecycleState) => void;
 }) {
@@ -133,7 +131,7 @@ export function StaffDetailPage({
   const [withdrawing, setWithdrawing] = useState(false);
   const [pendingWithdraw, setPendingWithdraw] = useState<ClinicCommand<null> | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [queuedNavigation, setQueuedNavigation] = useState<Tab | "back" | null>(null);
+  const [queuedNavigation, setQueuedNavigation] = useState<Tab | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const canManageStaff = clinicCapabilities.includes("staff.manage");
@@ -272,7 +270,7 @@ export function StaffDetailPage({
     message: "Loading employment details.",
   });
 
-  const requestNavigation = (target: Tab | "back") => {
+  const requestNavigation = (target: Tab) => {
     if (pendingSave || saving || pendingWithdraw || withdrawing || pendingUpload || uploadBusy) return;
     if (editing && changedDraft) {
       setQueuedNavigation(target);
@@ -283,8 +281,7 @@ export function StaffDetailPage({
       setEditing(false);
       setDraft(asDraft(profile));
     }
-    if (target === "back") onBack();
-    else setActiveTab(target);
+    setActiveTab(target);
   };
 
   const discardAndContinue = () => {
@@ -295,8 +292,7 @@ export function StaffDetailPage({
     setDraft(asDraft(profile));
     setError(null);
     setLatestAfterConflict(null);
-    if (target === "back") onBack();
-    else if (target) setActiveTab(target);
+    if (target) setActiveTab(target);
   };
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
@@ -524,11 +520,10 @@ export function StaffDetailPage({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage={activeTab === "work" || activeTab === "salary"}>
       <PageHeader
-        back={{ label: "Staff list", onClick: () => requestNavigation("back") }}
         icon={<UsersRound aria-hidden="true" size={17} className="staffHeaderIcon" />}
-        subtitle={staffSubtitle}
+        subtitle={activeTab === "work" || activeTab === "salary" ? undefined : staffSubtitle}
         title={profile.fullName}
       >
         {!editing && canManageStaff ? (
@@ -620,10 +615,7 @@ export function StaffDetailPage({
       {activeTab === "work" ? profile.staffType !== "doctor" ? (
         <section className="staffNoClinicalWork">
           <span><Stethoscope aria-hidden="true" size={20} /></span>
-          <div>
-            <h2>Clinical work is recorded for doctors only.</h2>
-            <p>This staff member’s operational activity is not part of treatment-stage reporting.</p>
-          </div>
+          <h2>Clinical work is recorded for doctors only.</h2>
         </section>
       ) : (
         <section className="staffWorkReport" aria-label={"Completed clinical work for " + profile.fullName}>
@@ -631,18 +623,13 @@ export function StaffDetailPage({
             rows={clinicalWork}
             rowKey={(work) => work.stageId}
             noun="completed stages"
+            standardPage
             minWidth={1120}
             loading={clinicalWorkLoading}
             loadingLabel="Loading completed clinical work…"
-            title={<div className="staffWorkTableTitle">
-              <span className="staffWorkTableIcon"><Stethoscope aria-hidden="true" size={17} /></span>
-              <div><h3>Completed treatment stages</h3><p>Clinical work attributed to this doctor.</p></div>
-            </div>}
             filters={<div className="staffWorkFilters">
               <MonthPicker allowAll allLabel="All months" value={clinicalWorkMonth} onChange={setClinicalWorkMonth} />
-              <span className="staffCountTile"><strong>{clinicalWork.length}</strong><small>Completed stages</small></span>
               <span className="staffWorkTotal"><strong>{formatNpr(clinicalWorkTotal)}</strong><small>Total clinical work value</small></span>
-              <small className="staffWorkHint">Clinical work value is not salary or commission.</small>
             </div>}
             empty={<p className="staffEmptyTable">No completed treatment stages are attributed to this doctor for the selected month.</p>}
             columns={[
@@ -662,24 +649,20 @@ export function StaffDetailPage({
       {activeTab === "salary" && canReadSalary ? (
         <section className="staffSalaryReport" aria-label={"Salary information for " + profile.fullName}>
           <div className="staffSalarySummary">
-            <article><span>Monthly base salary</span><strong>{formatNpr(profile.baseSalaryAmount)}</strong><small>Current staff profile value</small></article>
-            <article><span>Paid in selection</span><strong>{formatNpr(salaryPaidTotal)}</strong><small>{recordedSalaryPayouts.length} recorded payment{recordedSalaryPayouts.length === 1 ? "" : "s"}</small></article>
-            <article><span>Bonus / adjustment</span><strong>{formatNpr(salaryBonusTotal)}</strong><small>Included in recorded totals</small></article>
+            <article><span>Monthly base salary</span><strong>{formatNpr(profile.baseSalaryAmount)}</strong></article>
+            <article><span>Paid in selection</span><strong>{formatNpr(salaryPaidTotal)}</strong></article>
+            <article><span>Bonus / adjustment</span><strong>{formatNpr(salaryBonusTotal)}</strong></article>
           </div>
           <ClinicDataTable<ClinicSalaryPayout>
             rows={visibleSalaryPayouts}
             rowKey={(payout) => payout.salaryPayoutId}
             noun="salary payments"
+            standardPage
             minWidth={1050}
             loading={salaryLoading}
             loadingLabel="Loading salary information…"
-            title={<div className="staffWorkTableTitle">
-              <span className="staffSalaryTableIcon"><WalletCards aria-hidden="true" size={17} /></span>
-              <div><h3>Salary payment history</h3><p>Recorded payroll entries for this staff member.</p></div>
-            </div>}
             filters={<div className="staffSalaryFilters">
               <MonthPicker allowAll allLabel="All salary months" value={salaryMonth} onChange={setSalaryMonth} />
-              <small>Voided entries remain visible for audit history.</small>
             </div>}
             empty={<p className="staffEmptyTable">No salary payments have been recorded for this staff member in the selected month.</p>}
             columns={[
@@ -701,7 +684,6 @@ export function StaffDetailPage({
         <section className="staffDocuments">
           <header className="staffDocumentHeader">
             <div>
-              <span className="staffDocumentKicker"><FolderLock aria-hidden="true" size={15} /> Private files</span>
               <h2>Private documents</h2>
               <p>PDF or image (PNG, JPG, WebP), up to 25 MB. These files remain private to this clinic and are not visible in the staff directory.</p>
             </div>
@@ -761,7 +743,7 @@ export function StaffDetailPage({
             loadingLabel="Loading private documents…"
             title={<div className="staffWorkTableTitle">
               <span className="staffWorkTableIcon"><FileText aria-hidden="true" size={17} /></span>
-              <div><h3>Document register</h3><p>Files attached to this staff profile.</p></div>
+              <div><h3>Documents</h3></div>
             </div>}
             action={<span className="staffDocumentCount">{activeDocuments.length} active</span>}
             empty={<p className="staffEmptyTable">No private documents have been added for this staff member.</p>}

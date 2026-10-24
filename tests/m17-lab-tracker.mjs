@@ -38,7 +38,23 @@ try {
   await page.getByRole('heading', { name: 'Lab Tracker', exact: true }).waitFor();
   await page.getByText('Synthetic Pending Patient', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has Lab Tracker identity, version 1.0.0, and packaged assets', packageInfo.appId === 'company.dental.lab-tracker.m17' && packageInfo.version === '1.0.0' && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5);
+  check('private signed package has Lab Tracker identity, version 1.0.3, and packaged assets', packageInfo.appId === 'company.dental.lab-tracker.m17' && packageInfo.version === '1.0.3' && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5);
+  const standardPage = page.locator('[data-sajilo-standard-page]:visible');
+  const standardCount = standardPage.locator('[data-sajilo-table-count]');
+  const standardPagination = standardPage.locator('[data-sajilo-pagination]');
+  const tableFilters = standardPage.locator('[data-sajilo-table-filters]');
+  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+  await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'wx' }); screenshotWritten = true;
+  check('Lab Tracker list uses the shared Standard Window page header',
+    await standardPage.locator('[data-clinic-page-header]').count() === 1);
+  check('Lab Tracker keeps its filters inside the table toolbar', await tableFilters.count() === 1);
+  check('Lab Tracker result count reflects the displayed rows', await standardCount.innerText() === '2 orders');
+  check('Lab Tracker pagination sits outside the scrolling table', await standardPagination.count() === 1);
+  check('Lab Tracker pagination remains visible at the bottom of the app window',
+    await standardPagination.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.bottom <= innerHeight && rect.bottom > innerHeight - 160;
+    }));
   check('renderer receives the SDK bridge with no credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
     return ['cancel', 'connect', 'getAppInfo', 'request', 'report'].every(method => methods.includes(method))
@@ -47,9 +63,6 @@ try {
   check('startup loads lab orders and lab-scoped shared suppliers through the approved SDK routes',
     initial.calls.some(call => call.method === 'GET' && call.path === '/v1/lab-orders')
       && initial.calls.some(call => call.method === 'GET' && call.path === '/v1/clinic/suppliers?scope=lab'));
-  await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-  await fs.writeFile(screenshotPath, await page.screenshot(), { flag: 'wx' }); screenshotWritten = true;
-
   const pendingRow = page.getByRole('row').filter({ hasText: 'Synthetic Pending Patient' });
   await pendingRow.locator('button[title="Advance to Sent"]').click();
   await page.getByRole('heading', { name: 'Send to lab', exact: true }).waitFor();
@@ -102,6 +115,7 @@ try {
   const existingLabRow = page.getByRole('row').filter({ hasText: 'Bright Dental Lab' });
   await existingLabRow.getByRole('button', { name: 'Lab orders', exact: true }).click();
   await page.getByRole('heading', { name: 'Bright Dental Lab', exact: true }).waitFor();
+  check('Lab supplier detail has no duplicate in-page Back button', await page.locator('[data-clinic-page-header] button').count() === 0);
   const visibleSupplierOrderRows = await page.getByRole('row').filter({ hasText: 'Synthetic Pending Patient' }).evaluateAll(rows => rows.filter(row => row.getClientRects().length > 0).length);
   check('Lab Supplier Record displays associated operational work history without finance balances', visibleSupplierOrderRows === 1 && !/current due|opening balance|supplier statement/i.test(await page.locator('body').innerText()));
   check('renderer completed workflows without errors and every write used an idempotency key', errors.length === 0 && supplierSaved.calls.filter(call => call.method !== 'GET').every(call => Boolean(call.operationId)));

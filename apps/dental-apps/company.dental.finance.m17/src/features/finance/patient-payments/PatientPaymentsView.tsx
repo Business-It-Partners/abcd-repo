@@ -285,6 +285,10 @@ export default function PatientPaymentsView({
     ? [{ key: "received", label: "Received" }, { key: "outstanding", label: "Outstanding" }]
     : [{ key: "outstanding", label: "Outstanding" }];
   const tabBar = <Tabs tabs={tabs} active={view} onChange={(key) => setView(key as PaymentView)} />;
+  const listFilters = <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", flexWrap: "wrap" }}>
+    <MonthPicker value={month} onChange={onMonthChange} allowAll max={todayISO().slice(0, 7)} />
+    {tabBar}
+  </div>;
   const dueForDisplay = ledger?.summary.outstandingDue ?? selectedPatient?.currentDueAmount;
   const amountValue = decimalNumber(amount);
   const discountValue = decimalNumber(discount);
@@ -461,18 +465,12 @@ export default function PatientPaymentsView({
     </Modal>
   ) : null;
 
-  const maxMonth = todayISO().slice(0, 7);
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader
         title="Patient payments"
         icon={<Wallet size={17} style={{ color: "var(--acc)" }} />}
-        subtitle="Review patient receipts, payment history, and outstanding balances."
-      >
-        <div className="patientPaymentsMonthFilter">
-          <MonthPicker value={month} onChange={onMonthChange} allowAll max={maxMonth} />
-        </div>
-      </PageHeader>
+      />
 
       {view === "outstanding" ? (
         <>
@@ -480,7 +478,8 @@ export default function PatientPaymentsView({
             rows={outstanding}
             rowKey={(patient) => patient.patientId}
             noun="patients"
-            filters={tabBar}
+            standardPage
+            filters={listFilters}
             loading={loading}
             error={loadError}
             empty={<EmptyState message="All balances cleared — nothing outstanding." />}
@@ -494,15 +493,13 @@ export default function PatientPaymentsView({
             rows={received}
             rowKey={(entry) => entry.patientLedgerEntryId}
             noun="payments"
-            filters={tabBar}
+            standardPage
+            filters={listFilters}
             loading={loading}
             error={loadError}
             empty={<EmptyState message={"No payments received in " + bsMonthLabel(month, "All months") + "."} />}
             columns={receivedColumns}
           />
-          <p className="patientPaymentReportNote">
-            Financial totals are intentionally not calculated from this list. The current patient balance and the later trusted-report system remain the sources for authoritative totals.
-          </p>
           {patientDialog}
         </>
       )}

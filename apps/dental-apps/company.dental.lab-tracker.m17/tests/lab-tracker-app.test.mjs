@@ -8,19 +8,40 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readText = async relative => (await readFile(path.join(root, relative))).toString('utf8');
 const readJson = async relative => JSON.parse(await readText(relative));
 
-test('Lab Tracker package has its own first-release identity and two first-party modules', async () => {
+test('Lab Tracker package has its own 1.0.3 update identity and two first-party modules', async () => {
   const packageJson = await readJson('package.json');
   const manifest = await readJson('app.manifest.json');
   const app = await readJson('app.json');
   assert.equal(packageJson.name, 'company.dental.lab-tracker.m17');
-  assert.equal(packageJson.version, '1.0.0');
+  assert.equal(packageJson.version, '1.0.3');
   assert.equal(manifest.appId, packageJson.name);
-  assert.equal(manifest.version, '1.0.0');
+  assert.equal(manifest.version, '1.0.3');
   assert.deepEqual(app.modules.map(module => module.id), ['lab-tracker', 'lab-suppliers']);
   assert.equal(app.appId, packageJson.name);
   assert.equal(app.title, 'Lab Tracker');
   assert.deepEqual(app.anyCapabilities, ['lab_tracker.access']);
   assert.deepEqual(manifest.capabilities, ['clinic.app.lab-tracker', 'clinic.api.request', 'session.context']);
+});
+
+test('filterable Lab Tracker pages use the Standard Window 1 table layout', async () => {
+  const tracker = await readText('src/features/labs/components/LabTrackerView.tsx');
+  const suppliers = await readText('src/features/labs/components/LabsPanel.tsx');
+  assert.match(tracker, /<Page sheet standardPage>/);
+  assert.match(tracker, /noun="orders"[\s\S]*?standardPage[\s\S]*?filters=/);
+  assert.match(suppliers, /standardPage[\s\S]*?filters=/);
+  assert.match(suppliers, /PageHeader[\s\S]*?title="Lab supplier record"/);
+});
+
+test('Lab Tracker detail summaries omit duplicate helper captions', async () => {
+  const tracker = await readText('src/features/labs/components/LabTrackerView.tsx');
+  const suppliers = await readText('src/features/labs/components/LabsPanel.tsx');
+  assert.doesNotMatch(tracker, /Dispatched date|Choose a supplier to dispatch/);
+  assert.doesNotMatch(suppliers, /Add a lab before sending crown, bridge or denture work out/);
+});
+
+test('Lab supplier details rely on window Back/Forward without a duplicate page Back button', async () => {
+  const detail = await readText('src/features/labs/components/LabSupplierDetailView.tsx');
+  assert.doesNotMatch(detail, /back=\{\{/);
 });
 
 test('clinic reads and writes use the approved Lab Tracker API paths through ClinicClient', async () => {

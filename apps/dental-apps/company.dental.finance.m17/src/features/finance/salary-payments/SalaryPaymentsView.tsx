@@ -195,19 +195,12 @@ export default function SalaryPaymentsView({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader
         title="Salary payments"
         icon={<Wallet size={17} style={{ color: "var(--acc)" }} />}
-        subtitle="Review and record staff salary payouts by clinic month."
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)" }}>
-          <div style={{ display: "grid", gap: "2px" }}>
-            <span style={{ color: "var(--ink-3)", fontSize: "var(--fs-12)", fontWeight: "var(--fw-medium)" }}>Salary month</span>
-            <MonthPicker value={month} onChange={setMonth} allowAll allLabel="All salary months" max={todayISO().slice(0, 7)} />
-          </div>
-          <ClinicActionButton onClick={() => setAdding(true)}><Plus size={14} /> Record salary</ClinicActionButton>
-        </div>
+        <ClinicActionButton onClick={() => setAdding(true)}><Plus size={14} /> Record salary</ClinicActionButton>
       </PageHeader>
 
       {staffError ? (
@@ -224,10 +217,12 @@ export default function SalaryPaymentsView({
         rows={listed}
         rowKey={(payout) => payout.salaryPayoutId}
         noun="salary payments"
+        standardPage
         loading={loading}
         loadingLabel="Loading salary records…"
         error={loadError ? `Couldn't load the list — ${loadError}` : undefined}
-        empty={<EmptyState message="No salary payments for this salary month." hint={'Use "+ Record salary" above.'} />}
+        empty={<EmptyState message="No salary payments for this salary month." />}
+        filters={<MonthPicker value={month} onChange={setMonth} allowAll allLabel="All salary months" max={todayISO().slice(0, 7)} />}
         columns={columns}
       />
 

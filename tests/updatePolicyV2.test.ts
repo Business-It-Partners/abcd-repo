@@ -124,7 +124,7 @@ describe('signed update-policy v2 API grants', () => {
     expect(apiOperationsForPackage(pkg, undefined, now)).toEqual([]);
   });
 
-  it('rejects duplicate, unknown, malformed, over-ceiling, and more-than-six release grants', () => {
+  it('rejects duplicate, unknown, malformed, over-ceiling, and more-than-seven release grants', () => {
     const bytes = packageBytes();
     const grant = releaseGrant(bytes, ['appointments.list']);
     const duplicate = v2Policy([grant, grant]);
@@ -144,7 +144,9 @@ describe('signed update-policy v2 API grants', () => {
     const six = ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0'].map(version => packageBytes(version));
     expect(() => verifiedPolicy(v2Policy(six.map(value => releaseGrant(value, ['appointments.list']))))).not.toThrow();
     const seven = [...six, packageBytes('1.6.0')].map(value => releaseGrant(value, ['appointments.list']));
-    expect(() => verifiedPolicy(v2Policy(seven))).toThrow('Update policy release grants');
+    expect(() => verifiedPolicy(v2Policy(seven))).not.toThrow();
+    const eight = [...seven, releaseGrant(packageBytes('1.7.0'), ['appointments.list'])];
+    expect(() => verifiedPolicy(v2Policy(eight))).toThrow('Update policy release grants');
   });
 
   it('requires a grant matching the current catalogue row while allowing older retained fallback grants', () => {

@@ -15,7 +15,6 @@ interface LabSupplierDetailViewProps {
   lab: LabSupplier;
   orders: LabOrder[];
   loading: boolean;
-  onBack: () => void;
 }
 
 /**
@@ -26,7 +25,6 @@ export default function LabSupplierDetailView({
   lab,
   orders,
   loading,
-  onBack,
 }: LabSupplierDetailViewProps) {
   const sentOrders = useMemo(
     () => orders
@@ -41,7 +39,6 @@ export default function LabSupplierDetailView({
         title={lab.name}
         icon={<Truck size={17} style={{ color: "var(--acc)" }} />}
         subtitle={[lab.contactPerson, lab.phone, lab.address].filter(Boolean).join(" · ") || undefined}
-        back={{ label: "Lab supplier record", onClick: onBack }}
       />
 
       <DataTable<LabOrder>

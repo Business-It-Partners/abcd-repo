@@ -28,7 +28,10 @@ export function ClinicDataTable<T>({ rows, columns, rowKey, title, action, filte
 
   const tableSection = <section className={styles.card} data-clinic-data-table aria-busy={loading || undefined}>
     {(title || action) ? <header className={styles.cardHeader}>{title ? <h3 className={styles.cardTitle}>{title}</h3> : <span />}{action}</header> : null}
-    {filters ? <div className={styles.toolbar} data-sajilo-table-toolbar={standardPage ? "" : undefined}>{filters}</div> : null}
+    {(filters || standardPage) ? <div className={styles.toolbar} data-sajilo-table-toolbar={standardPage ? "" : undefined}>
+      {filters ? standardPage ? <div data-sajilo-table-filters="">{filters}</div> : filters : null}
+      {standardPage ? <span data-sajilo-table-count="" aria-live="polite">{sorted.length} {noun}</span> : null}
+    </div> : null}
     {loading ? <>
       <span className={styles.srOnly} role="status">{loadingLabel}</span>
       <TableWrap><Table minWidth={minWidth} striped data-sajilo-standard-table={standardPage ? "" : undefined}>{tableHead}<tbody aria-hidden="true">{Array.from({ length: Math.max(1, skeletonRows) }, (_, rowIndex) => <Tr key={`skeleton-${rowIndex}`} className={styles.skeletonRow}>{columns.map((column, columnIndex) => <Td key={column.key} align={column.align}><span className={styles.skeletonLine} style={{ width: `${48 + ((rowIndex + columnIndex) % 4) * 10}%` }} /></Td>)}</Tr>)}</tbody></Table></TableWrap>
@@ -38,8 +41,10 @@ export function ClinicDataTable<T>({ rows, columns, rowKey, title, action, filte
     </>}
   </section>;
   if (!standardPage) return tableSection;
+  const from = sorted.length > 0 ? start + 1 : 0;
+  const to = sorted.length > 0 ? Math.min(start + pageSize, sorted.length) : 0;
   return <div data-sajilo-table-root="">
     {tableSection}
-    {paginate && sorted.length > 0 ? <div data-sajilo-pagination=""><Pagination page={safePage} totalPages={totalPages} from={start + 1} to={Math.min(start + pageSize, sorted.length)} total={sorted.length} noun={noun} onPage={setPage} /></div> : null}
+    {paginate ? <div data-sajilo-pagination=""><Pagination page={safePage} totalPages={totalPages} from={from} to={to} total={sorted.length} noun={noun} onPage={setPage} /></div> : null}
   </div>;
 }

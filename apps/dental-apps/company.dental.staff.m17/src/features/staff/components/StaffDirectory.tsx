@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Plus, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
 import { ClinicDataTable } from "@/shared/ui/ClinicDataTable";
-import { Page } from "@/shared/ui/workspace-primitives";
-import { ClinicPageRefreshAction, useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
+import { Page, PageHeader } from "@/shared/ui/workspace-primitives";
+import { useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
 import { useClinicPageLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { formatBSShort } from "@/shared/dates/nepaliDate";
@@ -43,7 +43,6 @@ export function StaffDirectory({
   onLifecycle,
   selectedStaffId,
   onOpenStaff,
-  onCloseStaff,
   onInvalidStaff,
 }: {
   client: ClinicClient;
@@ -54,7 +53,6 @@ export function StaffDirectory({
   onLifecycle: (state: LifecycleState) => void;
   selectedStaffId: string | null;
   onOpenStaff: (staffId: string) => void;
-  onCloseStaff: () => void;
   onInvalidStaff: () => void;
 }) {
   const { showSuccess } = useClinicSnackbar();
@@ -97,7 +95,6 @@ export function StaffDirectory({
   useEffect(() => {
     if (!loading && !error && selectedStaffId && !selectedStaff) onInvalidStaff();
   }, [error, loading, onInvalidStaff, selectedStaff, selectedStaffId]);
-  const activeCount = useMemo(() => staff.filter((member) => member.status === "active").length, [staff]);
   const visibleStaff = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
     return staff.filter((member) => {
@@ -142,7 +139,6 @@ export function StaffDirectory({
         clinicCapabilities={clinicCapabilities}
         media={media}
         mediaCapabilities={mediaCapabilities}
-        onBack={onCloseStaff}
         onLifecycle={onLifecycle}
         onUpdated={(updated) => setStaff((current) =>
           current.map((member) => member.staffId === updated.staffId ? updated : member))}
@@ -153,27 +149,18 @@ export function StaffDirectory({
 
   const isEmptyDirectory = !loading && !error && staff.length === 0;
   return (
-    <Page sheet>
-      <section className="staffWorkspace" aria-labelledby="staff-page-title">
-        <header className="staffPageHeader">
-          <div>
-            <p className="staffEyebrow">Clinic roster</p>
-            <h1 id="staff-page-title">Your clinic team</h1>
-            <p>Keep employment records, roles, and contact details in one calm operational workspace.</p>
-          </div>
-          <div className="staffHeaderActions">
-            <ClinicPageRefreshAction placement="page-action" />
-            <button className="staffPrimary staffAddButton" onClick={beginCreate} type="button">
-              <Plus aria-hidden="true" size={16} /> Add staff member
-            </button>
-          </div>
-        </header>
+    <Page sheet standardPage>
+      <PageHeader title="Your clinic team">
+        <button className="staffPrimary staffAddButton" onClick={beginCreate} type="button">
+          <Plus aria-hidden="true" size={16} /> Add staff member
+        </button>
+      </PageHeader>
         {error && staff.length > 0 ? <p className="staffError" role="alert">{error}</p> : null}
-        <div className="staffDirectoryTable">
           <ClinicDataTable<StaffProfile>
             rows={visibleStaff}
             rowKey={(member) => member.staffId}
             noun="staff members"
+            standardPage
             minWidth={1040}
             loading={loading}
             loadingLabel="Loading staff directory…"
@@ -197,24 +184,10 @@ export function StaffDirectory({
                     {typeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
-                <p><strong>{activeCount}</strong> active staff</p>
               </div>
             ) : undefined}
             empty={loading || error ? null : isEmptyDirectory ? (
-              <section className="staffEmptyState">
-                <div className="staffEmptyArtwork">
-                  <UsersRound aria-hidden="true" size={28} />
-                  <span><ShieldCheck aria-hidden="true" size={15} /></span>
-                </div>
-                <p className="staffEmptyKicker">Build your care team</p>
-                <h2>Start with the people who keep the clinic moving.</h2>
-                <p>Use Add staff member to add doctors, receptionists, and support staff. Record their role, contact details, joining date, and salary when you are ready.</p>
-                <div className="staffEmptySteps">
-                  <span><b>1</b>Add a team member</span>
-                  <span><b>2</b>Set their role</span>
-                  <span><b>3</b>Keep their record current</span>
-                </div>
-              </section>
+              <p className="staffEmptyTable">No staff members yet.</p>
             ) : (
               <div className="staffNoResults">
                 <strong>No staff match these filters.</strong>
@@ -261,8 +234,6 @@ export function StaffDirectory({
               },
             ]}
           />
-        </div>
-      </section>
       {showCreate ? (
         <AddStaffModal
           busy={saving}

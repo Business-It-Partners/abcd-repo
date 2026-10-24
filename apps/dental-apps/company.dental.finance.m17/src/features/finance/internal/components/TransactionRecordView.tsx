@@ -92,20 +92,14 @@ export default function TransactionRecordView({
     { key: "in", label: `Money IN (${monthFiltered.filter((t) => t.flow === "in").length})` },
     { key: "out", label: `Money OUT (${monthFiltered.filter((t) => t.flow === "out").length})` },
   ];
+  const transactionFilters = <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", flexWrap: "wrap" }}>
+    <Tabs tabs={tabs} active={activeTab} onChange={(key) => setActiveTab(key as "all" | "in" | "out")} />
+    <MonthPicker value={monthFilter} onChange={setMonthFilter} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />
+  </div>;
 
   return (
-    <Page sheet>
-      <PageHeader title="Transaction Record" icon={<Wallet size={17} style={{ color: "var(--acc)" }} />}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)" }}>
-          <MonthPicker
-            value={monthFilter}
-            onChange={setMonthFilter}
-            allowAll
-            allLabel="All months"
-            max={todayISO().slice(0, 7)}
-          />
-        </div>
-      </PageHeader>
+    <Page sheet standardPage>
+      <PageHeader title="Transaction Record" icon={<Wallet size={17} style={{ color: "var(--acc)" }} />} />
 
       {loadError && !loading && (
         <ErrorState
@@ -121,14 +115,7 @@ export default function TransactionRecordView({
       {/* One financial-overview compartment. The tiles are status cues inside this
           section; they do not float independently on the page canvas. */}
       <Card square>
-        <CardHeader
-          title="Financial overview"
-          style={{ padding: "var(--sp-3) var(--sp-4)" }}
-        >
-          <span style={{ fontSize: "var(--fs-12)", color: "var(--ink-3)" }}>
-            Revenue, spending and outstanding balances
-          </span>
-        </CardHeader>
+        <CardHeader title="Financial overview" style={{ padding: "var(--sp-3) var(--sp-4)" }} />
         <CardBody>
       {/* 10 Financial Summary KPI Cards arranged in a responsive grid */}
       <div className="finance-metric-grid">
@@ -390,7 +377,6 @@ export default function TransactionRecordView({
             <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", color: "#7e22ce", fontVariantNumeric: "tabular-nums" }}>
               {formatNpr(totalSupplierOutstanding)}
             </div>
-            <div style={{ fontSize: "var(--fs-11)", color: "#7e22ce", marginTop: "2px" }}>All dates</div>
           </CardBody>
         </Card>
 
@@ -441,7 +427,6 @@ export default function TransactionRecordView({
               <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#ddd6fe", display: "flex", alignItems: "center", justifyContent: "center" }}><Landmark size={16} /></div>
             </div>
             <div style={{ fontSize: "var(--fs-16)", fontWeight: "var(--fw-bold)", fontVariantNumeric: "tabular-nums" }}>{formatNpr(totalLabOutstanding)}</div>
-            <div style={{ fontSize: "var(--fs-11)", color: "var(--ink-3)", marginTop: "2px" }}>All dates</div>
           </CardBody>
         </Card>
       </div>
@@ -451,18 +436,13 @@ export default function TransactionRecordView({
       {/* Separate ledger compartment */}
       <DataTable<MasterTransaction>
         square
+        standardPage
         rows={tabFiltered}
         rowKey={(t) => t.id}
         noun="transactions"
         loading={loading}
         loadingLabel="Loading the transaction record…"
-        filters={(
-          <Tabs
-            tabs={tabs}
-            active={activeTab}
-            onChange={(k) => setActiveTab(k as "all" | "in" | "out")}
-          />
-        )}
+        filters={transactionFilters}
         empty={<EmptyState message="No transactions found for the selected period." />}
         columns={[
           {

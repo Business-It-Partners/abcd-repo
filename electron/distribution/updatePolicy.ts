@@ -35,7 +35,7 @@ export type UpdatePolicy = UpdatePolicyV1 | UpdatePolicyV2;
 
 const hash = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const version = (value: unknown): value is string => typeof value === 'string' && /^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/.test(value);
-const maxRetainedReleaseGrantsPerApp = 6;
+const maxRetainedReleaseGrantsPerApp = 7;
 const hasExactKeys = (value: unknown, expected: string[]) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return Object.keys(value).sort().join() === expected.slice().sort().join();

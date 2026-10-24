@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicError } from "./sdk/client";
+import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
 import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
 import { TransactionRecordWorkspace } from "./features/finance/transaction-record/TransactionRecordWorkspace";
 import { PatientPaymentsWorkspace } from "./features/finance/patient-payments/PatientPaymentsWorkspace";
@@ -93,7 +94,6 @@ function App() {
     if (history?.current().moduleId === owner && history.current().screen !== "main") history.replace(mainPage(owner));
   }, []);
   const closeProduct = useCallback(() => closeDetail("product-list"), [closeDetail]);
-  const closeSupplier = useCallback(() => closeDetail("supplier-list"), [closeDetail]);
   const resetMissingProduct = useCallback(() => resetMissingDetail("product-list"), [resetMissingDetail]);
   const resetMissingSupplier = useCallback(() => resetMissingDetail("supplier-list"), [resetMissingDetail]);
 
@@ -197,8 +197,9 @@ function App() {
   const supplierId = page?.moduleId === "supplier-list" && page.screen === "supplier-detail" ? page.supplierId : null;
 
   return (
-    <ClinicLoadingProvider>
-      <ClinicPageRefreshProvider>
+    <ClinicSnackbarProvider>
+      <ClinicLoadingProvider>
+        <ClinicPageRefreshProvider>
         <main className="finance-app-shell" data-dental-os-app={APP_ID}>
           <header className="finance-app-toolbar" aria-label="Finance app toolbar">
             <div className="finance-app-toolbar-start">
@@ -248,7 +249,6 @@ function App() {
                 onNavigationLockChange={setFinanceNavigationLock}
                 selectedSupplierId={supplierId}
                 onOpenSupplier={openSupplier}
-                onCloseSupplier={closeSupplier}
                 onInvalidSupplier={resetMissingSupplier}
               />
             ) : moduleId === "purchases" ? (
@@ -258,8 +258,9 @@ function App() {
             )}
           </section>
         </main>
-      </ClinicPageRefreshProvider>
-    </ClinicLoadingProvider>
+        </ClinicPageRefreshProvider>
+      </ClinicLoadingProvider>
+    </ClinicSnackbarProvider>
   );
 }
 

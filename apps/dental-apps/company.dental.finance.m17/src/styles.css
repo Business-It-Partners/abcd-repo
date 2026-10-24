@@ -437,15 +437,8 @@ body {
   justify-content: center;
 }
 
-.patientPaymentReportNote {
-  margin: var(--sp-2) 0 0;
-  color: var(--ink-3);
-  font-size: var(--fs-12);
-}
-
 .purchase-notice,
-.purchase-reference-warning,
-.purchase-loaded-count {
+.purchase-reference-warning {
   margin: 0 0 var(--sp-3);
   color: var(--ink-2);
   font-size: var(--fs-13);
@@ -458,7 +451,6 @@ body {
   color: #77551a;
 }
 
-.purchase-loaded-count { margin-top: var(--sp-2); color: var(--ink-3); font-size: var(--fs-12); }
 .purchase-row-actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .purchase-items-summary { display: block; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .purchase-form-page { display: flex; flex-direction: column; gap: var(--sp-3); padding-bottom: 104px; }

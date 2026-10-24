@@ -194,7 +194,7 @@ export default function PurchasesView({
   }
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader title="Purchases" icon={<Receipt size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton onClick={() => { setNotice(""); setAdding(true); }}><Plus size={14} /> New purchase</ClinicActionButton>
       </PageHeader>
@@ -204,9 +204,10 @@ export default function PurchasesView({
         rows={rows}
         rowKey={(purchase) => purchase.purchaseId}
         noun="purchases"
+        standardPage
         minWidth={1050}
         totalsLabel="Total purchased"
-        filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", flexWrap: "wrap" }}>
+        filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <MonthPicker value={month} onChange={setMonth} max={todayISO().slice(0, 7)} />
           <SearchBox placeholder="Search invoice or supplier…" value={term} onChange={(event) => setTerm(event.target.value)} />
         </div>}
@@ -214,10 +215,9 @@ export default function PurchasesView({
         loadingLabel="Loading purchases…"
         error={purchasesError ? `Couldn't load the list — ${purchasesError}` : undefined}
         errorHint="Check your clinic connection and refresh the purchases list."
-        empty={<EmptyState icon={activePurchases.length === 0 ? <Receipt size={26} /> : <Search size={26} />} message={activePurchases.length === 0 ? "No purchases yet." : "No purchase matches this search."} hint={activePurchases.length === 0 ? "Record what you buy from a supplier so the supplier account can track the invoice." : undefined} />}
+        empty={<EmptyState icon={activePurchases.length === 0 ? <Receipt size={26} /> : <Search size={26} />} message={activePurchases.length === 0 ? "No purchases yet." : "No purchase matches this search."} />}
         columns={columns}
       />
-      {!purchasesLoading && !purchasesError && activePurchases.length > 0 ? <p className="purchase-loaded-count" aria-live="polite">Showing {activePurchases.length} loaded purchase{activePurchases.length === 1 ? "" : "s"}. The clinic returns the full purchase list; a large history may exceed the Dental OS response limit.</p> : null}
       {viewing ? <PurchaseDetailsDialog purchase={viewing} onClose={() => setViewing(null)} /> : null}
       {voidingPurchase ? (
         <ClinicModal title="Void purchase invoice?" description="The invoice leaves purchase totals and the supplier balance but remains in the audit trail. Any supplier payment stays recorded separately." onClose={() => { if (!voidSaving && !voidCommand) setVoidingPurchase(null); }} closeDisabled={voidSaving || Boolean(voidCommand)} size="small" verticalAlign="center">

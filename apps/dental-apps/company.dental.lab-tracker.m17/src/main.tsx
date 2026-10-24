@@ -11,7 +11,7 @@ import { LabRouteProvider } from '@/shell/routing/useClinicRouteState';
 import { installClinicClient } from '@/sdk/client';
 import { executeClinicCommand } from '@/sdk/commands';
 import { ClinicLoadingProvider } from '@/shared/ui/ClinicLoadingOverlay';
-import { ClinicPageRefreshAction, ClinicPageRefreshProvider, useClinicPageRefresh } from '@/shared/ui/ClinicPageRefresh';
+import { ClinicPageRefreshProvider, useClinicPageRefresh } from '@/shared/ui/ClinicPageRefresh';
 import { ClinicSnackbarProvider } from '@/shared/ui/ClinicSnackbar';
 import { todayISO } from '@/shared/dates/nepaliDate';
 import '@/shared/clinic.css';
@@ -63,12 +63,6 @@ function App() {
     if (current.moduleId === 'lab-suppliers' && current.screen === 'main') {
       history.push({ moduleId: 'lab-suppliers', screen: 'supplier-detail', supplierId });
     }
-  }, []);
-  const closeLabSupplier = useCallback(() => {
-    const history = historyRef.current;
-    const current = history?.current();
-    if (!history || current?.moduleId !== 'lab-suppliers' || current.screen === 'main') return;
-    if (!history.back(true)) history.replace(mainPage('lab-suppliers'));
   }, []);
   const resetMissingSupplier = useCallback(() => {
     const history = historyRef.current;
@@ -156,20 +150,18 @@ function App() {
       capabilities={capabilities}
       onLifecycle={reportModuleLifecycle}
       onOpenLabSupplier={openLabSupplier}
-      onCloseLabSupplier={closeLabSupplier}
       onInvalidLabSupplier={resetMissingSupplier}
     />
   </ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicSnackbarProvider>;
 }
 
-function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capabilities, onLifecycle, onOpenLabSupplier, onCloseLabSupplier, onInvalidLabSupplier }: {
+function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capabilities, onLifecycle, onOpenLabSupplier, onInvalidLabSupplier }: {
   client: ClinicClient;
   activeModule: LabModuleId;
   selectedLabSupplierId: string | null;
   capabilities: string[];
   onLifecycle: (moduleId: string, state: LifecycleState) => void;
   onOpenLabSupplier: (supplierId: string) => void;
-  onCloseLabSupplier: () => void;
   onInvalidLabSupplier: () => void;
 }) {
   const api = useMemo(() => new LabTrackerApi(client), [client]);
@@ -321,7 +313,6 @@ function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capa
   const supplierLifecycle = useCallback((state: LifecycleState) => onLifecycle('lab-suppliers', state), [onLifecycle]);
 
   return <main className="clinicApp">
-    <ClinicPageRefreshAction placement="utility-bar" />
     {loadError && <div role="alert" style={{ margin: '12px 18px', padding: '10px 12px', border: '1px solid #f0c5c5', background: '#fff7f7', color: '#9f1239' }}>Lab data could not be refreshed: {loadError}</div>}
     {writeError && <div role="alert" style={{ margin: '12px 18px', padding: '10px 12px', border: '1px solid #f0c5c5', background: '#fff7f7', color: '#9f1239' }}>
       <span>{pendingWrite ? 'The original save result is not confirmed. ' : ''}{writeError}</span>
@@ -350,7 +341,6 @@ function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capa
           onAddLab={createSupplier} onUpdateLab={updateSupplier} canManageSharedSuppliers={canManageSharedSuppliers}
           selectedLabSupplierId={selectedLabSupplierId}
           onOpenLabSupplierDetail={onOpenLabSupplier}
-          onCloseLabSupplierDetail={onCloseLabSupplier}
           onInvalidLabSupplierDetail={onInvalidLabSupplier}
           loadError={loadError}
         />

@@ -5,7 +5,7 @@ import MonthPicker from "@/shared/dates/MonthPicker";
 import { bsMonthToADRange, formatDateShort, todayISO, isInBSMonth } from "@/shared/dates/nepaliDate";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
-import { DataTable, EmptyState, ModalBody, Page, PageHeader, RowActions, StatTile, Tabs, TileGrid, Toolbar, type Column } from "@/shared/ui/workspace-primitives";
+import { DataTable, EmptyState, ModalBody, Page, PageHeader, RowActions, StatTile, Tabs, TileGrid, type Column } from "@/shared/ui/workspace-primitives";
 import { formatNpr } from "@/features/finance/internal/lib/domain";
 import SupplierPaymentModal from "./SupplierPaymentModal";
 import type { SupplierListApi } from "./api";
@@ -39,7 +39,6 @@ export default function SupplierDetailView({
   statementLoading,
   statementError,
   onNavigationLockChange,
-  onBack,
   onRecordPayment,
 }: {
   api: SupplierListApi;
@@ -55,7 +54,6 @@ export default function SupplierDetailView({
   statementLoading: boolean;
   statementError: string | null;
   onNavigationLockChange: (locked: boolean) => void;
-  onBack: () => void;
   onRecordPayment: (payment: ClinicSupplierPayment) => Promise<void>;
 }) {
   const [tab, setTab] = useState("statement");
@@ -99,7 +97,6 @@ export default function SupplierDetailView({
   }, [month, supplierPurchases]);
 
   const selectedOpening = statement?.supplier.openingBalanceAmount ?? supplier.openingBalanceAmount;
-  const selectedOpeningDate = statement?.supplier.openingBalanceAsOf ?? supplier.openingBalanceAsOf;
   const statementValue = (value: number | undefined) => statementLoading ? "Loading…" : statementError || value === undefined ? "Unavailable" : formatNpr(value);
   const purchaseColumns: Column<ClinicPurchase>[] = [
     { key: "sn", header: "S.N.", align: "center", width: 44, render: (_purchase, index) => <span style={{ color: "var(--ink-3)" }}>{index + 1}</span> },
@@ -130,19 +127,23 @@ export default function SupplierDetailView({
       },
     },
   ];
+  const listFilters = <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", flexWrap: "wrap" }}>
+    <Tabs tabs={DETAIL_TABS} active={tab} onChange={setTab} />
+    <MonthPicker value={month} onChange={setMonth} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />
+  </div>;
 
   return (
-    <Page sheet>
-      <PageHeader title={supplier.name} icon={<Truck size={17} style={{ color: "var(--acc)" }} />} subtitle={[supplier.contactPerson, supplier.phone].filter(Boolean).join(" · ") || undefined} back={{ label: "Supplier list", onClick: onBack }}>
+    <Page sheet standardPage>
+      <PageHeader title={supplier.name} icon={<Truck size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton onClick={() => { setPaymentNotice(""); setRecording(true); }}><Plus size={14} /> Record payment</ClinicActionButton>
       </PageHeader>
       {paymentNotice ? <p className="finance-supplier-success" role="status">{paymentNotice}</p> : null}
 
       <TileGrid>
-        <StatTile value={formatNpr(selectedOpening)} label="Opening balance" hint={selectedOpeningDate ? `as of ${formatDateShort(selectedOpeningDate)}` : undefined} tone={NEUTRAL_TONE} />
-        <StatTile value={statementValue(statement?.totalPurchasedAmount)} label="Total purchased" hint={statementError ? "Statement unavailable" : undefined} tone={NEUTRAL_TONE} />
-        <StatTile value={statementValue(statement?.totalPaidAmount)} label="Total paid" hint={statementError ? "Statement unavailable" : undefined} tone={PAID_TONE} />
-        <StatTile value={statementValue(statement?.currentDueAmount)} label="Balance due" hint={statementError ? "Statement unavailable" : statement?.currentDueAmount === 0 ? "settled" : statement && statement.currentDueAmount < 0 ? "you are in credit" : statement ? "owed to this supplier" : undefined} tone={DUE_TONE} />
+        <StatTile value={formatNpr(selectedOpening)} label="Opening balance" tone={NEUTRAL_TONE} />
+        <StatTile value={statementValue(statement?.totalPurchasedAmount)} label="Total purchased" tone={NEUTRAL_TONE} />
+        <StatTile value={statementValue(statement?.totalPaidAmount)} label="Total paid" tone={PAID_TONE} />
+        <StatTile value={statementValue(statement?.currentDueAmount)} label="Balance due" tone={DUE_TONE} />
       </TileGrid>
 
       {statementError ? <div className="finance-supplier-statement-error" role="alert">
@@ -150,36 +151,35 @@ export default function SupplierDetailView({
         <span>Authoritative balance and statement values are hidden until the clinic statement is available.</span>
       </div> : null}
 
-      <Toolbar>
-        <MonthPicker value={month} onChange={setMonth} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />
-      </Toolbar>
       {(tab === "statement" && (purchasesError || paymentsError)) ? <p className="finance-supplier-supporting-error" role="alert">
         {purchasesError ? `Purchase details are unavailable — ${purchasesError}. ` : ""}
         {paymentsError ? `Payment details are unavailable — ${paymentsError}.` : ""}
       </p> : null}
-      <Tabs tabs={DETAIL_TABS} active={tab} onChange={setTab} />
-
       {tab === "statement" ? <DataTable<SupplierStatementEntry>
         rows={shownStatement}
         rowKey={(entry) => entry.key}
         noun="entries"
+        standardPage
+        filters={listFilters}
         pageSize={25}
         loading={statementLoading}
         loadingLabel="Loading supplier statement…"
         error={statementError ? `Couldn't load supplier statement — ${statementError}` : undefined}
         errorHint="Check your clinic connection and refresh the supplier account."
-        empty={<EmptyState message={month === "all" ? "No supplier statement entries yet." : "No statement entries in the selected month."} hint={month === "all" ? undefined : "Try All months or choose another month."} />}
+        empty={<EmptyState message={month === "all" ? "No supplier statement entries yet." : "No statement entries in the selected month."} />}
         columns={statementColumns}
       /> : <DataTable<ClinicPurchase>
         rows={shownPurchases}
         rowKey={(purchase) => purchase.purchaseId}
         noun="purchases"
+        standardPage
+        filters={listFilters}
         totalsLabel="Total purchased"
         loading={purchasesLoading}
         loadingLabel="Loading supplier purchases…"
         error={purchasesError ? `Couldn't load supplier purchases — ${purchasesError}` : undefined}
         errorHint="Check your clinic connection and refresh the supplier account."
-        empty={<EmptyState icon={<Receipt size={26} />} message={supplierPurchases.length === 0 ? "No purchases yet" : "No purchases found in the selected month."} hint={supplierPurchases.length === 0 ? undefined : "Try All months or choose another month."} />}
+        empty={<EmptyState icon={<Receipt size={26} />} message={supplierPurchases.length === 0 ? "No purchases yet" : "No purchases found in the selected month."} />}
         columns={purchaseColumns}
       />}
 

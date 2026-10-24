@@ -153,7 +153,7 @@ export default function SupplierPaymentsView({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader title="Supplier payments" icon={<Landmark size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton onClick={() => setRecording(true)} disabled={suppliersLoading || purchasesLoading || Boolean(suppliersError)}>
           <Plus size={14} /> Record payment
@@ -166,12 +166,13 @@ export default function SupplierPaymentsView({
         rows={rows}
         rowKey={(payment) => payment.supplierPaymentId}
         noun="payments"
+        standardPage
         loading={paymentsLoading}
         loadingLabel="Loading payments…"
         error={paymentsError ? `Couldn't load the list — ${paymentsError}` : undefined}
         errorHint="Refresh the supplier payment list before recording or correcting entries."
         filters={<MonthPicker value={month} onChange={setMonth} allowAll allLabel="All months" max={todayISO().slice(0, 7)} />}
-        empty={<EmptyState icon={<Landmark size={26} />} message="No payments recorded yet." hint="Record what you pay suppliers and labs so each account stays accurate." />}
+        empty={<EmptyState icon={<Landmark size={26} />} message="No payments recorded yet." />}
         totalsLabel="Total paid"
         columns={columns}
       />

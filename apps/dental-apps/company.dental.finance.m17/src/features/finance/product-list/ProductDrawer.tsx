@@ -78,12 +78,10 @@ export default function ProductDrawer({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader
         title={product.name}
         icon={<Package size={17} style={{ color: "var(--acc)" }} />}
-        subtitle={`Category: ${categoryLabels[product.category]} · Unit: ${product.unit}`}
-        back={{ label: "Product list", onClick: onClose }}
       >
         <ClinicActionButton size="compact" onClick={onEdit}><Edit3 size={14} /> Edit</ClinicActionButton>
       </PageHeader>
@@ -92,7 +90,7 @@ export default function ProductDrawer({
         <section style={summaryCardStyle}>
           <div style={summaryLabelStyle}>Product Spec</div>
           <div style={{ fontSize: "var(--fs-14)", fontWeight: "var(--fw-bold)", color: "var(--ink-1)", marginTop: "4px" }}>{categoryLabels[product.category]}</div>
-          <div style={{ fontSize: "var(--fs-12)", color: "var(--ink-3)", marginTop: "2px" }}>{product.note || "No additional notes"}</div>
+          {product.note ? <div style={{ fontSize: "var(--fs-12)", color: "var(--ink-3)", marginTop: "2px" }}>{product.note}</div> : null}
         </section>
 
         <section style={summaryCardStyle}>
@@ -101,7 +99,6 @@ export default function ProductDrawer({
           </div>
           {purchasesError ? <div style={summaryUnavailableStyle}>Purchase history unavailable</div> : purchasesLoading ? <div style={summaryHintStyle}>Loading purchase history…</div> : <>
             <div style={summaryValueStyle}>{totalQuantity} <span style={{ fontSize: "var(--fs-13)", fontWeight: "normal", color: "var(--ink-3)" }}>{product.unit}s</span></div>
-            <div style={summaryHintStyle}>Across {filteredPurchases.length} invoice(s)</div>
           </>}
         </section>
 
@@ -111,7 +108,6 @@ export default function ProductDrawer({
           </div>
           {purchasesError ? <div style={summaryUnavailableStyle}>Purchase history unavailable</div> : purchasesLoading ? <div style={summaryHintStyle}>Loading purchase history…</div> : <>
             <div style={{ ...summaryValueStyle, color: "var(--acc)" }}>{formatNpr(totalInvoiceValue)}</div>
-            <div style={{ ...summaryHintStyle, color: "var(--acc)" }}>{monthFilter === "all" ? "All time total" : "Selected month total"}</div>
           </>}
         </section>
       </div>
@@ -120,13 +116,14 @@ export default function ProductDrawer({
         rows={filteredPurchases}
         rowKey={(purchase) => purchase.purchaseId}
         noun="product purchases"
+        standardPage
         loading={purchasesLoading}
         loadingLabel="Loading purchase history…"
         error={purchasesError ? `Couldn't load purchase history — ${purchasesError}` : undefined}
         errorHint="Check the clinic connection and refresh the product list."
-        title={<span style={{ display: "inline-flex", alignItems: "center", gap: "var(--sp-2)" }}><PackageCheck size={17} style={{ color: "var(--acc)" }} /> Purchase History ({filteredPurchases.length})</span>}
+        title={<span style={{ display: "inline-flex", alignItems: "center", gap: "var(--sp-2)" }}><PackageCheck size={17} style={{ color: "var(--acc)" }} /> Purchase History</span>}
         filters={<MonthPicker value={monthFilter} onChange={setMonthFilter} allowAll allLabel="All Time" max={todayISO().slice(0, 7)} />}
-        empty={<EmptyState message={matchingPurchases.length === 0 ? `No purchase invoices recorded for ${product.name} yet.` : `No purchases found for ${product.name} in the selected month.`} hint={matchingPurchases.length === 0 ? `When you record a purchase under Finance → Purchases, select ${product.name} to track transactions here.` : "Try selecting All Time or another month to view past purchases."} />}
+        empty={<EmptyState message={matchingPurchases.length === 0 ? `No purchase invoices recorded for ${product.name} yet.` : `No purchases found for ${product.name} in the selected month.`} />}
         columns={columns}
       />
     </Page>

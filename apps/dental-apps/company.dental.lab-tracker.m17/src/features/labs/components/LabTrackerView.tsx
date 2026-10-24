@@ -53,7 +53,6 @@ interface LabTrackerViewProps {
   loadError?: string;
   selectedLabSupplierId?: string | null;
   onOpenLabSupplierDetail?: (supplierId: string) => void;
-  onCloseLabSupplierDetail?: () => void;
   onInvalidLabSupplierDetail?: () => void;
 }
 
@@ -84,7 +83,6 @@ export default function LabTrackerView({
   loadError = '',
   selectedLabSupplierId = null,
   onOpenLabSupplierDetail,
-  onCloseLabSupplierDetail,
   onInvalidLabSupplierDetail,
 }: LabTrackerViewProps) {
   // The migration adapter owns this in-memory order directory. It resets on refresh.
@@ -156,13 +154,12 @@ export default function LabTrackerView({
         lab={openLabSupplier}
         orders={[...orders, ...removedOrders]}
         loading={labsLoading}
-        onBack={() => onCloseLabSupplierDetail?.()}
       />
     );
   }
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       {section === "orders" && (
         <PageHeader title="Lab Tracker" icon={<Briefcase size={17} style={{ color: "var(--acc)" }} />}>
           {ordersRefreshing ? <span aria-live="polite" role="status" style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)" }}>Refreshing…</span> : null}
@@ -183,48 +180,61 @@ export default function LabTrackerView({
 
       {section === "orders" && (
         <>
+          {removedOrders.length > 0 && (
+            <Card square style={{ marginTop: "var(--sp-4)" }}>
+              <CardHeader title={<><Trash2 size={15} /> Cancelled lab orders ({removedOrders.length})</>}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowRemoved((open) => !open)}>
+                  {showRemoved ? "Hide" : "View cancelled"}
+                </button>
+              </CardHeader>
+              {showRemoved && (
+                <CardBody>
+                  <p style={{ margin: "0 0 12px", fontSize: "var(--fs-13)", color: "var(--ink-2)" }}>Cancelled orders remain here for audit history and cannot be restored.</p>
+                  <DataTable<LabOrder>
+                    rows={removedOrders}
+                    rowKey={(order) => order.id}
+                    noun="cancelled orders"
+                    columns={[
+                      { key: "patient", header: "Patient", render: (order) => <span style={{ fontWeight: "var(--fw-bold)" }}>{order.patientName}</span> },
+                      { key: "procedure", header: "Lab work", render: (order) => <>{order.procedure}{order.tooth ? ` · Tooth ${order.tooth}` : ""}</> },
+                      { key: "reason", header: "Cancellation reason", render: (order) => <span>{order.voidReason || "—"}</span> },
+                      { key: "cancelled", header: "Cancelled", render: (order) => <span>{order.voidedAt ? formatDateShort(order.voidedAt.slice(0, 10)) : "—"}</span> },
+                    ]}
+                  />
+                </CardBody>
+              )}
+            </Card>
+          )}
           {/* Table Card View */}
           <DataTable<LabOrder>
             rows={activeOrders}
             rowKey={(o) => o.id}
             noun="orders"
+            standardPage
             pageSize={PAGE_SIZE}
             loading={labsLoading}
             filters={
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "var(--sp-3)", flexWrap: "wrap", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "var(--sp-3)", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", flexWrap: "wrap" }}>
                   {(["all", "Pending", "Sent", "Received", "Fitted"] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => patch({ status: tab === "all" ? null : tab })}
                       style={{
-                        background: filterTab === tab ? "var(--acc)" : "#ffffff",
-                        color: filterTab === tab ? "#ffffff" : "#475569",
-                        border: `1px solid ${filterTab === tab ? "var(--acc)" : "#e2e8f0"}`,
-                        borderRadius: "8px",
-                        padding: "6px 13px",
-                        fontSize: "var(--fs-13)",
-                        fontWeight: "var(--fw-medium)",
+                        background: filterTab === tab ? "#078bc6" : "#ffffff",
+                        color: filterTab === tab ? "#ffffff" : "#344e68",
+                        border: `1px solid ${filterTab === tab ? "#078bc6" : "#c6d6e5"}`,
+                        borderRadius: 0,
+                        minHeight: "36px",
+                        padding: "0 12px",
+                        fontSize: "14px",
+                        fontWeight: filterTab === tab ? 700 : 500,
                         cursor: "pointer",
+                        whiteSpace: "nowrap",
                       }}
                       type="button"
                     >
                       {tab === "all" ? "All Orders" : tab}
-                      {tab !== "all" && orders.filter((o) => o.status === tab).length > 0 && (
-                        <span
-                          style={{
-                            marginLeft: "var(--sp-2)",
-                            fontSize: "var(--fs-13)",
-                            fontWeight: "var(--fw-medium)",
-                            background: filterTab === tab ? "rgba(255,255,255,0.25)" : "#e2e8f0",
-                            color: filterTab === tab ? "#ffffff" : "#475569",
-                            padding: "1px 6px",
-                            borderRadius: "10px",
-                          }}
-                        >
-                          {orders.filter((o) => o.status === tab).length}
-                        </span>
-                      )}
                     </button>
                   ))}
                   <MonthPicker value={month} onChange={(value) => patch({ month: value === "all" ? null : value })} allowAll allLabel="All months" />
@@ -468,31 +478,6 @@ export default function LabTrackerView({
             ]}
           />
 
-          {removedOrders.length > 0 && (
-            <Card square style={{ marginTop: "var(--sp-4)" }}>
-              <CardHeader title={<><Trash2 size={15} /> Cancelled lab orders ({removedOrders.length})</>}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowRemoved((open) => !open)}>
-                  {showRemoved ? "Hide" : "View cancelled"}
-                </button>
-              </CardHeader>
-              {showRemoved && (
-                <CardBody>
-                  <p style={{ margin: "0 0 12px", fontSize: "var(--fs-13)", color: "var(--ink-2)" }}>Cancelled orders remain here for audit history and cannot be restored.</p>
-                  <DataTable<LabOrder>
-                    rows={removedOrders}
-                    rowKey={(order) => order.id}
-                    noun="cancelled orders"
-                    columns={[
-                      { key: "patient", header: "Patient", render: (order) => <span style={{ fontWeight: "var(--fw-bold)" }}>{order.patientName}</span> },
-                      { key: "procedure", header: "Lab work", render: (order) => <>{order.procedure}{order.tooth ? ` · Tooth ${order.tooth}` : ""}</> },
-                      { key: "reason", header: "Cancellation reason", render: (order) => <span>{order.voidReason || "—"}</span> },
-                      { key: "cancelled", header: "Cancelled", render: (order) => <span>{order.voidedAt ? formatDateShort(order.voidedAt.slice(0, 10)) : "—"}</span> },
-                    ]}
-                  />
-                </CardBody>
-              )}
-            </Card>
-          )}
         </>
       )}
 
@@ -782,9 +767,6 @@ export function LabDetailSheet({
             <div style={{ fontSize: "14px", fontWeight: "var(--fw-bold)", color: "var(--ink-1)", marginTop: "4px" }}>
               {order.labName || "—"}
             </div>
-            <div style={{ fontSize: "var(--fs-13)", color: "var(--ink-3)", marginTop: "2px" }}>
-              Tooth {order.tooth || "—"} {order.shade ? `(Shade ${order.shade})` : ""}
-            </div>
           </div>
 
           <div
@@ -803,9 +785,6 @@ export function LabDetailSheet({
             </div>
             <div style={{ fontSize: "14px", fontWeight: "var(--fw-bold)", color: "var(--ink-1)", marginTop: "4px" }}>
               {order.sentDate ? formatDateShort(order.sentDate) : "Not sent"}
-            </div>
-            <div style={{ fontSize: "var(--fs-13)", color: "var(--ink-3)", marginTop: "2px" }}>
-              {order.sentDate ? "Dispatched date" : "Choose a supplier to dispatch"}
             </div>
           </div>
 

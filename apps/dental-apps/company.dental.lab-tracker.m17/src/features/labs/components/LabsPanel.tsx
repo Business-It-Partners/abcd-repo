@@ -19,7 +19,6 @@ import {
   Field,
   Input,
   SearchBox,
-  Toolbar,
   PageHeader,
 } from "@/shared/ui/workspace-primitives";
 import { useSnackbar } from "@/shared/ui/SnackbarProvider";
@@ -72,43 +71,38 @@ export default function LabsPanel({
     if ((statusTab === "active") !== l.active) return false;
     return !q || l.name.toLowerCase().includes(q) || (l.contactPerson && l.contactPerson.toLowerCase().includes(q));
   });
-  const activeCount = labs.filter((l) => l.active).length;
-  const inactiveCount = labs.length - activeCount;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
+    <div className="labSupplierWorkspace" style={{ display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
       <PageHeader
         title="Lab supplier record"
         icon={<Truck size={17} style={{ color: "var(--acc)" }} />}
-        subtitle={`${activeCount} active supplier${activeCount === 1 ? "" : "s"} · Track laboratories and the work sent to them.`}
       >
         <button type="button" onClick={() => setShowAdd(true)} disabled={loading} className="btn btn-primary" style={{ flexShrink: 0 }}>
           <Plus size={15} /> Add Lab Supplier
         </button>
       </PageHeader>
 
-      <Toolbar>
-        <SearchBox placeholder="Search lab suppliers…" value={term} onChange={(e) => patch({ search: e.target.value || null })} />
-        <div role="tablist" aria-label="Lab supplier status" style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
-          {([
-            ["active", `Active suppliers (${activeCount})`],
-            ["inactive", `Inactive suppliers (${inactiveCount})`],
-          ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={statusTab === key} onClick={() => patch({ status: key === "active" ? null : key })} style={{ border: statusTab === key ? "1px solid var(--acc, #0284c7)" : "1px solid transparent", borderRadius: "8px", background: statusTab === key ? "#ffffff" : "transparent", color: statusTab === key ? "var(--acc, #0284c7)" : "#64748b", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", padding: "6px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>)}
-        </div>
-      </Toolbar>
-
       <DataTable<LabSupplier>
         rows={rows}
         rowKey={(lab) => lab.id}
         noun="lab suppliers"
+        standardPage
         loading={loading}
         loadingLabel="Loading lab suppliers…"
         rowStyle={(lab) => (!lab.active ? { opacity: 0.72 } : undefined)}
+        filters={<>
+          <SearchBox placeholder="Search lab suppliers…" value={term} onChange={(e) => patch({ search: e.target.value || null })} />
+          <div role="tablist" aria-label="Lab supplier status" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            {([
+              ["active", "Active"],
+              ["inactive", "Inactive"],
+            ] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={statusTab === key} onClick={() => patch({ status: key === "active" ? null : key })} style={{ minHeight: "36px", padding: "0 12px", border: `1px solid ${statusTab === key ? "#078bc6" : "#c6d6e5"}`, borderRadius: 0, background: statusTab === key ? "#078bc6" : "#fff", color: statusTab === key ? "#fff" : "#344e68", fontSize: "14px", fontWeight: statusTab === key ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>)}
+          </div>
+        </>}
         empty={
           <EmptyState
             icon={labs.length === 0 ? <Truck size={26} /> : <Search size={26} />}
             message={labs.length === 0 ? "No labs registered" : "No lab supplier matches this search"}
-            hint={labs.length === 0 ? "Add a lab before sending crown, bridge or denture work out." : undefined}
           />
         }
         columns={[
@@ -190,12 +184,6 @@ export default function LabsPanel({
           },
         ]}
       />
-
-      {!loading && labs.length > 0 && (
-        <p aria-live="polite" style={{ margin: 0, color: "var(--ink-3)", fontSize: "var(--fs-12)" }}>
-          Showing {labs.length} lab supplier{labs.length === 1 ? "" : "s"} from the clinic supplier directory.
-        </p>
-      )}
 
       {(showAdd || editingLab) && (
         <AddLabModal

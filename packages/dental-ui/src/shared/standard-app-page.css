@@ -20,6 +20,35 @@ body:has([data-sajilo-standard-page]) {
   overflow: hidden;
 }
 
+.finance-app-content:has([data-sajilo-standard-page]) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+main.clinicApp:has([data-sajilo-standard-page]),
+main.staffApp:has([data-sajilo-standard-page]) {
+  display: flex;
+  height: 100vh;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+main.clinicApp:has([data-sajilo-standard-page]) > div:not([hidden]) {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[data-sajilo-standard-page] .labSupplierWorkspace {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 body [data-sajilo-standard-page] {
   box-sizing: border-box;
   display: flex;
@@ -199,6 +228,27 @@ body [data-sajilo-standard-page] {
   border-radius: 0;
   margin: 0;
   background: #fff;
+}
+
+[data-sajilo-standard-page] [data-sajilo-table-filters] {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 360px;
+  align-items: center;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+}
+
+[data-sajilo-standard-page] [data-sajilo-table-filters] > * {
+  min-width: 0;
+}
+
+[data-sajilo-standard-page] [data-sajilo-table-count] {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: #4e6680;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 [data-sajilo-standard-page] [data-sajilo-standard-table] {

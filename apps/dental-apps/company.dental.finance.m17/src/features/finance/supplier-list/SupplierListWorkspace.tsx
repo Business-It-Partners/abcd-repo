@@ -21,14 +21,12 @@ export function SupplierListWorkspace({
   onNavigationLockChange,
   selectedSupplierId,
   onOpenSupplier,
-  onCloseSupplier,
   onInvalidSupplier,
 }: {
   client: ClinicClient;
   onNavigationLockChange: (locked: boolean) => void;
   selectedSupplierId: string | null;
   onOpenSupplier: (supplierId: string) => void;
-  onCloseSupplier: () => void;
   onInvalidSupplier: () => void;
 }) {
   const [suppliers, setSuppliers] = useState<ClinicSupplier[]>([]);
@@ -162,10 +160,6 @@ export function SupplierListWorkspace({
     onOpenSupplier(supplier.supplierId);
   }, [onOpenSupplier]);
 
-  const closeSupplier = useCallback(() => {
-    onCloseSupplier();
-  }, [onCloseSupplier]);
-
   const onRecordPayment = useCallback(async (payment: ClinicSupplierPayment) => {
     setPayments((current) => [payment, ...current.filter((row) => row.supplierPaymentId !== payment.supplierPaymentId)]);
     setPaymentsError(null);
@@ -186,7 +180,6 @@ export function SupplierListWorkspace({
     statementLoading={statementLoading}
     statementError={statementError}
     onNavigationLockChange={onNavigationLockChange}
-    onBack={closeSupplier}
     onRecordPayment={onRecordPayment}
   />;
 

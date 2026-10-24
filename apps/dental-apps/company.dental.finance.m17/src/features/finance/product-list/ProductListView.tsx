@@ -207,7 +207,7 @@ export default function ProductListView({
   }
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader title="Product list" icon={<Package size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton onClick={() => setAdding(true)} disabled={writeInProgress}>
           <Plus size={14} /> Add product
@@ -223,8 +223,9 @@ export default function ProductListView({
         rows={rows}
         rowKey={(product) => product.productId}
         noun="products"
+        standardPage
         filters={
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <SearchBox placeholder="Search products…" value={term} onChange={(event) => setTerm(event.target.value)} />
             <Select value={category} onChange={(event) => setCategory(event.target.value)} style={{ width: "auto" }}>
               <option value="all">All categories</option>
@@ -237,14 +238,10 @@ export default function ProductListView({
         loadingLabel="Loading products…"
         error={loadError ? `Couldn't load the product catalogue — ${loadError}` : undefined}
         errorHint="Check your clinic connection and refresh the product list."
-        empty={<EmptyState icon={products.length === 0 ? <Package size={26} /> : <Search size={26} />} message={products.length === 0 ? "No products yet." : "No product matches this search."} hint={products.length === 0 ? "Add the things you buy — gloves, composite, burs — so purchases can be recorded against them." : undefined} />}
+        empty={<EmptyState icon={products.length === 0 ? <Package size={26} /> : <Search size={26} />} message={products.length === 0 ? "No products yet." : "No product matches this search."} />}
         rowStyle={(product) => ({ opacity: product.active ? 1 : 0.55 })}
         columns={columns}
       />
-
-      {!loading && !loadError && products.length > 0 ? (
-        <p style={{ margin: "var(--sp-2) 0 0", color: "var(--ink-3)", fontSize: "var(--fs-12)" }}>Showing {products.length} product{products.length === 1 ? "" : "s"}.</p>
-      ) : null}
 
       {adding ? (
         <ProductFormModal

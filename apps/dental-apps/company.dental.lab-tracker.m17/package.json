@@ -1,6 +1,6 @@
 {
   "name": "company.dental.lab-tracker.m17",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "private": true,
   "description": "M17 Lab Tracker and Lab Supplier Record package for Dental OS.",
   "type": "module",

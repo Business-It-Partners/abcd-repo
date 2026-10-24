@@ -163,17 +163,22 @@ export default function SupplierListView({
   ];
 
   return (
-    <Page sheet>
+    <Page sheet standardPage>
       <PageHeader title="Supplier list" icon={<Truck size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton disabled={Boolean(pendingStatusId || unknownStatus)} onClick={() => setAdding(true)}><Plus size={14} /> Add supplier</ClinicActionButton>
       </PageHeader>
+      {statusMessage ? <p className={unknownStatus || pendingStatusId ? "finance-module-message" : "finance-supplier-success"} role={unknownStatus ? "alert" : "status"}>{statusMessage}</p> : null}
+      {unknownStatus ? <button type="button" className="btn btn-secondary" disabled={Boolean(pendingStatusId)} onClick={() => void resolveStatus(unknownStatus)}>
+        {pendingStatusId ? "Checking original update…" : "Retry original status update"}
+      </button> : null}
 
       <DataTable<ClinicSupplier>
         rows={rows}
         rowKey={(supplier) => supplier.supplierId}
         noun="suppliers"
+        standardPage
         totalsLabel="Total outstanding"
-        filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", flexWrap: "wrap" }}>
+        filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <SearchBox placeholder="Search suppliers…" value={term} onChange={(event) => setTerm(event.target.value)} />
           <div role="tablist" aria-label="Supplier status" className="finance-supplier-status-tabs">
             {([
@@ -196,16 +201,10 @@ export default function SupplierListView({
         empty={<EmptyState
           icon={suppliers.length === 0 ? <Truck size={26} /> : <Search size={26} />}
           message={suppliers.length === 0 ? "No suppliers yet." : "No supplier matches this search."}
-          hint={suppliers.length === 0 ? "Add the vendors you buy materials from so purchases can be recorded against them." : undefined}
         />}
         rowStyle={(supplier) => ({ opacity: supplier.active ? 1 : 0.55 })}
         columns={columns}
       />
-
-      {statusMessage ? <p className={unknownStatus || pendingStatusId ? "finance-module-message" : "finance-supplier-success"} role={unknownStatus ? "alert" : "status"}>{statusMessage}</p> : null}
-      {unknownStatus ? <button type="button" className="btn btn-secondary" disabled={Boolean(pendingStatusId)} onClick={() => void resolveStatus(unknownStatus)}>
-        {pendingStatusId ? "Checking original update…" : "Retry original status update"}
-      </button> : null}
 
       {adding ? <SupplierFormModal
         api={api}

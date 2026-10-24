@@ -67,12 +67,6 @@ function App() {
       history.push({ moduleId: "staff", screen: "profile", staffId });
     }
   }, []);
-  const closeStaff = useCallback(() => {
-    const history = historyRef.current;
-    const current = history?.current();
-    if (!history || current?.moduleId !== "staff" || current.screen === "directory") return;
-    if (!history.back(true)) history.replace(directoryPage());
-  }, []);
   const resetMissingStaff = useCallback(() => {
     const history = historyRef.current;
     const current = history?.current();
@@ -183,7 +177,6 @@ function App() {
               onLifecycle={reportLifecycle}
               selectedStaffId={page?.screen === "profile" ? page.staffId : null}
               onOpenStaff={openStaff}
-              onCloseStaff={closeStaff}
               onInvalidStaff={resetMissingStaff}
             />
           </ClinicPageRefreshProvider>

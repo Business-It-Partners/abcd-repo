@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "failure": "AssertionError: Lab Tracker list uses the shared Standard Window page header\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/lab-orders\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/clinic/suppliers?scope=lab\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"Lab Tracker\\nAll Orders\\nPending\\nSent\\nReceived\\nFitted\\nAll months\\n2 orders\\nS.N.\\tPatient⇅\\tWork⇅\\tLab⇅\\tSent⇅\\tSent\\tReceived\\tFitted\\tActions\\n\\n1\\n\\t\\nSynthetic Sent Patient\\nTooth 36\\nShade A1\\n\\t\\nZirconia Crown\\n\\t\\nBright…\\n\\t\\n06/07/2083\\n\\t\\n\\t\\n\\t\\n\\t\\nView\\nReturn to pending\\nEdit\\nCancel\\n\\n\\n2\\n\\t\\nSynthetic Pending Patient\\nTooth 46\\nShade A2\\n\\t\\nPFM Crown\\n\\t\\n—\\n\\t\\n—\\n\\t\\n\\t\\n\\t\\n\\t\\nView\\nEdit\\nShowing 1 to 2 of 2 orders\\nPrevious\\n1\\nNext\"}\nPrivate host stderr: [375886:1023/234611.437981:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n[375758:1023/234612.450921:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[375758:1023/234612.450963:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[375758:1023/234612.451013:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[375758:1023/234612.451178:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n",
+  "checks": [
+    "private signed package has Lab Tracker identity, version 1.0.1, and packaged assets"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.lab-tracker.m17",
+    "version": "1.0.1",
+    "packageSha256": "1e8a419eae78f4c3994c2d4159d37b48983f9bb6727806858306efb9094173be",
+    "payloadDigest": "de3051fc15d3da9502a8cc94c611c6b07c665404c241362abcc4adbb3912e4cb",
+    "wireBytes": 1295525,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.",
+  "screenshot": "m17-lab-tracker-private-2026-10-23T18-01-10.625Z.png"
+}

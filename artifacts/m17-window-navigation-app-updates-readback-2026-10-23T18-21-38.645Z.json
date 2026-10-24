@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "phase": "isolated-package-install",
+  "failure": null,
+  "checks": [
+    "saved sequence-72 baseline signatures and shared freshness verify",
+    "baseline already contains Finance 1.7.2, Lab Tracker 1.0.2, and Staff 1.0.1",
+    "public catalogue and policy signatures, pinned signer, freshness, and sequence 73 verify",
+    "unrelated app releases remain unchanged and each target resolves to its updated version",
+    "all pre-existing API grants remain in the updated policy",
+    "exact company.dental.finance.m17 1.7.2 release appears once",
+    "exact app capabilities and matching signed grant are published for company.dental.finance.m17",
+    "exact company.dental.lab-tracker.m17 1.0.2 release appears once",
+    "exact app capabilities and matching signed grant are published for company.dental.lab-tracker.m17",
+    "exact company.dental.staff.m17 1.0.2 release appears once",
+    "exact app capabilities and matching signed grant are published for company.dental.staff.m17",
+    "public package bytes, signer, digest, identity, and API grant verify for company.dental.finance.m17",
+    "isolated PackageRegistry installs and launches company.dental.finance.m17 with exact signed operations",
+    "isolated install is removed after verification for company.dental.finance.m17",
+    "public package bytes, signer, digest, identity, and API grant verify for company.dental.lab-tracker.m17",
+    "isolated PackageRegistry installs and launches company.dental.lab-tracker.m17 with exact signed operations",
+    "isolated install is removed after verification for company.dental.lab-tracker.m17",
+    "public package bytes, signer, digest, identity, and API grant verify for company.dental.staff.m17",
+    "isolated PackageRegistry installs and launches company.dental.staff.m17 with exact signed operations",
+    "isolated install is removed after verification for company.dental.staff.m17"
+  ],
+  "sequence": 73,
+  "keyId": "company-staging-m17-20261022",
+  "apps": [
+    {
+      "id": "company.dental.finance.m17",
+      "version": "1.7.2",
+      "packageSha256": "7f701cb0cdf4d9ba996ced25a5c5e56c391fd1815b7fe542b85789a76aec3931",
+      "payloadDigest": "792aa3bbcfb0a653aff1ac1f6f6422e4481518ffec69649fc10a2639c6148a07",
+      "apiOperations": [
+        "clinic.api.request"
+      ]
+    },
+    {
+      "id": "company.dental.lab-tracker.m17",
+      "version": "1.0.2",
+      "packageSha256": "c1bc3060141cce4e07cf78f018f4019c1f411491e871179c5b114e46421d616c",
+      "payloadDigest": "d6eb0da3bed44c200e082ff326b4246f37cab3b53acda291c48c6f210527b4de",
+      "apiOperations": [
+        "clinic.api.request"
+      ]
+    },
+    {
+      "id": "company.dental.staff.m17",
+      "version": "1.0.2",
+      "packageSha256": "dfe1835266ee4baf6675f6d25d62a532073fcf00b08855184919e044c39e14d3",
+      "payloadDigest": "3961bef2441c906653dec7a89103c77b694fa678782b65fb4e294af55c958d32",
+      "apiOperations": [
+        "clinic.api.request",
+        "clinic.media.read",
+        "clinic.media.upload"
+      ]
+    }
+  ],
+  "sourceHead": "ae6f46f7f1031d0aaa6724dc185a75195ac99585",
+  "scope": "Read-only signed public staging feed and package reads plus isolated local PackageRegistry install/launch/uninstall. No authenticated Store session or clinic business API reads/writes."
+}
