@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('desktop', {
     hide: () => ipcRenderer.send('dock-caption:hide'),
   },
   support:()=>ipcRenderer.invoke('support:action','preview'),
+  shell: { reload: () => ipcRenderer.invoke('shell:reload') as Promise<boolean> },
   store: {
     action: (kind: string, input?: unknown, generation?: number) => ipcRenderer.invoke('store:action', kind, input, generation),
     artwork: (appId: string, expectedSha256?: string, generation?: number) => ipcRenderer.invoke('store:artwork', appId, expectedSha256, generation),

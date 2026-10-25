@@ -459,6 +459,11 @@ button:disabled{opacity:1;color:var(--text-muted);cursor:default}
 @media(prefers-reduced-motion:reduce){.app-launch-spinner{animation:none}}
 .runtime-failure{position:absolute;inset:10px;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px #0002}
 .runtime-failure h2{font-size:21px}.runtime-failure button{padding:9px 13px;margin:5px;border:1px solid #b1bbc7;border-radius:6px;background:#fff;color:#30333c}
+.window-content-recovery{height:100%;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px;background:var(--surface-subtle);color:var(--text-primary);text-align:center}
+.window-content-recovery h2{margin:0;font-size:20px;font-weight:650}.window-content-recovery p{max-width:440px;margin:0;color:var(--text-muted);line-height:1.5}
+.window-content-recovery button,.shell-renderer-recovery button{padding:9px 14px;border:1px solid var(--border-strong);border-radius:7px;background:var(--surface);color:var(--text-primary);font:inherit;font-weight:600;cursor:pointer}
+.shell-renderer-recovery{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;background:var(--surface-subtle);color:var(--text-primary);text-align:center}
+.shell-renderer-recovery h1{margin:0;font-size:26px;font-weight:650}.shell-renderer-recovery p{max-width:520px;margin:0;color:var(--text-muted);line-height:1.55}
 .runtime-confirm-backdrop{position:absolute;z-index:8;inset:0;display:grid;place-items:center;padding:22px;background:rgb(18 31 48 / 34%);backdrop-filter:blur(3px)}
 .runtime-confirm{display:grid;width:min(100%,440px);gap:12px;padding:24px;border:1px solid #d8e1ec;border-radius:16px;background:#fff;box-shadow:0 20px 58px rgb(19 39 65 / 26%);color:#172b46}
 .runtime-confirm-icon{display:grid;width:42px;height:42px;place-items:center;border:1px solid #f5dfb0;border-radius:12px;background:#fff8e7;color:#aa6b0b}

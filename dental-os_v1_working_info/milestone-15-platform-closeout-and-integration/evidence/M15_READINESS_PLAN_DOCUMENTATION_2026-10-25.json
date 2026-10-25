@@ -1,0 +1,44 @@
+{
+  "record": "M15 V1 readiness plan documentation check",
+  "date": "2026-10-25",
+  "scope": "Documentation-only planning update; no runtime implementation or certification",
+  "worktree": "/home/master-x/.codex/worktrees/dental-os-audit/fewa_business_os",
+  "source_sha": "75d65aff995fba051e523fb05b3bd46e9c933954",
+  "source_state": "checked out on codex/m15-readiness at the audited SHA; pre-existing readiness documentation changes preserved",
+  "implementation_branch": "codex/m15-readiness",
+  "implementation_branch_status": "created and verified at the audited SHA after rechecking the detached worktree",
+  "preflight": {
+    "node_modules": "absent",
+    "vitest": "unavailable",
+    "package_lock": "present",
+    "active_build_or_test_process": "none found",
+    "other_node_processes": "eight low-RSS idle Playwright MCP servers; left running",
+    "separate_electron_app": "platform-closeout worktree; left running",
+    "load_average": [5.54, 3.33, 1.99],
+    "memory_available_gib": 6.9,
+    "swap_used_gib": 3.7
+  },
+  "commands": {
+    "documentation_check": "python3 tools/check-dental-docs.py",
+    "documentation_check_result": "PASS",
+    "git_diff_check": "PASS",
+    "build": "NOT RUN",
+    "unit_tests": "NOT RUN; Vitest was unavailable before dependency installation",
+    "ui_tests": "NOT RUN"
+  },
+  "documentation_check_counts": {
+    "architecture_documents": 24,
+    "milestones": 19,
+    "required_milestone_files": 76,
+    "requirements": 16,
+    "acceptance_gates": 18,
+    "invariants": 14,
+    "errors": 0
+  },
+  "contract_sha256": "9daa03a430321a501a0c4e1dca8cd6cc552041680dfaa25aeac8853ff60e358c",
+  "notes": [
+    "The documentation checker validates documentation links, structure, and requirement ownership; it does not certify runtime behavior.",
+    "M15.7 preflight and branch setup are complete; M15.8 through M15.12 remain planned sequentially. The user's manual review remains separate.",
+    "G12, G13, and formal G15 remain open."
+  ]
+}

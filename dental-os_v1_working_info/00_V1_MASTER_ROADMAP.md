@@ -17,6 +17,10 @@ One active platform milestone by default. M15 remains the platform closeout trac
 
 Statuses: PLANNED, IMPLEMENTING, IMPLEMENTED, VERIFIED, BLOCKED, DEFERRED, REMOVED. Technical verification and user acceptance are separate. A missing required supported-host check prevents verification of that scope; an explicit scope change needs a recorded user decision and updated traceability.
 
+## M15 readiness continuation — 2026-10-25
+
+At the user's direction, the existing M15 platform-closeout plan now includes M15.7–M15.12 for audit-worktree baseline review, shell recovery, resource-pressure recovery, saved-session recovery, exact-source/M15 evidence, and user review plus main-project integration. M15.7 preflight and branch setup are complete. M15.8 is implemented and has focused Linux private-display evidence for shell crash/hang recovery, managed-app crash/hang containment and bounded restart recovery; M15.9–M15.12 remain open and sequential. Current-source Windows evidence and independent review remain in M15.11. These are sequential M15 sub-milestones, not a new milestone after M20. The detailed scope and exit evidence are in the [M15 plan](milestone-15-platform-closeout-and-integration/PLAN.md); the [central checklist](PLATFORM_RECONCILIATION_AND_CLOSEOUT_CHECKLIST.md) and [global status](00_V1_STATUS.md) track progress. M20/G20 remains dependent on M15/G15, and this plan does not close G12/G13 or G15.
+
 ## Sequence
 
 | Milestone | Purpose | Depends on | Gate | Plan |

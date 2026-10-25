@@ -45,10 +45,12 @@ export class FixtureRuntime {
     this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{let changed=false;for(const e of this.entries.values())if(this.runtimePackage(e)?.manifest.appId===appId){e.state.writeState=this.broker.writeState(appId);changed=true;}if(changed)this.emit();},options.apiTrace);
   }
   private diagnostic:(code:EventCode,target:Target)=>void;
-  private emit() {
+  private emit(force = false) {
     const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
-    if (!this.win.isDestroyed() && key!==this.lastEmission) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
+    if (!this.win.isDestroyed() && (force || key!==this.lastEmission)) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
   }
+  /** Re-send the live guest state when the shell renderer has been replaced. */
+  replayState() { this.emit(true); }
   private resolveModuleAcks(e:Entry,accepted:boolean){
     if(!e.moduleAcks)return;
     for(const ack of e.moduleAcks.values()){clearTimeout(ack.timer);ack.resolve(accepted);}
@@ -387,7 +389,15 @@ export class FixtureRuntime {
     const e = this.entries.get(id);
     if (!e || !['failed','unresponsive'].includes(e.state.phase)) throw new Error('Runtime is not awaiting recovery');
     if(this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''))throw Error('Resolve the server change before restarting');
-    if(this.restartBudget.remaining(id)){e.state.reason='restart-limit';this.emit();throw Error('Restart limit reached. Wait one minute, then try again.');}
+    // A user-confirmed restart after a sustained hang counts toward the same
+    // rolling crash-loop limit as an exited renderer. A renderer that recovers
+    // on its own never consumes this budget.
+    if(e.state.phase==='unresponsive')this.restartBudget.failed(id);
+    if(this.restartBudget.remaining(id)){
+      if(e.state.phase==='unresponsive')this.fail(e,'restart-limit');
+      else {e.state.reason='restart-limit';e.view.setVisible(false);this.emit();}
+      throw Error('Restart limit reached. Wait one minute, then try again.');
+    }
     this.diagnostic('app-restarted',id==='studio'||id==='records'?id:'company-app');const rect = e.rect; this.close(id); this.create(id, rect);
   }
   report(event: IpcMainEvent, input: unknown) {

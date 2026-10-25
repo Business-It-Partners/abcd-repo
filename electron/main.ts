@@ -8,6 +8,7 @@ import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
 import { FixtureRuntime } from './runtime/manager';
+import { RestartBudget } from './runtime/restartBudget';
 import type { ApiTraceRecord } from './sdk/broker';
 import { SessionManager } from './identity/session';
 import { FirebaseClient } from './identity/client';
@@ -27,8 +28,13 @@ import type { SessionView } from './identity/contracts';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let diagnostics:DiagnosticStore|undefined;
 let recoveryWindow:BrowserWindow|undefined;
+let shellRecoveryWindow:BrowserWindow|undefined;
 let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
+let shellRecoveryActive=false;
+let shellRuntimeStateReplayPending=false;
+let retryShellRenderer:((manual:boolean)=>boolean)|undefined;
+const shellRecoveryBudget=new RestartBudget();
 let dockCaptionOverlay: DockCaptionOverlay | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
@@ -63,7 +69,7 @@ const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSw
 let identity: SessionManager | undefined;
 const canUseWorkspace = () => identityBypass || identity?.view().phase === 'ready';
 const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
-const isShell = (event: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
+const isShell = (event: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => !!hostWindow && !shellRecoveryActive && bootPhase === 'ready' && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
 let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
@@ -95,13 +101,115 @@ function createWindow() {
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,developmentApps,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
   if(filePicker)runtime?.setFilePicker(filePicker);
-  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}filePicker?.cancelAll();runtime?.dispose();});
+  let hostClosing = false;
+  win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}hostClosing=true;filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   let transitioning = false, restoring = false, wantsFocus = false;
   let restoreAttempts = 0;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
+  let shellUnresponsiveTimer: ReturnType<typeof setTimeout> | undefined;
+  let shellLoadTimer: ReturnType<typeof setTimeout> | undefined;
+  let shellHeartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+  let shellHeartbeatGeneration = 0;
+  let shellReloadInProgress = false;
+  let shellReloadQueued = false;
+  const stopShellHeartbeat = () => {
+    if (shellHeartbeatTimer) clearTimeout(shellHeartbeatTimer);
+    shellHeartbeatTimer = undefined;
+    shellHeartbeatGeneration++;
+  };
+  const closeShellRecovery = () => {
+    const recovery = shellRecoveryWindow;
+    shellRecoveryWindow = undefined;
+    if (recovery && !recovery.isDestroyed()) recovery.close();
+  };
+  const showShellRecovery = () => {
+    shellRecoveryActive = true;
+    bootPhase = 'recovery';
+    shellReloadInProgress = false;
+    shellReloadQueued = false;
+    stopShellHeartbeat();
+    if (shellLoadTimer) clearTimeout(shellLoadTimer);
+    runtime?.hideAll(false);
+    const existing = shellRecoveryWindow;
+    if (existing && !existing.isDestroyed()) { existing.show(); existing.focus(); return; }
+    diagnostics?.record('shell-recovery-required');
+    const recovery = new BrowserWindow({
+      parent: win, modal: true, alwaysOnTop: true, width: 620, height: 430, title: 'Sajilo Dental desktop recovery', icon: appIconPath,
+      show: false, webPreferences: { preload:path.join(__dirname,'recoveryPreload.js'),sandbox:true,contextIsolation:true,nodeIntegration:false,spellcheck:false },
+    });
+    shellRecoveryWindow = recovery;
+    recovery.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    recovery.webContents.on('will-navigate', event => event.preventDefault());
+    recovery.on('close', event => { if (shellRecoveryActive && !hostClosing && !win.isDestroyed()) event.preventDefault(); });
+    recovery.on('closed', () => { if (shellRecoveryWindow === recovery) shellRecoveryWindow = undefined; });
+    recovery.once('ready-to-show', () => { if (shellRecoveryActive && !recovery.isDestroyed()) { recovery.show(); recovery.focus(); } });
+    const page = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Sajilo Dental desktop recovery</title><style>body{font:16px system-ui,sans-serif;max-width:520px;margin:38px auto;padding:0 24px;color:#202936}h1{font-size:24px}p{line-height:1.5;color:#4b5563}button{margin:8px 8px 0 0;padding:10px 14px;border:1px solid #aeb9c5;border-radius:7px;background:#fff;color:#202936;font:inherit;cursor:pointer}pre{max-height:110px;overflow:auto;background:#f4f6f8;padding:10px}</style><h1>Desktop shell needs recovery</h1><p>Sajilo Dental paused app surfaces after repeated shell renderer failures. Your platform session remains in the main process. Reopen the desktop to restore controls and any still-running app windows.</p><button id="retry-shell">Retry desktop</button><button id="export-support">Preview safe diagnostics</button><pre id="support-preview"></pre><button id="save-support" hidden>Save diagnostics file</button><button id="quit-recovery">Quit Sajilo Dental</button><p id="support-status" role="status"></p>`;
+    void recovery.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(page)).then(() => {
+      if (shellRecoveryActive && !recovery.isDestroyed()) { recovery.show(); recovery.focus(); }
+    }).catch(() => {});
+  };
+  const queueShellReload = () => {
+    if (shellReloadQueued) return;
+    shellReloadQueued = true;
+    setImmediate(() => {
+      if (win.isDestroyed() || !shellReloadInProgress) { shellReloadQueued = false; return; }
+      try { win.webContents.reload(); }
+      catch { shellReloadQueued = false; showShellRecovery(); }
+    });
+  };
+  const beginShellRecovery = (manual: boolean) => {
+    if (win.isDestroyed() || bootPhase === 'exiting' || shellReloadInProgress) return false;
+    if (!manual && shellRecoveryBudget.remaining('host') > 0) { showShellRecovery(); return false; }
+    if (!manual) shellRecoveryBudget.failed('host');
+    stopShellHeartbeat();
+    if (shellUnresponsiveTimer) clearTimeout(shellUnresponsiveTimer);
+    shellUnresponsiveTimer = undefined;
+    shellRecoveryActive = true;
+    bootPhase = 'recovery';
+    shellRuntimeStateReplayPending = true;
+    filePicker?.cancelAll();
+    runtime?.hideAll(false);
+    const recovery = shellRecoveryWindow;
+    if (recovery && !recovery.isDestroyed()) recovery.hide();
+    shellReloadInProgress = true;
+    shellReloadQueued = false;
+    diagnostics?.record('shell-recovery-started');
+    if (shellLoadTimer) clearTimeout(shellLoadTimer);
+    shellLoadTimer = setTimeout(() => { if (shellRecoveryActive) showShellRecovery(); }, 15_000);
+    // If the renderer is still alive, kill it first and let its gone event
+    // queue the replacement load after Chromium finishes teardown.
+    try {
+      if (!win.webContents.isCrashed()) {
+        win.webContents.forcefullyCrashRenderer();
+        return true;
+      }
+    }
+    catch { /* The bounded reload below still gets a chance to recover it. */ }
+    queueShellReload();
+    return true;
+  };
+  retryShellRenderer = manual => beginShellRecovery(manual);
+  const scheduleShellHeartbeat = () => {
+    if (win.isDestroyed() || hostClosing || shellRecoveryActive || shellReloadInProgress || bootPhase !== 'ready') return;
+    if (shellHeartbeatTimer) clearTimeout(shellHeartbeatTimer);
+    shellHeartbeatTimer = setTimeout(() => {
+      shellHeartbeatTimer = undefined;
+      if (win.isDestroyed() || hostClosing || shellRecoveryActive || shellReloadInProgress || bootPhase !== 'ready') return;
+      const generation = ++shellHeartbeatGeneration;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const probe = win.webContents.executeJavaScript('void 0').then(() => true, () => false);
+      const deadline = new Promise<'timeout'>(resolve => { timeout = setTimeout(() => resolve('timeout'), 5000); });
+      void Promise.race([probe, deadline]).then(result => {
+        if (timeout) clearTimeout(timeout);
+        if (generation !== shellHeartbeatGeneration || win.isDestroyed()) return;
+        if (result !== true) { beginShellRecovery(false); return; }
+        scheduleShellHeartbeat();
+      });
+    }, 10_000);
+  };
   const publish = (value: boolean) => {
     transitioning = value;
     if (!win.isDestroyed()) win.webContents.send('window:host-transition', value);
@@ -118,6 +226,43 @@ function createWindow() {
     }, 80);
   };
   win.once('ready-to-show', () => { win.show(); win.focus(); });
+  win.webContents.on('unresponsive', () => {
+    if (shellUnresponsiveTimer) clearTimeout(shellUnresponsiveTimer);
+    if (shellRecoveryActive || shellReloadInProgress) return;
+    // Allow a short, transient main-thread stall to clear before reloading.
+    shellUnresponsiveTimer = setTimeout(() => { if (!win.isDestroyed() && !shellRecoveryActive) beginShellRecovery(false); }, 1500);
+  });
+  win.webContents.on('responsive', () => {
+    if (shellUnresponsiveTimer) clearTimeout(shellUnresponsiveTimer);
+    shellUnresponsiveTimer = undefined;
+  });
+  win.webContents.on('render-process-gone', () => {
+    // Recovery already owns this renderer teardown after an explicit watchdog
+    // kill. Queue the load without counting the same failure twice.
+    if (shellReloadInProgress) { queueShellReload(); return; }
+    if (shellRecoveryActive && shellRecoveryWindow && !shellRecoveryWindow.isDestroyed()) return;
+    if (shellLoadTimer) clearTimeout(shellLoadTimer);
+    shellLoadTimer = undefined;
+    beginShellRecovery(false);
+  });
+  win.webContents.on('did-fail-load', (_event, errorCode, _description, _validatedURL, isMainFrame) => {
+    if (!isMainFrame || errorCode === -3) return;
+    if (shellRecoveryActive) showShellRecovery();
+    else if (bootPhase === 'ready') beginShellRecovery(false);
+  });
+  win.webContents.on('did-finish-load', () => {
+    if (!shellRecoveryActive) { scheduleShellHeartbeat(); return; }
+    if (shellLoadTimer) clearTimeout(shellLoadTimer);
+    shellLoadTimer = undefined;
+    shellReloadInProgress = false;
+    shellReloadQueued = false;
+    shellRecoveryActive = false;
+    bootPhase = 'ready';
+    diagnostics?.record('shell-recovered');
+    closeShellRecovery();
+    if (!win.isDestroyed()) { win.show(); win.focus(); }
+    scheduleShellHeartbeat();
+  });
   win.on('minimize', () => {
     if (settleTimer) clearTimeout(settleTimer);
     restoring = false;
@@ -139,8 +284,18 @@ function createWindow() {
   });
   win.on('enter-full-screen', () => { if (restoring) settleRestore(); });
   win.on('resize', () => { if (restoring) settleRestore(); });
-  win.on('closed', () => { if (settleTimer) clearTimeout(settleTimer); captionOverlay.dispose(); if(dockCaptionOverlay===captionOverlay)dockCaptionOverlay=undefined; });
+  win.on('closed', () => {
+    if (settleTimer) clearTimeout(settleTimer);
+    if (shellUnresponsiveTimer) clearTimeout(shellUnresponsiveTimer);
+    if (shellLoadTimer) clearTimeout(shellLoadTimer);
+    stopShellHeartbeat();
+    shellReloadQueued = false;
+    retryShellRenderer = undefined;
+    captionOverlay.dispose(); if(dockCaptionOverlay===captionOverlay)dockCaptionOverlay=undefined;
+    if (hostWindow === win) hostWindow = undefined;
+  });
   activateExisting = () => {
+    if (shellRecoveryActive && shellRecoveryWindow && !shellRecoveryWindow.isDestroyed()) { shellRecoveryWindow.show(); shellRecoveryWindow.focus(); return; }
     if (win.isDestroyed()) return;
     if (win.isMinimized() || transitioning) {
       wantsFocus = true;
@@ -150,7 +305,7 @@ function createWindow() {
   void win.loadFile(path.join(__dirname, '../dist/index.html'), { query: storeFixtures ? {} : process.env.ELECTRON_OS_TEST_DISPLAY && app.commandLine.hasSwitch('prototype-fixtures') ? { prototypeFixtures: '1', ...(runtimeFixtures ? { runtimeFixtures: '1', ...(runtimeResourceFixtures ? { resourceFixtures: '1' } : {}) } : {}) } : runtimeFixtures ? { prototypeFixtures: '1', runtimeFixtures: '1', ...(runtimeResourceFixtures ? { resourceFixtures: '1' } : {}) } : {} });
 }
 
-const supportCaller=(event:Electron.IpcMainInvokeEvent)=>isShell(event)||!!recoveryWindow&&event.sender===recoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame;
+const supportCaller=(event:Electron.IpcMainInvokeEvent)=>isShell(event)||!!recoveryWindow&&event.sender===recoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame||!!shellRecoveryWindow&&event.sender===shellRecoveryWindow.webContents&&event.senderFrame===event.sender.mainFrame;
 let supportBusy=false;
 const supportView=()=>({appVersion:app.getVersion(),electron:process.versions.electron,platform:process.platform,arch:process.arch,...diagnostics?.preview()});
 const supportReviewText=(report:ReturnType<typeof supportView>)=>{
@@ -172,7 +327,7 @@ ipcMain.handle('support:action',async(event,kind:unknown)=>{
  if(supportBusy||!['preview','export','show-files'].includes(kind as string))return {ok:false};
  supportBusy=true;
  try{
-  if(kind==='show-files'){if(owner!==recoveryWindow)return {ok:false};await shell.openPath(app.getPath('userData'));return {ok:true};}
+  if(kind==='show-files'){if(owner!==recoveryWindow&&owner!==shellRecoveryWindow)return {ok:false};await shell.openPath(app.getPath('userData'));return {ok:true};}
   if(kind==='preview'){
    const review=await dialog.showMessageBox(owner,{type:'info',title:'Safe support diagnostics',message:'Review safe support diagnostics',detail:supportReviewText(supportView()),buttons:['Close','Save diagnostics file'],defaultId:0,cancelId:0});
    if(review.response!==1)return {ok:false,cancelled:true};
@@ -185,6 +340,19 @@ ipcMain.handle('support:action',async(event,kind:unknown)=>{
   await dialog.showMessageBox(owner,{type:'warning',title:'Diagnostics unavailable',message:'Could not save diagnostics',detail:'Choose a new filename in a writable folder. Existing files are never overwritten.',buttons:['Close']}).catch(()=>{});
   return {ok:false};
  }finally{supportBusy=false;}
+});
+ipcMain.handle('shell:reload', event => {
+  if (!hostWindow || event.sender !== hostWindow.webContents || event.senderFrame !== event.sender.mainFrame || bootPhase === 'exiting') return false;
+  return retryShellRenderer?.(true) ?? false;
+});
+ipcMain.handle('shell:recovery-retry', event => {
+  if (!shellRecoveryActive || !shellRecoveryWindow || event.sender !== shellRecoveryWindow.webContents || event.senderFrame !== event.sender.mainFrame) return false;
+  return retryShellRenderer?.(true) ?? false;
+});
+ipcMain.handle('shell:recovery-quit', event => {
+  if (!shellRecoveryWindow || event.sender !== shellRecoveryWindow.webContents || event.senderFrame !== event.sender.mainFrame) return false;
+  app.quit();
+  return true;
 });
 ipcMain.handle('window:control', (event, action: unknown) => {
   const win = BrowserWindow.fromWebContents(event.sender);
@@ -232,7 +400,11 @@ ipcMain.handle('os:status', event => {
   if (!isShell(event)) throw new Error('Invalid caller');
   return { phase: bootPhase };
 });
-ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.sync(value); });
+ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => {
+  if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable');
+  runtime.sync(value);
+  if (shellRuntimeStateReplayPending) { runtime.replayState(); shellRuntimeStateReplayPending = false; }
+});
 ipcMain.handle('runtime:navigate', (event, id: unknown, direction: unknown, generation: unknown, discardDirty: unknown, preserveDraft: unknown) => {
   if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) return false;
   return runtime.navigate(id, direction, discardDirty === true, preserveDraft === true);
@@ -333,7 +505,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
+  bootPhase = 'exiting'; shellRecoveryActive = false; retryShellRenderer = undefined; filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

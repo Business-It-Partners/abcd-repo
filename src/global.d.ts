@@ -8,6 +8,7 @@ declare global {
         hide(): void;
       };
       support():Promise<{ok:boolean;cancelled?:boolean}>;
+      shell: { reload(): Promise<boolean> };
       store: { action(kind: 'view', input?: undefined, generation?: number): Promise<import('../electron/distribution/contracts').StoreView>; action(kind: 'refresh' | 'cancel' | 'install' | 'uninstall' | 'update-now', input?: string, generation?: number): Promise<import('../electron/distribution/contracts').StoreResult>; artwork(appId: string, expectedSha256?: string, generation?: number): Promise<string | null>; subscribe(callback: (value: import('../electron/distribution/contracts').StoreView) => void): () => void };
       developmentApps: { view(): Promise<import('../electron/developmentApps').DevelopmentAppView> };
       identity: { view(): Promise<import('../electron/identity/contracts').SessionView>; clinicLogo(): Promise<string | undefined>; action(kind: 'login' | 'lock' | 'logout', input?: unknown): Promise<import('../electron/identity/contracts').ActionResult>; devCredentialsAvailable(): Promise<boolean>; devCredentials(): Promise<{ email: string; password: string } | undefined>; subscribe(callback: (value: import('../electron/identity/contracts').SessionView) => void): () => void };

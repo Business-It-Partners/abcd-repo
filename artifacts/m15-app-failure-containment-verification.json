@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "a crashed app renderer is contained while shell, Store and session stay ready",
+    "another isolated app keeps its renderer and private draft separate",
+    "three renderer failures pause further app restarts",
+    "closing and reopening cannot bypass the app crash-loop limit",
+    "the shell and unaffected Records app remain available after app recovery is paused",
+    "a hung app is isolated as unresponsive while shell and identity services stay ready",
+    "the user can restart a hung app without restarting the shell"
+  ],
+  "platform": "linux"
+}

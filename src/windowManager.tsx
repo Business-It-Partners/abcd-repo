@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { fitBounds, fitContentWidthBounds, initialBounds, WINDOW_IDS, windowSpec, type Size, type WindowId } from './windowGeometry';
 import type { Rect } from './motion';
+import { isRuntimeId } from '../electron/runtime/contracts';
 
 export type Phase = 'closed' | 'visible' | 'minimizing' | 'minimized' | 'restoring';
 export const MAX_OPEN_APP_WINDOWS = 2;
@@ -16,6 +17,56 @@ export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow
 export function createDesktop(size: Size): DesktopState {
   const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } });
   return { size, windows: Object.fromEntries(WINDOW_IDS.map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false, openAppLimit: null, openAppLimitRequestedId: null };
+}
+const recoveryStorageKey = 'sajilo-dental-shell-layout-v1';
+type SavedWindow = Pick<ManagedWindow, 'id' | 'title' | 'phase' | 'presentation' | 'normalBounds' | 'userResized'>;
+/** Persist only the open OS window layout so a shell renderer reload can reattach to live app views. */
+export function serializeShellRecoveryState(state: DesktopState): string {
+  const windows: SavedWindow[] = Object.values(state.windows).filter(win => win.phase !== 'closed').map(({ id, title, phase, presentation, normalBounds, userResized }) => ({ id, title, phase, presentation, normalBounds: { ...normalBounds }, userResized }));
+  return JSON.stringify({ version: 1, windows, order: state.order.filter(id => state.windows[id]?.phase !== 'closed') });
+}
+/** Restore a bounded, validated layout after a renderer-only reload; app data stays in its own renderer. */
+export function restoreShellRecoveryState(size: Size, raw: string | null | undefined): DesktopState {
+  const initial = createDesktop(size);
+  if (!raw) return initial;
+  try {
+    const saved = JSON.parse(raw) as { version?: unknown; windows?: unknown; order?: unknown };
+    if (saved.version !== 1 || !Array.isArray(saved.windows) || saved.windows.length > MAX_OPEN_APP_WINDOWS || !Array.isArray(saved.order)) return initial;
+    const seen = new Set<string>();
+    let state = initial;
+    for (const item of saved.windows) {
+      if (!item || typeof item !== 'object') return initial;
+      const win = item as Record<string, unknown>;
+      const id = win.id;
+      if (typeof id !== 'string' || seen.has(id) || (!Object.hasOwn(state.windows, id) && !isRuntimeId(id))) return initial;
+      if (typeof win.title !== 'string' || win.title.length < 1 || win.title.length > 100 ||
+          !['visible', 'minimized', 'minimizing', 'restoring'].includes(String(win.phase)) ||
+          !['normal', 'fullscreen'].includes(String(win.presentation)) || typeof win.userResized !== 'boolean' ||
+          !win.normalBounds || typeof win.normalBounds !== 'object') return initial;
+      const bounds = win.normalBounds as Record<string, unknown>;
+      if (Object.keys(bounds).sort().join() !== 'height,width,x,y' || !Object.values(bounds).every(value => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= 8192) ||
+          (bounds.width as number) < 1 || (bounds.height as number) < 1 || (bounds.width as number) * (bounds.height as number) > 16_000_000) return initial;
+      if (!Object.hasOwn(state.windows, id)) state = desktopReducer(state, { type: 'register', id, title: win.title });
+      const prior = state.windows[id];
+      state = { ...state, windows: { ...state.windows, [id]: {
+        ...prior,
+        title: win.title,
+        phase: win.phase === 'minimized' ? 'minimized' : 'visible',
+        presentation: win.presentation as ManagedWindow['presentation'],
+        normalBounds: fitBounds(bounds as unknown as Rect, size, windowSpec(id).minimum),
+        userResized: win.userResized,
+        busy: false,
+        modal: false,
+        interaction: 'idle',
+        navigation: { entries: [], index: -1 },
+      } } };
+      seen.add(id);
+    }
+    const savedOrder = saved.order as unknown[];
+    if (savedOrder.some(id => typeof id !== 'string' || !seen.has(id)) || new Set(savedOrder).size !== savedOrder.length) return initial;
+    const order = [...savedOrder as string[], ...[...seen].filter(id => !savedOrder.includes(id))];
+    return { ...state, order, overview: false, openAppLimit: null, openAppLimitRequestedId: null };
+  } catch { return initial; }
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
   return [...state.order].reverse().find(id => state.windows[id].phase === 'visible');
@@ -118,10 +169,15 @@ function createWindow(id: WindowId, title: string, size: Size): ManagedWindow {
 type Manager = { state: DesktopState; getState(): DesktopState; dispatch(action: WindowAction): void };
 const Context = createContext<Manager | null>(null);
 export function WindowManagerProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(() => createDesktop({ width: innerWidth, height: innerHeight }));
+  const [state, setState] = useState(() => {
+    let saved: string | null = null;
+    try { saved = sessionStorage.getItem(recoveryStorageKey); } catch { /* Storage is optional for shell recovery. */ }
+    return restoreShellRecoveryState({ width: innerWidth, height: innerHeight }, saved);
+  });
   const current = useRef(state);
   const dispatch = useCallback((action: WindowAction) => {
     current.current = desktopReducer(current.current, action);
+    try { sessionStorage.setItem(recoveryStorageKey, serializeShellRecoveryState(current.current)); } catch { /* Layout persistence must never block the shell. */ }
     setState(current.current);
   }, []);
   const getState = useCallback(() => current.current, []);

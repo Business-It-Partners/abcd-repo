@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "main-process identity/session services are available before failure",
+    "shell reload restores the open Store/app layout and keeps the guest renderer alive",
+    "the guest app draft remains inside its isolated renderer",
+    "shell reload restores the open Store/app layout and keeps the guest renderer alive",
+    "the guest app draft remains inside its isolated renderer",
+    "a hung shell renderer is detected and reloaded while main-process session authority remains ready",
+    "shell reload restores the open Store/app layout and keeps the guest renderer alive",
+    "the guest app draft remains inside its isolated renderer",
+    "repeated shell failures stop automatic reloads and show an OS recovery surface",
+    "shell reload restores the open Store/app layout and keeps the guest renderer alive",
+    "the guest app draft remains inside its isolated renderer",
+    "the recovery surface provides a manual retry after bounded automatic recovery",
+    "recovered desktop exposes Store controls and the identity service"
+  ],
+  "platform": "linux"
+}

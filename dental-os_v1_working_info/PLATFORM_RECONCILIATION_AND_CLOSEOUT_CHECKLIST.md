@@ -1,9 +1,24 @@
 # Dental OS — Platform Reconciliation and Closeout Checklist
 
-**Created:** 2026-10-21. **Updated:** 2026-10-22.
+**Created:** 2026-10-21. **Updated:** 2026-10-25.
 **Status:** The declared baseline passed its required Linux and exact-source Windows checks on `8a0b07a2`. The later fullscreen-chrome follow-up passes local Linux checks; no push/GitHub Actions run was triggered, so current-source Windows verification remains. The current-source private synthetic media Dock run passed staging session boundaries and real JPEG upload/readback/checksum/withdrawal through the normal SessionManager gate. A 19-check staging probe also confirms Clinic B's signed apps are denied Clinic A's active synthetic image/document with no binary requests or bytes returned. The targeted upload-failure scenario outcomes passed: MIME/checksum mismatches returned HTTP 422, session revocation during a content PUT prevented finalisation, and the real receipt race returned one success and one conflict followed by successful replay. The verifier exited 1 on duplicate cleanup after successful withdrawal; the guard was corrected but not rerun. The M15 media-platform exit is **INCOMPLETE** pending a clean corrected verifier result. See [consolidated media staging acceptance](milestone-15-platform-closeout-and-integration/evidence/P07_MEDIA_STAGING_ACCEPTANCE_2026-10-22.md) and [raw upload-failure evidence](milestone-15-platform-closeout-and-integration/evidence/P07_MEDIA_UPLOAD_FAILURES_STAGING_2026-10-22.json). Its Worker fix is deployed to staging with bindings/secrets and health verified. Focused/full local tests pass; no public media grant was published. Independent review and G15 closure remain open. G12/G13 user/profile acceptance remains separate.
 **Owner:** Local OS platform track, with product decisions reviewed by Abhishek.
-**Milestone assignment:** [M15 — Platform Closeout and Integration](milestone-15-platform-closeout-and-integration/PLAN.md), gate G15, adopted by the user on 2026-10-21. P01–P09 remain task identifiers; M15.1–M15.6 are the milestone slices.
+**Milestone assignment:** [M15 — Platform Closeout and Integration](milestone-15-platform-closeout-and-integration/PLAN.md), gate G15, adopted by the user on 2026-10-21. P01–P09 remain task identifiers; M15.1–M15.12 are the milestone slices after the 2026-10-25 readiness continuation.
+
+## User-directed M15 readiness continuation — 2026-10-25
+
+The user directed the V1 readiness work to continue inside M15, using the local dental-os-audit worktree and proceeding one sub-milestone at a time. This extends the existing platform closeout track; it does not add a milestone after M20 or waive any existing gate.
+
+| M15 slice | Task | Status / exit evidence |
+| --- | --- | --- |
+| M15.7 | Recheck the audit worktree, source SHA, Git changes, dependencies, and task-owned processes before implementation; create a dedicated readiness branch because the checkout is detached and codex/milestone-15 is used elsewhere. | COMPLETE: `/home/master-x/.codex/worktrees/dental-os-audit/fewa_business_os` is on codex/m15-readiness at `75d65aff995fba051e523fb05b3bd46e9c933954`; all pre-existing readiness documentation changes were preserved. Dependencies are absent; no build/test runner was active. See M15.7 evidence. |
+| M15.8 | Recover the shell from shell-renderer crashes/hangs; contain Store/app crashes and bound restart loops. | IMPLEMENTED — Linux private-display tests cover shell crash/hang recovery, Store-open restoration and Store content boundaries, app crash/hang isolation, and the three-failure restart limit. Exact evidence and remaining M15.11 host/review gates are in the M15 evidence ledger. |
+| M15.9 | Reclaim Store and app-renderer resources when measured pressure thresholds are reached. | Pressure test records thresholds, eviction order, reclaimed resources, responsive shell/session/recovery surfaces, and app/Store reopen behavior. |
+| M15.10 | Preserve saved credentials through transient sign-in service failures; clear only definitive invalid/revoked credentials. | Focused identity tests cover transient and definitive outcomes, retry, and successful restore. |
+| M15.11 | Verify exact source and finish outstanding M15 automated/staging evidence and independent technical review. | Build, unit, relevant private UI and current-source Windows results, corrected upload-failure verifier result, review, exact SHA, and limitations recorded. User manual review remains separate. |
+| M15.12 | Obtain the user's manual review, integrate the reviewed changes into the main project, and verify the integrated source. | Review decision, merge identity, and post-merge verification recorded; G15 remains open if G12/G13 or other owner gates remain open. |
+
+**Sequence:** M15.7 → M15.8 → M15.9 → M15.10 → M15.11 → user's manual review → M15.12. See the [M15 plan](milestone-15-platform-closeout-and-integration/PLAN.md) and [status](milestone-15-platform-closeout-and-integration/STATUS.md). The planning record above is the initial 2026-10-25 checkpoint; subsequent M15.8 implementation and evidence are recorded in the [verification ledger](milestone-15-platform-closeout-and-integration/VERIFICATION_EVIDENCE.md#m158-linux-shell-and-app-failure-containment).
 
 ## End goal and authority
 

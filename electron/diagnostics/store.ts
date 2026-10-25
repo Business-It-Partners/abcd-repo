@@ -1,6 +1,6 @@
 import {mkdirSync,lstatSync,readFileSync,openSync,writeFileSync,fsyncSync,closeSync,renameSync,unlinkSync,existsSync,chmodSync} from 'node:fs';
 import path from 'node:path';
-export const eventCodes=['boot-ready','boot-recovery','session-reset','app-failed','app-restarted','exit-blocked','store-unavailable','support-exported'] as const;
+export const eventCodes=['boot-ready','boot-recovery','shell-recovery-started','shell-recovered','shell-recovery-required','session-reset','app-failed','app-restarted','exit-blocked','store-unavailable','support-exported'] as const;
 export type EventCode=typeof eventCodes[number];export type Target='host'|'studio'|'records'|'company-app';
 type RecordEntry={time:number;code:EventCode;target:Target};
 const maxBytes=32768,maxRecords=256;

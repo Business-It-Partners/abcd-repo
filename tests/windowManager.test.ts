@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, dockZoneTop, statusBarHeightForWidth, dockWindowGap, WINDOW_IDS, type ResizeEdge } from '../src/windowGeometry';
 import { dockHeightForWidth } from '../src/motion';
-import { activeWindow, createDesktop, desktopReducer } from '../src/windowManager';
+import { activeWindow, createDesktop, desktopReducer, restoreShellRecoveryState, serializeShellRecoveryState } from '../src/windowManager';
 
 const screen = { width: 1440, height: 1000 }, minimum = { width: 540, height: 340 };
 const start = { x: 300, y: 200, width: 760, height: 480 };
@@ -81,6 +81,28 @@ describe('Constrained window resizing', () => {
   });
 });
 describe('Shared lifecycle and focus', () => {
+  it('restores only the bounded OS window layout after a shell renderer reload', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'phase', id: 'store', phase: 'visible' });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });
+    state = desktopReducer(state, { type: 'patch', id: 'studio', patch: { normalBounds: start, userResized: true, busy: true, modal: true } });
+    state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'minimizing' });
+    const restored = restoreShellRecoveryState({ width: 1024, height: 768 }, serializeShellRecoveryState(state));
+    expect(restored.windows.store.phase).toBe('visible');
+    expect(restored.windows.studio.phase).toBe('visible');
+    expect(restored.windows.studio.userResized).toBe(true);
+    expect(restored.windows.studio.busy).toBe(false);
+    expect(restored.windows.studio.modal).toBe(false);
+    expect(restored.windows.studio.normalBounds.x).toBeGreaterThanOrEqual(0);
+    expect(restored.windows.studio.normalBounds.x + restored.windows.studio.normalBounds.width).toBeLessThanOrEqual(1024);
+    expect(restored.order).toEqual(['store', 'studio']);
+  });
+  it('rejects malformed or over-capacity shell recovery layouts', () => {
+    const tooMany = JSON.stringify({ version: 1, windows: ['store', 'studio', 'records'].map(id => ({ id, title: id, phase: 'visible', presentation: 'normal', normalBounds: start, userResized: false })), order: ['store', 'studio', 'records'] });
+    expect(restoreShellRecoveryState(screen, '{broken').order).toEqual([]);
+    expect(restoreShellRecoveryState(screen, tooMany).order).toEqual([]);
+    expect(restoreShellRecoveryState(screen, JSON.stringify({ version: 1, windows: [{ id: 'file:///etc/passwd', title: 'bad', phase: 'visible', presentation: 'normal', normalBounds: start, userResized: false }], order: ['file:///etc/passwd'] })).order).toEqual([]);
+  });
   it('keeps a third app closed while counting a minimized app toward the two-window limit', () => {
     let state = createDesktop(screen);
     state = desktopReducer(state, { type: 'phase', id: 'store', phase: 'visible' });

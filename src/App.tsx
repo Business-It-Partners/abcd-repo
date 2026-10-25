@@ -24,6 +24,7 @@ import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
 import type { OpenAppLimitPrompt } from './windowManager';
 import { DesktopChrome } from './DesktopChrome';
+import { WindowContentBoundary } from './WindowContentBoundary';
 import { OpenAppLimitDialog } from './OpenAppLimitDialog';
 import type { SessionView } from '../electron/identity/contracts';
 import type { DevelopmentAppView } from '../electron/developmentApps';
@@ -382,12 +383,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     {WINDOW_IDS.filter(id => id !== 'standard-window-1' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}
       moduleNavigation={id === 'finance' ? { activeModuleId: financeModule, activeLabel: financeModule, modules: FINANCE_MODULES.map(label=>({id:label,label})) } : undefined}
       onSelectModule={id === 'finance' ? selectFinanceModule : undefined}>
+      <WindowContentBoundary title={windowSpec(id).title} resetKey={staticControllers[id].win.phase}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore controller={staticControllers.store} settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));
         setStoreMessage(`${windowSpec(id).title} uninstalled. Demo records retained for this session.`);
         }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
+      </WindowContentBoundary>
     </ManagedWindowFrame>)}
     </div>
     <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock} aria-label="Application dock">
