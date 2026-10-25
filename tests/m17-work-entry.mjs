@@ -60,6 +60,12 @@ try {
   check('Work Entry module selection is acknowledged after the package opens', module.moduleSelectionResult?.ok === true && module.moduleAcks.length === 1);
 
   await page.getByRole('button', { name: 'Start work', exact: true }).click();
+  await page.locator('[data-work-entry-step="1"][aria-current="step"]').waitFor();
+  check('an in-progress case opens on the first Patient & case tab by default',
+    await page.locator('[data-work-entry-step="1"][aria-current="step"]').getAttribute('aria-current') === 'step'
+      && !(await page.evaluate(() => new URLSearchParams(location.search).has('workTab'))));
+  const caseNavigationAtOpen = await app.evaluate(() => globalThis.m17WorkEntry.navigation());
+  await page.locator('[data-work-entry-step="2"]').click();
   await page.getByText('Work Done Today', { exact: false }).waitFor();
   const opened = await inspect(app);
   const requiredReads = ['/v1/follow-ups', '/v1/patients/11111111-1111-4111-8111-111111111111/core',
@@ -69,7 +75,7 @@ try {
   check('opening an in-progress case reads its clinical context through the approved SDK routes', requiredReads.every(route => opened.calls.some(call => call.method === 'GET' && call.path === route)));
   await page.getByRole('button', { name: /Patient & case/ }).click();
   await page.getByText('Synthetic Work Entry Patient', { exact: true }).waitFor();
-  await page.getByRole('button', { name: /Imaging, Rx & Lab/ }).click();
+  await page.getByRole('button', { name: /Imaging & Rx/ }).click();
   await page.getByRole('button', { name: /Add Image/ }).waitFor();
   check('the imaging step exposes the patient radiograph gallery and upload control',
     await page.locator('[aria-label="Radiographs"] input[type="file"]').count() === 1);
@@ -95,16 +101,28 @@ try {
     await page.waitForTimeout(50);
   }
   check('the active Work Entry step is reflected in its app-owned history', routeStep === 'imaging');
-  check('the OS receives the Work Entry navigation stack for its Back control',
-    Boolean(hostNavigation && hostNavigation.index > 0 && hostNavigation.entries.length > 1));
+  check('workflow tab changes replace the current case page instead of adding Back-stack entries',
+    Boolean(hostNavigation && caseNavigationAtOpen
+      && hostNavigation.index === caseNavigationAtOpen.index
+      && hostNavigation.entries.join('|') === caseNavigationAtOpen.entries.join('|')));
   check('the OS Back request is accepted for the active Work Entry route',
     await app.evaluate(() => globalThis.m17WorkEntry.navigate('back', false, true)));
-  await page.locator('[data-work-entry-step][aria-current="step"]').filter({ hasText: 'Patient & case' }).waitFor();
-  check('OS Back returns to the previous Work Entry step while retaining the open case',
-    await page.getByText('Synthetic Work Entry Patient', { exact: true }).count() > 0
-      && await page.evaluate(() => new URLSearchParams(location.search).get('workTab')) === 'patient');
-  await page.getByRole('button', { name: /Imaging, Rx & Lab/ }).click();
-  await page.locator('[data-work-entry-step][aria-current="step"]').filter({ hasText: 'Imaging, Rx & Lab' }).waitFor();
+  await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).waitFor();
+  await page.waitForFunction(() => !new URLSearchParams(location.search).has('caseId'));
+  check('OS Back returns from the case workflow to the Work Entry worklist',
+    await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).count() === 1);
+  await page.getByRole('button', { name: 'Start work', exact: true }).click();
+  await page.locator('[data-work-entry-step="1"][aria-current="step"]').waitFor();
+  await page.locator('[data-work-entry-step="2"]').click();
+  await page.getByText('Work Done Today', { exact: false }).waitFor();
+  check('in-progress treatment protocol cards use half-width columns on desktop',
+    await page.locator('[data-work-entry-treatment-grid]').evaluate(grid => {
+      const bounds = grid.getBoundingClientRect();
+      const cards = [...grid.children].map(card => card.getBoundingClientRect());
+      return bounds.width > 900 && cards.length > 0 && cards.every(card => card.width < bounds.width * 0.55);
+    }));
+  await page.getByRole('button', { name: /Imaging & Rx/ }).click();
+  await page.locator('[data-work-entry-step][aria-current="step"]').filter({ hasText: 'Imaging & Rx' }).waitFor();
   check('the removed Lab requirement panel is absent from this step', await page.getByText('Lab requirement', { exact: true }).count() === 0);
   check('Radiographs and Prescription occupy the same row', await page.locator('[data-work-entry-imaging-layout]').evaluate(layout => {
     const xray = layout.querySelector('[data-work-entry-radiographs]').getBoundingClientRect();
@@ -137,11 +155,23 @@ try {
   const imageBytes = Buffer.from(imageBase64, 'base64');
   const radiograph = 'm17-work-entry-radiograph-1.png';
   const radiographs = [radiograph, 'm17-work-entry-radiograph-2.png', 'm17-work-entry-radiograph-3.png'];
+  await app.evaluate(() => globalThis.m17WorkEntry.setMediaUploadDelay(450));
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.locator('[data-testid="radiograph-dropzone"]').click();
   const fileChooser = await fileChooserPromise;
   check('Add Image opens the device file chooser and accepts multiple radiographs', fileChooser.isMultiple());
   await fileChooser.setFiles(radiographs.map(name => ({ name, mimeType: 'image/png', buffer: imageBytes })));
+  const uploadSpinner = page.locator('[data-work-entry-upload-spinner]').first();
+  await uploadSpinner.waitFor();
+  check('each uploading image shows a centered blue circular loader on its own preview card', await uploadSpinner.evaluate(spinner => {
+    const frame = spinner.parentElement.getBoundingClientRect();
+    const icon = spinner.querySelector('svg').getBoundingClientRect();
+    const color = getComputedStyle(spinner.querySelector('svg')).color;
+    return color === 'rgb(2, 132, 199)' && Math.abs((frame.left + frame.width / 2) - (icon.left + icon.width / 2)) < 1
+      && Math.abs((frame.top + frame.height / 2) - (icon.top + icon.height / 2)) < 1
+      && Number.parseFloat(getComputedStyle(spinner.querySelector('svg')).animationDuration) > 0;
+  }));
+  await app.evaluate(() => globalThis.m17WorkEntry.setMediaUploadDelay(0));
   await page.getByRole('button', { name: `Preview ${radiographs[2]}` }).waitFor();
   check('the radiograph gallery lays out three image cards before its Add Image tile', await page.locator('[aria-label="Radiographs"] article').count() === 3);
   await fs.writeFile(pickedImageScreenshotPath, await page.screenshot(), { flag: 'wx' });
@@ -186,6 +216,86 @@ try {
   check('the preview disappears only after the host-mediated audited withdrawal succeeds',
     Boolean(withdrawal && withdrawal.body.reason === 'Removed by clinician from Work Entry.')
       && await page.getByRole('button', { name: `Preview ${radiograph}` }).count() === 0);
+  check('In-progress case tabs omit Payment and rename the lab-free imaging step',
+    await page.locator('[data-work-entry-step]').filter({ hasText: /^Payment$/ }).count() === 0
+      && await page.locator('[data-work-entry-step]').filter({ hasText: /Imaging & Rx/ }).count() === 1);
+  await page.locator('[data-work-entry-step="6"]').click();
+  await page.locator('[data-work-entry-step="6"][aria-current="step"]').waitFor();
+  check('In-progress Follow-up contains no payment collection or lab-order form',
+    await page.getByText('Paid today (NPR)', { exact: true }).count() === 0
+      && await page.getByText('Discount (Rs)', { exact: true }).count() === 0
+      && await page.getByText('Payment method', { exact: true }).count() === 0
+      && await page.getByText('Lab requirement', { exact: true }).count() === 0);
+  await page.getByLabel('No follow-up needed for this visit').check();
+  check('Follow-up can advance without collecting payment',
+    await page.locator('[data-work-entry-step-actions] button').filter({ hasText: 'Next' }).isEnabled());
+  await page.locator('[data-work-entry-step="7"]').click();
+  const reviewSave = page.locator('[data-work-entry-review-save]');
+  await reviewSave.waitFor();
+  check('Review & save is in the stepbar action position with no duplicate bottom commit button',
+    await reviewSave.isVisible()
+      && await reviewSave.evaluate(button => Boolean(button.closest('[data-work-entry-step-actions]')))
+      && await page.getByRole('button', { name: 'Commit Work Entry', exact: true }).count() === 0);
+  check('the in-progress case workflow can return to the list through the window Back control',
+    await app.evaluate(() => globalThis.m17WorkEntry.navigate('back', false, true)));
+  await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).waitFor();
+  await app.evaluate(() => globalThis.m17WorkEntry.setWorklistStatus('open'));
+  await page.getByRole('button', { name: 'Refresh Work Entry', exact: true }).click();
+  await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).getByText('Open', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Start work', exact: true }).click();
+  await page.getByRole('button', { name: /Patient & purpose/ }).waitFor();
+  const assertOpenCaseTabbarHasNoBack = async step => check(`Open Case tab ${step} has no in-tab Back button`,
+    await page.locator('[data-work-entry-step-actions]').getByRole('button', { name: 'Back', exact: true }).count() === 0);
+  check('the Open Case flow uses the window Back control without an in-page Back to Work Entry button',
+    await page.getByRole('button', { name: 'Back to Work Entry', exact: true }).count() === 0);
+  check('the Open Case workflow uses the larger numbered preview stepbar and visible page border',
+    await page.locator('[data-work-entry-step="1"]').evaluate(tab => getComputedStyle(tab).fontSize === '14.4px')
+      && await page.locator('[data-work-entry-workflow-page]').evaluate(panel => getComputedStyle(panel).borderTopWidth === '1px'));
+  await page.locator('[data-work-entry-step="2"]').click();
+  await page.getByText('Treatment Plan (1)', { exact: true }).waitFor();
+  await assertOpenCaseTabbarHasNoBack('Chart & plan');
+  check('the Open Case treatment plan uses the responsive protocol-card grid',
+    await page.locator('[data-work-entry-treatment-grid] > *').count() === 1);
+  await page.locator('[data-work-entry-step="3"]').click();
+  await assertOpenCaseTabbarHasNoBack('Imaging & Rx');
+  const openImagingLayout = page.locator('[data-work-entry-open-imaging-layout]');
+  await openImagingLayout.waitFor();
+  check('Open Case replaces Lab with Prescription in the right column beside Radiographs',
+    await page.getByText('Lab requirement', { exact: true }).count() === 0
+      && await page.locator('[data-work-entry-step]').filter({ hasText: /^Lab$/ }).count() === 0
+      && await openImagingLayout.evaluate(layout => {
+        const radiographs = layout.querySelector('[data-work-entry-open-radiographs-card]').getBoundingClientRect();
+        const prescription = layout.querySelector('[data-work-entry-open-prescription-card]').getBoundingClientRect();
+        return radiographs.width > 0 && prescription.width > 0 && Math.abs(radiographs.top - prescription.top) < 2
+          && radiographs.left < prescription.left;
+      }));
+  await page.locator('[data-work-entry-step="4"]').click();
+  await assertOpenCaseTabbarHasNoBack("Today's work");
+  await page.locator('[data-work-entry-open-today-work-grid]').waitFor();
+  check('Open Case Today’s work uses the full width and has no payment or lab-entry form',
+    await page.locator('[data-work-entry-open-today-work-grid]').evaluate(grid => {
+      const bounds = grid.getBoundingClientRect();
+      const card = grid.firstElementChild.getBoundingClientRect();
+      return card.width > bounds.width * 0.9;
+    })
+      && await page.locator('[data-work-entry-open-payment-panel]').count() === 0
+      && await page.getByText('Paid today (NPR)', { exact: true }).count() === 0
+      && await page.getByText('Discount (Rs)', { exact: true }).count() === 0
+      && await page.getByText('Payment method', { exact: true }).count() === 0
+      && await page.getByText('Lab requirement', { exact: true }).count() === 0);
+  check('Open Case tabs omit Payment and show Imaging & Rx',
+    await page.locator('[data-work-entry-step]').filter({ hasText: /^Payment$/ }).count() === 0
+      && await page.locator('[data-work-entry-step]').filter({ hasText: /Imaging & Rx/ }).count() === 1);
+  check('the Open Case flow labels the recall step Follow-up',
+    await page.getByRole('button', { name: /Follow-up/ }).count() === 1);
+  await page.locator('[data-work-entry-step="5"]').click();
+  await assertOpenCaseTabbarHasNoBack('Follow-up');
+  await page.locator('[data-work-entry-step="6"]').click();
+  await assertOpenCaseTabbarHasNoBack('Review & commit');
+  check('the Open Case window Back returns to the Work Entry worklist',
+    await app.evaluate(() => globalThis.m17WorkEntry.navigate('back', false, true)));
+  await page.waitForFunction(() => !new URLSearchParams(location.search).has('caseId'));
+  await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).waitFor();
   check('opening the patient case performs no clinic writes', opened.effects === 0 && opened.calls.every(call => call.method === 'GET'));
   check('renderer errors stayed clear through worklist and clinical context views', errors.length === 0);
   await app.close(); app = undefined;

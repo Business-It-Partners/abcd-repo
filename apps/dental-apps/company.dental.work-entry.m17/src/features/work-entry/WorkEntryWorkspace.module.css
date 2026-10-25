@@ -1,17 +1,22 @@
 .workspace { padding: 1.35rem 1.25rem 2rem; }
-.continuationWorkspace { padding:1.35rem 0 2rem; }
-.stepBar { display:flex; align-items:center; gap:8px; width:100%; min-width:0; box-sizing:border-box; padding:6px 8px; border:1px solid #d6e1ed; border-radius:10px; background:#fff; box-shadow:0 2px 8px rgb(15 23 42 / 5%); }
-.stepTabs { display:flex; flex:1 1 auto; align-items:center; min-width:0; gap:2px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
-.stepButton { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; gap:8px; min-height:42px; padding:0 11px; border:0; border-radius:7px; background:transparent; color:#475569; font:inherit; font-size:12px; font-weight:600; white-space:nowrap; cursor:pointer; transition:color .15s ease,background .15s ease; }
-.stepButton:hover:not(:disabled) { background:#f3f8fc; color:#075985; }
-.stepButton:focus-visible { outline:2px solid #38bdf8; outline-offset:1px; }
-.stepButton::after { position:absolute; right:11px; bottom:1px; left:11px; height:3px; border-radius:3px; background:transparent; content:""; }
-.stepButtonActive,.stepButtonActive:hover:not(:disabled) { background:#f0f9ff; color:#075985; }
-.stepButtonActive::after { background:#0284c7; }
-.stepButton:disabled { color:#a0adba; cursor:not-allowed; }
-.stepNumber { display:inline-flex; flex:0 0 20px; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#edf2f7; color:#526274; font-size:11px; font-weight:700; }
-.stepNumberActive { background:#0284c7; color:#fff; }
-.stepActions { display:flex; flex:0 0 auto; align-items:center; gap:7px; margin-left:3px; padding-left:10px; border-left:1px solid #e2e8f0; white-space:nowrap; }
+.continuationWorkspace { padding:.5rem 0 2rem; }
+.stepBar { display:flex; align-items:center; gap:10.8px; width:100%; min-width:0; box-sizing:border-box; padding:7.2px; border:.9px solid #d5e2eb; border-radius:12.6px; background:#f8fbfd; box-shadow:0 2.7px 9px rgb(15 23 42 / 5%); }
+.stepTabs { display:flex; flex:1 1 auto; align-items:center; min-width:0; gap:4.5px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; scroll-padding-inline:3.6px; }
+.stepButton { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; gap:9px; min-height:45px; padding:0 11.7px; border:.9px solid transparent; border-radius:9px; background:transparent; color:#34495e; font-family:var(--font-sans, "Inter"), "Segoe UI", Arial, sans-serif; font-size:14.4px; font-weight:550; letter-spacing:-.009em; line-height:1.2; white-space:nowrap; cursor:pointer; transition:color .15s ease,background .15s ease,border-color .15s ease,box-shadow .15s ease; }
+.stepButton:hover:not(:disabled) { border-color:#d5e7f2; background:#f0f7fb; color:#164f70; }
+.stepButton:focus-visible { outline:2.7px solid #7ac5e7; outline-offset:1.8px; }
+.stepButtonActive,.stepButtonActive:hover:not(:disabled) { border-color:#b9dcec; background:#eaf5fb; color:#124c6e; box-shadow:inset 0 1px 0 rgb(255 255 255 / 90%); font-weight:600; }
+.stepButtonComplete,.stepButtonComplete:hover:not(:disabled) { border-color:transparent; background:#eaf5ee; color:#285b3d; }
+.stepButton:disabled { color:#8796a5; cursor:not-allowed; }
+.stepLabel { font-size:14.4px; font-weight:550; }
+.stepButtonActive .stepLabel,.stepButtonComplete .stepLabel { font-weight:600; }
+.stepNumber { display:inline-flex; flex:0 0 25.2px; align-items:center; justify-content:center; width:25.2px; height:25.2px; border:.9px solid #d8e2ea; border-radius:50%; background:#fff; color:#40566b; font-family:var(--font-sans, "Inter"), "Segoe UI", Arial, sans-serif; font-size:12.6px; font-weight:600; font-variant-numeric:tabular-nums; }
+.stepNumberActive { border-color:#1476a6; background:#1476a6; color:#fff; }
+.stepNumberComplete { border-color:#438c5e; background:#438c5e; color:#fff; }
+.stepNumber svg { width:13.5px; height:13.5px; }
+.stepActions { display:flex; flex:0 0 auto; align-items:center; gap:7.2px; margin-left:2.7px; padding-left:10.8px; border-left:.9px solid #d9e4ec; white-space:nowrap; }
+.stepActions :global(.btn) { transform:scale(.9); transform-origin:center; }
+.stagePriceInput:focus { outline:2px solid #7ac5e7; outline-offset:1px; box-shadow:0 0 0 3px rgb(2 132 199 / 14%); }
 .heading, .detailHeading { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
 .headingActions { display:flex; align-items:center; gap:.55rem; flex:0 0 auto; }
 .eyebrow { margin:0 0 .35rem; color:#0284c7; font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; }
@@ -38,18 +43,27 @@
 .error { margin:0 0 1rem; padding:.7rem .8rem; border:1px solid #fecaca; color:#b91c1c; background:#fff1f2; font-size:.82rem; }
 .caseActions { justify-content:flex-end; padding:1rem; border-bottom:1px solid var(--line); } .caseActions label,.caseForm label { display:flex; flex-direction:column; gap:.3rem; color:var(--ink-2); font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; text-transform:none; } .caseActions select,.caseForm input,.caseForm select,.caseForm textarea { min-height:2.25rem; padding:.42rem .6rem; border:1px solid var(--field-border); border-radius:0; background:#fff; color:#0f172a; font:inherit; letter-spacing:normal; text-transform:none; } .caseActions select { min-width:15rem; } .caseForm { display:flex; flex-direction:column; gap:.7rem; } .caseForm textarea { min-height:4.75rem; resize:vertical; } .modalActions { justify-content:flex-end; margin-top:.2rem; padding-top:.75rem; border-top:1px solid var(--line); }
 .protocolCard { margin:1rem; border:1px solid #d6e1ed; } .protocolCard header { display:flex; justify-content:space-between; gap:1rem; padding:.75rem .85rem; background:#edf4f9; color:#0f172a; font-size:.84rem; } .protocolCard header span { color:#64748b; font-size:.76rem; } .protocolCard ol { margin:0; padding:0; list-style:none; } .protocolCard li { display:flex; justify-content:space-between; gap:1rem; padding:.65rem .85rem; border-top:1px solid #e2e8f0; font-size:.8rem; } .protocolCard li span:last-child { color:#64748b; white-space:nowrap; }
+.treatmentProtocolGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start; }
+.workflowPage { box-sizing:border-box; width:100%; min-width:0; display:flex; flex-direction:column; gap:14px; padding:14px; border:1px solid #c6d4df; background:#fff; box-shadow:0 2px 6px rgb(15 23 42 / 4%); }
 .completionForm { display:flex; flex-direction:column; gap:.75rem; } .completionForm fieldset { display:flex; flex-direction:column; gap:.45rem; margin:0; padding:.7rem; border:1px solid var(--line); } .completionForm legend { padding:0 .25rem; color:var(--ink-2); font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; text-transform:none; } .completionForm label { display:flex; align-items:center; gap:.45rem; color:#1e293b; font-size:var(--fs-14); } .completionForm label span { margin-left:auto; color:var(--ink-3); } .noDoctors { margin:0; padding:.7rem; border:1px solid #fde68a; color:#92400e; background:#fffbeb; font-size:var(--fs-13); }
 .selectedPatient { display:flex; align-items:center; gap:.55rem; padding:.7rem .8rem; border:1px solid #b9d8ee; background:#f0f9ff; color:#0f172a; font-size:var(--fs-14); } .selectedPatient span { color:var(--ink-3); } .selectedPatient button { margin-left:auto; border:0; background:transparent; color:#0284c7; cursor:pointer; font:inherit; font-weight:var(--fw-bold); } .caseField { display:flex; flex-direction:column; gap:.3rem; } .caseField label { color:var(--ink-2); font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; text-transform:none; } .caseField input,.caseField textarea { width:100%; box-sizing:border-box; } .caseField input:focus,.caseField textarea:focus { border-color:#0284c7; box-shadow:0 0 0 2px rgb(2 132 199 / 14%); outline:none; } .patientMatches { display:flex; flex-direction:column; gap:.2rem; max-height:11rem; overflow:auto; padding:.3rem; border:1px solid var(--field-border); background:#fff; } .patientMatches button { display:flex; flex-direction:column; align-items:flex-start; gap:.1rem; width:100%; padding:.5rem .6rem; border:1px solid transparent; background:#fff; color:#0f172a; cursor:pointer; font:inherit; text-align:left; } .patientMatches button:hover,.patientMatches button:focus-visible,.patientMatchActive { border-color:#7dd3fc !important; background:#e0f2fe !important; outline:none; } .patientMatches small,.patientSearchHint { color:var(--ink-3); font-size:var(--fs-13); } .patientSearchHint { display:block; margin-top:.1rem; }
-.caseContext { margin:0 1.25rem; border:1px solid #d6e1ed; background:#fff; box-shadow:0 3px 12px rgb(15 23 42 / 4%); }
+.caseContext { margin:0; border:1px solid #c6d4df; background:#fff; box-shadow:0 3px 12px rgb(15 23 42 / 5%); font-family:var(--font-sans, "Inter"), "Segoe UI", Arial, sans-serif; }
 .caseContextHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:1rem 1.15rem; border-bottom:1px solid #dce6ee; }
-.caseContextEyebrow { margin:0 0 .25rem; color:#0284c7; font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; text-transform:none; }
-.caseContextHeader h2 { margin:0; color:#102a33; font-size:1.05rem; }
-.caseContextHeader p:not(.caseContextEyebrow) { margin:.22rem 0 0; color:var(--ink-3); font-size:var(--fs-13); }
+.caseContextEyebrow { margin:0 0 .32rem; color:#087eae; font-size:var(--fs-14); font-weight:650; letter-spacing:0; text-transform:none; }
+.caseContextHeader h2 { margin:0; color:#102a33; font-size:1.2rem; font-weight:650; line-height:1.35; }
+.caseContextMeta { margin:.3rem 0 0; color:#52687a; font-size:var(--fs-14); line-height:1.4; }
 .caseContextGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; }
-.caseContextGrid > div { display:flex; flex-direction:column; gap:.3rem; min-height:4.2rem; padding:.85rem 1.15rem; border-bottom:1px solid #e5edf4; }
-.caseContextGrid > div:nth-child(odd) { border-right:1px solid #e5edf4; }
-.caseContextGrid span { color:var(--ink-2); font-size:var(--fs-13); font-weight:var(--fw-bold); letter-spacing:0; text-transform:none; }
-.caseContextGrid strong { color:#1e293b; font-size:var(--fs-14); font-weight:var(--fw-bold); line-height:1.35; }
-.caseContextHint { margin:0; padding:.75rem 1.15rem; color:var(--ink-2); background:#f0f9ff; font-size:var(--fs-13); line-height:1.45; }
-@media (max-width:700px) { .caseContext { margin:0 .75rem; } .caseContextGrid { grid-template-columns:1fr; } .caseContextGrid > div:nth-child(odd) { border-right:0; } }
+.caseContextGrid > div { display:flex; flex-direction:column; gap:.35rem; min-width:0; min-height:4.1rem; padding:.85rem 1.15rem; border-bottom:1px solid #e1e9ef; }
+.caseContextGrid > div:nth-child(odd) { border-right:1px solid #e1e9ef; }
+.caseContextGrid > div:nth-last-child(-n+2) { border-bottom:0; }
+.caseContextGrid span { color:#52687a; font-size:var(--fs-14); font-weight:600; letter-spacing:0; text-transform:none; }
+.caseContextGrid strong { color:#152b3b; font-size:var(--fs-15); font-weight:650; line-height:1.4; overflow-wrap:anywhere; }
+.clinicalNoteSection { display:flex; flex-direction:column; gap:.55rem; margin-top:1.1rem; padding:.8rem; border:1px solid #c6d4df; background:#f4f8fb; box-shadow:0 2px 6px rgb(15 23 42 / 4%); }
+.clinicalNoteLabel { color:#294b60; font-family:var(--font-sans, "Inter"), "Segoe UI", Arial, sans-serif; font-size:var(--fs-14); font-weight:650; letter-spacing:.015em; }
+.clinicalNoteInput { display:block; width:100%; min-height:5.5rem; box-sizing:border-box; padding:.65rem .75rem; border:1px solid #aebfcb; border-radius:6px; outline:none; color:#152b3b; background:#fff; font:inherit; font-size:var(--fs-14); line-height:1.5; resize:vertical; transition:border-color .15s ease,box-shadow .15s ease; }
+.clinicalNoteInput::placeholder { color:#667b8b; opacity:1; }
+.clinicalNoteInput:focus-visible { border-color:#2783a7; box-shadow:0 0 0 3px rgb(39 131 167 / 16%); }
+@media (max-width:700px) { .caseContextGrid { grid-template-columns:1fr; } .caseContextGrid > div:nth-child(odd) { border-right:0; } .caseContextGrid > div:nth-last-child(2) { border-bottom:1px solid #e1e9ef; } .caseContextGrid > div:last-child { border-bottom:0; } }
 @media (max-width:700px) { .workspace { padding:1rem .75rem 1.5rem; } .filters,.detailHeading { align-items:stretch; flex-direction:column; } .filters span { white-space:normal; } .caseActions { justify-content:stretch; } .caseActions label,.caseActions select { width:100%; min-width:0; } }
+@media (max-width:700px) { .workflowPage { padding:10px; } }
+@media (max-width:900px) { .treatmentProtocolGrid { grid-template-columns:1fr; } }

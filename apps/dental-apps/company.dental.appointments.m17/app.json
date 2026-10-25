@@ -9,7 +9,6 @@
   ],
   "excludedRoles": [],
   "allowedRoles": [],
-  "preferredContentWidth": 1160,
   "modules": [
     {
       "id": "appointments",

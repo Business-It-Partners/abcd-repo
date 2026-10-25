@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "failure": "Error: Appointments guest did not open. Pages: data:text/html,<title>Private M17 Appointments host</title>\nPrivate page diagnostic: {\"host\":null,\"calls\":[]}\nPrivate host stderr: [548655:1024/114704.382132:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
+  "checks": [],
+  "errors": [],
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic clinic service; no live staging data or publication. The pinned SaaS route role-guard gap is not established by this fixture.",
+  "screenshot": null
+}

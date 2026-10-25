@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Appointments uses the shared Standard Window scroll viewport",
+    "Appointments scroll shell fills the Standard Window page",
+    "Appointments uses the six-pixel overlay scrollbar four pixels from the page edge",
+    "ephemeral signed package has the declared 1.0.6 update identity and stays below the package asset cap",
+    "appointments screen keeps summary cards and date controls without phone or no-show columns",
+    "appointment rows match Follow-ups system font and 14px size, with blue action buttons",
+    "renderer receives only the current SDK bridge surface and no credential getter",
+    "initial reads use only the registered appointment and staff-reference routes",
+    "the active-doctor filter excludes inactive doctors and non-doctor staff",
+    "registered Appointments module selection is acknowledged after app readiness",
+    "dirty booking draft can be kept without losing entered synthetic details",
+    "discard confirmation closes the booking form without creating a server row",
+    "same-doctor overlap warning blocks a locally visible conflicting slot",
+    "booking uses the SDK command with standalone diary fields and no patient-record ID",
+    "half-open adjacent appointment slot is accepted and reflected in the refreshed schedule",
+    "permitted status change saves through the idempotent status route",
+    "reschedule sends expected row version and refreshed data contains the new time",
+    "409 conflict refreshes canonical row version without applying the rejected status",
+    "unresolved booking keeps the modal open, disables edits, and offers only original-save reconciliation",
+    "response-loss fixture committed exactly one row before returning an uncertain receipt",
+    "original retry reuses the operation identity and returns one receipt without a duplicate",
+    "revocation clears rendered appointment data and blocks any further route calls",
+    "all renderer errors stayed clear during synthetic workflow acceptance",
+    "host session-capability policy denies the app before any clinic business route is called",
+    "role-denied page has no business data or renderer error"
+  ],
+  "errors": [],
+  "package": {
+    "version": "1.0.6",
+    "packageSha256": "1f126491ef5a2291474093ae023e2e78a2d57359a41d98b4fcc4424478627e1c",
+    "payloadDigest": "e9c3a5e4dcd8e25d48b951e725efe6a19a0741e8276e1f75b73ffc535829a7a2",
+    "wireBytes": 1242979,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic clinic service; no live staging data or publication. The pinned SaaS route role-guard gap is not established by this fixture.",
+  "screenshot": "m17-appointments-private-2026-10-24T05-52-50.511Z.png"
+}

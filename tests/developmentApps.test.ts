@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe('DevelopmentAppService', () => {
-  it('imports the real locally built app output without writing to release storage', () => {
+  it('publishes the real locally built Appointments output without writing to release storage', () => {
     const tempRoot = mkdtempSync(path.join(tmpdir(), 'dental-dev-real-build-'));
     tempRoots.push(tempRoot);
     const profileRoot = path.join(tempRoot, 'profile');
@@ -33,12 +33,14 @@ describe('DevelopmentAppService', () => {
     const releaseRoot = path.join(profileRoot, 'packages');
     const service = new DevelopmentAppService(root, storageRoot, true);
 
-    const build = service.getBuiltApp('company.dental.followups.m17');
+    const appId = 'company.dental.appointments.m17';
+    service.publishBuild(appId);
+    const build = service.getBuiltApp(appId);
     expect(build).toBeDefined();
-    expect(build?.manifest.version).toBe('1.0.3');
+    expect(build?.manifest.version).toBe('1.0.8');
     expect(build?.files.get('index.html')?.toString()).toContain('./assets/app.js');
-    expect(build?.files.has('assets/followups.png')).toBe(true);
-    expect(existsSync(path.join(storageRoot, 'apps', 'company.dental.followups.m17', build!.buildId, 'payload', 'assets', 'app.js'))).toBe(true);
+    expect(build?.files.has('assets/appointments.png')).toBe(true);
+    expect(existsSync(path.join(storageRoot, 'apps', appId, build!.buildId, 'payload', 'assets', 'app.js'))).toBe(true);
     expect(existsSync(releaseRoot)).toBe(false);
   });
 
@@ -75,8 +77,9 @@ describe('DevelopmentAppService', () => {
 
     const appId = 'company.dental.followups.m17';
     const dist = path.join(sourceRoot, 'apps/dental-apps', appId, 'dist');
+    service.publishBuild(appId);
     const first = service.getBuiltApp(appId)!;
-    expect(first.manifest.version).toBe('1.0.3');
+    expect(first.manifest.version).toBe('1.0.5');
     expect(first.files.get('index.html')?.toString()).toContain('build one');
     expect(first.buildId).toMatch(/^[a-f0-9]{64}$/);
     expect(storageRoot).not.toBe(releaseRoot);
@@ -96,6 +99,7 @@ describe('DevelopmentAppService', () => {
     writeFileSync(manifestPath, JSON.stringify(manifestValue));
     writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>build two</title>');
 
+    service.publishBuild(appId);
     const second = service.getBuiltApp(appId)!;
     expect(second.manifest.version).toBe('9.8.7');
     expect(second.buildId).not.toBe(first.buildId);

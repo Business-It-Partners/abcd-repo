@@ -18,6 +18,7 @@ type Props = {
   replaceMediaAssetId?: string | null;
   savedUploads?: SavedRadiographUpload[];
   onUploadCompleted?: (upload: SavedRadiographUpload) => void;
+  onError?: (message: string) => void;
   onRemoveSavedUpload?: (mediaAssetId: string, reason: string) => Promise<void>;
   onSavedUploadRemoved?: (mediaAssetId: string) => void;
 };
@@ -48,6 +49,7 @@ export default function RadiographUploader({
   onUploaded,
   savedUploads = [],
   onUploadCompleted,
+  onError,
   onRemoveSavedUpload,
   onSavedUploadRemoved,
 }: Props) {
@@ -64,6 +66,10 @@ export default function RadiographUploader({
   const [removalError, setRemovalError] = useState('');
   const [busyUploads, setBusyUploads] = useState(0);
   const canUpload = Boolean(patientId);
+  const reportError = (setLocalError: React.Dispatch<React.SetStateAction<string>>, message: string) => {
+    if (onError) onError(message);
+    else setLocalError(message);
+  };
 
   const reloadMedia = useCallback(async () => {
     if (!patientId) {
@@ -76,9 +82,9 @@ export default function RadiographUploader({
       setRemoteAssets(media);
       setListError('');
     } catch (cause) {
-      setListError(cause instanceof Error ? cause.message : 'Saved radiographs could not be loaded.');
+      reportError(setListError, cause instanceof Error ? cause.message : 'Saved radiographs could not be loaded.');
     }
-  }, [patientId]);
+  }, [onError, patientId]);
 
   useEffect(() => { void reloadMedia(); }, [reloadMedia]);
 
@@ -108,7 +114,7 @@ export default function RadiographUploader({
       setPreviewUrls(current => ({ ...current, [upload.mediaAssetId]: url }));
       setPreview({ url, name: upload.displayFilename });
     } catch (cause) {
-      setUploadError(cause instanceof Error ? cause.message : 'This radiograph could not be opened.');
+      reportError(setUploadError, cause instanceof Error ? cause.message : 'This radiograph could not be opened.');
     } finally {
       setPreviewLoadingId('');
     }
@@ -149,7 +155,7 @@ export default function RadiographUploader({
       onSavedUploadRemoved?.(target.mediaAssetId);
       setRemovalTarget(null);
     } catch (cause) {
-      setRemovalError(cause instanceof Error ? cause.message : 'The image was not removed. Please try again.');
+      reportError(setRemovalError, cause instanceof Error ? cause.message : 'The image was not removed. Please try again.');
     } finally {
       setRemovingId('');
     }
@@ -159,9 +165,9 @@ export default function RadiographUploader({
     setUploadError('');
     if (busyUploads > 0) return;
     const rejected = files.filter(file => !acceptedTypes.includes(file.type) || file.size < 1 || file.size > maxFileBytes);
-    if (rejected.length) setUploadError('Only JPEG, PNG, or WebP images from 1 byte up to 10 MiB can be uploaded.');
+    if (rejected.length) reportError(setUploadError, 'Only JPEG, PNG, or WebP images from 1 byte up to 10 MiB can be uploaded.');
     if (!patientId) {
-      if (files.length) setUploadError('Select or save the patient before adding radiographs.');
+      if (files.length) reportError(setUploadError, 'Select or save the patient before adding radiographs.');
       return;
     }
 
@@ -183,7 +189,7 @@ export default function RadiographUploader({
         }, sent => setDrafts(current => current.map(draft => draft.key === key ? { ...draft, progress: sent } : draft)));
       } catch (cause) {
         setDrafts(current => current.map(draft => draft.key === key ? { ...draft, status: 'error' } : draft));
-        setUploadError(cause instanceof Error ? cause.message : 'The radiograph upload failed. The local draft remains available.');
+        reportError(setUploadError, cause instanceof Error ? cause.message : 'The radiograph upload failed. The local draft remains available.');
         setBusyUploads(current => Math.max(0, current - 1));
         continue;
       }
@@ -195,7 +201,7 @@ export default function RadiographUploader({
         await onUploaded?.();
         await reloadMedia();
       } catch (cause) {
-        setListError(cause instanceof Error ? cause.message : 'The image was saved, but the gallery could not be refreshed.');
+        reportError(setListError, cause instanceof Error ? cause.message : 'The image was saved, but the gallery could not be refreshed.');
       }
     }
   };
@@ -271,8 +277,13 @@ export default function RadiographUploader({
 
         {drafts.map(draft => (
           <article key={draft.key} className={styles.imageCard}>
-            <div className={styles.imageButton}>
-              <img src={draft.previewUrl} alt={draft.sourceFilename ?? 'Radiograph preview'} className={styles.image} />
+            <div className={styles.previewFrame}>
+              <div className={styles.imageButton}>
+                <img src={draft.previewUrl} alt={draft.sourceFilename ?? 'Radiograph preview'} className={styles.image} />
+              </div>
+              {draft.status === 'uploading' && <span role="status" aria-label="Uploading image" data-work-entry-upload-spinner className={styles.uploadingOverlay}>
+                <Loader2 size={28} className={styles.uploadSpinner} aria-hidden="true" />
+              </span>}
             </div>
             <div className={styles.caption}>{draft.type || defaultType}</div>
             <p className={styles.imageStatus}>
@@ -296,9 +307,9 @@ export default function RadiographUploader({
         Each film is stored in this clinic’s private imaging record after upload{dateLabel ? `. It is filed for ${dateLabel}.` : '.'}
       </p>
 
-      {uploadError && <p role="alert" className={styles.error}>{uploadError}</p>}
-      {listError && <p role="alert" className={styles.error}>{listError}</p>}
-      {removalError && <p role="alert" className={styles.error}>{removalError}</p>}
+      {!onError && uploadError && <p role="alert" className={styles.error}>{uploadError}</p>}
+      {!onError && listError && <p role="alert" className={styles.error}>{listError}</p>}
+      {!onError && removalError && <p role="alert" className={styles.error}>{removalError}</p>}
 
       {preview && <div role="dialog" aria-modal="true" aria-label={`Radiograph preview: ${preview.name}`} onClick={() => setPreview(null)}
         style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 28, background: 'rgba(15,23,42,.82)' }}>

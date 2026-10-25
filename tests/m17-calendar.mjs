@@ -48,7 +48,7 @@ try {
     !calendarContent.hasNestedInset && calendarContent.padding === '22px 26px 0px' && calendarContent.margin === '0px');
   const initial = await inspect(app); packageInfo = initial.package;
   const initialMonth = await page.locator('.calendarCard h2').innerText();
-  check('ephemeral package has the Calendar 1.0.3 update identity and stays under the package cap', packageInfo.version === '1.0.3' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral package has the Calendar 1.0.4 update identity and stays under the package cap', packageInfo.version === '1.0.4' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('calendar reads only through the SDK with a bounded BS month range', initial.calls.some(call => call.method === 'GET' && call.path.startsWith('/v1/calendar-tasks?')
     && (Date.parse(`${new URLSearchParams(call.path.split('?')[1]).get('to')}T00:00:00Z`) - Date.parse(`${new URLSearchParams(call.path.split('?')[1]).get('from')}T00:00:00Z`)) / 86400000 <= 45));
   const day = Number(initial.todayBs.split('-')[2]);

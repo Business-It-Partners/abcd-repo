@@ -34,7 +34,6 @@ import {
 } from "@/features/patients/model/domain";
 import {
   StatTile,
-  TileGrid,
   Page,
   PageHeader,
   SearchBox,
@@ -507,7 +506,7 @@ export default function FollowUpsView({
         </button>
       </PageHeader>
 
-      <TileGrid>
+      <div className="followUpsSummaryGrid">
         {DATE_TILES.map((t) => (
           <StatTile
             key={t.key}
@@ -522,7 +521,7 @@ export default function FollowUpsView({
             }}
           />
         ))}
-      </TileGrid>
+      </div>
 
       {/* Ten columns. Below 1080px the wrapper scrolls sideways rather than wrapping every cell
           onto two lines, which would cost more height than the scrollbar costs dignity. */}

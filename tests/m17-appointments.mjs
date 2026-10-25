@@ -42,15 +42,45 @@ try {
   await assertStandardPageScroll(page, check, 'Appointments');
   await page.getByText('Synthetic M17 Appointment', { exact: true }).waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('ephemeral signed package has the declared 1.0.4 update identity and stays below the package asset cap', packageInfo.version === '1.0.4' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral signed package has the declared 1.0.8 update identity and stays below the package asset cap', packageInfo.version === '1.0.8' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   const tableHeaders = await page.locator('.appointmentTable thead th').allTextContents();
-  check('appointments screen follows the SaaS day-book layout with summary cards, date controls, and the same status columns',
+  check('appointments screen keeps summary cards and date controls without phone or no-show columns',
     await page.locator('.appointmentSummaryCard').count() === 4
       && await page.getByRole('button', { name: 'Previous day' }).count() === 1
-      && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Phone|Arrived|No-show|Cancel|Action');
-  check('Doctor is absent from table cells while remaining available as a schedule filter', await page.locator('.appointmentTable [data-label="Doctor"]').count() === 0 && await page.getByRole('combobox', { name: 'Doctor', exact: true }).isVisible());
-  check('the initial schedule is the current day rather than the cancelled summary bucket', await page.locator('.appointmentSummaryCard[aria-pressed="true"]').count() === 0 && (initial.calls.find(call => call.method === 'GET' && call.path.startsWith('/v1/appointments?'))?.path.includes('date=') ?? false));
-  check('renderer receives only the current SDK bridge surface and no credential or shell Files transfer getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
+      && tableHeaders.map(value => value.trim()).join('|') === 'Time|Patient|Reason|Doctor|Arrived|Cancel|Action');
+  const appointmentSummary = await page.locator('.appointmentSummary').boundingBox();
+  const firstSummaryCard = await page.locator('.appointmentSummaryCard').first().boundingBox();
+  const lastSummaryCard = await page.locator('.appointmentSummaryCard').last().boundingBox();
+  check('appointment summary cards fill the content width in four equal columns', !!appointmentSummary && !!firstSummaryCard && !!lastSummaryCard
+    && firstSummaryCard.width > 200 && Math.abs(firstSummaryCard.width - lastSummaryCard.width) < 1
+    && Math.abs(firstSummaryCard.x - appointmentSummary.x) < 1
+    && Math.abs(lastSummaryCard.x + lastSummaryCard.width - appointmentSummary.x - appointmentSummary.width) < 1);
+  const firstDataRow = page.locator('.appointmentTable tbody tr').first();
+  const firstDataCell = firstDataRow.locator('td').first();
+  const detailsButton = firstDataRow.getByRole('button', { name: 'Details', exact: true });
+  const columnWidths = await page.locator('.appointmentTable col').evaluateAll(columns => columns.map(column => column.getBoundingClientRect().width));
+  const tableWidth = columnWidths.reduce((total, width) => total + width, 0);
+  check('appointment table gives Time 9.5%, Patient 19%, Reason and Doctor 20% each, with independent fixed column sizing',
+    columnWidths.length === 7
+      && Math.abs(columnWidths[0] / tableWidth - 0.095) < 0.01
+      && Math.abs(columnWidths[1] / tableWidth - 0.19) < 0.01
+      && Math.abs(columnWidths[2] / tableWidth - 0.20) < 0.01
+      && Math.abs(columnWidths[3] / tableWidth - 0.20) < 0.01
+      && Math.abs(columnWidths[4] / tableWidth - 0.065) < 0.01
+      && Math.abs(columnWidths[5] / tableWidth - 0.065) < 0.01
+      && Math.abs(columnWidths[6] / tableWidth - 0.185) < 0.01);
+  check('appointment table action buttons stay within the table without horizontal overflow', await page.locator('.appointmentTable').evaluate(table => {
+    const wrapper = table.closest('.appointmentTableWrap');
+    return !!wrapper && table.scrollWidth <= wrapper.clientWidth + 1
+      && [...table.querySelectorAll('td[data-label="Action"]')].every(cell => {
+        const buttons = [...cell.querySelectorAll('button')];
+        return buttons.every(button => button.getBoundingClientRect().right <= cell.getBoundingClientRect().right + 1);
+      });
+  }));
+  check('appointment rows match Follow-ups system font and 14px size, with blue action buttons',
+    await firstDataCell.evaluate(element => getComputedStyle(element).fontSize === '14px' && getComputedStyle(element).fontFamily.startsWith('ui-sans-serif'))
+      && await detailsButton.getAttribute('class').then(value => value?.includes('btn-primary') === true));
+  check('renderer receives only the current M15 SDK bridge surface and no credential getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
   check('initial reads use only the registered appointment and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/appointments|/v1/appointments/summary|/v1/clinic/staff-references');
   check('the active-doctor filter excludes inactive doctors and non-doctor staff', await page.getByRole('combobox', { name: 'Doctor', exact: true }).locator('option').allTextContents().then(values => values.includes('Synthetic Doctor') && !values.some(value => /Inactive|Helper/.test(value))));
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });

@@ -13,7 +13,7 @@ const { buildPackage, verifyPackage, sha256, canonical } = require(path.join(roo
 const { verifyUpdatePolicy, apiOperationsForPackage, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue, allowUpdatedPackage } = require(path.join(root, 'dist-electron/distribution/updatePolicy.js'));
 const { verifyCatalogue, noWatermark } = require(path.join(root, 'dist-electron/distribution/catalogue.js'));
 const { clinicRequestAllowed } = require(path.join(root, 'dist-electron/sdk/appPolicy.js'));
-const { adToBs } = require(path.join(root, 'packages/dental-ui/node_modules/@sbmdkl/nepali-date-converter'));
+const { adToBs } = require(path.join(root, 'node_modules/@sbmdkl/nepali-date-converter'));
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const appId = 'company.dental.calendar.m17';

@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-25",
+  "objective": "Bring the local Development Apps Appointments build up to the installed signed 1.0.8 UI",
+  "appId": "company.dental.appointments.m17",
+  "source": {
+    "worktree": "/home/master-x/.codex/worktrees/development-app-work/fewa_business_os",
+    "branch": "codex/development-app-work",
+    "baseCommit": "50f1c1b"
+  },
+  "installedReference": {
+    "version": "1.0.8",
+    "signedPackageChanged": false
+  },
+  "localDevelopmentSnapshot": {
+    "version": "1.0.8",
+    "buildId": "b514b94ef8bbbb931db2514f2d5fc708872b734ec770b34ef813ebe432a48836",
+    "registry": "/home/master-x/.config/electron-desktop-prototype/development-apps/registry.json",
+    "previousVersion": "1.0.5",
+    "previousBuildId": "9321c156597bbea726cd8ff63ee161f04b11aa307e9d46ea0ffaa220093479fc",
+    "payloadFileCount": 5,
+    "payloadMatchesWorktreeDist": true,
+    "signedOrUploaded": false
+  },
+  "uiParity": [
+    "Four equal full-width appointment summary cards",
+    "Sortable Doctor column restored",
+    "Phone and No-show columns absent",
+    "Fixed table column proportions and wrapping row actions",
+    "Follow-ups-matching 14px row text and blue action buttons"
+  ],
+  "verification": {
+    "appTypecheck": "passed",
+    "appPackageTests": "5 passed",
+    "appBuild": "passed",
+    "rootBuild": "passed",
+    "rootUnitTests": "511 passed across 35 files",
+    "privateAppointmentsUi": {
+      "passed": 27,
+      "total": 27,
+      "report": "../../../artifacts/m17-appointments-private-2026-10-25T07-15-20.213Z.json",
+      "screenshot": "../../../artifacts/m17-appointments-private-2026-10-25T07-15-20.213Z.png"
+    }
+  },
+  "m15SdkNote": "The local bundle uses current M15 navigation code, including backPreservesDraft behavior; that code postdates the signed installed bundle.",
+  "runtimeState": {
+    "runningM15AppTouched": false,
+    "restartPerformed": false,
+    "productionOrCloudflareChanged": false
+  }
+}

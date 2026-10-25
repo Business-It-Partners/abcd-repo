@@ -25,11 +25,11 @@ it('assigns unique M17 identities and current versions without changing the prev
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(packageNames).size).toBe(packageNames.length);
     const expectedVersions: Record<string, string> = {
-      [followupsId]: '1.0.3',
-      [appointmentsId]: '1.0.5',
+      [followupsId]: '1.0.5',
+      [appointmentsId]: '1.0.8',
       [calendarId]: '1.0.4',
-      'company.dental.work-entry.m17': '1.0.6',
-      'company.dental.patient-record.m17': '1.0.10',
+      'company.dental.work-entry.m17': '1.0.7',
+      'company.dental.patient-record.m17': '1.0.11',
       'company.dental.finance.m17': '1.7.11',
       'company.dental.lab-tracker.m17': '1.0.3',
       'company.dental.staff.m17': '1.0.3',
