@@ -1,10 +1,14 @@
 export const runtimeIds = ['studio', 'records'] as const;
 /** Historical display aliases for the two original sample packages. New first-party apps use package IDs. */
 export type RuntimeId = string;
-export function isRuntimeId(value: unknown): value is RuntimeId { return value === 'studio' || value === 'records' || typeof value === 'string' && /^company\.[a-z][a-z0-9.-]{1,70}$/.test(value); }
-export function packageIdForRuntime(id: RuntimeId) { return id === 'studio' ? 'company.sample.alpha' : id === 'records' ? 'company.sample.beta' : id; }
+const companyRuntimeId = /^company\.[a-z][a-z0-9.-]{1,70}$/;
+const developmentPackageId = /^company\.dental\.[a-z0-9.-]+\.m17$|^company\.dental\.m17\.treatment-protocols$/;
+export function isDevelopmentRuntimeId(value: string): boolean { return value.startsWith('dev.') && companyRuntimeId.test(value.slice(4)) && developmentPackageId.test(value.slice(4)); }
+export function developmentRuntimeIdForPackage(id: string) { return `dev.${id}`; }
+export function isRuntimeId(value: unknown): value is RuntimeId { return value === 'studio' || value === 'records' || typeof value === 'string' && (companyRuntimeId.test(value) || isDevelopmentRuntimeId(value)); }
+export function packageIdForRuntime(id: RuntimeId) { const packageId = isDevelopmentRuntimeId(id) ? id.slice(4) : id; return packageId === 'studio' ? 'company.sample.alpha' : packageId === 'records' ? 'company.sample.beta' : packageId; }
 export function runtimeIdForPackage(id: string) { return id === 'company.sample.alpha' ? 'studio' : id === 'company.sample.beta' ? 'records' : id; }
-export function runtimeHost(id: RuntimeId) { return id === 'studio' ? 'alpha' : id === 'records' ? 'beta' : packageIdForRuntime(id); }
+export function runtimeHost(id: RuntimeId) { return isDevelopmentRuntimeId(id) ? `dev-${packageIdForRuntime(id)}` : id === 'studio' ? 'alpha' : id === 'records' ? 'beta' : packageIdForRuntime(id); }
 export type RuntimeRect = { x: number; y: number; width: number; height: number };
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
 export type RuntimeState = {

@@ -9,7 +9,7 @@ import { StoreApp, catalogIds, type StoreJob } from './StoreApp';
 import { celebrateStoreArrival } from './storeArrival';
 import { DeliveryStore, useDeliveryStore } from './DeliveryStore';
 import { sampleWindows } from '../electron/distribution/contracts';
-import { packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/contracts';
+import { developmentRuntimeIdForPackage, packageIdForRuntime, runtimeIdForPackage } from '../electron/runtime/contracts';
 import { defaultTableContentWidth } from './windowGeometry';
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
@@ -25,6 +25,7 @@ import { activeWindow, useWindowManager, WindowManagerProvider } from './windowM
 import { DesktopChrome } from './DesktopChrome';
 import { OpenAppLimitDialog } from './OpenAppLimitDialog';
 import type { SessionView } from '../electron/identity/contracts';
+import type { DevelopmentAppView } from '../electron/developmentApps';
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
 const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
@@ -88,6 +89,11 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
+  const [developmentApps, setDevelopmentApps] = useState<DevelopmentAppView>({ enabled: false, apps: [] });
+  const [developmentMessage, setDevelopmentMessage] = useState('');
+  const [developmentRuntimeAppId, setDevelopmentRuntimeAppId] = useState<string | null>(null);
+  const [developmentLaunch, setDevelopmentLaunch] = useState<{ appId: string; preferredContentWidth: number; hasModuleSidebar: boolean } | null>(null);
+  const [pendingDevelopmentSwitch, setPendingDevelopmentSwitch] = useState<{ appId: string; windowId: string } | null>(null);
   const queue = useRef<StaticWindowId[]>([]);
   const [reservation,setReservation]=useState(1);
   const [readyId,setReadyId]=useState<WindowId|null>(null);
@@ -98,8 +104,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
+  useEffect(()=>{
+    let alive=true;
+    void window.desktop?.developmentApps.view().then(view=>{if(alive)setDevelopmentApps(view);}).catch(()=>{});
+    return()=>{alive=false;};
+  },[]);
   const dynamicTargets=useRef<Record<string,RefObject<HTMLButtonElement|null>>>({});
   for(const app of delivery.view.apps){const id=runtimeIdForPackage(app.id);if(!sampleWindows[app.id])dynamicTargets.current[id]??=createRef<HTMLButtonElement>();}
+  for(const app of developmentApps.apps){const id=developmentRuntimeIdForPackage(app.id);dynamicTargets.current[id]??=createRef<HTMLButtonElement>();}
   const runtimeTargets:Record<string,RefObject<HTMLButtonElement|null>>={...targets,...dynamicTargets.current};
   const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
   const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
@@ -128,6 +140,57 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   useEffect(()=>{if(!readyId)return;const timer=setTimeout(()=>setReadyId(null),5000);return ()=>clearTimeout(timer);},[readyId]);
   useEffect(()=>{if(!updatedId)return;const timer=setTimeout(()=>setUpdatedId(null),900);return ()=>clearTimeout(timer);},[updatedId]);
   function openStoreApp(id:WindowId){const controller=allControllers[id];if(!controller){setReadyId(id);return;}if(arrivalId){finishArrival.current?.();setArrivalId(null);}setReadyId(null);controller.open();}
+  async function prepareDevelopmentOpen(appId:string){
+    const id=developmentRuntimeIdForPackage(appId);
+    if(launchingPackage.current)return;
+    launchingPackage.current=true;
+    try{
+      const result=await window.desktop?.runtime.discoverApp(id);
+      if(!result?.ok){setDevelopmentMessage(result?.error?.message??'The local build could not be opened.');return;}
+      const app=result.value;
+      if(!app||app.runtimeId!==id){setDevelopmentMessage('The local app could not be opened.');return;}
+      setDevelopmentRuntimeAppId(appId);
+      setDevelopmentLaunch({appId,preferredContentWidth:app.preferredContentWidth??defaultTableContentWidth(app.appId)??960,hasModuleSidebar:app.modules.length>1});
+      setDevelopmentMessage('');
+    }catch{setDevelopmentMessage('The local app could not be opened. Build it from its project first, then try again.');}
+    finally{launchingPackage.current=false;}
+  }
+  function openDevelopmentApp(appId:string){
+    setDevelopmentMessage('');
+    const openDevelopmentId=developmentRuntimeAppId?developmentRuntimeIdForPackage(developmentRuntimeAppId):undefined;
+    const openWindowId=openDevelopmentId&&state.windows[openDevelopmentId]&&state.windows[openDevelopmentId].phase!=='closed'
+      ?openDevelopmentId
+      :state.windows[appId]&&state.windows[appId].phase!=='closed'?appId:undefined;
+    if(openWindowId){
+      const win=state.windows[openWindowId];
+      if(!win||win.modal||win.busy||win.interaction!=='idle'){
+        setDevelopmentMessage('Finish the open dialog or window action before restarting this app.');
+        return;
+      }
+      const controller=allControllers[openWindowId];
+      if(!controller){setDevelopmentMessage('Close the open app, then select it again to load the latest build.');return;}
+      setPendingDevelopmentSwitch({appId,windowId:openWindowId});
+      controller.close();
+      return;
+    }
+    void prepareDevelopmentOpen(appId);
+  }
+  useEffect(()=>{
+    if(!pendingDevelopmentSwitch)return;
+    if(state.windows[pendingDevelopmentSwitch.windowId]?.phase!=='closed')return;
+    const {appId}=pendingDevelopmentSwitch;
+    setPendingDevelopmentSwitch(null);
+    void prepareDevelopmentOpen(appId);
+  },[pendingDevelopmentSwitch,state.windows]);
+  useEffect(()=>{
+    if(!developmentLaunch)return;
+    const id=developmentRuntimeIdForPackage(developmentLaunch.appId);
+    const controller=allControllers[id],win=state.windows[id];
+    if(!controller||!win||win.phase!=='closed')return;
+    dispatch({type:'fit-content-width',id,preferredContentWidth:developmentLaunch.preferredContentWidth,hasModuleSidebar:developmentLaunch.hasModuleSidebar});
+    setDevelopmentLaunch(null);
+    openStoreApp(id);
+  },[developmentLaunch,dynamicControllerRefs,state.windows]);
   async function openInstalledApp(id:WindowId){
     if(!id.startsWith('company.')){openStoreApp(id);return;}
     if(launchingPackage.current)return;
@@ -253,12 +316,12 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { updateDockItemHover(false); setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
+    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} developmentApps={developmentApps} developmentMessage={developmentMessage} developmentTargets={Object.fromEntries(developmentApps.apps.map(app=>[app.id,dynamicTargets.current[developmentRuntimeIdForPackage(app.id)]]))} onOpenDevelopmentApp={openDevelopmentApp} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps.filter(app=>app.id===developmentRuntimeAppId)} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onConfirmCancel={id=>setPendingDevelopmentSwitch(pending=>pending?.windowId===id?null:pending)} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>

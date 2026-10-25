@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('desktop', {
     artwork: (appId: string, expectedSha256?: string, generation?: number) => ipcRenderer.invoke('store:artwork', appId, expectedSha256, generation),
     subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('store:state', listener); return () => ipcRenderer.removeListener('store:state', listener); },
   },
+  developmentApps: {
+    view: () => ipcRenderer.invoke('development-apps:view'),
+  },
   identity: {
     view: () => ipcRenderer.invoke('identity:view'),
     clinicLogo: () => ipcRenderer.invoke('identity:clinic-logo') as Promise<string | undefined>,

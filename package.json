@@ -45,6 +45,7 @@
     "test:workspace": "node tools/run-ui-test.mjs tests/workspace-flows.mjs tests/delivery-states.mjs",
     "test:hardening": "node tools/run-ui-test.mjs tests/hardening.mjs tests/resources.mjs tests/recovery.mjs",
     "test:store-arrival": "node tools/run-ui-test.mjs tests/store-arrival-delivery.mjs",
+    "test:development-apps": "node tools/run-ui-test.mjs tests/development-apps.mjs",
     "test:onboarding": "node tools/run-ui-test.mjs tests/onboarding.mjs",
     "test:staging-onboarding-desktop": "node tools/run-ui-test.mjs tests/staging-onboarding-desktop.mjs",
     "test:staging-media-dock": "node tools/run-ui-test.mjs tests/media-staging-dock.mjs"

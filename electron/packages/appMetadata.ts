@@ -27,7 +27,9 @@ const roles = ['admin', 'doctor', 'reception'];
 const text = (value: unknown, max: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
 const list = (value: unknown, allowed: readonly string[], max: number) => Array.isArray(value) && value.length <= max && new Set(value).size === value.length && value.every(item => typeof item === 'string' && allowed.includes(item));
 
-export function parseDentalAppMetadata(pkg: VerifiedPackage): DentalAppMetadata | undefined {
+type AppContent = Pick<VerifiedPackage, 'manifest' | 'files'>;
+
+export function parseDentalAppMetadata(pkg: AppContent): DentalAppMetadata | undefined {
   const source = pkg.files.get('app.json');
   if (!source) return undefined;
   let value: any;
@@ -51,7 +53,7 @@ export function parseDentalAppMetadata(pkg: VerifiedPackage): DentalAppMetadata 
   return value as DentalAppMetadata;
 }
 
-export function appInfo(pkg: VerifiedPackage, metadata = parseDentalAppMetadata(pkg), role?: string, capabilities: readonly string[] = []): DentalAppInfo | undefined {
+export function appInfo(pkg: AppContent, metadata = parseDentalAppMetadata(pkg), role?: string, capabilities: readonly string[] = []): DentalAppInfo | undefined {
   if (!metadata) return undefined;
   if (metadata.allowedRoles.length && (!role || !metadata.allowedRoles.includes(role as 'admin' | 'doctor' | 'reception'))) return undefined;
   if (metadata.excludedRoles.includes(role as 'admin' | 'doctor' | 'reception') || !metadata.anyCapabilities.some(capability => capabilities.includes(capability))) return undefined;

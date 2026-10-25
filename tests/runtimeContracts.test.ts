@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLayout, fixtureAsset, compositePixels } from '../electron/runtime/contracts';
+import { parseLayout, fixtureAsset, compositePixels, developmentRuntimeIdForPackage, isRuntimeId, packageIdForRuntime, runtimeHost } from '../electron/runtime/contracts';
 const layouts=()=>['studio','records'].map(id=>({id,open:true,visible:id==='studio',rect:{x:0,y:43,width:640,height:400}}));
 describe('isolated runtime boundary',()=>{
  it('accepts bounded first-party runtime IDs without a fixed two-app layout',()=>{
@@ -11,6 +11,13 @@ describe('isolated runtime boundary',()=>{
   expect(parseLayout(edgeLayout)).toEqual(edgeLayout);
   const atLimit=Array.from({length:16},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}));
   expect(parseLayout(atLimit)).toHaveLength(16);
+  const localId=developmentRuntimeIdForPackage('company.dental.patient-record.m17');
+  expect(isRuntimeId(localId)).toBe(true);
+  expect(packageIdForRuntime(localId)).toBe('company.dental.patient-record.m17');
+  expect(runtimeHost(localId)).toBe('dev-company.dental.patient-record.m17');
+  expect(runtimeHost('company.dental.patient-record.m17')).not.toBe(runtimeHost(localId));
+  expect(isRuntimeId('dev.company.sample.preview')).toBe(false);
+  expect(parseLayout([{id:localId,open:true,visible:false,rect:{x:0,y:43,width:640,height:400}}])).toHaveLength(1);
   const tooMany=Array.from({length:17},(_,i)=>({id:`company.app${String(i).padStart(2,'0')}`,open:false,visible:false,rect:{x:0,y:43,width:640,height:400}}));
   for(const value of [[layouts()[0],layouts()[0]],layouts().map(v=>({...v,identity:'forged'})),layouts().map(v=>({...v,visible:true})),layouts().map(v=>({...v,rect:{...v.rect,width:NaN}})),[{...dynamic[0],id:'company.1bad'}],[{...edgeLayout[0],rect:{...edgeLayout[0].rect,x:-8193}}],tooMany])expect(()=>parseLayout(value)).toThrow();
  });

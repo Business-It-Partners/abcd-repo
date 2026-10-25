@@ -2,23 +2,25 @@ import { useSessionGeneration } from './SessionBoundary';
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type RefObject } from 'react';
 import { ManagedWindowFrame, useManagedWindow as useManagedWindowForDynamic, type WindowController } from './ManagedWindow';
 import { useWindowManager, activeWindow } from './windowManager';
-import { runtimeIds, runtimeIdForPackage, type RuntimeState, type RuntimeId, type RuntimeLayout } from '../electron/runtime/contracts';
+import { developmentRuntimeIdForPackage, runtimeIds, runtimeIdForPackage, type RuntimeState, type RuntimeId, type RuntimeLayout } from '../electron/runtime/contracts';
 import type { StoreApp } from '../electron/distribution/contracts';
+import type { DevelopmentAppItem } from '../electron/developmentApps';
 import { dockZoneTop, type WindowId } from './windowGeometry';
 import { StoreArtwork } from './StoreArtwork';
 import type { WindowModuleNavigation } from './WindowModuleSidebar';
 import { AlertTriangle } from 'lucide-react';
 
 type ControllerRef = MutableRefObject<WindowController>;
-type DynamicApp = StoreApp & { target: RefObject<HTMLButtonElement | null> };
+type DynamicApp = { id: string; title: string; target: RefObject<HTMLButtonElement | null> };
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
 type RuntimeConfirm = { id: RuntimeId; action: 'close' | 'back' };
-export function RuntimeFixtures({ controllers, apps = [], targets = {}, onControllerRef = () => {}, blocked, hostTransitioning, onSelectModule }: {
-  controllers: Record<string, WindowController>; apps?: StoreApp[];
+export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], targets = {}, onControllerRef = () => {}, blocked, hostTransitioning, onSelectModule, onConfirmCancel }: {
+  controllers: Record<string, WindowController>; apps?: StoreApp[]; developmentApps?: readonly DevelopmentAppItem[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
   onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean; hostTransitioning: boolean;
   onSelectModule?(id: RuntimeId, moduleId: string): void | Promise<void>;
+  onConfirmCancel?(id: RuntimeId): void;
 }) {
   const generation = useSessionGeneration();
   const { state, dispatch } = useWindowManager();
@@ -34,7 +36,10 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
   const immersive=!!front&&state.windows[front]?.presentation==='fullscreen';
   const immersiveRef=useRef(immersive);immersiveRef.current=immersive;
   const dockTop=dockZoneTop(state.size);
-  const dynamicApps:DynamicApp[]=apps.filter(app=>!!app.installedVersion&&!['company.sample.alpha','company.sample.beta'].includes(app.id)).flatMap(app=>{const id=runtimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{...app,id,target}]:[];});
+  const dynamicApps:DynamicApp[]=[
+    ...apps.filter(app=>!!app.installedVersion&&!['company.sample.alpha','company.sample.beta'].includes(app.id)).flatMap(app=>{const id=runtimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{id,title:app.title,target}]:[];}),
+    ...developmentApps.slice(0,1).flatMap(app=>{const id=developmentRuntimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{id,title:app.title,target}]:[];}),
+  ];
   const appSignature=dynamicApps.map(app=>`${app.id}:${app.title}`).sort().join('|');
   const managedApps=dynamicApps;
   const managedAppIds=new Set(managedApps.map(app=>app.id));
@@ -153,14 +158,14 @@ export function RuntimeFixtures({ controllers, apps = [], targets = {}, onContro
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm?.id===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={accepted=>{setConfirm(undefined);if(!accepted)onConfirmCancel?.(id);}} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
         moduleNavigation={entry?.moduleNavigation}
         onSelectModule={moduleId=>onSelectModule?.(id,moduleId)}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirmAction?:RuntimeConfirm['action'];requestConfirm(action:RuntimeConfirm['action']):void;cancel():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirmAction?:RuntimeConfirm['action'];requestConfirm(action:RuntimeConfirm['action']):void;cancel(accepted?:boolean):void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
   const navigationDisabled=entry?.phase!=='ready'||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
@@ -181,7 +186,7 @@ function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,re
   </ManagedWindowFrame>;
 }
 
-function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cancel,acceptConfirm,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirmAction?:RuntimeConfirm['action'];requestConfirm():void;cancel():void;acceptConfirm?():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {
+function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cancel,acceptConfirm,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirmAction?:RuntimeConfirm['action'];requestConfirm():void;cancel(accepted?:boolean):void;acceptConfirm?():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {
   const generation=useSessionGeneration();
   const dirty=useRef(false);dirty.current=entry?.dirty??false;const unsafe=useRef(false);unsafe.current=!!entry?.writeState&&entry.writeState!=='none';
   useEffect(()=>{c.setCloseGuard(()=>{if(dirty.current||unsafe.current){requestConfirm();return false;}return true;});return()=>c.setCloseGuard();},[id]);
@@ -198,7 +203,7 @@ function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cance
       <div className="runtime-confirm-icon" aria-hidden="true"><AlertTriangle size={22}/></div>
       <h2>{unsafe.current?'Reconcile the server change first':id==='company.dental.patient-record.m17'?'Discard unsaved patient details?':'Discard unfinished app work?'}</h2>
       <p>{unsafe.current?'A change may have reached the clinic. Keep this window open and check the save result in the app before leaving.':id==='company.dental.patient-record.m17'?'The patient details on this page have not been saved. If you leave now, they will be discarded.':'This app has unfinished work that has not been saved. If you leave now, it will be discarded.'}</p>
-      <div className="runtime-confirm-actions"><button autoFocus className="runtime-confirm-cancel" onClick={cancel}>Cancel</button>{!unsafe.current&&<button className="runtime-confirm-ok" onClick={acceptConfirm??(()=>{dirty.current=false;c.setModal(false);cancel();c.close();})}>OK</button>}</div>
+      <div className="runtime-confirm-actions"><button autoFocus className="runtime-confirm-cancel" onClick={()=>cancel()}>Cancel</button>{!unsafe.current&&<button className="runtime-confirm-ok" onClick={acceptConfirm??(()=>{dirty.current=false;c.setModal(false);cancel(true);c.close();})}>OK</button>}</div>
     </section></div>}
   </div>;
 }

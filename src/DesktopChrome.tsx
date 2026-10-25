@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
 import type { StoreView } from '../electron/distribution/contracts';
 import type { SessionView } from '../electron/identity/contracts';
 import { hasAvailableStoreUpdate } from './storeUpdateState';
+import type { DevelopmentAppView } from '../electron/developmentApps';
 import './DesktopChrome.css';
 
 const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
@@ -13,12 +14,16 @@ type Props = {
   session?: SessionView;
   sessionControls?: ReactNode;
   storeView: StoreView;
+  developmentApps?: DevelopmentAppView;
+  developmentMessage?: string;
+  developmentTargets?: Record<string, RefObject<HTMLButtonElement | null>>;
   storeControlsLocked: boolean;
   statusbarVisible: boolean;
   onOpenApps?: () => void;
   onRequestUpdate(id: string): void;
   onCancelUpdate(): void;
   onRefreshApps(): void;
+  onOpenDevelopmentApp?(id: string): void;
   onShowWindows?: () => void;
   onSupport?: () => void;
   onRequestSignOut?: () => void;
@@ -30,7 +35,7 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ session, sessionControls, storeView, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
+export function DesktopChrome({ session, sessionControls, storeView, developmentApps, developmentMessage, developmentTargets, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onOpenDevelopmentApp, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
   const [clinicLogo, setClinicLogo] = useState<{ generation: number; dataUrl: string }>();
@@ -220,6 +225,24 @@ export function DesktopChrome({ session, sessionControls, storeView, storeContro
         </div> : <div className="updates-empty" role={storeView.phase === 'unavailable' ? 'alert' : 'status'}>{widgetMessage}</div>}
         {updateApps.length > 0 && <div className="updates-widget-footnote" aria-live="polite">{widgetMessage}</div>}
       </section>
+
     </section>
+
+    {developmentApps?.enabled && <section className="desktop-widget development-apps-widget" aria-label="Development app collection">
+        <div className="development-widget-heading">
+          <div>
+            <div className="widget-kicker">DEVELOPMENT APPS</div>
+            <span className="development-widget-subtitle">Open the latest local build</span>
+          </div>
+        </div>
+        <div className="development-app-grid" aria-label="First-party development apps">
+          {developmentApps.apps.map(app => <button ref={developmentTargets?.[app.id]} className="development-app-tile" key={app.id} type="button" disabled={!onOpenDevelopmentApp || storeControlsLocked} onClick={() => onOpenDevelopmentApp?.(app.id)} aria-label={`Open ${app.title} development app`}>
+            <span className="development-app-thumbnail"><img src={app.thumbnail} alt="" draggable="false"/></span>
+            <span className="development-app-name">{app.title}</span>
+          </button>)}
+        </div>
+        {developmentMessage && <div className="development-widget-message" role="status">{developmentMessage}</div>}
+    </section>
+  }
   </>;
 }

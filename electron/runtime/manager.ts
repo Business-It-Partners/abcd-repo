@@ -7,14 +7,17 @@ import { appNavigationSnapshot, type AppNavigationSnapshot, type Result } from '
 import { staging } from '../sdk/environment';
 import { fixtureServices } from '../sdk/fixtures';
 import { PackageRegistry, type Lease } from '../packages/registry';
+import type { VerifiedPackage } from '../packages/format';
 import { RestartBudget } from './restartBudget';
 import { appInfo, parseDentalAppMetadata, type DentalAppInfo, type DentalAppMetadata } from '../packages/appMetadata';
 import type { EventCode, Target } from '../diagnostics/store';
 import { randomUUID } from 'node:crypto';
-import { compositePixels, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+import { compositePixels, isDevelopmentRuntimeId, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+import type { DevelopmentAppBuild, DevelopmentAppService } from '../developmentApps';
 const moduleSelectionAckTimeoutMs=10_000;
 const appLaunchHealthTimeoutMs=20_000;
-type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
+type RuntimePackage = Pick<VerifiedPackage, 'manifest' | 'files' | 'capabilities'>;
+type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; developmentBuild?:DevelopmentAppBuild; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
 export class FixtureRuntime {
   private services = fixtureServices();
   private filePicker?: FilePickerCoordinator;
@@ -30,14 +33,16 @@ export class FixtureRuntime {
   private lastEmission = '';
   private restartBudget=new RestartBudget();
   private launchFeedbackFixture = false;
-  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void;apiTrace?:(record:ApiTraceRecord)=>void}={transport:'fixture'}) {
+  private developmentApps?:DevelopmentAppService;
+  constructor(private win: BrowserWindow, private packages: PackageRegistry, private preload: string, identity?: Identity, private changed:()=>void=()=>{}, options:{transport:'fixture'|'staging';dropFirstWriteResponse?:boolean;modulePreviewFixture?:boolean;launchFeedbackFixture?:boolean;diagnostic?:(code:EventCode,target:Target)=>void;apiTrace?:(record:ApiTraceRecord)=>void;developmentApps?:DevelopmentAppService}={transport:'fixture'}) {
+    this.developmentApps=options.developmentApps;
     this.diagnostic=options.diagnostic??(()=>{});
     this.launchFeedbackFixture=!!options.launchFeedbackFixture;
     const baseIdentity=identity??this.services.identity;
     this.identity=options.launchFeedbackFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['followups.access','appointments.access','work_entry.access','patient_record.access','treatment_progress.access','lab_tracker.access','finance.manage','patient_payments.outstanding.read','staff.manage','treatment_protocols.manage','calendar.access','future_billing.access']}}})}:options.modulePreviewFixture?{...baseIdentity,snapshot:()=>({...baseIdentity.snapshot(),clinicSession:{clinicUser:{role:'admin',capabilities:['fixture.module-preview']}}})}:baseIdentity;
     const base:Transport=options.transport==='staging'?fetch:this.services.transport;let drop=!!options.dropFirstWriteResponse;
     const transport:Transport=async(url,init)=>{const response=await base(url,init);if(drop&&init.method==='POST'&&new URL(url).pathname.match(/^\/v1\/appointments\/[0-9a-f-]{36}\/status$/)&&response.ok){drop=false;await response.arrayBuffer();throw Error('Private one-shot lost-response injection');}return response;};
-    this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{const e=[...this.entries.values()].find(e=>e.lease?.manifest.appId===appId);if(e){e.state.writeState=this.broker.writeState(appId);this.emit();}},options.apiTrace);
+    this.broker=new ApiBroker(staging,this.identity,transport,undefined,appId=>{let changed=false;for(const e of this.entries.values())if(this.runtimePackage(e)?.manifest.appId===appId){e.state.writeState=this.broker.writeState(appId);changed=true;}if(changed)this.emit();},options.apiTrace);
   }
   private diagnostic:(code:EventCode,target:Target)=>void;
   private emit() {
@@ -66,7 +71,7 @@ export class FixtureRuntime {
     const wasVisible = e.view.getVisible();
     this.restartBudget.failed(e.state.id);this.diagnostic('app-failed',e.state.id==='studio'||e.state.id==='records'?e.state.id:'company-app');
     e.image=undefined;e.state.snapshot=undefined;clearTimeout(e.captureTimer);this.resolveModuleAcks(e,false);
-    clearTimeout(e.healthTimer);if(e.lease){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
+    clearTimeout(e.healthTimer);if(e.lease&&!isDevelopmentRuntimeId(e.state.id)){try{this.packages.markFailed(e.lease.manifest.appId,e.lease.release.digest);this.changed();}catch{reason='update-recovery-required';}}
     this.filePicker?.cancelRecipient(e.view.webContents);
     this.broker.unregister(e.view.webContents);
     e.state.phase = 'failed'; e.state.reason = reason; e.view.setVisible(false);
@@ -86,7 +91,7 @@ export class FixtureRuntime {
     else this.hideForMirror(e);
   }
   private async prepareLaunchFade(e:Entry):Promise<boolean>{
-    if(packageIdForRuntime(e.state.id)!==e.state.id||e.view.webContents.isDestroyed())return false;
+    if(e.state.id==='studio'||e.state.id==='records'||e.view.webContents.isDestroyed())return false;
     try{return await e.view.webContents.executeJavaScript(`(()=>{
       if(matchMedia('(prefers-reduced-motion: reduce)').matches||typeof document.documentElement.animate!=='function')return false;
       const animation=document.documentElement.animate([{opacity:0},{opacity:1}],{duration:260,easing:'ease-out',fill:'both'});
@@ -129,12 +134,12 @@ export class FixtureRuntime {
     await e.capturePromise;
   }
   private asset(id: RuntimeId, url: string) {
-    const lease = this.entries.get(id)?.lease; if (!lease) return;
+    const entry = this.entries.get(id), pkg = entry && this.runtimePackage(entry); if (!pkg) return;
     try {
       const u = new URL(url), host = runtimeHost(id);
       if (u.protocol !== 'dental-fixture:' || u.host !== host || u.username || u.password || u.search || u.hash || u.pathname.includes('%')) return;
       let name = u.pathname.slice(1); if(!name||name.endsWith('/'))name+='index.html';
-      const bytes = lease.files.get(name); if (!bytes) return;
+      const bytes = pkg.files.get(name); if (!bytes) return;
       const ext = name.split('.').pop() ?? '';
       const types: Record<string, string> = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', json: 'application/json', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2' };
       return { bytes, type: types[ext] ?? 'application/octet-stream' };
@@ -142,15 +147,17 @@ export class FixtureRuntime {
   }
   private callerEntry(event: IpcMainInvokeEvent) {
     if(event.senderFrame!==event.sender.mainFrame)return undefined;
-    return [...this.entries.values()].find(entry=>entry.view.webContents===event.sender&&entry.state.phase==='ready'&&entry.lease);
+    return [...this.entries.values()].find(entry=>entry.view.webContents===event.sender&&entry.state.phase==='ready'&&this.runtimePackage(entry));
   }
-  private appInfoFor(pkg: Lease | ReturnType<PackageRegistry['inspectPackage']>, metadata?: DentalAppMetadata): DentalAppInfo | undefined {
+  private runtimePackage(entry: Entry): RuntimePackage | undefined { return entry.developmentBuild ?? entry.lease; }
+  private appInfoFor(pkg: RuntimePackage, metadata?: DentalAppMetadata): DentalAppInfo | undefined {
     const session=this.identity.snapshot().clinicSession as {clinicUser?:{role?:string;capabilities?:unknown}}|undefined;
     if(!session?.clinicUser||!Array.isArray(session.clinicUser.capabilities))return undefined;
     return appInfo(pkg,metadata,session.clinicUser.role,session.clinicUser.capabilities.filter((value):value is string=>typeof value==='string'));
   }
   private visibleAppInfo(entry: Entry): DentalAppInfo | undefined {
-    return entry.lease ? this.appInfoFor(entry.lease,entry.appMetadata) : undefined;
+    const content=this.runtimePackage(entry);
+    return content?this.appInfoFor(content,entry.appMetadata):undefined;
   }
   private syncModuleNavigation(entry: Entry) {
     const info=this.visibleAppInfo(entry),modules=info?.modules??[];
@@ -161,12 +168,23 @@ export class FixtureRuntime {
   }
   private installedAppInfo(id: RuntimeId): DentalAppInfo | undefined {
     try {
-      const pkg=this.packages.inspectPackage(packageIdForRuntime(id));
-      return this.appInfoFor(pkg,parseDentalAppMetadata(pkg));
+      const content=isDevelopmentRuntimeId(id)
+        ?this.developmentApps?.getBuiltApp(packageIdForRuntime(id))
+        :this.packages.inspectPackage(packageIdForRuntime(id));
+      return content?this.appInfoFor(content,parseDentalAppMetadata(content)):undefined;
     } catch { return undefined; }
   }
   discoverApp(id: unknown): Result<(DentalAppInfo & {runtimeId:RuntimeId}) | null> {
     if(!isRuntimeId(id))return{ok:false,error:{code:'INVALID_REQUEST',message:'This app cannot be opened.',outcome:'not_sent'}};
+    if(isDevelopmentRuntimeId(id)){
+      const build=this.developmentApps?.getBuiltApp(packageIdForRuntime(id));
+      if(!build)return{ok:false,error:{code:'UNAVAILABLE',message:'Build this app from its project first. Its output will be copied into the separate development app store.',outcome:'not_sent'}};
+      const metadata=parseDentalAppMetadata(build);
+      if(!metadata)return{ok:true,value:null};
+      const info=this.appInfoFor(build,metadata);
+      if(!info)return{ok:false,error:{code:'ACCESS_DENIED',message:'This app is not available for your current clinic role.',outcome:'not_sent'}};
+      return{ok:true,value:{runtimeId:id,...info}};
+    }
     try {
       const pkg=this.packages.inspectPackage(packageIdForRuntime(id));
       const metadata=parseDentalAppMetadata(pkg);
@@ -244,13 +262,22 @@ export class FixtureRuntime {
     view.setBounds(rect);
     const wc = view.webContents;
     if(this.restartBudget.remaining(id)){e.state.phase='failed';e.state.reason='restart-limit';this.emit();return e;}
-    try { e.lease = this.packages.launch(packageIdForRuntime(id)); e.appMetadata=parseDentalAppMetadata(e.lease); if(this.packages.describe(e.lease.manifest.appId).trial)this.changed(); } catch { this.fail(e, 'package-verification-failed'); return e; }
+    try {
+      if(isDevelopmentRuntimeId(id)){
+        e.developmentBuild=this.developmentApps?.getBuiltApp(packageIdForRuntime(id));
+        if(!e.developmentBuild)throw new Error('Development app build is unavailable');
+      }else e.lease = this.packages.launch(packageIdForRuntime(id));
+      const content=this.runtimePackage(e)!;
+      e.appMetadata=parseDentalAppMetadata(content);
+      if(e.lease&&this.packages.describe(e.lease.manifest.appId).trial)this.changed();
+    } catch { this.fail(e, 'package-verification-failed'); return e; }
     const selected=this.selectedModules.get(id),info=this.visibleAppInfo(e);
     if(selected&&info?.modules.some(module=>module.id===selected))e.moduleId=selected;
     else if(selected)this.selectedModules.delete(id);
     this.syncModuleNavigation(e);
     e.healthTimer=setTimeout(()=>this.fail(e,'launch-health-timeout'),appLaunchHealthTimeoutMs);
-    const lease = e.lease, entryLocation=lease.manifest.entry==='index.html'?'':lease.manifest.entry.endsWith('/index.html')?lease.manifest.entry.slice(0,-'index.html'.length):lease.manifest.entry, entryURL = `dental-fixture://${host}/${entryLocation}`;
+    const pkg=this.runtimePackage(e)!;
+    const entryLocation=pkg.manifest.entry==='index.html'?'':pkg.manifest.entry.endsWith('/index.html')?pkg.manifest.entry.slice(0,-'index.html'.length):pkg.manifest.entry, entryURL = `dental-fixture://${host}/${entryLocation}`;
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));
     wc.on('will-navigate', event => event.preventDefault());
     wc.on('will-frame-navigate', event => event.preventDefault());
@@ -282,15 +309,21 @@ export class FixtureRuntime {
       if(this.entries.get(id)!==e||wc.isDestroyed())return;
       const authorizedLocal=()=>{
         try{
-          const family=clinicAppFamily(lease.capabilities);
+          const family=clinicAppFamily(pkg.capabilities);
           return this.entries.get(id)===e && e.state.phase==='ready' &&
-            !!family && lease.capabilities.includes(family) &&
-            this.identity.allowed?.(family)!==false && this.packages.authorizeLocalPick(lease);
+            !!family && pkg.capabilities.includes(family) &&
+            this.identity.allowed?.(family)!==false && (e.developmentBuild
+              ?this.developmentApps?.allowsLocalFilePick(e.developmentBuild)===true
+              :!!e.lease&&this.packages.authorizeLocalPick(e.lease));
         }catch{return false;}
       };
-      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: lease.manifest.appId, appVersion: lease.manifest.version, capabilities: [...lease.capabilities],
-        authorize:()=>{try{this.packages.assertAllowed(lease);return true;}catch{return false;}},
-        authorizeApiOperation:operation=>{try{return this.packages.authorizeApiOperation(lease,operation);}catch{return false;}},
+      this.broker.register({ sender: wc, frame: wc.mainFrame, origin: entryURL, appId: pkg.manifest.appId, appVersion: pkg.manifest.version, capabilities: [...pkg.capabilities],
+        authorize:()=>e.developmentBuild
+          ?this.developmentApps?.isAuthorizedBuild(e.developmentBuild)===true
+          :(()=>{try{if(!e.lease)return false;this.packages.assertAllowed(e.lease);return true;}catch{return false;}})(),
+        authorizeApiOperation:operation=>e.developmentBuild
+          ?this.developmentApps?.allowsApiOperation(e.developmentBuild,operation)===true
+          :(()=>{try{return !!e.lease&&this.packages.authorizeApiOperation(e.lease,operation);}catch{return false;}})(),
         authorizeLocalPick:authorizedLocal,
         pickLocal:async(input:FilePickInput,requestId:string,signal:AbortSignal)=>{
           const ticket=this.fileActivation.get(wc);this.fileActivation.delete(wc);
@@ -298,7 +331,7 @@ export class FixtureRuntime {
              !e.view.getVisible() || !authorizedLocal() || !this.filePicker)
              throw Object.assign(Error('FORBIDDEN'),{code:'FORBIDDEN'});
           return this.filePicker.pick(input,{
-            sender:wc,frame:wc.mainFrame,appId:lease.manifest.appId,appVersion:lease.manifest.version,
+            sender:wc,frame:wc.mainFrame,appId:pkg.manifest.appId,appVersion:pkg.manifest.version,
             windowId:id,generation:this.identity.snapshot().generation,requestId,
             authorized:()=>authorizedLocal() && !wc.isDestroyed(),
           }, e.appMetadata?.title ?? 'Dental application',signal);
@@ -314,7 +347,7 @@ export class FixtureRuntime {
         // the app is alive. Wait for a sustained miss and present recovery;
         // never kill an app solely because this advisory ping was late.
         e.pingTimer = setTimeout(() => this.markUnresponsive(e), 5000);
-        void wc.executeJavaScript('document.readyState === "complete" && !!document.body && typeof window.dentalApp?.connect === "function"').then(ready => { clearTimeout(e.pingTimer); pending = false;if(this.entries.get(id)!==e)return;if(e.state.phase==='unresponsive')this.markResponsive(e);if(ready&&e.connected&&!e.healthy){try{this.packages.markHealthy(lease.manifest.appId,lease.release.digest);e.healthy=true;clearTimeout(e.healthTimer);this.changed();}catch{this.fail(e,'update-policy-refused');}} }).catch(() => { clearTimeout(e.pingTimer); pending = false; });
+        void wc.executeJavaScript('document.readyState === "complete" && !!document.body && typeof window.dentalApp?.connect === "function"').then(ready => { clearTimeout(e.pingTimer); pending = false;if(this.entries.get(id)!==e)return;if(e.state.phase==='unresponsive')this.markResponsive(e);if(ready&&e.connected&&!e.healthy){try{if(e.lease){this.packages.markHealthy(e.lease.manifest.appId,e.lease.release.digest);this.changed();}e.healthy=true;clearTimeout(e.healthTimer);}catch{this.fail(e,'update-policy-refused');}} }).catch(() => { clearTimeout(e.pingTimer); pending = false; });
       }, 2000);
     });
     void wc.loadURL(entryURL).catch(() => this.fail(e, 'load-failed'));
@@ -332,12 +365,12 @@ export class FixtureRuntime {
     const retained = new Set(next.map(layout => layout.id));
     for (const id of [...this.entries.keys()]) if (!retained.has(id)) {
       const e = this.entries.get(id)!;
-      if (this.broker.hasUnsafeWrites(e.lease?.manifest.appId ?? '')) { e.view.setVisible(false); this.win.webContents.send('runtime:close-blocked', { id }); }
+    if (this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId ?? '')) { e.view.setVisible(false); this.win.webContents.send('runtime:close-blocked', { id }); }
       else this.close(id);
     }
     for (const layout of this.desired) {
       let e = this.entries.get(layout.id);
-      if (!layout.open) { if (e) {if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??'')){e.view.setVisible(false);this.win.webContents.send('runtime:close-blocked',{id:layout.id});}else this.close(layout.id);} continue; }
+      if (!layout.open) { if (e) {if(this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??'')){e.view.setVisible(false);this.win.webContents.send('runtime:close-blocked',{id:layout.id});}else this.close(layout.id);} continue; }
       const rect = Object.fromEntries(Object.entries(layout.rect).map(([k, v]) => [k, Math.round(v)])) as RuntimeRect;
       e ??= this.create(layout.id, rect);
       e.rect = rect; e.view.setBounds(rect); e.view.setBorderRadius(rect.x===0&&rect.width===width?0:10);
@@ -353,7 +386,7 @@ export class FixtureRuntime {
     if (!isRuntimeId(id)) throw new Error('Invalid runtime');
     const e = this.entries.get(id);
     if (!e || !['failed','unresponsive'].includes(e.state.phase)) throw new Error('Runtime is not awaiting recovery');
-    if(this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''))throw Error('Resolve the server change before restarting');
+    if(this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''))throw Error('Resolve the server change before restarting');
     if(this.restartBudget.remaining(id)){e.state.reason='restart-limit';this.emit();throw Error('Restart limit reached. Wait one minute, then try again.');}
     this.diagnostic('app-restarted',id==='studio'||id==='records'?id:'company-app');const rect = e.rect; this.close(id); this.create(id, rect);
   }
@@ -446,7 +479,7 @@ export class FixtureRuntime {
     if(!isRuntimeId(runtimeIdForPackage(appId)))throw Error('Unknown update app');
     throw Error('App updates activate only on the next full app launch');
   }
-  blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(e.lease?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
+  blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
     this.fileActivation.clear();this.filePicker?.cancelAll();
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);

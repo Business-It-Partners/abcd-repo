@@ -21,6 +21,7 @@ import { DistributionService } from './distribution/service';
 import { CatalogueStore } from './distribution/storage';
 import { distributionFixtures as createDistributionFixtures } from './distribution/fixtures';
 import { fixtureServices } from './sdk/fixtures';
+import { DevelopmentAppService } from './developmentApps';
 import type { SessionView } from './identity/contracts';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let diagnostics:DiagnosticStore|undefined;
@@ -29,6 +30,7 @@ let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
+let developmentApps: DevelopmentAppService | undefined;
 const privateRuntimeDisplay = process.platform === 'linux' && !process.env.DISPLAY && !!process.env.ELECTRON_OS_TEST_DISPLAY && path.join(process.env.XDG_RUNTIME_DIR || '', process.env.WAYLAND_DISPLAY || '') === process.env.ELECTRON_OS_TEST_DISPLAY;
 const m18FinanceApiTraceEnabled = privateRuntimeDisplay && app.commandLine.hasSwitch('identity-staging') && app.commandLine.hasSwitch('m18-finance-api-trace');
 const m18FinanceApiTrace: ApiTraceRecord[] = [];
@@ -49,6 +51,8 @@ const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
 const runtimeResourceFixtures = runtimeFixtures && (runtimeFixtureAppCount > 2 || launchFeedbackFixture || stagingMediaFixtures);
 const trustedTest = privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows');
+const developmentAppUiFixtures = privateRuntimeDisplay && app.commandLine.hasSwitch('development-apps-fixtures');
+const developmentAppBuildFixtures = privateRuntimeDisplay && app.commandLine.hasSwitch('development-app-build-fixtures');
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
@@ -85,7 +89,7 @@ function createWindow() {
   });
   hostWindow = win;
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
-  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
+  if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,developmentApps,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
   if(filePicker)runtime?.setFilePicker(filePicker);
   win.on('close', event => {if(runtime?.blockUnsafeExit()){event.preventDefault();return;}filePicker?.cancelAll();runtime?.dispose();});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -267,6 +271,10 @@ ipcMain.handle('store:action', (event, kind: unknown, input: unknown, generation
   if (kind === 'update-now') return distribution.updateNow(input,id=>{if(!runtime)throw Error('Runtime unavailable');runtime.updateNow(id);});
   return { ok: false, code: 'INVALID' };
 });
+ipcMain.handle('development-apps:view', event => {
+  if (!isShell(event) || !canUseWorkspace()) return { enabled: false, apps: [] };
+  return developmentApps?.view() ?? { enabled: false, apps: [] };
+});
 ipcMain.handle('store:artwork', (event, appId: unknown, expectedSha256: unknown, generation: unknown) => {
   if (!isShell(event) || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) return null;
   return distribution?.artwork(appId, expectedSha256, generation) ?? null;
@@ -288,6 +296,7 @@ if (primary) void app.whenReady().then(async () => {
     const storeFixture = storeFixtures ? createDistributionFixtures(path.join(__dirname, '../fixtures/packages'), catalogueStore.load().sequence + 1, app.commandLine.hasSwitch('update-fixtures') ? path.join(app.getPath('userData'),'update-fixture.json') : undefined, onboardingFixtures, { unavailableControlFile: app.commandLine.hasSwitch('distribution-unavailable-fixtures') ? path.join(app.getPath('userData'),'distribution-unavailable.fixture') : undefined, packageDelayMs: app.commandLine.hasSwitch('distribution-progress-fixtures') ? 900 : 0 }) : undefined;
     packages = runtimeFixtures ? fixtureRegistry(packageRoot, path.join(__dirname, '../fixtures/packages'), runtimeFixtureAppCount,modulePreviewFixtures,slowModuleAckFixtures,launchFeedbackFixture,stagingMediaFixtures) : new PackageRegistry(packageRoot, storeFixture?.config.policy ?? stagingDistribution.policy);
     if (!runtimeFixtures) packages.initialize();
+    developmentApps = new DevelopmentAppService(app.getAppPath(), path.join(app.getPath('userData'), 'development-apps'), !app.isPackaged && (!trustedTest || developmentAppUiFixtures) && !app.commandLine.hasSwitch('identity-staging'), developmentAppBuildFixtures);
     if (!identityBypass) {
       const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
       identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging', Date.now, 8000, identityFixture ? undefined : identityStageDiagnostics);
