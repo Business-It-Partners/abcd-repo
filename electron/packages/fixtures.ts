@@ -120,11 +120,9 @@ export function fixtureRegistry(root: string, fixtureRoot: string, appCount = 2,
     const html=`<!doctype html><html lang="en"><meta charset="utf-8"><title>Synthetic Records Picker</title>
       <h1>Synthetic Records Picker</h1><button id="connect-sdk">Connect SDK</button><button id="pick-local">Choose local X-ray</button>
       <button id="try-synthetic">Programmatic picker request</button><pre id="pick-result" role="status">Connecting</pre>
-      <pre id="transfer-result" role="status">No Files transfer received</pre>
       <script>let current;const result=document.getElementById('pick-result');
       function connectSdk(){window.dentalApp.connect({major:1,minor:5}).then(value=>{current=value.ok?value.value:null;
-      result.textContent=value.ok?'SDK connected':'Connection denied';
-      if(value.ok)window.dentalApp.onFilesReceived(selection=>{document.getElementById('transfer-result').textContent=JSON.stringify(selection);});});}
+      result.textContent=value.ok?'SDK connected':'Connection denied';});}
       async function choose(){if(!current){result.textContent='Not connected';return;}
       const response=await window.dentalApp.request({version:1,connection:current.connection,generation:current.generation,
       requestId:crypto.randomUUID(),operation:'local.files.pick',

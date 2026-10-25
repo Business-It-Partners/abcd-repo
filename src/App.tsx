@@ -1,4 +1,4 @@
-import { createRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
+import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
 import { Check, ChevronRight, Layers, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
@@ -14,13 +14,8 @@ import { defaultTableContentWidth } from './windowGeometry';
 import { RuntimeFixtures } from './RuntimeFixtures';
 import { WindowOverview } from './WindowOverview';
 import { RecordsApp } from './RecordsApp';
-import { FilesApp, type FilesImageRequest } from './FilesApp';
 import { StandardWindow1 } from './StandardWindow1';
-import { ImageViewer, type ViewerImage } from './ImageViewer';
-import { FilesPickerModal } from './FilesPickerModal';
-import type { FilePickerPrompt, FilePickerResponse } from '../electron/host/filePickerContract';
-import './FilesApp.css';
-import { ManagedWindowFrame, useManagedWindow } from './ManagedWindow';
+import { ManagedWindowFrame } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
 import { statusBarHeightForWidth, WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
@@ -82,57 +77,13 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
-  const { studio, records, followups, files } = controllers;
-  const viewerTarget=useMemo(()=>createRef<HTMLButtonElement>(),[]);
-  const viewerController=useManagedWindow('image-viewer',viewerTarget);
-  const [viewerImage,setViewerImage]=useState<ViewerImage|null>(null);
-  const [viewerError,setViewerError]=useState('');
-  const [viewerBusy,setViewerBusy]=useState(false);
-  const viewerRequest=useRef(0);
+  const { studio, records, followups } = controllers;
   const phase = studio.win.phase;
   const [installed, setInstalled] = useState<StaticWindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
   const [dynamicControllerRefs,setDynamicControllerRefs]=useState<Record<string,MutableRefObject<WindowController>>>({});
   const onControllerRef=useCallback((id:string,ref:MutableRefObject<WindowController>|null)=>setDynamicControllerRefs(previous=>{if(ref){if(previous[id]===ref)return previous;return{...previous,[id]:ref};}if(!previous[id])return previous;const next={...previous};delete next[id];return next;}),[]);
   const dynamicControllers:Record<string,WindowController>=Object.fromEntries(Object.entries(dynamicControllerRefs).map(([id,ref])=>[id,ref.current]));
   const allControllers:Record<string,WindowController>={...staticControllers,...dynamicControllers};
-  const closeViewer=()=>{
-    viewerRequest.current++;
-    if(viewerImage)void window.desktop?.files.viewerClose(viewerImage.sessionId,viewerImage.generation).catch(()=>{});
-    setViewerImage(previous=>{previous?.bytes.fill(0);return null;});
-    setViewerError('');setViewerBusy(false);viewerController.close();
-  };
-  const openViewer=async(request:FilesImageRequest)=>{
-    if(!window.desktop?.files)return;
-    const token=++viewerRequest.current;
-    setViewerError('');setViewerBusy(true);
-    if(viewerImage)void window.desktop.files.viewerClose(viewerImage.sessionId,viewerImage.generation).catch(()=>{});
-    try{
-      const image=await window.desktop.files.viewerOpen(request);
-      if(viewerRequest.current!==token){
-        image.bytes.fill(0);void window.desktop.files.viewerClose(image.sessionId,image.generation).catch(()=>{});return;
-      }
-      setViewerImage(previous=>{previous?.bytes.fill(0);return image;});viewerController.open();
-    }catch{if(viewerRequest.current===token)setViewerError('Unable to safely open this picture. Refresh Files and try again.');}
-    finally{if(viewerRequest.current===token)setViewerBusy(false);}
-  };
-  const stepViewer=async(direction:-1|1)=>{
-    if(!viewerImage||viewerBusy||!window.desktop?.files)return;
-    const token=++viewerRequest.current;
-    setViewerBusy(true);setViewerError('');
-    try{
-      const image=await window.desktop.files.viewerStep({sessionId:viewerImage.sessionId,generation:viewerImage.generation,direction});
-      if(token!==viewerRequest.current){image.bytes.fill(0);return;}
-      setViewerImage(previous=>{previous?.bytes.fill(0);return image;});
-    }catch{if(token===viewerRequest.current)setViewerError('This picture is no longer available. Close and refresh Files.');}
-    finally{if(token===viewerRequest.current)setViewerBusy(false);}
-  };
-  useEffect(()=>{
-    // On a clinic/session change, discard decoded images and all in-flight reads.
-    viewerRequest.current++;
-    setViewerImage(previous=>{previous?.bytes.fill(0);return null;});
-    setViewerError('');setViewerBusy(false);
-    dispatch({type:'phase',id:'image-viewer',phase:'closed'});
-  },[session?.generation,dispatch]);
   const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
@@ -142,7 +93,6 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [updatedId,setUpdatedId]=useState<WindowId|null>(null);
   const [financeModule,setFinanceModule]=useState(FINANCE_MODULES[0]);
   const [launchNotice,setLaunchNotice]=useState('');
-  const [pickerPrompt,setPickerPrompt]=useState<FilePickerPrompt|null>(null);
   const launchingPackage=useRef(false);
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
@@ -153,7 +103,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
   const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
   const deliveredIds = delivery.installedOrder.map(runtimeIdForPackage);
-  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['files', 'standard-window-1', 'store', ...deliveredIds])], titleByWindow);
+  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['standard-window-1', 'store', ...deliveredIds])], titleByWindow);
   const pendingArrivalId=delivery.installingId?runtimeIdForPackage(delivery.installingId):undefined;
   function startStoreJob(id:StaticWindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
   useEffect(() => {
@@ -216,11 +166,6 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const showStatusbar = !immersive || statusbarRevealed || anyMotion || hostTransitioning;
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
   useEffect(() => { setDockRevealed(false); setStatusbarRevealed(false); }, [immersive, frontApp]);
-  useEffect(()=>window.desktop?.files.subscribePicker(prompt=>{
-    setPickerPrompt(prompt);
-    if(prompt)window.desktop?.runtime.hideAll(session?.generation);
-  }),[session?.generation]);
-  const respondPicker = (response:FilePickerResponse)=>window.desktop?.files.pickResponse(response)??Promise.resolve(false);
   function updateDockItemHover(hovered:boolean) {
     if (dockItemHoveredRef.current === hovered) return;
     dockItemHoveredRef.current = hovered;
@@ -279,13 +224,13 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       if (toggle && !overviewShortcutEnabled.current) return;
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      if (event.repeat || pickerPrompt || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
+      if (event.repeat || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
       if (!current.overview) { dock.reset(); setDockRevealed(false); }
       dispatch({ type: 'overview', open: !current.overview });
     };
     window.addEventListener('keydown', shortcut, true);
     return () => window.removeEventListener('keydown', shortcut, true);
-  }, [dispatch, getState, hostTransitioning, pickerPrompt, dock.reset]);
+  }, [dispatch, getState, hostTransitioning, dock.reset]);
   useEffect(() => window.desktop?.onHostTransition(value => {
     setHostTransitioning(value);
     if (value) { dock.reset(); setDockRevealed(false); }
@@ -307,8 +252,8 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
-    <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }} inert={!!pickerPrompt} aria-hidden={!!pickerPrompt}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!pickerPrompt || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -320,13 +265,9 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       </div>
     </ManagedWindowFrame>}
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={records}><RecordsApp controller={records}/></ManagedWindowFrame>}
-    <ManagedWindowFrame controller={files}><FilesApp key={session?.generation ?? 0} visible={files.win.phase === 'visible'} active={frontApp==='files'&&!state.overview&&!pickerPrompt&&!hostTransitioning} onViewImage={request=>void openViewer(request)}/></ManagedWindowFrame>
-    <ManagedWindowFrame controller={viewerController} hideMinimize onClose={closeViewer}>
-      <ImageViewer image={viewerImage} active={viewerController.active} busy={viewerBusy} error={viewerError} onStep={direction=>void stepViewer(direction)}/>
-    </ManagedWindowFrame>
     <ManagedWindowFrame controller={followups}><FollowupsApp controller={followups}/></ManagedWindowFrame>
     <StandardWindow1 controller={staticControllers['standard-window-1']}/>
-    {WINDOW_IDS.filter(id => id !== 'files' && id !== 'standard-window-1' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}
+    {WINDOW_IDS.filter(id => id !== 'standard-window-1' && !isPrototype(id)).map(id => <ManagedWindowFrame key={id} controller={staticControllers[id]}
       moduleNavigation={id === 'finance' ? { activeModuleId: financeModule, activeLabel: financeModule, modules: FINANCE_MODULES.map(label=>({id:label,label})) } : undefined}
       onSelectModule={id === 'finance' ? selectFinanceModule : undefined}>
       {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore controller={staticControllers.store} settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
@@ -337,7 +278,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
         }} installed={installed} updates={updates} job={job} message={storeMessage} start={startStoreJob} cancel={()=>{queue.current=[];setJob(null);setStoreMessage('Cancelled. You can try again.');}} open={openStoreApp} updateAll={()=>{if(job)return;const [first,...rest]=updates;queue.current=rest;if(first)startStoreJob(first,true);}}/> : id === 'lab' ? <LabApp controller={controllers.lab}/> : id === 'staff' ? <StaffApp controller={controllers.staff}/> : id === 'finance' ? <FinanceApp selectedModule={financeModule}/> : <div className="coming-soon-body" data-app-focus tabIndex={-1}><img src={dockArtwork(id)} alt=""/><h2>{windowSpec(id).title}</h2><p>Coming soon</p></div>}
     </ManagedWindowFrame>)}
     </div>
-    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock || !!pickerPrompt} aria-label="Application dock">
+    <nav className={`dock-region ${showDock ? 'chrome-shown' : 'chrome-hidden'}`} style={{ '--dock-hide-distance': `${180 * dockScale}px` } as CSSProperties} inert={!showDock} aria-label="Application dock">
       <div className="dock-hit-zone" style={{ left: dock.layout.left - DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, width: dock.layout.width + DOCK.pad * dockScale * 2, height: DOCK.bottom * dockScale + dockHeight }}/>
       <div className="dock-pill" style={{ left: dock.layout.left - DOCK.pad * dockScale, width: dock.layout.width + 2 * DOCK.pad * dockScale, top: size.height - DOCK.bottom - dockHeight, height: dockHeight }}/>
       {dock.layout.items.map(item => {
@@ -349,7 +290,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
           const dockLabel = icons.find(icon => icon.id === previewApp)?.label ?? titleByWindow[previewApp] ?? previewApp;
           const title = state.windows[previewApp]?.title ?? dockLabel;
           return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
-            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'files' ? <img className="preview-artwork" src={dockArtwork('files')} alt=""/> : previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{dockLabel}</span>
+            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{dockLabel}</span>
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
@@ -365,7 +306,6 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       <div className="statusbar-reveal-edge" onPointerEnter={() => setStatusbarRevealed(true)} aria-hidden="true"/>
       <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)} aria-hidden="true"/>
     </>}
-    {state.overview && !pickerPrompt && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
-    {pickerPrompt && <FilesPickerModal key={pickerPrompt.requestId} prompt={pickerPrompt} onReply={respondPicker}/> }
+    {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
   </main>;
 }

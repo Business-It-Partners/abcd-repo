@@ -15,6 +15,9 @@ try{
  const display=await app.evaluate(({screen})=>screen.getPrimaryDisplay().bounds);await page.waitForFunction(b=>innerWidth===b.width&&innerHeight===b.height,display);
  await installDemoApps(page);
  await page.waitForFunction(()=>[...document.querySelectorAll('.dock-artwork')].every(e=>e.complete&&e.naturalWidth>0));
+ check('V1 omits the in-house Files Explorer, Image Viewer, and shell file-transfer surface',await page.evaluate(()=>
+  !document.querySelector('[data-dock-app="files"]')&&!document.querySelector('[data-window-id="files"]')
+  &&!document.querySelector('[data-window-id="image-viewer"]')&&!('files' in window.desktop)));
  check('All ten dental app launchers use loaded, distinct raster artwork',await page.locator('.dock-artwork[src*=".png"]').evaluateAll(images=>images.length===10&&new Set(images.map(i=>i.src)).size===10&&images.every(i=>i.src.includes('.png'))));
  check('Normal dock excludes prototype demos',await page.getByRole('button',{name:'Motion Studio',exact:true}).count()===0&&await page.getByRole('button',{name:'Records',exact:true}).count()===0);
  check('Removed nonfunctional Playground and Settings placeholders',await page.getByRole('button',{name:/visual placeholder/}).count()===0);

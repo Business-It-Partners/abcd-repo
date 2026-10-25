@@ -34,7 +34,7 @@ function fixture() {
     }),
     cancel: vi.fn<AppSdk['cancel']>(async () => ({ ok: true, value: { cancelledLocally: true } })),
     getAppInfo: vi.fn<AppSdk['getAppInfo']>(async () => ({ ok: true, value: { appId: 'company.dental.followups', title: 'Follow-ups', description: '', iconDataUrl: '', modules: [] } })),
-    openAppExplorer: vi.fn<AppSdk['openAppExplorer']>(async () => ({ ok: true, value: {} })), onModuleSelected: () => () => {}, onFilesReceived: () => () => {},
+    openAppExplorer: vi.fn<AppSdk['openAppExplorer']>(async () => ({ ok: true, value: {} })), onModuleSelected: () => () => {},
     navigation: { report: vi.fn(), onRequest: () => () => {} }, report: vi.fn(),
   };
   const client = new ClinicClient(bridge, lost);

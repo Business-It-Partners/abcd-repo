@@ -92,4 +92,34 @@ describe('SDK 1.6 app page history', () => {
     expect(host.report.mock.lastCall?.[0].entries).not.toContain(reviewEntry);
     history.dispose();
   });
+
+  it('preserves a draft only when Back stays inside the same case', () => {
+    const host = bridge();
+    const history = new AppHistory<{ caseId?: string; step: number }>(
+      host.value,
+      { step: 0 },
+      () => false,
+      (current, previous) => Boolean(current.caseId && current.caseId === previous?.caseId),
+    );
+    history.push({ caseId: 'case-a', step: 1 });
+    history.push({ caseId: 'case-a', step: 2 });
+    expect(host.report.mock.lastCall?.[0].backPreservesDraft).toBe(true);
+    const stepOne = host.report.mock.lastCall?.[0].entries[1];
+    const stepTwo = host.report.mock.lastCall?.[0].entries[2];
+    host.request('back', stepOne!, true);
+    expect(history.current()).toEqual({ caseId: 'case-a', step: 1 });
+    expect(host.report.mock.lastCall?.[0].backPreservesDraft).toBeUndefined();
+    host.request('back', host.report.mock.lastCall?.[0].entries[0], true);
+    expect(history.current()).toEqual({ caseId: 'case-a', step: 1 });
+    expect(host.report.mock.lastCall?.[0].entries[2]).toBe(stepTwo);
+    history.dispose();
+  });
+
+  it('ignores unknown navigation IDs safely', () => {
+    const host = bridge();
+    const history = new AppHistory(host.value, 'list');
+    expect(() => host.request('back', 'not-a-page-id')).not.toThrow();
+    expect(history.current()).toBe('list');
+    history.dispose();
+  });
 });

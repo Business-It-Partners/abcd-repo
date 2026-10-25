@@ -38,6 +38,8 @@ Compatible feature changes should ship as app-only releases. New platform powers
 
 The exact manifest/capability rules belong to the [package contract](23_V1_PACKAGE_FORMAT.md), and request enforcement belongs to the [SDK/broker contract](11_V1_SDK_AND_API_BROKER.md). This consolidation does not add a route-list manifest field or approve remotely delivered API-route permissions. Current app-specific route-policy coupling needs an explicit design review against the independence promise; any revised mechanism requires its own decision and evidence.
 
+V1 file access uses the host operating system's native file chooser, invoked by a dental app's native file input or an individually authorized SDK request. Dental OS does not provide an in-house Files browser, image viewer, or shell-mediated file sending between apps. An app may accept drag-and-drop inside its own file drop zone; the operating system and that app own the interaction.
+
 ## V1 app-update experience
 
 Store Update downloads and verifies a separate candidate without closing, reloading or changing the running app. The Store reports Update ready — applies next time you open this app. After the user normally closes that app, its next full launch trials the candidate; a bounded startup-health check acknowledges success or recovers to an eligible known-good version. Focusing, minimizing or restoring an existing window is not a full launch. No automatic relaunch or live code injection is required.

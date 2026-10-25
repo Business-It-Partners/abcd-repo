@@ -8,7 +8,6 @@ export const dockWindowGap = 12;
 export const statusBarHeightForWidth = (width: number) => width <= 760 ? 65 : 34;
 const comingSoon = (title: string) => ({ title, preferred: { width: 760, height: 480 }, minimum: { width: 480, height: 300 } });
 export const WINDOW_SPECS = {
-  files: { title: 'Files', preferred: { width: 1040, height: 630 }, minimum: { width: 590, height: 390 } },
   'standard-window-1': { title: 'Standard Window 1', preferred: { width: 1080, height: 680 }, minimum: { width: 600, height: 400 } },
   store: { title: 'App Store', preferred: { width: 1060, height: 660 }, minimum: { width: 560, height: 400 } },
   studio: { title: 'Motion Studio', preferred: { width: 760, height: 480 }, minimum: { width: 540, height: 340 } },
@@ -46,7 +45,6 @@ const tableContentWidths: Readonly<Record<string, number>> = {
 };
 export function defaultTableContentWidth(appId: string): number | undefined { return tableContentWidths[appId]; }
 export function windowSpec(id: WindowId): WindowSpec {
-  if(id==='image-viewer')return {title:'Image Viewer',preferred:{width:800,height:570},minimum:{width:420,height:300}};
   return Object.hasOwn(WINDOW_SPECS, id) ? WINDOW_SPECS[id as keyof typeof WINDOW_SPECS] : companyAppSpec;
 }
 
@@ -108,12 +106,6 @@ export function initialBounds(id: WindowId, size: Size): Rect {
   const spec = windowSpec(id), area = workArea(size);
   if (id === 'records' || id === 'followups') return { ...area };
   const width = Math.min(spec.preferred.width, area.width);
-  // The private image viewer floats over Files rather than covering the whole
-  // work area; shared maximize/resize still use the normal window geometry.
-  if(id==='image-viewer'){
-    const height=Math.min(spec.preferred.height,area.height);
-    return fitBounds({x:area.x+(area.width-width)/2,y:area.y+(area.height-height)/2,width,height},size,spec.minimum);
-  }
   return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y, width, height: area.height }, size, spec.minimum);
 }
 

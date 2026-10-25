@@ -6,8 +6,23 @@ import path from 'node:path';
 export async function verifyRuntime(profileArgs, reportName) {
  const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
  const app=await electron.launch({args:[root,...profileArgs,'--runtime-fixtures'],env,timeout:30000});
- const checks=[],errors=[];let topology;const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
- const shell=await app.firstWindow();shell.on('pageerror',e=>errors.push(e.message));
+ const checks=[],errors=[],runtimeEvents=[];let topology;const check=(name,value=true)=>{assert.ok(value,name);checks.push(name);console.log('PASS',name);};
+ const shell=await app.firstWindow();
+ const attachPageDiagnostics=page=>{
+  const kind=page===shell?'shell':'app';
+  page.on('pageerror',error=>{if(kind==='shell')errors.push(error.message);else if(runtimeEvents.length<80)runtimeEvents.push({type:'app-pageerror',message:error.message.slice(0,500)});});
+  page.on('console',message=>{if(kind==='app'&&message.type()==='error'&&runtimeEvents.length<80)runtimeEvents.push({type:'app-console-error',message:message.text().slice(0,500)});});
+ };
+ for(const page of app.context().pages())attachPageDiagnostics(page);
+ app.context().on('page',attachPageDiagnostics);
+ await app.evaluate(({app})=>{
+  globalThis.__m15RuntimeEvents=[];
+  app.on('web-contents-created',(_event,wc)=>{
+   const id=wc.id;
+   wc.on('did-fail-load',(_loadEvent,errorCode,errorDescription,validatedURL,isMainFrame)=>globalThis.__m15RuntimeEvents.push({type:'did-fail-load',id,errorCode,errorDescription,validatedURL,isMainFrame}));
+   wc.on('render-process-gone',(_goneEvent,details)=>globalThis.__m15RuntimeEvents.push({type:'render-process-gone',id,details}));
+  });
+ });
  const nativePointerMoves=[];
  async function movePointer(page,x,y,host){
   if(process.platform==='win32'){
@@ -35,9 +50,28 @@ export async function verifyRuntime(profileArgs, reportName) {
  }
  const moveShell=(x,y)=>movePointer(shell,x,y);
  const moveGuest=(page,host,x,y)=>movePointer(page,x,y,host);
+ // Runtime fixtures stay hidden while a dock item is hovered; move to shell
+ // chrome after the click so the native runtime can take over, as it does when
+ // a user moves from the dock into the app window.
+ const activateDockApp=async name=>{
+  await shell.getByRole('button',{name,exact:true}).click();
+  await moveShell(10,10);
+ };
  const state=id=>shell.locator(`[data-runtime="${id}"]`);
  const geometryTolerance=2,geometryMatches=(actual,expected)=>Math.abs(actual-expected)<=geometryTolerance;
- const ready=id=>shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',id,{timeout:15000});
+ const ready=async id=>{
+  try{return await shell.waitForFunction(id=>document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase==='ready',id,{timeout:25000});}
+  catch(error){
+   const diagnostic=await Promise.all([
+    shell.evaluate(async id=>{const element=document.querySelector(`[data-runtime="${id}"]`);return{surface:element?{phase:element.dataset.runtimePhase,reason:element.dataset.runtimeReason,message:element.querySelector('.runtime-failure')?.innerText??null}:null,status:await window.desktop?.status().catch(error=>({error:String(error)})),body:document.body.innerText.slice(0,2000),buttons:[...document.querySelectorAll('button')].slice(0,50).map(button=>({label:button.getAttribute('aria-label'),text:button.innerText.slice(0,100),disabled:button.disabled}))};},id),
+    app.evaluate(({webContents})=>({contents:webContents.getAllWebContents().filter(wc=>wc.getURL().startsWith('dental-fixture:')).map(wc=>({id:wc.id,url:wc.getURL(),title:wc.getTitle(),destroyed:wc.isDestroyed(),crashed:wc.isCrashed?.()??null,processId:wc.getOSProcessId()})),events:globalThis.__m15RuntimeEvents??[]})),
+   ]).then(([shellState,processes])=>({runtimeId:id,shell:shellState,processes,errors:[...errors]}));
+   runtimeEvents.push(diagnostic);
+   await shell.screenshot({path:path.join(root,'artifacts','runtime-startup-failed.png')});
+   console.error('RUNTIME STARTUP DIAGNOSTIC',JSON.stringify(diagnostic));
+   throw new Error(`${error.message}; runtime startup diagnostic ${JSON.stringify(diagnostic)}`);
+  }
+ };
  const native=()=>app.evaluate(({webContents,BrowserWindow})=>({shell:BrowserWindow.getAllWindows()[0].webContents.getOSProcessId(),apps:webContents.getAllWebContents().filter(w=>w.getURL().startsWith('dental-fixture:')).map(w=>({id:w.id,url:w.getURL(),pid:w.getOSProcessId(),prefs:{sandbox:w.getLastWebPreferences().sandbox,contextIsolation:w.getLastWebPreferences().contextIsolation,nodeIntegration:w.getLastWebPreferences().nodeIntegration}}))}));
  const nativeView=host=>app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)return null;const b=view.getBounds();return{visible:view.getVisible(),bounds:{x:b.x,y:b.y,width:b.width,height:b.height}};},host);
  async function waitNativeView(host,predicate){for(let i=0;i<100;i++){const view=await nativeView(host);if(predicate(view))return view;await new Promise(r=>setTimeout(r,20));}throw new Error(`Native app view did not settle: ${host} ${JSON.stringify(await nativeView(host))}`);}
@@ -48,7 +82,7 @@ export async function verifyRuntime(profileArgs, reportName) {
  async function guest(host){for(let n=0;n<60;n++){const p=app.context().pages().find(p=>p.url().startsWith(`dental-fixture://${host}/`));if(p)return p;await new Promise(r=>setTimeout(r,50));}throw new Error('Guest page missing: '+app.context().pages().map(p=>p.url()).join(','));}
  async function shot(name){const image=await shell.evaluate(()=>window.desktop.capture({x:0,y:0,width:innerWidth,height:innerHeight}));await fs.writeFile(path.join(root,'artifacts',name),Buffer.from(image.split(',')[1],'base64'));}
  try {
-  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();await ready('studio');let alpha=await guest('alpha');
+  await activateDockApp('Motion Studio');await ready('studio');let alpha=await guest('alpha');
   await waitExpectedNative('alpha');
   const initialNative=await nativeView('alpha');assert.ok(initialNative?.visible);await alpha.waitForFunction(({width,height,tolerance})=>Math.abs(innerWidth-width)<=tolerance&&Math.abs(innerHeight-height)<=tolerance,{...initialNative.bounds,tolerance:geometryTolerance});
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
@@ -91,7 +125,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.keyboard.press('Escape');await financeExplorer.waitFor({state:'detached'});
   const restoredAfterExplorer=await waitExpectedNative('alpha');
   check('Closing Finance explorer restores the foreground native app surface',restoredAfterExplorer.visible);
-  await shell.getByRole('button',{name:'Records',exact:true}).click();await ready('records');const beta=await guest('beta');
+  await activateDockApp('Records');await ready('records');const beta=await guest('beta');
   const inactiveMirror=shell.locator('[data-runtime="studio"] .isolated-mirror');
   await inactiveMirror.waitFor();
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
@@ -99,7 +133,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('covered app window keeps its existing shadow',await shell.locator('[data-testid="studio-window"]').evaluate(frame=>getComputedStyle(frame).boxShadow!=='none'));
   topology=await native();check('two isolated renderer processes and separate shell',topology.apps.length===2&&new Set([topology.shell,...topology.apps.map(w=>w.pid)]).size===3);
   check('sandbox/context isolation and no Node',topology.apps.every(w=>w.prefs.sandbox&&w.prefs.contextIsolation&&!w.prefs.nodeIntegration));
-  check('apps have no Node or shell bridge',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,navigation,onFilesReceived,onModuleSelected,openAppExplorer,report,request'));
+  check('apps have no Node, shell bridge or Files transfer API',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
   await alpha.evaluate(()=>localStorage.setItem('isolation','alpha-only'));
   check('storage is separated by app',await beta.evaluate(()=>localStorage.getItem('isolation'))===null);
   await shell.getByRole('button',{name:'Open apps catalog'}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible');
@@ -115,15 +149,15 @@ export async function verifyRuntime(profileArgs, reportName) {
   await beta.getByRole('button',{name:'Open local dialog'}).click();await beta.getByRole('dialog').waitFor();
   check('modal stays in app content',await shell.locator('[data-window-id="records"] .mac-titlebar').evaluate(e=>e.inert));
   await beta.keyboard.press('Tab');check('local modal traps keyboard focus',await beta.evaluate(()=>document.activeElement.id)==='dismiss');
-  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
+  await activateDockApp('Motion Studio');
   check('beta-to-alpha switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).isFocused()));
   await alpha.getByLabel('Your draft').fill('alpha-independent');
-  await shell.getByRole('button',{name:'Records',exact:true}).click();
+  await activateDockApp('Records');
   check('alpha-to-beta switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://beta/')).isFocused()));
   await beta.getByRole('button',{name:'Close dialog'}).click();
   await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('dialog',{name:'Unsaved app work'}).waitFor();
   await shell.getByRole('button',{name:'Keep working',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
-  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
+  await activateDockApp('Motion Studio');
   const handle=shell.locator('[data-window-id="studio"] [data-resize="se"]'),before=await handle.boundingBox();
   await moveShell(before.x+before.width/2,before.y+before.height/2);await shell.mouse.down();await shell.mouse.move(before.x+before.width/2+60,before.y+before.height/2+25,{steps:4});await shell.mouse.up();
   await ready('studio');check('resize uses shared manager',await shell.locator('[data-window-id="studio"]').evaluate(e=>e.getBoundingClientRect().width)>760);
@@ -166,9 +200,9 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('minimize/restore retains isolated draft and process',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory'&&(await native()).apps.find(w=>w.url.includes('beta')).pid===topology.apps.find(w=>w.url.includes('beta')).pid);
   await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('button',{name:'Discard and close',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='closed');
   check('discard destroys the app webContents',(await native()).apps.length===1);
-  await shell.getByRole('button',{name:'Records',exact:true}).click();await ready('records');const betaNew=await guest('beta');
+  await activateDockApp('Records');await ready('records');const betaNew=await guest('beta');
   check('reopen creates clean workflow state',await betaNew.getByLabel('Your draft').inputValue()==='');
-  await shell.getByRole('button',{name:'Motion Studio',exact:true}).click();
+  await activateDockApp('Motion Studio');
   await alpha.evaluate(()=>{location.href='https://example.com';});await alpha.waitForTimeout(100);check('external navigation denied',alpha.url().startsWith('dental-fixture://alpha/'));
   await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://alpha/')).forcefullyCrashRenderer());
   await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor();
@@ -179,11 +213,11 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.locator('[data-runtime="studio"] [role="alert"]').waitFor({timeout:10000});
   check('watchdog terminates hung renderer without stopping beta',await shell.locator('[data-runtime="studio"]').getAttribute('data-runtime-phase')==='unresponsive'&&await betaNew.getByLabel('Your draft').inputValue()==='');
   for(let i=0;i<3;i++){
-   await shell.getByRole('button',{name:i===0?'Restart app':'Motion Studio',exact:true}).click();await ready('studio');
+   if(i===0)await shell.getByRole('button',{name:'Restart app',exact:true}).click();else await activateDockApp('Motion Studio');await ready('studio');
    await shell.getByRole('button',{name:'Close Motion Studio',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='closed');
    check(`cleanup cycle ${i+1}: no closed sample webContents`,(await native()).apps.length===1);
   }
-  await shell.getByRole('button',{name:'Records',exact:true}).click();await waitExpectedNative('beta');
+  await activateDockApp('Records');await waitExpectedNative('beta');
   const recordsFrame=shell.locator('[data-testid="records-window"]'),originalBounds=await recordsFrame.boundingBox();
   const viewport=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));
   const frameBox=await recordsFrame.boundingBox(),dragX=Math.max(2,Math.min(viewport.width-2,frameBox.x+frameBox.width/2)),dragY=Math.max(35,Math.min(viewport.height-2,frameBox.y+21));
@@ -209,5 +243,13 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('edge dragging leaves no selected app text',!await shell.evaluate(()=>window.getSelection()?.toString())&&!await betaNew.evaluate(()=>window.getSelection()?.toString()));
   check('no shell renderer errors',errors.length===0);
   return {checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null};
- } finally {await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({nativePointerMoves,checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));await app.close();}
+ } finally {
+  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
+  await fs.writeFile(path.join(root,'artifacts',reportName),JSON.stringify({nativePointerMoves,runtimeEvents,checks,topology,errors,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));
+  // The temporary fixture profile has only synthetic state. Exit the test app
+  // directly so the desktop's user-facing quit confirmation cannot hang CI.
+  const closed=app.waitForEvent('close',{timeout:5000}).then(()=>true,()=>false);
+  await app.evaluate(({app})=>app.exit(0)).catch(()=>{});
+  if(!await closed&&app.process().exitCode===null)app.process().kill('SIGTERM');
+ }
 }

@@ -13,7 +13,7 @@ export type ManagedWindow = {
 export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean };
 export function createDesktop(size: Size): DesktopState {
   const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } });
-  return { size, windows: Object.fromEntries([...WINDOW_IDS, 'image-viewer'].map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false };
+  return { size, windows: Object.fromEntries(WINDOW_IDS.map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false };
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
   return [...state.order].reverse().find(id => state.windows[id].phase === 'visible');

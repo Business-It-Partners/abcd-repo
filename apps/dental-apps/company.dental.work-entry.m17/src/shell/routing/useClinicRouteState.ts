@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { AppHistory } from '../../../../../../packages/app-sdk/src/appHistory';
+import { clinicClient } from '@/sdk/client';
 import {
   clinicTabForArea,
   parseClinicRoute,
@@ -20,24 +22,42 @@ function href(route: ClinicRouteState) {
   return `${window.location.pathname}?${serializeClinicRoute(route).toString()}`;
 }
 
-/** App-local route state; it owns no cross-app navigation or business data. */
-export function useClinicRouteState() {
-  const [search, setSearch] = useState(() => window.location.search);
-  useEffect(() => {
-    const onPopState = () => setSearch(window.location.search);
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+function routeFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('tab')) params.set('tab', 'work-entry');
+  return parseClinicRoute(params);
+}
 
-  const route = useMemo(() => {
-    const params = new URLSearchParams(search);
-    if (!params.has('tab')) params.set('tab', 'work-entry');
-    return parseClinicRoute(params);
-  }, [search]);
+/** App routes stay private while opaque page IDs connect them to the OS Back button. */
+export function useClinicRouteState() {
+  const [initialRoute] = useState(routeFromLocation);
+  const [route, setRoute] = useState(initialRoute);
+  const history = useRef<AppHistory<ClinicRouteState> | null>(null);
+
+  useEffect(() => {
+    const pages = clinicClient().createHistory(
+      initialRoute,
+      undefined,
+      (current, previous) => Boolean(current.params.caseId && current.params.caseId === previous?.params.caseId),
+    );
+    history.current = pages;
+    const unsubscribe = pages.subscribe(next => {
+      const nextUrl = href(next);
+      if (`${window.location.pathname}${window.location.search}` !== nextUrl) window.history.replaceState({}, '', nextUrl);
+      setRoute(next);
+    });
+    return () => {
+      unsubscribe();
+      pages.dispose();
+      if (history.current === pages) history.current = null;
+    };
+  }, [initialRoute]);
 
   const commit = useCallback((next: ClinicRouteState, mode: NavigationMode) => {
-    window.history[mode === 'push' ? 'pushState' : 'replaceState']({}, '', href(next));
-    setSearch(window.location.search);
+    const pages = history.current;
+    if (!pages) return;
+    if (mode === 'push') pages.push(next);
+    else pages.replace(next);
   }, []);
   const navigate = useCallback((tab: ClinicTab, params?: ClinicRouteParams, mode: NavigationMode = 'push') => {
     commit(routeForTab(tab, params), mode);

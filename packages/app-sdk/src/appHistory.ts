@@ -17,15 +17,16 @@ export class AppHistory<T> {
     private readonly bridge: Pick<AppSdk, 'navigation'>,
     initialPage: T,
     private readonly canNavigate: () => boolean = () => true,
-    private readonly backPreservesDraft: (page: T) => boolean = () => false,
+    private readonly backPreservesDraft: (page: T, previousPage?: T) => boolean = () => false,
   ) {
     this.entries = [{ id: crypto.randomUUID(), page: initialPage }];
     this.unsubscribe = bridge.navigation.onRequest(request => {
       const target = this.entries.findIndex(entry => entry.id === request.entry);
+      if (target < 0 || target === this.index) return;
       const discard = request.discard === true;
       const preserveDraft = request.preserveDraft === true && request.direction === 'back' &&
-        this.backPreservesDraft(this.entries[this.index].page);
-      if (target < 0 || target === this.index || !discard && !preserveDraft && !this.canNavigate()) return;
+        this.backPreservesDraft(this.entries[this.index].page, this.entries[target].page);
+      if (!discard && !preserveDraft && !this.canNavigate()) return;
       if (request.direction === 'back' && target >= this.index) return;
       if (request.direction === 'forward' && target <= this.index) return;
       this.index = target;
@@ -81,10 +82,12 @@ export class AppHistory<T> {
   }
 
   private snapshot(): AppNavigationSnapshot {
+    const page = this.entries[this.index].page;
+    const previousPage = this.index > 0 ? this.entries[this.index - 1].page : undefined;
     return {
       entries: this.entries.map(entry => entry.id),
       index: this.index,
-      ...(this.backPreservesDraft(this.entries[this.index].page) ? { backPreservesDraft: true as const } : {}),
+      ...(this.backPreservesDraft(page, previousPage) ? { backPreservesDraft: true as const } : {}),
     };
   }
 

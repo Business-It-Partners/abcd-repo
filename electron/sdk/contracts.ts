@@ -38,8 +38,6 @@ export type AppSdk = {
   getAppInfo(): Promise<Result<RuntimeAppInfo>>;
   openAppExplorer(): Promise<Result>;
   onModuleSelected(listener: (value: { moduleId: string }) => void): () => void;
-  /** Local Files metadata delivered by the trusted OS, never file bytes or paths. */
-  onFilesReceived(listener: (selection: import('../host/localFiles').FileSelection) => void): () => void;
   navigation: {
     report(input: AppNavigationSnapshot): void;
     onRequest(listener: (value: AppNavigationRequest) => void): () => void;

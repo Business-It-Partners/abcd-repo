@@ -10,6 +10,8 @@ The complete former Flutter/Rust project is archived in `refrence/`. Its pharmac
 
 Preserve the shared window lifecycle, app-scoped dialogs, single-session continuity, stable motion fallback, and softer readable visual design. App records are currently synthetic and memory-only. Do not imply production data persistence, finance integration, authentication, or backend services that have not been implemented.
 
+**V1 device files:** use the host operating system's native file chooser for app file selection. Do not ship an in-house Files browser, shell image viewer, or cross-app file-send flow. Apps may use native file inputs, an individually authorized SDK picker, and their own in-app drag/drop targets.
+
 The active work contract and prototype acceptance history remain in WORK_CHECKLIST.md. The production architecture and milestone records below govern new platform scope. See DEVELOPMENT.md and HOW_TO_RUN.md for current commands. No mobile support, deployment, or production migration is implied by this folder relocation.
 
 ## Dental OS production contract — 2026-10-15

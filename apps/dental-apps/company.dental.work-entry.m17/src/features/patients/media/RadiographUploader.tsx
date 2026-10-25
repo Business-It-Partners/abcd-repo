@@ -205,10 +205,35 @@ export default function RadiographUploader({
     event.target.value = '';
   };
 
-  const onDrop = (event: DragEvent<HTMLElement>) => {
+  const hasDraggedFiles = (transfer: DataTransfer) => transfer.types.includes('Files')
+    || Array.from(transfer.items).some(item => item.kind === 'file');
+
+  const onDrop = (event: DragEvent<HTMLButtonElement>) => {
+    if (!hasDraggedFiles(event.dataTransfer)) return;
     event.preventDefault();
+    event.stopPropagation();
     setDragOver(false);
-    void ingestFiles(Array.from(event.dataTransfer.files));
+    const items = Array.from(event.dataTransfer.items)
+      .filter(item => item.kind === 'file')
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null);
+    void ingestFiles(items.length ? items : Array.from(event.dataTransfer.files));
+  };
+
+  const onDragOver = (event: DragEvent<HTMLButtonElement>) => {
+    if (!hasDraggedFiles(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const accepted = canUpload && busyUploads === 0;
+    event.dataTransfer.dropEffect = accepted ? 'copy' : 'none';
+    setDragOver(accepted);
+  };
+
+  const onDragLeave = (event: DragEvent<HTMLButtonElement>) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOver(false);
   };
 
   const removeDraft = (draft: XrayDraft) => {
@@ -257,10 +282,9 @@ export default function RadiographUploader({
           </article>
         ))}
 
-        <button type="button" className={`${styles.addImage} ${dragOver ? styles.dragOver : ''}`} disabled={!canUpload || busyUploads > 0}
+        <button type="button" data-testid="radiograph-dropzone" className={`${styles.addImage} ${dragOver ? styles.dragOver : ''}`} disabled={!canUpload || busyUploads > 0}
         onClick={() => canUpload && !busyUploads && inputRef.current?.click()}
-        onDragOver={event => { event.preventDefault(); if (canUpload && !busyUploads) setDragOver(true); }}
-        onDragLeave={event => { event.preventDefault(); setDragOver(false); }} onDrop={onDrop}
+        onDragEnter={onDragOver} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
         aria-label={!canUpload ? 'Select a patient before adding images' : 'Add Image. Drop or browse'}>
           <span className={styles.uploadIcon}>{busyUploads ? <Loader2 size={17} aria-label="Upload in progress" /> : <Upload size={17} aria-hidden="true" />}</span>
           <strong className={styles.addTitle}>{!patientId ? 'Select a patient' : busyUploads ? 'Uploading…' : 'Add Image'}</strong>

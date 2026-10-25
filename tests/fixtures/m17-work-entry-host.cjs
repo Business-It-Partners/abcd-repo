@@ -24,7 +24,7 @@ const stageId = '44444444-4444-4444-8444-444444444444';
 const patientProtocolId = '55555555-5555-4555-8555-555555555555';
 const staffId = '66666666-6666-4666-8666-666666666666';
 const mediaAssetId = '88888888-8888-4888-8888-888888888888';
-const mediaAssetIds = [mediaAssetId, '99999999-9999-4999-8999-999999999999', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'];
+const mediaAssetIds = [mediaAssetId, '99999999-9999-4999-8999-999999999999', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'];
 const mediaAssets = new Map();
 let nextMediaAssetIndex = 0;
 const calls = [];
@@ -149,9 +149,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('runtime:app-info', event => runtime.appInfo(event));
   ipcMain.handle('runtime:open-explorer', event => runtime.openExplorer(event));
   ipcMain.on('runtime:report', (event, value) => runtime.report(event, value));
+  ipcMain.on('runtime:navigation-report', (event, value) => runtime.navigationReport(event, value));
   ipcMain.on('runtime:module-selection-ack', (event, value) => { moduleAcks.push(value); runtime.acknowledgeModule(event, value); });
   global.m17WorkEntry = {
     calls, effects: () => effects, caseValue,
+    navigate: (direction, discardDirty = false, preserveDraft = false) => runtime.navigate(appId, direction, discardDirty, preserveDraft),
+    navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
     module: async () => { moduleSelectionResult = await runtime.selectModule(appId, 'work-entry'); return moduleSelectionResult; },
     moduleAcks, moduleSelectionResult: () => moduleSelectionResult,
     package: { appId, version: manifest.version, packageSha256: digest, payloadDigest: pkg.release.digest, wireBytes: bytes.length, assetCount: pkg.files.size },

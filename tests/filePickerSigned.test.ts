@@ -7,7 +7,7 @@ import type { PackageRegistry } from '../electron/packages/registry';
 
 const directories:string[]=[];
 afterEach(()=>{for(const directory of directories.splice(0))rmSync(directory,{recursive:true,force:true});});
-describe('M16 signed isolated company file-picker fixture',()=>{
+describe('signed isolated company native device-picker fixture',()=>{
   it('verifies installed signed dental release against separate signed local capability policy',()=>{
     const root=mkdtempSync(path.join(tmpdir(),'m16-signed-test-'));directories.push(root);
     const fixtures=path.join(process.cwd(),'fixtures','packages');

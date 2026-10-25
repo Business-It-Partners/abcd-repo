@@ -1,4 +1,4 @@
-import { profileArgs } from './profile.mjs';
+import { profile, profileArgs } from './profile.mjs';
 import { assertStandardPageScroll } from './standard-page-scroll-test.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
@@ -35,7 +35,9 @@ const inspect = target => target.evaluate(() => ({
 try {
   const expectedAppVersion = JSON.parse(await fs.readFile(path.join(root, 'apps/dental-apps/company.dental.work-entry.m17/app.manifest.json'), 'utf8')).version;
   app = await electron.launch({ args: [hostApp, ...profileArgs], env, timeout: 30000 });
+  await app.firstWindow();
   app.process().stderr?.on('data', chunk => hostLogs.push(String(chunk)));
+  check('private UI host uses its isolated temporary app profile', await app.evaluate(({ app }) => app.getPath('userData')) === profile);
   page = await waitForGuest(app); page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'Work Entry', exact: true }).waitFor();
   await assertStandardPageScroll(page, check, 'Work Entry');
@@ -85,6 +87,24 @@ try {
       && tab.querySelector('span')?.textContent?.trim()
       && tab.textContent?.trim());
   }));
+  const routeStep = await page.evaluate(() => new URLSearchParams(location.search).get('workTab'));
+  let hostNavigation;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    hostNavigation = await app.evaluate(() => globalThis.m17WorkEntry.navigation());
+    if (hostNavigation && hostNavigation.index > 0) break;
+    await page.waitForTimeout(50);
+  }
+  check('the active Work Entry step is reflected in its app-owned history', routeStep === 'imaging');
+  check('the OS receives the Work Entry navigation stack for its Back control',
+    Boolean(hostNavigation && hostNavigation.index > 0 && hostNavigation.entries.length > 1));
+  check('the OS Back request is accepted for the active Work Entry route',
+    await app.evaluate(() => globalThis.m17WorkEntry.navigate('back', false, true)));
+  await page.locator('[data-work-entry-step][aria-current="step"]').filter({ hasText: 'Patient & case' }).waitFor();
+  check('OS Back returns to the previous Work Entry step while retaining the open case',
+    await page.getByText('Synthetic Work Entry Patient', { exact: true }).count() > 0
+      && await page.evaluate(() => new URLSearchParams(location.search).get('workTab')) === 'patient');
+  await page.getByRole('button', { name: /Imaging, Rx & Lab/ }).click();
+  await page.locator('[data-work-entry-step][aria-current="step"]').filter({ hasText: 'Imaging, Rx & Lab' }).waitFor();
   check('the removed Lab requirement panel is absent from this step', await page.getByText('Lab requirement', { exact: true }).count() === 0);
   check('Radiographs and Prescription occupy the same row', await page.locator('[data-work-entry-imaging-layout]').evaluate(layout => {
     const xray = layout.querySelector('[data-work-entry-radiographs]').getBoundingClientRect();
@@ -117,7 +137,11 @@ try {
   const imageBytes = Buffer.from(imageBase64, 'base64');
   const radiograph = 'm17-work-entry-radiograph-1.png';
   const radiographs = [radiograph, 'm17-work-entry-radiograph-2.png', 'm17-work-entry-radiograph-3.png'];
-  await page.locator('[aria-label="Radiographs"] input[type="file"]').setInputFiles(radiographs.map(name => ({ name, mimeType: 'image/png', buffer: imageBytes })));
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.locator('[data-testid="radiograph-dropzone"]').click();
+  const fileChooser = await fileChooserPromise;
+  check('Add Image opens the device file chooser and accepts multiple radiographs', fileChooser.isMultiple());
+  await fileChooser.setFiles(radiographs.map(name => ({ name, mimeType: 'image/png', buffer: imageBytes })));
   await page.getByRole('button', { name: `Preview ${radiographs[2]}` }).waitFor();
   check('the radiograph gallery lays out three image cards before its Add Image tile', await page.locator('[aria-label="Radiographs"] article').count() === 3);
   await fs.writeFile(pickedImageScreenshotPath, await page.screenshot(), { flag: 'wx' });
@@ -128,6 +152,32 @@ try {
     uploadCalls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/upload-intents')
       && uploadCalls.some(call => call.method === 'PUT' && call.path === '/v1/patient-media/88888888-8888-4888-8888-888888888888/content')
       && uploadCalls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/88888888-8888-4888-8888-888888888888/finalise'));
+  const droppedName = 'm17-work-entry-dropped-radiograph.png';
+  const dropEvents = await page.locator('[data-testid="radiograph-dropzone"]').evaluate((zone, { name, base64 }) => {
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    const data = new DataTransfer();
+    data.items.add(new File([bytes], name, { type: 'image/png' }));
+    zone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: data }));
+    const over = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data });
+    zone.dispatchEvent(over);
+    const drop = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data });
+    zone.dispatchEvent(drop);
+    return { overPrevented: over.defaultPrevented, dropPrevented: drop.defaultPrevented,
+      fileCount: data.files.length, itemFileCount: Array.from(data.items).filter(item => item.kind === 'file' && item.getAsFile()).length };
+  }, { name: droppedName, base64: imageBase64 });
+  check('radiograph drop zone accepts file drags and handles the drop event',
+    dropEvents.overPrevented && dropEvents.dropPrevented && dropEvents.fileCount === 1 && dropEvents.itemFileCount === 1);
+  await page.waitForTimeout(500);
+  const afterDrop = await inspect(app);
+  const droppedPreview = await page.getByRole('button', { name: `Preview ${droppedName}` }).count();
+  console.log('PRIVATE DROP RESULT', JSON.stringify({ dropEvents, droppedPreview,
+    droppedUpload: afterDrop.calls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/upload-intents' && call.body?.displayFilename === droppedName),
+    status: await page.locator('[role="alert"]').allTextContents() }));
+  check('a dropped image follows the same authenticated upload and finalise flow',
+    droppedPreview > 0
+      && afterDrop.calls.some(call => call.method === 'POST' && call.path === '/v1/patient-media/upload-intents' && call.body?.displayFilename === droppedName)
+      && afterDrop.calls.some(call => call.method === 'POST' && call.path.endsWith('/finalise')));
   await page.getByRole('button', { name: `Remove ${radiograph}` }).click();
   await page.getByRole('button', { name: 'Remove image', exact: true }).click();
   await page.getByRole('button', { name: `Preview ${radiograph}` }).waitFor({ state: 'detached' });
