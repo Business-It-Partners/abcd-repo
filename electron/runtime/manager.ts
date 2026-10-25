@@ -12,7 +12,7 @@ import { RestartBudget } from './restartBudget';
 import { appInfo, parseDentalAppMetadata, type DentalAppInfo, type DentalAppMetadata } from '../packages/appMetadata';
 import type { EventCode, Target } from '../diagnostics/store';
 import { randomUUID } from 'node:crypto';
-import { compositePixels, isDevelopmentRuntimeId, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+import { compositePixels, isDevelopmentRuntimeId, isRuntimeId, nativeRuntimeResizeGutter, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
 import type { ResourcePressureLevel } from '../host/resourcePressure';
 import type { DevelopmentAppBuild, DevelopmentAppService } from '../developmentApps';
 const moduleSelectionAckTimeoutMs=10_000;
@@ -363,7 +363,7 @@ export class FixtureRuntime {
     const [width, height] = this.win.getContentSize();
     for (const layout of next) {
       const horizontalOverflow = Math.max(0, -layout.rect.x, layout.rect.x + layout.rect.width - width);
-      if (horizontalOverflow > layout.rect.width * .7 + 1 || layout.rect.y + layout.rect.height > height + 1) throw new Error('Outside host');
+      if (horizontalOverflow > (layout.rect.width + nativeRuntimeResizeGutter) * .7 + 1 || layout.rect.y + layout.rect.height > height + 1) throw new Error('Outside host');
     }
     const hadNativeInput = [...this.entries.values()].some(e => e.view.getVisible());
     this.desired = next;

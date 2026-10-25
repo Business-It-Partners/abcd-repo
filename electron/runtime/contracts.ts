@@ -1,4 +1,6 @@
 export const runtimeIds = ['studio', 'records'] as const;
+/** Shell resize handles stay exposed over the native app surface; keep host bounds validation aligned with the shell gutter. */
+export const nativeRuntimeResizeGutter = 7;
 /** Historical display aliases for the two original sample packages. New first-party apps use package IDs. */
 export type RuntimeId = string;
 const companyRuntimeId = /^company\.[a-z][a-z0-9.-]{1,70}$/;

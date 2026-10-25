@@ -1,9 +1,8 @@
 import { clamp, DOCK, dockHeightForWidth, type Rect } from './motion';
+export { nativeRuntimeResizeGutter } from '../electron/runtime/contracts';
 
 export type Size = { width: number; height: number };
 export type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
-/** Native app views paint above React, so reserve only the matching shell resize hit areas. */
-export const nativeRuntimeResizeGutter = 7;
 const hiddenEdgeFraction = .7;
 export const dockWindowGap = 12;
 // Keep in sync with DesktopChrome.css responsive status-bar min-heights plus its 1px border.
