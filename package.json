@@ -25,6 +25,7 @@
     "test:ui": "node tools/run-ui-test.mjs tests/store.mjs tests/labs.mjs tests/staff.mjs tests/overview.mjs tests/finance.mjs tests/dockapps.mjs tests/followups.mjs tests/records.mjs tests/windows.mjs tests/electron.mjs tests/native-session.mjs tests/scaling.mjs",
     "test:dockapps": "node tools/run-ui-test.mjs tests/dockapps.mjs",
     "test:finance": "node tools/run-ui-test.mjs tests/finance.mjs",
+    "test:finance-sidebar": "node tools/run-ui-test.mjs tests/m15-finance-sidebar.mjs",
     "test:overview": "node tools/run-ui-test.mjs tests/overview.mjs",
     "test:staff": "node tools/run-ui-test.mjs tests/staff.mjs",
     "test:clarity": "node tools/run-ui-test.mjs tests/clarity.mjs",

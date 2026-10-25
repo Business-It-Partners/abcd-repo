@@ -3,6 +3,7 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ListChecks, Loader2, Plus, Trash2 } from "lucide-react";
 import type { TreatmentProtocol, TreatmentProtocolInput } from "@/shell/session/types";
+import { ClinicModal } from "@/shared/ui/ClinicModal";
 import { Card, CardBody, CardHeader, DataTable, Field, InlineCheck, Input, Modal, ModalBody, ModalError, Page, PageHeader, SearchBox, Table, TableWrap, Td, Th, Tr } from "@/shared/ui/workspace-primitives";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
@@ -48,9 +49,10 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
   const [search, setSearch] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
+  const [retireConfirmOpen, setRetireConfirmOpen] = useState(false);
   const [saveIntent, setSaveIntent] = useState<'create' | 'update' | 'retire' | null>(null);
   const selectedId = route.params.protocolId;
-  useEffect(() => { onLifecycleChange({ dirty: draftDirty, modal: newOpen }); }, [draftDirty, newOpen, onLifecycleChange]);
+  useEffect(() => { onLifecycleChange({ dirty: draftDirty, modal: newOpen || retireConfirmOpen }); }, [draftDirty, newOpen, onLifecycleChange, retireConfirmOpen]);
   useEffect(() => {
     if (!selectedId) { setSelected(null); return; }
     const protocol = protocols.find((item) => item.protocolId === selectedId);
@@ -83,25 +85,37 @@ export function TreatmentProtocolsEditor({ protocols, loading, saving, pendingSa
       setDraftDirty(false); setSaveIntent(null);
     } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "The original save could not be confirmed."); }
   }
+  async function confirmRetire() {
+    if (pendingSave || !selected?.protocolId || selected.rowVersion === undefined) return;
+    setRetireConfirmOpen(false);
+    setSaveIntent('retire');
+    try {
+      await onSave({ ...toInput(selected), active: false }, selected.protocolId, selected.rowVersion);
+      closeDetail("protocolId");
+      setSaveError(null);
+      setDraftDirty(false); setSaveIntent(null);
+    } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "Protocol could not be removed."); }
+  }
   const visibleProtocols = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     if (!term) return protocols;
     return protocols.filter((protocol) => [protocol.name, protocol.category, protocol.description ?? "", ...protocol.stages.map((stage) => stage.stageName)]
       .some((value) => value.toLocaleLowerCase().includes(term)));
   }, [protocols, search]);
-  if (selected) return <ProtocolDetail draft={selected} saving={saving} pendingSave={pendingSave} error={saveError ?? error} onRetrySave={() => void retryPendingSave()} onBack={() => { if (pendingSave) return; closeDetail("protocolId"); setSaveError(null); setDraftDirty(false); }} onChange={(next) => { if (pendingSave) return; setSelected(next); setDraftDirty(true); }} onSave={() => void persist(selected)} onRetire={() => {
+  if (selected) return <>
+    <ProtocolDetail draft={selected} saving={saving} pendingSave={pendingSave} error={saveError ?? error} onRetrySave={() => void retryPendingSave()} onBack={() => { if (pendingSave) return; closeDetail("protocolId"); setSaveError(null); setDraftDirty(false); }} onChange={(next) => { if (pendingSave) return; setSelected(next); setDraftDirty(true); }} onSave={() => void persist(selected)} onRetire={() => {
     if (pendingSave) return;
     if (!selected.protocolId || selected.rowVersion === undefined) return;
-    if (!window.confirm(`Remove "${selected.name}" from future treatment plans? Existing patient plans remain unchanged.`)) return;
-    setSaveIntent('retire');
-    void (async () => {
-      const saved = await onSave({ ...toInput(selected), active: false }, selected.protocolId, selected.rowVersion);
-      closeDetail("protocolId");
-      setSaveError(null);
-      setDraftDirty(false); setSaveIntent(null);
-      return saved;
-    })().catch((cause) => setSaveError(cause instanceof Error ? cause.message : "Protocol could not be removed."));
-  }} />;
+    setRetireConfirmOpen(true);
+  }} />
+    {retireConfirmOpen ? <ClinicModal title="Remove treatment protocol?" onClose={() => setRetireConfirmOpen(false)} maxWidth={480} verticalAlign="center">
+      <p style={{ margin: 0, color: "var(--ink-1)", fontSize: "var(--fs-14)", lineHeight: 1.55 }}>Remove “{selected.name}” from future treatment plans? Existing patient plans remain unchanged.</p>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+        <button type="button" className="btn btn-secondary" onClick={() => setRetireConfirmOpen(false)}>Cancel</button>
+        <button type="button" className="btn btn-danger" onClick={() => void confirmRetire()}>Remove protocol</button>
+      </div>
+    </ClinicModal> : null}
+  </>;
   return <Page sheet standardPage>
     <PageHeader title="Treatment Protocols">
       <ClinicActionButton onClick={() => { setNewOpen(true); setDraftDirty(false); setSaveError(null); }}><Plus size={14} /> New protocol</ClinicActionButton>

@@ -238,6 +238,10 @@ ipcMain.handle('runtime:select-module', (event,id:unknown,moduleId:unknown) => {
 ipcMain.on('runtime:module-selection-ack',(event,input:unknown)=>runtime?.acknowledgeModule(event,input));
 for (const kind of ['connect', 'request', 'cancel'] as const) ipcMain.handle(`sdk:${kind}`, (event, input: unknown) => runtime ? runtime.sdk(kind, event, input) : { ok: false, error: { code: 'UNAVAILABLE', message: 'No application runtime.', outcome: 'not_sent' } });
 ipcMain.handle('identity:view', event => { if (!isShell(event)) throw new Error('Invalid caller'); return identityView(); });
+ipcMain.handle('identity:clinic-logo', event => {
+  if (!isShell(event) || !identity || !canUseWorkspace()) return undefined;
+  return identity.clinicLogo();
+});
 const developmentCredentials = () => {
   if (app.isPackaged) return undefined;
   if (devCredentialFixtures) return { email: 'dev-login@fixture.invalid', password: 'synthetic-dev-fill-only' };

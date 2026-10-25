@@ -38,6 +38,8 @@ type Draft = {
 type LifecycleState = { dirty: boolean; modal: boolean };
 type Preview = { url: string; mimeType: string; filename: string };
 const allowedDocumentTypes = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+// Keep the private-documents implementation intact while its tab is temporarily hidden by product direction.
+const SHOW_PRIVATE_DOCUMENTS_TAB = false;
 const salaryTypeLabels = { advance: "Advance", salary: "Salary", adjustment: "Adjustment", other: "Other" } as const;
 const salaryMethodLabels = { cash: "Cash", bank_transfer: "Bank transfer", other: "Other" } as const;
 
@@ -516,7 +518,7 @@ export function StaffDetailPage({
     { key: "profile", label: "Staff info" },
     { key: "work", label: "Work done", icon: <Stethoscope aria-hidden="true" size={14} /> },
     ...(canReadSalary ? [{ key: "salary", label: "Salary info", icon: <WalletCards aria-hidden="true" size={14} /> }] : []),
-    ...(canManageStaff ? [{ key: "documents", label: "Private documents (" + activeDocuments.length + ")" }] : []),
+    ...(canManageStaff && SHOW_PRIVATE_DOCUMENTS_TAB ? [{ key: "documents", label: "Private documents (" + activeDocuments.length + ")" }] : []),
   ];
 
   return (

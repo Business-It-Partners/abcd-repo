@@ -49,6 +49,15 @@ test("Staff screens remove redundant empty-state and summary captions", async ()
   assert.doesNotMatch(detail, /Current staff profile value|recorded payment\{|Included in recorded totals|Voided entries remain visible|Files attached to this staff profile/);
 });
 
+test("Staff private documents stay implemented but the tab is temporarily hidden", async () => {
+  const detail = await readText("src/features/staff/components/StaffDetailPage.tsx");
+
+  assert.match(detail, /const SHOW_PRIVATE_DOCUMENTS_TAB = false/);
+  assert.match(detail, /canManageStaff && SHOW_PRIVATE_DOCUMENTS_TAB \? \[\{ key: "documents", label: "Private documents/);
+  assert.match(detail, /activeTab === "documents" && canManageStaff/);
+  assert.match(detail, /await api\.listDocuments\(profile\.staffId\)/);
+});
+
 test("Staff profile detail uses shared app-window history with modal and dirty guards", async () => {
   const main = await readText("src/main.tsx");
   const directory = await readText("src/features/staff/components/StaffDirectory.tsx");

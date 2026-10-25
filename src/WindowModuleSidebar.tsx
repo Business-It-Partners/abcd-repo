@@ -30,7 +30,7 @@ export function WindowModuleSidebar({ title, navigation, disabled = false, onSel
         return <button key={module.id} type="button" className={`window-module-sidebar-item${active ? ' is-active' : ''}`}
           aria-current={active ? 'page' : undefined} disabled={disabled || !!pendingId}
           onClick={() => void select(module.id)} title={module.label}>
-          <PanelsTopLeft size={16} aria-hidden="true"/><span>{module.label}</span>
+          <PanelsTopLeft size={17} aria-hidden="true"/><span>{module.label}</span>
         </button>;
       })}
     </div>

@@ -17,7 +17,7 @@ This matrix connects the constitution to acceptance gates and execution owners. 
 | R09 Safe activation, dirty work, rollback and revocation | 10; INV-09/12 | G08/G11/G14/G15/G17 (ADR-025 next-full-launch trial/recovery); M08/M11/M14/M15/M17 |
 | R10 OS-only durability and online-dependent privacy | 13,14; INV-10/11 | G02/G10/G14/G15/G17 (affected final-source OS-only durability and session privacy)/G21; M02/M10/M14/M15/M17/M20 |
 | R11 App-contained failure and actionable recovery | 07,15; INV-10/12 | G03/G10/G12/G14/G15/G17 (integrated runtime/update failure recovery); M03/M10/M12/M14/M15/M17 |
-| R12 Bounded operational diagnostics/resource management | 15; INV-11/13 | G10/G11/G12/G13/G14/G15/G17 (representative workload and renewal operations)/G20; M10..M15/M17/M20 |
+| R12 Bounded operational diagnostics/resource management | 06,15,20/ADR-034; INV-11/13 | G10/G11/G12/G13/G14/G15/G17 (representative workload and renewal operations)/G20; M10..M15/M17/M20 |
 | R13 No direct app-to-app system | 11,19; INV-05/07 | G04/G09/G15 (bounded OS-navigation design assessment only; no messaging implementation); M04/M09/M15 |
 | R14 Platform release/update and supported-host proof | 10,16,18; INV-12/13 | G20/G21; M20 |
 | R15 Honest baseline, decisions and acceptance evidence | 20,21; INV-10/13 | G01/G11/G12/G13/G14/G15/G16/G17/G20/G21 and every milestone |

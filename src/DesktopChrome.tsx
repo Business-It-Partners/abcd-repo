@@ -26,6 +26,7 @@ const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 export function DesktopChrome({ session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [clinicLogo, setClinicLogo] = useState<{ generation: number; dataUrl: string }>();
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
     const today = currentNepaliDate(new Date());
     return { year: today.year, month: today.month };
@@ -45,6 +46,17 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setClinicLogo(undefined);
+    if (session?.phase !== 'ready') return () => { active = false; };
+    const generation = session.generation;
+    void window.desktop?.identity.clinicLogo().then(logo => {
+      if (active && logo) setClinicLogo({ generation, dataUrl: logo });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [session?.generation, session?.phase]);
+
   const bsCalendar = useMemo(() => nepaliMonthGrid(shownBsMonth), [shownBsMonth]);
   const gregorianCalendar = useMemo(() => gregorianMonthGrid(shownGregorianMonth.getFullYear(), shownGregorianMonth.getMonth() + 1), [shownGregorianMonth]);
   const todayBs = currentNepaliDate(now);
@@ -52,6 +64,7 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
   const isCurrentBsMonth = shownBsMonth.year === todayBs.year && shownBsMonth.month === todayBs.month;
   const isCurrentGregorianMonth = shownGregorianMonth.getFullYear() === now.getFullYear() && shownGregorianMonth.getMonth() === now.getMonth();
   const clinicName = session?.clinicLabel || 'Sajilo Dental';
+  const clinicLogoUrl = clinicLogo?.generation === session?.generation ? clinicLogo?.dataUrl : undefined;
   const formatDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' }).format(now);
   const formatTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(now);
 
@@ -85,7 +98,9 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
     </header>
 
     {session?.phase === 'ready' && <section className="desktop-widget desktop-clinic-widget" aria-label="Clinic and signed-in user">
-      <div className="clinic-widget-mark" aria-hidden="true">{initialsFor(clinicName)}</div>
+      <div className={`clinic-widget-mark${clinicLogoUrl ? ' has-logo' : ''}`} aria-hidden="true">
+        {clinicLogoUrl ? <img src={clinicLogoUrl} alt="" onError={() => setClinicLogo(undefined)} /> : initialsFor(clinicName)}
+      </div>
       <div className="clinic-widget-copy">
         <strong title={clinicName}>{clinicName}</strong>
         <span>{session.userLabel || 'Signed-in user'}</span>

@@ -23,6 +23,7 @@ import { dockArtwork } from './dockArtwork';
 import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
 import { DesktopChrome } from './DesktopChrome';
+import { OpenAppLimitDialog } from './OpenAppLimitDialog';
 import type { SessionView } from '../electron/identity/contracts';
 
 const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.url).href;
@@ -71,7 +72,7 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   };
 }
 
-export function App({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/></WindowManagerProvider>; }
+export function App({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/><OpenAppLimitDialog/></WindowManagerProvider>; }
 function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
@@ -220,6 +221,10 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       const current = getState();
+      if (current.openAppLimit) {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); dispatch({ type: 'dismiss-open-app-limit' }); }
+        return;
+      }
       const toggle = (event.code === 'Backquote' || event.key === '`') && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && !event.isComposing;
       if (toggle && !overviewShortcutEnabled.current) return;
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
@@ -246,14 +251,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       setLaunchNotice('This app could not switch modules. Close and reopen the app, or update it from Apps.');
     }
   }
-  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { updateDockItemHover(false); setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
+  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { updateDockItemHover(false); setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
     {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
-    <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }} inert={!!pickerPrompt} aria-hidden={!!pickerPrompt}>
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || !!pickerPrompt || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>

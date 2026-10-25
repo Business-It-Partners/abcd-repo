@@ -140,6 +140,27 @@ describe('session-scoped media upload gate',()=>{
    if(denied.ok)expect(denied.value.capabilities).not.toContain('clinic.media.upload');
   }finally{broker.dispose();await h.close();}
  });
+ it('loads the private clinic logo once per session and clears the cached image on logout',async()=>{
+  const dataUrl='data:image/png;base64,c3ludGhldGlj';let logoReads=0;
+  const h=await harness({clinicLogo:async()=>{logoReads++;return dataUrl;}});
+  try{
+   expect(await h.session.clinicLogo()).toBeUndefined();expect(logoReads).toBe(0);
+   expect((await h.session.login(input)).ok).toBe(true);
+   const [first,second]=await Promise.all([h.session.clinicLogo(),h.session.clinicLogo()]);
+   expect(first).toBe(dataUrl);expect(second).toBe(dataUrl);expect(logoReads).toBe(1);
+   await h.session.logout();expect(await h.session.clinicLogo()).toBeUndefined();expect(logoReads).toBe(1);
+  }finally{await h.close();}
+ });
+ it('drops a pending clinic-logo result when the session is cleared',async()=>{
+  let finish!:(value:string|undefined)=>void;let reads=0;
+  const h=await harness({clinicLogo:async()=>{reads++;return new Promise(resolve=>finish=resolve);}});
+  try{
+   expect((await h.session.login(input)).ok).toBe(true);
+   const pending=h.session.clinicLogo();await new Promise(resolve=>setTimeout(resolve,0));expect(reads).toBe(1);
+   await h.session.logout();finish('data:image/png;base64,stale');
+   expect(await pending).toBeUndefined();expect(await h.session.clinicLogo()).toBeUndefined();
+  }finally{await h.close();}
+ });
 });
 describe('Firebase/Worker fixed-endpoint contract',()=>{
  const jwt=(project=staging.firebaseProject)=>`header.${Buffer.from(JSON.stringify({aud:project,iss:`https://securetoken.google.com/${project}`,sub:'fixture-user',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')}.signature`;
@@ -151,5 +172,29 @@ describe('Firebase/Worker fixed-endpoint contract',()=>{
   const responses=[Response.json({idToken:jwt('production' as typeof staging.firebaseProject),refreshToken:'r',localId:'fixture-user',expiresIn:'3600'}),new Response(null,{status:302,headers:{location:'https://evil.invalid'}}),Response.json({token:'bad'}),new Response('x'.repeat(66000),{headers:{'content-type':'application/json'}})];
   for(const response of responses){const c=new FirebaseClient(async()=>response);await expect(c.signIn(input.email,input.password,new AbortController().signal)).rejects.toThrow(AuthFailure);}
   const c=new FirebaseClient(async()=>Response.json({session:{platformAdmin:{role:'admin'}}}));await expect(c.resolve('fixture',new AbortController().signal)).rejects.toThrow(AuthFailure);
+ });
+ it('fetches only the authenticated clinic logo from the private branding endpoint',async()=>{
+  const sent:{url:string;init:RequestInit}[]=[];const png=Uint8Array.from([137,80,78,71,13,10,26,10]);
+  const client=new FirebaseClient(async(url,init)=>{sent.push({url:String(url),init:init!});return new Response(png,{headers:{'content-type':'image/png'}});});
+  const value=await client.clinicLogo('host-held-id-token',new AbortController().signal);
+  expect(value).toBe(`data:image/png;base64,${Buffer.from(png).toString('base64')}`);
+  expect(sent).toHaveLength(1);expect(sent[0].url).toBe(staging.apiBase+'/v1/clinic/branding/logo/view');
+  expect(sent[0].init).toMatchObject({method:'POST',redirect:'manual',credentials:'omit',cache:'no-store'});
+  expect(new Headers(sent[0].init.headers).get('authorization')).toBe('Bearer host-held-id-token');
+  expect(sent[0].init.body).toBeUndefined();
+ });
+ it('uses the initials fallback for absent, unsupported, or oversized clinic logos',async()=>{
+  const signal=new AbortController().signal;
+  const absent=new FirebaseClient(async()=>new Response(null,{status:404}));
+  const unsupported=new FirebaseClient(async()=>new Response('<svg/>',{headers:{'content-type':'image/svg+xml'}}));
+  let oversizedBodyRead=false;const oversizedHeaderResponse=new Response(new Uint8Array([1]),{headers:{'content-type':'image/png','content-length':'2000001'}});
+  Object.defineProperty(oversizedHeaderResponse.body,'getReader',{value:()=>{oversizedBodyRead=true;throw new Error('oversized response should not be read');}});
+  const oversizedHeader=new FirebaseClient(async()=>oversizedHeaderResponse);
+  const oversizedStream=new FirebaseClient(async()=>new Response(new ReadableStream({start(controller){controller.enqueue(new Uint8Array(2_000_001));}}),{headers:{'content-type':'image/png'}}));
+  await expect(absent.clinicLogo('token',signal)).resolves.toBeUndefined();
+  await expect(unsupported.clinicLogo('token',signal)).resolves.toBeUndefined();
+  await expect(oversizedHeader.clinicLogo('token',signal)).resolves.toBeUndefined();
+  expect(oversizedBodyRead).toBe(false);
+  await expect(oversizedStream.clinicLogo('token',signal)).resolves.toBeUndefined();
  });
 });

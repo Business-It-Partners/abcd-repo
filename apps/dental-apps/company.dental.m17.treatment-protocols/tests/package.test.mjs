@@ -28,6 +28,14 @@ test('renderer uses the OS API bridge and contains no direct network or browser 
   assert.doesNotMatch(source, /localStorage|sessionStorage|indexedDB/);
 });
 
+test('protocol removal uses the shared in-app modal instead of the browser-native confirm dialog', () => {
+  const editor = read('src/features/treatment-protocols/internal/TreatmentProtocolsEditor.tsx');
+  assert.doesNotMatch(editor, /window\.confirm\s*\(/);
+  assert.match(editor, /ClinicModal title="Remove treatment protocol\?"/);
+  assert.match(editor, /modal: newOpen \|\| retireConfirmOpen/);
+  assert.match(editor, /Existing patient plans remain unchanged\./);
+});
+
 test('packaged page blocks renderer network access and keeps inline SaaS styling available', () => {
   const html = read('index.html');
   assert.match(html, /connect-src 'none'/);
