@@ -2,10 +2,15 @@
 .open-app-limit-dialog{width:min(440px,100%);padding:24px;border:1px solid var(--control-border);border-radius:12px;background:var(--surface);color:var(--text-primary);box-shadow:0 18px 54px #0c172b40}
 .open-app-limit-dialog h2{margin:0 0 10px;font-size:20px;line-height:1.3;font-weight:650}
 .open-app-limit-dialog p{margin:0;color:var(--text-secondary);font-size:14px;line-height:1.55}
-.open-app-limit-open-apps{margin-top:18px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-subtle);font-size:13px}
-.open-app-limit-open-apps>span{color:var(--text-muted);font-weight:600}
-.open-app-limit-open-apps ul{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0;padding-left:19px;color:var(--text-primary)}
-.open-app-limit-actions{display:flex;justify-content:flex-end;margin-top:20px}
-.open-app-limit-actions button{min-width:84px;padding:9px 18px;border-radius:7px;background:var(--accent);color:white;font:inherit;font-weight:600}
-.open-app-limit-actions button:hover{background:var(--accent-hover)}
-.open-app-limit-actions button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.open-app-limit-actions{display:flex;align-items:stretch;gap:8px;margin-top:18px}
+.open-app-limit-choice,.open-app-limit-cancel{min-height:40px;border:1px solid transparent;border-radius:7px;font:inherit;font-size:12px;line-height:1.2;font-weight:650;cursor:pointer}
+.open-app-limit-choice{flex:1 1 0;min-width:0;padding:8px 6px;color:#fff;text-align:center;overflow-wrap:anywhere}
+.open-app-limit-choice--green{border-color:#16864a;background:#16864a}
+.open-app-limit-choice--green:hover:not(:disabled){border-color:#116b3b;background:#116b3b}
+.open-app-limit-choice--yellow{border-color:#d4a329;background:#f2c34d;color:#3c3214}
+.open-app-limit-choice--yellow:hover:not(:disabled){border-color:#bd8f1e;background:#e9b932}
+.open-app-limit-cancel{flex:0 0 auto;min-width:72px;padding:8px 12px;border-color:#d64545;background:#d64545;color:#fff}
+.open-app-limit-cancel:hover{border-color:#ba3434;background:#ba3434}
+.open-app-limit-choice:disabled{cursor:not-allowed;opacity:.58}
+.open-app-limit-choice:focus-visible,.open-app-limit-cancel:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media(max-width:420px){.open-app-limit-dialog{padding:20px}.open-app-limit-actions{flex-wrap:wrap}.open-app-limit-choice{flex-basis:calc(50% - 4px)}.open-app-limit-cancel{margin-left:auto}}

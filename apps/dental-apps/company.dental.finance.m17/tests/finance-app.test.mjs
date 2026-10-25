@@ -104,7 +104,7 @@ test("purchase form and review use shared app-window history with draft-safe Bac
   assert.match(main, /screen === "main"/);
   assert.match(main, /onReviewPurchase=\{reviewPurchase\}/);
   assert.match(main, /history\.reset\(mainPage\(selected\)\)/);
-  assert.match(main, /financeNavigationLocked/);
+  assert.match(main, /financeModuleNavigationLocked/);
   assert.doesNotMatch(main, /window\.history|popstate|location\.hash/);
 });
 

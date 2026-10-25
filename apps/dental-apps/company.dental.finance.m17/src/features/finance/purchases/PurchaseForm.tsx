@@ -208,6 +208,7 @@ export default function PurchaseForm({
   referencesError,
   purchase,
   reviewing,
+  onDraftDirtyChange,
   onProductCreated,
   onSupplierCreated,
   onCancel,
@@ -228,6 +229,7 @@ export default function PurchaseForm({
   referencesError: string | null;
   purchase: ClinicPurchase | null;
   reviewing: boolean;
+  onDraftDirtyChange: (dirty: boolean) => void;
   onProductCreated: (product: ClinicProduct) => void;
   onSupplierCreated: (supplier: ClinicSupplier) => void;
   onCancel: () => void;
@@ -264,6 +266,7 @@ export default function PurchaseForm({
   const pendingLineFocus = useRef<{ key: number; field: string } | null>(null);
   const currentFingerprint = JSON.stringify({ purchaseType, supplierId, date, invoiceNumber, note, discount, correctionReason, lines });
   const initialFingerprint = useRef(currentFingerprint);
+  const draftDirty = currentFingerprint !== initialFingerprint.current || saving || unknownWrite;
   const locked = saving || unknownWrite || conflicted;
   const isLab = purchaseType === "lab_service";
   const activeProducts = useMemo(() => products.filter((product) => product.active), [products]);
@@ -303,6 +306,11 @@ export default function PurchaseForm({
     onModalOpenChange(modalOpen);
     return () => onModalOpenChange(false);
   }, [discardDialog, onModalOpenChange, quickProductFor, quickSupplier, riskWarnings.length, validationDialog]);
+
+  useEffect(() => {
+    onDraftDirtyChange(draftDirty);
+  }, [draftDirty, onDraftDirtyChange]);
+  useEffect(() => () => onDraftDirtyChange(false), [onDraftDirtyChange]);
 
   const setLine = (key: number, patch: Partial<DraftLine>) => setLines((current) => current.map((line) => line.key === key ? { ...line, ...patch } : line));
   const focusLineField = (key: number, field: string) => {
@@ -471,7 +479,9 @@ export default function PurchaseForm({
     ];
     return (
       <div className="purchase-form-page purchase-review-page">
-        <PageHeader title={purchase ? "Confirm Invoice Correction" : "Confirm Purchase Order"} />
+        <PageHeader title={purchase ? "Confirm Invoice Correction" : "Confirm Purchase Order"}>
+          <ClinicActionButton onClick={() => void save()} disabled={saving || conflicted || (!unknownWrite && !canReview)}>{saving ? <><Loader2 size={15} className="spin" /> {purchase ? "Saving correction…" : "Saving purchase…"}</> : unknownWrite ? "Retry original save" : purchase ? "Confirm & Save Correction" : "Confirm & Save Purchase"}</ClinicActionButton>
+        </PageHeader>
         <div className="purchase-review-card">
           <dl className="purchase-review-context" aria-label="Invoice details">
             {metadata.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
@@ -497,9 +507,6 @@ export default function PurchaseForm({
           {purchase ? <p className="purchase-correction-notice"><strong>Correction reason:</strong> {correctionReason.trim()}</p> : null}
           {tooLargeForBroker ? <ModalError>This purchase exceeds the Dental OS 12,000-byte SDK request-body limit. Do not split the invoice; reduce line details or wait for a reviewed host/API size change.</ModalError> : null}
           {error ? <ModalError>{error}</ModalError> : null}
-          <div className="purchase-form-actions">
-            <ClinicActionButton onClick={() => void save()} disabled={saving || conflicted || (!unknownWrite && !canReview)}>{saving ? <><Loader2 size={15} className="spin" /> {purchase ? "Saving correction…" : "Saving purchase…"}</> : unknownWrite ? "Retry original save" : purchase ? "Confirm & Save Correction" : "Confirm & Save Purchase"}</ClinicActionButton>
-          </div>
         </div>
       </div>
     );

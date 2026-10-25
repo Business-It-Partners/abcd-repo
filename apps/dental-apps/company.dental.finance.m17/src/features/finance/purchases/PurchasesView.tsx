@@ -43,6 +43,8 @@ export default function PurchasesView({
   suppliers,
   screen,
   purchaseId,
+  purchaseDraftDirty,
+  onDraftDirtyChange,
   purchasesLoading,
   referencesLoading,
   purchasesError,
@@ -67,6 +69,8 @@ export default function PurchasesView({
   suppliers: ClinicSupplier[];
   screen: "main" | "purchase-form" | "purchase-review";
   purchaseId?: string;
+  purchaseDraftDirty: boolean;
+  onDraftDirtyChange: (dirty: boolean) => void;
   purchasesLoading: boolean;
   referencesLoading: boolean;
   purchasesError: string | null;
@@ -97,15 +101,19 @@ export default function PurchasesView({
   const editing = purchaseId ? purchases.find((purchase) => purchase.purchaseId === purchaseId) ?? null : null;
   const modalOpen = purchaseFormModalOpen || Boolean(viewing) || Boolean(voidingPurchase);
   const navigationLocked = formOpen || Boolean(viewing) || Boolean(voidingPurchase);
+  const draftDirty = (formOpen && purchaseDraftDirty) || Boolean(viewing) || Boolean(voidingPurchase);
 
   useEffect(() => {
-    client.report({ dirty: navigationLocked, modal: modalOpen });
-    onNavigationLockChange(navigationLocked);
+    client.report({ dirty: draftDirty, modal: modalOpen });
     return () => {
       client.report({ dirty: false, modal: false });
-      onNavigationLockChange(false);
     };
-  }, [client, modalOpen, navigationLocked, onNavigationLockChange]);
+  }, [client, draftDirty, modalOpen]);
+
+  useEffect(() => {
+    onNavigationLockChange(navigationLocked);
+    return () => onNavigationLockChange(false);
+  }, [navigationLocked, onNavigationLockChange]);
 
   const query = term.trim().toLocaleLowerCase();
   const activePurchases = useMemo(() => purchases.filter((purchase) => purchase.status === "recorded"), [purchases]);
@@ -196,6 +204,7 @@ export default function PurchasesView({
           referencesError={referencesError}
           purchase={editing}
           reviewing={screen === "purchase-review"}
+          onDraftDirtyChange={onDraftDirtyChange}
           onProductCreated={onProductCreated}
           onSupplierCreated={onSupplierCreated}
           onCancel={onExitPurchaseForm}

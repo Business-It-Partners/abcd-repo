@@ -137,11 +137,12 @@ export function useManagedWindow(id: WindowId, target: RefObject<HTMLButtonEleme
     target?.focus({ preventScroll: true });
   }
   function close() {
-    if (closeGuard.current && !closeGuard.current()) return;
+    if (closeGuard.current && !closeGuard.current()) return false;
     const current = getState();
-    if (current.windows[id].modal || Object.values(current.windows).some(w => w.busy || w.interaction !== 'idle')) return;
+    if (current.windows[id].modal || Object.values(current.windows).some(w => w.busy || w.interaction !== 'idle')) return false;
     snapshotRef.current = undefined; setSnapshot(undefined);
     dispatch({ type: 'phase', id, phase: 'closed' });
+    return getState().windows[id]?.phase === 'closed';
   }
   const toggleFullscreen = () => { if (!Object.values(getState().windows).some(w => w.busy || w.interaction !== 'idle')) dispatch({ type: 'toggle', id }); };
   return { id, win, bounds, active, anyBusy, snapshot, windowRef, canvasRef, focus, setModal, setCloseGuard, navigate, resetNavigation, goBack, goForward, open, close, toggleFullscreen,

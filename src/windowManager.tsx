@@ -12,10 +12,10 @@ export type ManagedWindow = {
   id: WindowId; title: string; phase: Phase; presentation: 'normal' | 'fullscreen'; normalBounds: Rect;
   busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing'; userResized: boolean; navigation: WindowNavigation;
 };
-export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean; openAppLimit: OpenAppLimitPrompt | null };
+export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean; openAppLimit: OpenAppLimitPrompt | null; openAppLimitRequestedId: WindowId | null };
 export function createDesktop(size: Size): DesktopState {
   const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } });
-  return { size, windows: Object.fromEntries(WINDOW_IDS.map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false, openAppLimit: null };
+  return { size, windows: Object.fromEntries(WINDOW_IDS.map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false, openAppLimit: null, openAppLimitRequestedId: null };
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
   return [...state.order].reverse().find(id => state.windows[id].phase === 'visible');
@@ -35,6 +35,7 @@ export type WindowAction =
   | { type: 'navigation-forward'; id: WindowId }
   | { type: 'toggle'; id: WindowId }
   | { type: 'dismiss-open-app-limit' }
+  | { type: 'restore-open-app-limit'; requestedId: WindowId; prompt: OpenAppLimitPrompt }
   | { type: 'viewport'; size: Size };
 
 export function desktopReducer(state: DesktopState, action: WindowAction): DesktopState {
@@ -56,7 +57,8 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
       normalBounds: fitContentWidthBounds(win.normalBounds, state.size, windowSpec(action.id).minimum, action.preferredContentWidth, action.hasModuleSidebar) } } };
   }
   if (action.type === 'overview') return { ...state, overview: action.open };
-  if (action.type === 'dismiss-open-app-limit') return state.openAppLimit ? { ...state, openAppLimit: null } : state;
+  if (action.type === 'dismiss-open-app-limit') return state.openAppLimit ? { ...state, openAppLimit: null, openAppLimitRequestedId: null } : state;
+  if (action.type === 'restore-open-app-limit') return { ...state, openAppLimit: action.prompt, openAppLimitRequestedId: action.requestedId };
   if (action.type === 'viewport') {
     const windows = { ...state.windows };
     for (const id of Object.keys(windows) as WindowId[]) windows[id] = { ...windows[id], normalBounds: fitBounds(windows[id].normalBounds, action.size, windowSpec(id).minimum), interaction: 'idle' };
@@ -100,7 +102,7 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
   if (reopening) {
     const openWindows = Object.values(state.windows).filter(openWindow => openWindow.phase !== 'closed');
     if (openWindows.length >= MAX_OPEN_APP_WINDOWS) {
-      return { ...state, openAppLimit: { requestedTitle: win.title, openAppTitles: openWindows.map(openWindow => openWindow.title) } };
+      return { ...state, openAppLimit: { requestedTitle: win.title, openAppTitles: openWindows.map(openWindow => openWindow.title) }, openAppLimitRequestedId: action.id };
     }
   }
   return { ...state,

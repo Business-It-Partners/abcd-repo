@@ -22,6 +22,7 @@ import { statusBarHeightForWidth, WINDOW_IDS, windowSpec, type StaticWindowId, t
 import { dockArtwork } from './dockArtwork';
 import { StoreArtwork } from './StoreArtwork';
 import { activeWindow, useWindowManager, WindowManagerProvider } from './windowManager';
+import type { OpenAppLimitPrompt } from './windowManager';
 import { DesktopChrome } from './DesktopChrome';
 import { OpenAppLimitDialog } from './OpenAppLimitDialog';
 import type { SessionView } from '../electron/identity/contracts';
@@ -75,7 +76,7 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   };
 }
 
-export function App({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/><OpenAppLimitDialog/></WindowManagerProvider>; }
+export function App({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/></WindowManagerProvider>; }
 function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
@@ -123,6 +124,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const onControllerRef=useCallback((id:string,ref:MutableRefObject<WindowController>|null)=>setDynamicControllerRefs(previous=>{if(ref){if(previous[id]===ref)return previous;return{...previous,[id]:ref};}if(!previous[id])return previous;const next={...previous};delete next[id];return next;}),[]);
   const dynamicControllers:Record<string,WindowController>=Object.fromEntries(Object.entries(dynamicControllerRefs).map(([id,ref])=>[id,ref.current]));
   const allControllers:Record<string,WindowController>={...staticControllers,...dynamicControllers};
+  const pendingCapacityReplacement=useRef<{closingId:WindowId;requestedId:WindowId;prompt:OpenAppLimitPrompt}|null>(null);
   const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
   const [storeMessage, setStoreMessage] = useState('');
@@ -141,6 +143,33 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
   useEffect(() => () => { dockCaptionActivity.current = undefined; window.desktop?.dockCaption.hide(); }, []);
+  function finishCapacityReplacement(closingId:WindowId){
+    const pending=pendingCapacityReplacement.current;
+    if(!pending||pending.closingId!==closingId)return;
+    pendingCapacityReplacement.current=null;
+    const requested=allControllers[pending.requestedId];
+    if(requested){requested.open();return;}
+    dispatch({type:'restore-open-app-limit',requestedId:pending.requestedId,prompt:pending.prompt});
+    setLaunchNotice(`Could not open ${pending.prompt.requestedTitle}. Choose an app to close and try again.`);
+  }
+  function closeAppForCapacity(id:WindowId){
+    const current=getState(),prompt=current.openAppLimit,requestedId=current.openAppLimitRequestedId;
+    const closing=allControllers[id],win=current.windows[id];
+    if(!prompt||!requestedId||!closing||!win||win.phase==='closed'||win.busy||win.modal||win.interaction!=='idle'||pendingCapacityReplacement.current)return;
+    pendingCapacityReplacement.current={closingId:id,requestedId,prompt};
+    dispatch({type:'dismiss-open-app-limit'});
+    if(closing.close())finishCapacityReplacement(id);
+  }
+  function cancelCapacityReplacement(id:WindowId,pendingWrite:boolean){
+    const pending=pendingCapacityReplacement.current;
+    if(!pending||pending.closingId!==id)return;
+    pendingCapacityReplacement.current=null;
+    if(pendingWrite){
+      setLaunchNotice(`Resolve the pending change in ${getState().windows[id]?.title??'that app'}, then open ${pending.prompt.requestedTitle} again.`);
+      return;
+    }
+    dispatch({type:'restore-open-app-limit',requestedId:pending.requestedId,prompt:pending.prompt});
+  }
   useEffect(()=>{
     let alive=true;
     void window.desktop?.developmentApps.view().then(view=>{if(alive)setDevelopmentApps(view);}).catch(()=>{});
@@ -328,14 +357,15 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       setLaunchNotice('This app could not switch modules. Close and reopen the app, or update it from Apps.');
     }
   }
-  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
+  return <>
+    <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
     {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} developmentApps={developmentApps} developmentMessage={developmentMessage} developmentTargets={Object.fromEntries(developmentApps.apps.map(app=>[app.id,dynamicTargets.current[developmentRuntimeIdForPackage(app.id)]]))} onOpenDevelopmentApp={openDevelopmentApp} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onCapacityCloseCommitted={finishCapacityReplacement} onCapacityCloseCancelled={cancelCapacityReplacement} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -389,5 +419,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)} aria-hidden="true"/>
     </>}
     {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
-  </main>;
+  </main>
+  <OpenAppLimitDialog onCloseApp={closeAppForCapacity}/>
+  </>;
 }

@@ -60,7 +60,7 @@ function App() {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const capabilitiesRef = useRef<string[]>([]);
   const moduleIdRef = useRef<FinanceModuleId>("transaction-record");
-  const financeNavigationLocked = useRef(false);
+  const financeModuleNavigationLocked = useRef(false);
   const historyRef = useRef<AppHistory<FinancePage> | null>(null);
 
   const applyHistoryPage = useCallback((next: FinancePage) => {
@@ -116,7 +116,7 @@ function App() {
   const resetMissingSupplier = useCallback(() => resetMissingDetail("supplier-list"), [resetMissingDetail]);
 
   const setFinanceNavigationLock = useCallback((locked: boolean) => {
-    financeNavigationLocked.current = locked;
+    financeModuleNavigationLocked.current = locked;
   }, []);
 
   useEffect(() => {
@@ -150,7 +150,7 @@ function App() {
         setModuleMessage("The selected Finance module is unavailable in this package version.");
       } else {
         const selected = moduleId as FinanceModuleId;
-        if (financeNavigationLocked.current && selected !== moduleIdRef.current) {
+        if (financeModuleNavigationLocked.current && selected !== moduleIdRef.current) {
           setModuleMessage("Finish or close the open Finance dialog, or retry its pending update, before switching modules.");
           throw new Error("Finance module navigation is blocked while a dialog or unresolved update is open.");
         }
@@ -189,7 +189,9 @@ function App() {
         : initialModule;
       const appHistory = sdk.createHistory<FinancePage>(
         mainPage(selected),
-        () => !financeNavigationLocked.current,
+        // The shared OS runtime guards dirty drafts, modals and pending writes.
+        // Finance's module-switch lock must not block page-level window Back.
+        () => true,
         (current) => current.moduleId === "purchases" && current.screen === "purchase-review",
       );
       history = appHistory;

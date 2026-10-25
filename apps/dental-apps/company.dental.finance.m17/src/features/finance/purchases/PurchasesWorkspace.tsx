@@ -34,6 +34,7 @@ export function PurchasesWorkspace({
   onReviewPurchase: () => void;
   onExitPurchaseForm: () => void;
 }) {
+  const [purchaseDraftDirty, setPurchaseDraftDirty] = useState(false);
   const [purchases, setPurchases] = useState<ClinicPurchase[]>([]);
   const [products, setProducts] = useState<ClinicProduct[]>([]);
   const [suppliers, setSuppliers] = useState<ClinicSupplier[]>([]);
@@ -134,6 +135,8 @@ export function PurchasesWorkspace({
       purchasesError={purchasesError}
       referencesError={productsError || suppliersError}
       onNavigationLockChange={onNavigationLockChange}
+      purchaseDraftDirty={purchaseDraftDirty}
+      onDraftDirtyChange={setPurchaseDraftDirty}
       screen={screen}
       purchaseId={purchaseId}
       onOpenPurchaseForm={onOpenPurchaseForm}
