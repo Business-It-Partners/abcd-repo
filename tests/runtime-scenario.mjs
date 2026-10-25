@@ -3,6 +3,7 @@ import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+function hasNativeResolution(image){const surface=image.closest('[data-runtime]');if(!surface)return false;const gutter=surface.dataset.presentation==='fullscreen'?0:Number.parseFloat(getComputedStyle(surface).getPropertyValue('--native-runtime-resize-gutter'))||0,style=getComputedStyle(image);return image.naturalWidth+gutter>=image.clientWidth&&image.naturalHeight+gutter>=image.clientHeight&&style.filter==='none'&&style.backdropFilter==='none';}
 export async function verifyRuntime(profileArgs, reportName) {
  const root=path.resolve(import.meta.dirname,'..'),env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
  const app=await electron.launch({args:[root,...profileArgs,'--runtime-fixtures'],env,timeout:30000});
@@ -151,7 +152,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   const inactiveMirror=shell.locator('[data-runtime="studio"] .isolated-mirror');
   await inactiveMirror.waitFor();
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
-  check('covered app preview keeps native capture resolution without CSS blur',await inactiveMirror.evaluate(image=>image.naturalWidth>=image.clientWidth&&getComputedStyle(image).filter==='none'&&getComputedStyle(image).backdropFilter==='none'));
+  check('covered app preview keeps native capture size within the resize gutter, without CSS blur',await inactiveMirror.evaluate(hasNativeResolution));
   check('covered app window keeps its existing shadow',await shell.locator('[data-testid="studio-window"]').evaluate(frame=>getComputedStyle(frame).boxShadow!=='none'));
   topology=await native();check('two isolated renderer processes and separate shell',topology.apps.length===2&&new Set([topology.shell,...topology.apps.map(w=>w.pid)]).size===3);
   check('sandbox/context isolation and no Node',topology.apps.every(w=>w.prefs.sandbox&&w.prefs.contextIsolation&&!w.prefs.nodeIntegration));
@@ -246,7 +247,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await moveShell(dragX,dragY);await shell.mouse.down();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='moving');
   const hiddenDuringDrag=await nativeView('beta');check('native app surface hides synchronously when window movement starts',!!hiddenDuringDrag&&!hiddenDuringDrag.visible);
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="records"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
-  check('moving window uses its crisp full-resolution app preview',await state('records').locator('.isolated-mirror').evaluate(image=>image.naturalWidth>=image.clientWidth&&getComputedStyle(image).filter==='none'&&getComputedStyle(image).backdropFilter==='none'));
+  check('moving window uses native-size app preview within the resize gutter, without CSS blur',await state('records').locator('.isolated-mirror').evaluate(hasNativeResolution));
   await shot('runtime-drag-preview.png');
   await shell.mouse.move(dragX-2000,dragY,{steps:8});await shell.mouse.up();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='idle');
   let edgeBounds=await recordsFrame.boundingBox(),edgeView=await waitExpectedNative('beta');
