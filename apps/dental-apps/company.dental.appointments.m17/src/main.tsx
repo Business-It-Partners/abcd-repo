@@ -22,7 +22,7 @@ declare global { interface Window { dentalApp?: import('../../../../electron/sdk
 type BucketChoice = 'day' | AppointmentBucket;
 type FormSeed = { appointment?: Appointment; date: string };
 type PendingWrite = { command: ClinicCommand<AppointmentReceipt>; label: string; closeModal: boolean };
-type SortColumn = 'patient';
+type SortColumn = 'patient' | 'doctor';
 const blankSummary: AppointmentSummary = { todayBooked: 0, thisWeekBooked: 0, upcomingBooked: 0, cancelled: 0 };
 const statusLabels: Record<AppointmentStatus, string> = { booked: 'Booked', arrived: 'Arrived', cancelled: 'Cancelled', no_show: 'No-show' };
 const bucketLabels: Record<AppointmentBucket, string> = { today: 'Today', week: 'This week', upcoming: 'Upcoming', cancelled: 'Cancelled' };
@@ -267,7 +267,9 @@ function AppointmentsApp() {
   const sortedAppointments = useMemo(() => {
     if (!sort) return appointments;
     return [...appointments].sort((left, right) => {
-      const compared = left.patientName.localeCompare(right.patientName, undefined, { sensitivity: 'base' })
+      const a = sort.column === 'patient' ? left.patientName : left.doctorName;
+      const b = sort.column === 'patient' ? right.patientName : right.doctorName;
+      const compared = a.localeCompare(b, undefined, { sensitivity: 'base' })
         || left.appointmentDate.localeCompare(right.appointmentDate)
         || left.startMinute - right.startMinute;
       return sort.direction === 'ascending' ? compared : -compared;
@@ -325,21 +327,23 @@ function AppointmentsApp() {
           <span className="appointmentTableCount" aria-live="polite">{visibleAppointments.length} {visibleAppointments.length === 1 ? 'appointment' : 'appointments'}</span>
         </div>
         {loading && <div role="status" className="appointmentLoading"><span className="appointmentsSpinner" /> Updating schedule…</div>}
-        {visibleAppointments.length === 0 && !loading ? <div className="appointmentEmpty"><CalendarDays size={24} aria-hidden="true" /><strong>{search.trim() ? 'No appointments match this search' : 'No appointments in this range'}</strong><span>{search.trim() ? 'Try a different patient, phone, reason, or doctor.' : 'Bookings for this clinic and filter will appear here.'}</span></div> : visibleAppointments.length > 0 ? <div className="appointmentTableWrap"><table className="appointmentTable" data-sajilo-standard-table=""><thead><tr>
+        {visibleAppointments.length === 0 && !loading ? <div className="appointmentEmpty"><CalendarDays size={24} aria-hidden="true" /><strong>{search.trim() ? 'No appointments match this search' : 'No appointments in this range'}</strong><span>{search.trim() ? 'Try a different patient, phone, reason, or doctor.' : 'Bookings for this clinic and filter will appear here.'}</span></div> : visibleAppointments.length > 0 ? <div className="appointmentTableWrap"><table className="appointmentTable" data-sajilo-standard-table=""><colgroup>
+          <col className="appointmentTimeColumn" /><col className="appointmentPatientColumn" /><col className="appointmentReasonColumn" /><col className="appointmentDoctorColumn" /><col className="appointmentArrivedColumn" /><col className="appointmentCancelColumn" /><col className="appointmentActionColumn" />
+        </colgroup><thead><tr>
           <th scope="col">Time</th>
           <th scope="col" aria-sort={sort?.column === 'patient' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('patient')}>Patient <ArrowUpDown size={12} aria-hidden="true" /></button></th>
           <th scope="col">Reason</th>
-          <th scope="col">Phone</th><th scope="col" className="appointmentCenter">Arrived</th><th scope="col" className="appointmentCenter">No-show</th><th scope="col" className="appointmentCenter">Cancel</th><th scope="col" className="appointmentCenter">Action</th>
+          <th scope="col" aria-sort={sort?.column === 'doctor' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('doctor')}>Doctor <ArrowUpDown size={12} aria-hidden="true" /></button></th>
+          <th scope="col" className="appointmentCenter">Arrived</th><th scope="col" className="appointmentCenter">Cancel</th><th scope="col" className="appointmentCenter">Action</th>
         </tr></thead><tbody>
           {visibleAppointments.map(item => <tr key={item.appointmentId}>
             <td data-label="Time"><strong>{minuteLabel(item.startMinute)}</strong><span>till {minuteLabel(item.startMinute + item.durationMinutes)}</span></td>
             <td data-label="Patient"><strong>{item.patientName}</strong><span>{item.contactPhone || 'No contact added'}</span></td>
             <td data-label="Reason">{item.reason}</td>
-            <td data-label="Phone">{item.contactPhone ? <a href={`tel:${item.contactPhone}`} className="appointmentPhone">{item.contactPhone}</a> : <span>—</span>}</td>
+            <td data-label="Doctor">{item.doctorName}</td>
             <td data-label="Arrived" className="appointmentCenter"><StatusToggle appointment={item} status="arrived" color="#16a34a" title="Mark arrived" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
-            <td data-label="No-show" className="appointmentCenter"><StatusToggle appointment={item} status="no_show" color="#d97706" title="Mark no-show" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
             <td data-label="Cancel" className="appointmentCenter"><StatusToggle appointment={item} status="cancelled" color="#dc2626" title="Cancel booking" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
-            <td data-label="Action" className="appointmentRowActions"><div>{(item.status === 'booked' || item.status === 'arrived') && <button type="button" className="btn btn-primary btn-sm" onClick={() => setForm({ appointment: item, date: item.appointmentDate })} disabled={pending !== null}><Clock3 size={13} aria-hidden="true" /> Reschedule</button>}<button type="button" className="btn btn-secondary btn-sm" onClick={() => setDetails(item)}>Details</button></div></td>
+            <td data-label="Action" className="appointmentRowActions"><div>{(item.status === 'booked' || item.status === 'arrived') && <button type="button" className="btn btn-primary btn-sm" onClick={() => setForm({ appointment: item, date: item.appointmentDate })} disabled={pending !== null}><Clock3 size={13} aria-hidden="true" /> Reschedule</button>}<button type="button" className="btn btn-primary btn-sm" onClick={() => setDetails(item)}>Details</button></div></td>
           </tr>)}
         </tbody></table></div> : null}
       </section>

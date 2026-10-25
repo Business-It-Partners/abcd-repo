@@ -1,0 +1,93 @@
+{
+  "recorded": "2026-10-24",
+  "appId": "company.dental.appointments.m17",
+  "version": "1.0.8",
+  "previousVersion": "1.0.7",
+  "release": {
+    "environment": "cloudfare-staging",
+    "catalogueSequence": 91,
+    "priorSequence": 90,
+    "status": "published",
+    "keyId": "company-staging-m17-20261022",
+    "signerFingerprintSha256": "e59c1c12fc7c594b5810cce75f2161157249a4b6a7586ecde2cebdb21ba20709",
+    "package": {
+      "objectKey": "releases/company.dental.appointments.m17/1.0.8/b9830cd02a295bac4f33d66414b6a5b0218761c9e5861ecbb2b1dd35a1174c7e.dentalpkg",
+      "sha256": "b9830cd02a295bac4f33d66414b6a5b0218761c9e5861ecbb2b1dd35a1174c7e",
+      "bytes": 1244321,
+      "payloadDigest": "db4a1aebd8a80e95b8c94aa1553508e1539dd5c14189f86eb57d826dfdf5e2f0"
+    },
+    "exactApiOperations": [
+      "clinic.api.request"
+    ],
+    "retiredReleaseGrants": [
+      {
+        "apiOperations": [
+          "clinic.api.request"
+        ],
+        "packageSha256": "433a37e77da1ff20beb09b710c0da2d9ccbd944c1300375a08875f4c3abf9b03",
+        "payloadDigest": "6e58bc374902f99710b4293385ffac5feb317b3849d67533dff9312b51b4b291",
+        "version": "1.0.1"
+      }
+    ],
+    "retainedGrantVersions": [
+      "1.0.2",
+      "1.0.3",
+      "1.0.4",
+      "1.0.5",
+      "1.0.6",
+      "1.0.7",
+      "1.0.8"
+    ]
+  },
+  "checks": {
+    "appTypecheck": "passed",
+    "packageContractTests": {
+      "passed": 5,
+      "total": 5
+    },
+    "appBuild": "passed",
+    "rootBuild": "passed",
+    "rootUnitTests": {
+      "passed": 528,
+      "total": 528
+    },
+    "privateUi": {
+      "passed": true,
+      "checks": 28,
+      "report": "../../../artifacts/m17-appointments-private-2026-10-24T06-14-56.365Z.json",
+      "screenshot": "../../../artifacts/m17-appointments-private-2026-10-24T06-14-56.365Z.png"
+    },
+    "publisher": {
+      "httpStatus": 200,
+      "packageWritten": true,
+      "artworkWritten": true,
+      "catalogueSequence": 91,
+      "updatePolicySequence": 91,
+      "anonymousDenied": true,
+      "replayDenied": true,
+      "temporaryWorkerCleanedUp": true
+    },
+    "releasePublicReadback": {
+      "passed": true,
+      "feedSequence": 91,
+      "signedCatalogueAndPolicy": true,
+      "exactPackageBytesAndSignature": true,
+      "exactApiGrant": true,
+      "artworkBytesAndHash": true,
+      "retiredGrant": "1.0.1"
+    },
+    "finalPublicReadback": {
+      "passed": true,
+      "feedSequence": 91,
+      "report": "../../../artifacts/m17-staging-packages-readonly-2026-10-24T06-16-44.316Z.json",
+      "allTenM17PackagesVerified": true,
+      "isolatedRegistryInstallLaunchHealthUninstall": true,
+      "checkCount": 36
+    }
+  },
+  "limitations": [
+    "Published to the Cloudflare staging Store only; no production promotion.",
+    "Not installed through the authenticated user Store profile; live clinic workflows remain open.",
+    "The already-running desktop OS was not restarted; refresh the staging Store and fully relaunch Appointments to load 1.0.8."
+  ]
+}

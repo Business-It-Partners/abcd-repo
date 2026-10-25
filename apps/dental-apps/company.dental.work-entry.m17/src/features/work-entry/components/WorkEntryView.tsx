@@ -230,6 +230,24 @@ interface WorkEntryViewProps {
 const ANTICOAG_RE = /warfarin|blood thinner|anticoagulant|heparin|clopidogrel/i;
 const SURGICAL_RE = /extraction|surgery|surgical|implant|extract/i;
 
+function formatIndianRupeeInput(value: string): string {
+  const [whole = "", ...fractionParts] = value.split(".");
+  const groupedWhole = whole.length > 3
+    ? `${whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",")},${whole.slice(-3)}`
+    : whole;
+  return fractionParts.length ? `${groupedWhole}.${fractionParts.join("")}` : groupedWhole;
+}
+
+function caretPositionForGroupedInput(value: string, logicalOffset: number): number {
+  if (logicalOffset <= 0) return 0;
+  let seen = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== ",") seen += 1;
+    if (seen >= logicalOffset) return index + 1;
+  }
+  return value.length;
+}
+
 const card: React.CSSProperties = {
   background: "#ffffff",
   border: "1px solid #cbd5e1",
@@ -238,6 +256,22 @@ const card: React.CSSProperties = {
   boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
   width: "100%",
   boxSizing: "border-box",
+};
+
+// In the fixed, tabbed patient flow the tab bar defines the page edge. Keep
+// the tab content flush with it instead of wrapping each step in another card.
+const workflowPage: React.CSSProperties = {
+  ...card,
+  border: "none",
+  padding: 0,
+  boxShadow: "none",
+};
+
+const continuationStepFrame: React.CSSProperties = {
+  ...workflowPage,
+  border: "1px solid #c6d4df",
+  padding: "16px",
+  boxShadow: "0 3px 12px rgba(15, 23, 42, 0.05)",
 };
 
 const label: React.CSSProperties = {
@@ -333,20 +367,28 @@ export default function WorkEntryView({
   onFinish,
 }: WorkEntryViewProps) {
   const [step, setStep] = useState(initialStep);
-  const paymentStep = canCollectPayment ? 6 : null;
-  const recallStep = canCollectPayment ? 7 : 6;
-  const reviewStep = canCollectPayment ? 8 : 7;
-  const workflowSteps = canCollectPayment
-    ? [...CORE_STEPS, { n: 6, displayN: 5, label: "Payment" }, { n: 7, displayN: 6, label: "Recall" }, { n: 8, displayN: 7, label: "Review & commit" }]
-    : [...CORE_STEPS, { n: 6, displayN: 5, label: "Recall" }, { n: 7, displayN: 6, label: "Review & commit" }];
+  const [passedSteps, setPassedSteps] = useState<Set<number>>(() => new Set());
+  const paymentCollectionEnabled = canCollectPayment && !fixedPatientFlow;
+  const visibleCoreSteps = fixedPatientFlow
+    ? CORE_STEPS.map((workflowStep) => workflowStep.n === 5 ? { ...workflowStep, label: "Imaging & Rx" } : workflowStep)
+    : CORE_STEPS;
+  const paymentStep = paymentCollectionEnabled ? 6 : null;
+  const recallStep = paymentCollectionEnabled ? 7 : 6;
+  const reviewStep = paymentCollectionEnabled ? 8 : 7;
+  const workflowSteps = paymentCollectionEnabled
+    ? [...visibleCoreSteps, { n: 6, displayN: 5, label: "Payment" }, { n: 7, displayN: 6, label: "Follow-up" }, { n: 8, displayN: 7, label: "Review & commit" }]
+    : [...visibleCoreSteps, { n: 6, displayN: 5, label: "Follow-up" }, { n: 7, displayN: 6, label: "Review & commit" }];
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
 
-  const goToStep = (nextStep: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) => {
+  const goToStep = (nextStep: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8, markCurrentPassed = false) => {
     if (!onCommitWorkEntry && nextStep > effStep && currentStepHasUnsavedChanges) {
       setSaveError("Save this section before moving to a later step.");
       return;
+    }
+    if (markCurrentPassed && nextStep > effStep) {
+      setPassedSteps((current) => current.has(effStep) ? current : new Set(current).add(effStep));
     }
     setSaveError("");
     setStep(nextStep);
@@ -432,7 +474,7 @@ export default function WorkEntryView({
       // immediately, so navigation or a later encounter failure cannot lose clinical data.
       const history = [data, ...(existing.canalHistory || []).filter((item) => item.tooth !== data.tooth)];
       void Promise.resolve(onSaveCanalHistory(existing.id, history)).catch(() => {
-        showToast("Could not save canal readings to the patient record.");
+        setSaveError("Could not save canal readings to the patient record.");
       });
     }
   };
@@ -514,7 +556,7 @@ export default function WorkEntryView({
     repairedCaseRef.current = repairKey;
     void Promise.resolve(onUpdateCase(openCase.id, { stages: repairedStages })).catch(() => {
       repairedCaseRef.current = "";
-      showToast("This treatment plan could not be repaired. Reload it before recording work.");
+      setSaveError("This treatment plan could not be repaired. Reload it before recording work.");
     });
   }, [openCase, onUpdateCase, showToast]);
 
@@ -812,8 +854,7 @@ export default function WorkEntryView({
     !saved &&
     !!selectedId &&
     lines.length > 0 &&
-    lines.every((l) => l.procedure.trim().length > 0) &&
-    !allergyConflict;
+    lines.every((l) => l.procedure.trim().length > 0);
 
   const effStep = selectedId ? step : 1;
   const stepStripRef = useRef<HTMLDivElement>(null);
@@ -1030,6 +1071,10 @@ export default function WorkEntryView({
   };
 
   const submit = async () => {
+    if (allergyConflict) {
+      setSaveError("Resolve the medication allergy conflict before saving this encounter.");
+      return;
+    }
     if (selectedDoctors.length === 0) {
       setShowDoctorRequired(true);
       return;
@@ -1096,7 +1141,6 @@ export default function WorkEntryView({
     } catch (error) {
       const message = error instanceof Error ? error.message : "This section could not be saved.";
       setSaveError(message);
-      showToast(message, "error");
       return false;
     } finally {
       setSaving(false);
@@ -1178,7 +1222,7 @@ export default function WorkEntryView({
       return;
     }
     let payment: Omit<PatientPaymentInput, "patientId"> | null = null;
-    if (canCollectPayment) {
+    if (paymentCollectionEnabled) {
       try {
           payment = parseWorkEntryPayment({
             paymentDate: dateISO,
@@ -1209,7 +1253,7 @@ export default function WorkEntryView({
       return null;
     }
     let payment: Omit<PatientPaymentInput, "patientId"> | null = null;
-    if (canCollectPayment) {
+    if (paymentCollectionEnabled) {
       try {
         payment = parseWorkEntryPayment({
           paymentDate: dateISO,
@@ -1235,6 +1279,10 @@ export default function WorkEntryView({
 
   const commitWorkEntry = async () => {
     if (!onCommitWorkEntry || saving) return;
+    if (allergyConflict) {
+      setSaveError("Resolve the medication allergy conflict before committing this visit.");
+      return;
+    }
     if (prescriptionDraftDirty) {
       setSaveError("Add the current medication to the prescription before reviewing the visit.");
       return;
@@ -1255,7 +1303,7 @@ export default function WorkEntryView({
     setSaveError("");
     const finishCommitLoading = beginOperation("Work Entry", {
       title: "Saving record…",
-      message: "Saving clinical work, lab work, payment, and follow-up details.",
+      message: fixedPatientFlow ? "Saving clinical work and follow-up details." : "Saving clinical work, lab work, payment, and follow-up details.",
     }, true);
     let committed = false;
     try {
@@ -1274,7 +1322,7 @@ export default function WorkEntryView({
         },
         periodontalTeeth: perioTeeth,
         prescriptionItems: prescriptions.filter((item) => item.medicine.trim()),
-        labOrders: unpersistedLabOrderDrafts(labOrders),
+        labOrders: fixedPatientFlow ? [] : unpersistedLabOrderDrafts(labOrders),
         recall,
         closeCase,
       });
@@ -1283,7 +1331,6 @@ export default function WorkEntryView({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Work Entry could not be committed.";
       setSaveError(message);
-      showToast(message, "error");
     } finally {
       setSaving(false);
       finishCommitLoading();
@@ -1294,7 +1341,7 @@ export default function WorkEntryView({
   const editTotalCost = editSteps.reduce((sum, s) => sum + (s.agreedCost || 0), 0);
 
   return (
-    <div style={{ padding: "24px", maxWidth: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div style={{ padding: fixedPatientFlow ? "16px 12px 24px" : "24px", maxWidth: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {newComplaintMode && selectedId ? (
             renderNewComplaint(selectedId, () => {
@@ -1312,6 +1359,7 @@ export default function WorkEntryView({
                         ? { ...originalStep, label: patientStepLabel }
                         : originalStep;
                       const active = effStep === s.n;
+                      const completed = !active && passedSteps.has(s.n);
                       const locked = (s.n > 1 && !selectedId) || (!onCommitWorkEntry && s.n > effStep && currentStepHasUnsavedChanges);
                       return (
                         <button
@@ -1322,13 +1370,14 @@ export default function WorkEntryView({
                           data-active-step={active ? "true" : undefined}
                           data-work-entry-step={s.n}
                           aria-current={active ? "step" : undefined}
+                          aria-label={completed ? `${s.label}, visited` : undefined}
                           title={!onCommitWorkEntry && s.n > effStep && currentStepHasUnsavedChanges ? "Save this section before moving forward." : undefined}
-                          className={active ? `${styles.stepButton} ${styles.stepButtonActive}` : styles.stepButton}
+                          className={`${styles.stepButton}${active ? ` ${styles.stepButtonActive}` : completed ? ` ${styles.stepButtonComplete}` : ""}`}
                         >
-                          <span className={active ? `${styles.stepNumber} ${styles.stepNumberActive}` : styles.stepNumber}>
-                            {s.displayN}
+                          <span className={`${styles.stepNumber}${active ? ` ${styles.stepNumberActive}` : completed ? ` ${styles.stepNumberComplete}` : ""}`}>
+                            {completed ? <Check size={15} strokeWidth={2.6} aria-hidden="true" /> : s.displayN}
                           </span>
-                          <span>{s.label}</span>
+                          <span className={styles.stepLabel}>{s.label}</span>
                         </button>
                       );
                     })}
@@ -1336,11 +1385,11 @@ export default function WorkEntryView({
                   {fixedPatientFlow && (
                     <div className={`clinicWizardHeaderActions ${styles.stepActions}`} data-work-entry-step-actions>
                       {effStep === 1 && (renderPatientStep ? (
-                        <button type="button" className="btn btn-primary" onClick={() => goToStep(2)}>
+                        <button type="button" className="btn btn-primary" onClick={() => goToStep(2, true)}>
                           Next <ArrowRight size={14} />
                         </button>
                       ) : (
-                        <button type="button" className="btn btn-primary" onClick={() => goToStep(2)}>
+                        <button type="button" className="btn btn-primary" onClick={() => goToStep(2, true)}>
                           Next <ArrowRight size={14} />
                         </button>
                       ))}
@@ -1349,7 +1398,7 @@ export default function WorkEntryView({
                           {!onCommitWorkEntry && <button type="button" className="btn btn-primary" disabled={!workHasUnsavedChanges || saving} onClick={() => void saveWorkTab()}>
                             {saving ? "Saving…" : "Save work"}
                           </button>}
-                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && workHasUnsavedChanges) || saving} onClick={() => goToStep(4)}>
+                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && workHasUnsavedChanges) || saving} onClick={() => goToStep(4, true)}>
                             Next <ArrowRight size={14} />
                           </button>
                         </>
@@ -1359,7 +1408,7 @@ export default function WorkEntryView({
                           {!onCommitWorkEntry && <button type="button" className="btn btn-primary" disabled={!perioTeeth || saving} onClick={() => void savePerioTab()}>
                             {saving ? "Saving…" : "Save perio chart"}
                           </button>}
-                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && Boolean(perioTeeth)) || saving} onClick={() => goToStep(5)}>
+                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && Boolean(perioTeeth)) || saving} onClick={() => goToStep(5, true)}>
                             Next <ArrowRight size={14} />
                           </button>
                         </>
@@ -1369,32 +1418,33 @@ export default function WorkEntryView({
                           {!onCommitWorkEntry && <button type="button" className="btn btn-primary" disabled={!prescriptions.length || prescriptionDraftDirty || saving} onClick={() => void savePrescriptionTab()}>
                             {saving ? "Saving…" : "Save prescription"}
                           </button>}
-                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && prescriptionHasUnsavedChanges) || saving} onClick={() => goToStep(6)}>
-                            {canCollectPayment ? "Payment" : "Recall"} <ArrowRight size={14} />
+                          <button type="button" className="btn btn-primary" disabled={(!onCommitWorkEntry && prescriptionHasUnsavedChanges) || saving} onClick={() => goToStep(6, true)}>
+                          Next <ArrowRight size={14} />
                           </button>
                         </>
                       )}
                       {effStep === 6 && (
-                        canCollectPayment ? <button type="button" className="btn btn-primary" disabled={saving} onClick={() => goToStep(7)}>Recall <ArrowRight size={14} /></button>
-                          : <button type="button" className="btn btn-primary" disabled={(!noFollowUpNeeded && !fuDate) || saving} onClick={() => onCommitWorkEntry ? goToStep(7) : void saveRecallTab()}>{saving ? "Saving…" : onCommitWorkEntry ? <>Next <ArrowRight size={14} /></> : "Save recall"}</button>
+                        paymentCollectionEnabled ? <button type="button" className="btn btn-primary" disabled={saving} onClick={() => goToStep(7, true)}>Next <ArrowRight size={14} /></button>
+                          : <button type="button" className="btn btn-primary" disabled={(!noFollowUpNeeded && !fuDate) || saving} onClick={() => onCommitWorkEntry ? goToStep(7, true) : void saveRecallTab()}>{saving ? "Saving…" : onCommitWorkEntry ? <>Next <ArrowRight size={14} /></> : "Save recall"}</button>
                       )}
-                      {canCollectPayment && effStep === 7 && (
-                        <button type="button" className="btn btn-primary" disabled={(!noFollowUpNeeded && !fuDate) || saving} onClick={() => onCommitWorkEntry ? goToStep(8) : void saveRecallTab()}>{saving ? "Saving…" : onCommitWorkEntry ? <>Next <ArrowRight size={14} /></> : "Save recall"}</button>
+                      {paymentCollectionEnabled && effStep === 7 && (
+                        <button type="button" className="btn btn-primary" disabled={(!noFollowUpNeeded && !fuDate) || saving} onClick={() => onCommitWorkEntry ? goToStep(8, true) : void saveRecallTab()}>{saving ? "Saving…" : onCommitWorkEntry ? <>Next <ArrowRight size={14} /></> : "Save recall"}</button>
+                      )}
+                      {effStep === reviewStep && onCommitWorkEntry && (
+                        <button type="button" className="btn btn-primary" data-work-entry-review-save
+                          disabled={!saved && saving}
+                          onClick={() => saved ? onFinish?.() : void commitWorkEntry()}>
+                          <Check size={16} aria-hidden="true" /> {saved ? "Finish" : saving ? "Saving…" : "Review & save"}
+                        </button>
                       )}
                     </div>
                   )}
                 </div>
               )}
-              {saveError && effStep !== recallStep && (
-                <div role="alert" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)" }}>
-                  {saveError}
-                </div>
-              )}
-
               {/* STEP 1 — PATIENT RESOLUTION */}
-              {effStep === 1 && (renderPatientStep ? renderPatientStep(() => goToStep(2), () => undefined) : (
+              {effStep === 1 && (renderPatientStep ? renderPatientStep(() => goToStep(2, true), () => undefined) : (
                 <section
-                  style={{
+                  style={fixedPatientFlow ? workflowPage : {
                     background: "#ffffff",
                     borderRadius: "0px",
                     border: "1px solid #e2e8f0",
@@ -1407,7 +1457,7 @@ export default function WorkEntryView({
                       top
                       backLabel="Change Patient"
                       onBack={fixedPatientFlow ? undefined : () => { setSelectedId(null); setQuery(""); }}
-                      onNext={() => goToStep(2)}
+                      onNext={() => goToStep(2, true)}
                       nextLabel="Work Done Today"
                     />
                   )}
@@ -1655,7 +1705,7 @@ export default function WorkEntryView({
 
               {/* STEP 2 — WORK DONE TODAY */}
               {effStep === 2 && (
-                <section style={card} onKeyDown={advanceOnEnter}>
+                <section style={fixedPatientFlow ? continuationStepFrame : card} onKeyDown={advanceOnEnter}>
                   {!fixedPatientFlow && (
                     <StepNav
                       top
@@ -1664,7 +1714,7 @@ export default function WorkEntryView({
                       saveLabel="Save work"
                       saveDisabled={!workHasUnsavedChanges}
                       saving={saving}
-                      onNext={() => goToStep(4)}
+                      onNext={() => goToStep(4, true)}
                       nextLabel="Perio Chart"
                       nextDisabled={workHasUnsavedChanges}
                     />
@@ -1673,10 +1723,12 @@ export default function WorkEntryView({
                     <StepDot n={2} /> <Stethoscope size={16} style={{ color: "#7c3aed" }} /> Work Done Today
                   </h3>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 1fr) minmax(360px, 2fr) auto", gap: "16px", alignItems: "end", marginBottom: "16px", background: "#f8fafc", padding: "14px 16px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: fixedPatientFlow ? "190px minmax(360px, 1fr)" : "minmax(240px, 1fr) minmax(360px, 2fr) auto", gap: "16px", alignItems: "end", marginBottom: "16px", background: "#f8fafc", padding: "14px 16px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
                     <div>
                       <label style={label}>Visit Date</label>
-                      <DatePicker value={dateISO} onChange={setDateISO} fluid />
+                      <div style={{ width: "180px", maxWidth: "100%" }}>
+                        <DatePicker value={dateISO} onChange={setDateISO} fluid />
+                      </div>
                     </div>
                     <div>
                       <label style={label}>Attending Doctor(s)</label>
@@ -1758,9 +1810,7 @@ export default function WorkEntryView({
                     {sessionType !== "continue" ? <label style={label}>Work Procedures Performed Today</label> : null}
 
                     {sessionType === "continue" ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px", alignItems: "start" }}>
-                        <div style={{ ...card, padding: "16px", background: "#f0f9ff", border: "1px solid #bae6fd", borderTop: "4px solid #0284c7" }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "12px", alignItems: "start" }}>
+                      <div className={styles.treatmentProtocolGrid} data-work-entry-treatment-grid>
                         {treatmentGroups.map((tg) => {
                           const sortedStages = sortStagesByGrade(tg.stages);
                           const donePrior = sortedStages.filter((s) => s.status === "done");
@@ -1772,7 +1822,7 @@ export default function WorkEntryView({
                           const recordsCanals = tg.stages.some((stage) => stage.recordCanals === true)
                             || (!hasExplicitCanalSetting && /root\s*canal|rct/i.test(tg.name));
                           return (
-                            <div key={tg.name} style={{ border: "1px solid #e9e2d6", borderRadius: "0px", background: "#fbf9f4", padding: "13px 14px", boxShadow: "none" }}>
+                            <div key={tg.name} style={{ minWidth: 0, border: "1px solid #b3cedc", borderRadius: "0px", background: "#c6e1ef", padding: "13px 14px", boxShadow: "none" }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "12px", paddingBottom: "10px", borderBottom: "1px solid #f1f5f9" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
                                   <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", letterSpacing: "0.02em", textTransform: "uppercase", color: "#0284c7" }}>
@@ -1847,8 +1897,8 @@ export default function WorkEntryView({
                                         borderRight: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
                                         borderBottom: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
                                         borderRadius: "0px",
-                                        borderLeft: isDragging ? "1.5px dashed #7c3aed" : "3px solid #16a34a",
-                                        background: isDragging ? "#faf5ff" : isOver ? "#f3e8ff" : "#f0fdf4",
+                                        borderLeft: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
+                                        background: isDragging ? "#faf5ff" : isOver ? "#f3e8ff" : "#ffffff",
                                         opacity: isDragging ? 0.4 : 1,
                                         transition: "background-color 0.12s ease, border-color 0.12s ease",
                                       }}
@@ -1879,7 +1929,7 @@ export default function WorkEntryView({
                                       <Check size={16} style={{ color: "#16a34a", flexShrink: 0 }} />
                                       <span style={{ flex: 1, minWidth: 0 }}>
                                         <span style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                                          <span style={{ fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)", color: "#059669", textDecoration: "line-through" }}>{dIdx + 1}. {s.label}</span>
+                                          <span style={{ fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)", color: "#1e293b" }}>{dIdx + 1}. {s.label}</span>
                                           {(s.gradeLabel || s.grade || isMobilityGroup) && (
                                             <span style={{ fontSize: "var(--fs-11)", fontWeight: "var(--fw-bold)", background: "#f3e8ff", padding: "1px 6px", borderRadius: "0px", color: "#7c3aed", border: "1px solid #e9d5ff" }}>
                                               {s.gradeLabel || (s.grade ? `Grade ${s.grade}` : "Grade I")}
@@ -2011,12 +2061,20 @@ export default function WorkEntryView({
                                         <input
                                           aria-label={`Today's charge for ${s.label}`}
                                           title="Charge for this completed stage"
-                                          style={{ ...input, width: "80px", minWidth: "80px", height: "39px", padding: "6px 8px", textAlign: "right", fontWeight: "var(--fw-bold)", fontVariantNumeric: "tabular-nums", background: "#ffffff" }}
+                                          className={styles.stagePriceInput}
+                                          style={{ ...input, width: "128px", minWidth: "128px", height: "39px", padding: "6px 8px", textAlign: "right", fontWeight: "var(--fw-bold)", fontVariantNumeric: "tabular-nums", background: "#ffffff" }}
                                           inputMode="decimal"
-                                          value={charge}
+                                          value={formatIndianRupeeInput(charge)}
                                           onClick={(e) => e.stopPropagation()}
                                           onChange={(e) => {
-                                            const next = readRupeeText(e.target);
+                                            const target = e.currentTarget;
+                                            const caret = target.selectionStart ?? target.value.length;
+                                            const logicalCaret = target.value.slice(0, caret).replace(/[^\d.]/g, "").length;
+                                            const next = readRupeeText(target);
+                                            const groupedNext = formatIndianRupeeInput(next);
+                                            target.value = groupedNext;
+                                            const nextCaret = caretPositionForGroupedInput(groupedNext, logicalCaret);
+                                            target.setSelectionRange(nextCaret, nextCaret);
                                             setStageChargeDrafts((current) => ({ ...current, [s.order]: next }));
                                             if (selectedLine) {
                                               setLine(selectedLine.key, { cost: next });
@@ -2054,7 +2112,7 @@ export default function WorkEntryView({
                                             style={{
                                               background: "none",
                                               border: "none",
-                                              color: "#94a3b8",
+                                              color: "#dc2626",
                                               cursor: removingStageId ? "wait" : "pointer",
                                               opacity: removingStageId && removingStageId !== s.stageId ? 0.45 : 1,
                                               padding: "2px 4px",
@@ -2065,8 +2123,6 @@ export default function WorkEntryView({
                                               flexShrink: 0,
                                               transition: "color 0.15s ease",
                                             }}
-                                            onMouseEnter={(e) => (e.currentTarget.style.color = "#dc2626")}
-                                            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
                                           >
                                             {removingStageId === s.stageId ? "…" : <Trash2 size={14} />}
                                           </button>
@@ -2128,7 +2184,7 @@ export default function WorkEntryView({
                                   type="button"
                                   onClick={() => onCommitWorkEntry ? addInlineDraftStage(tg.name) : handleOpenAddStageModal(tg.name)}
                                   className="btn btn-secondary btn-sm"
-                                  style={{ marginTop: "10px", border: "1px dashed #cbd5e1", background: "#ffffff", color: "#475569" }}
+                                  style={{ marginTop: "10px", minHeight: "36px", padding: "6px 12px", border: "1px solid #0284c7", background: "#0284c7", color: "#ffffff" }}
                                 >
                                   <Plus size={13} /> Add stage
                                 </button>
@@ -2137,9 +2193,6 @@ export default function WorkEntryView({
                               {/* Root Canal Working Length Trigger Pill */}
                               {recordsCanals && (() => {
                                 const toothNum = teeth[0] ?? "";
-                                const savedCanal = toothNum ? existing?.canalHistory?.find((c) => c.tooth === toothNum) : undefined;
-                                const canalData = toothNum ? (canalDataMap[toothNum] || savedCanal) : undefined;
-                                const hasCanalData = toothNum && !!canalData;
                                 return (
                                   <button
                                     type="button"
@@ -2147,11 +2200,11 @@ export default function WorkEntryView({
                                     className="btn btn-secondary"
                                     style={{
                                       marginTop: "10px",
+                                      marginLeft: "8px",
                                       width: "fit-content",
                                       maxWidth: "100%",
-                                      minWidth: "228px",
                                       border: "1px solid #d8b4fe",
-                                      background: hasCanalData ? "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)" : "#ffffff",
+                                      background: "#ffffff",
                                       color: "#6b21a8",
                                       minHeight: "42px",
                                       padding: "10px 14px",
@@ -2169,21 +2222,13 @@ export default function WorkEntryView({
                                     }}
                                   >
                                     <Stethoscope size={16} style={{ color: "#7c3aed" }} />
-                                    {hasCanalData ? (
-                                      <span>
-                                        Canals: {canalData?.canals.map((c) => `${c.canal}${c.lengthMm ? `: ${c.lengthMm}mm` : ""}`).filter(Boolean).join(" · ")} ✎ Edit
-                                      </span>
-                                    ) : (
-                                      <span>Working Length &amp; Canal Details ({toothNum || "RCT"})</span>
-                                    )}
+                                    <span>Canal Length</span>
                                   </button>
                                 );
                               })()}
                             </div>
                           );
                         })}
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <>
@@ -2213,17 +2258,23 @@ export default function WorkEntryView({
                     )}
                   </div>
 
-                  <div style={{ marginTop: "18px" }}>
-                    <label style={label}>Clinical Note</label>
-                    <textarea style={{ ...input, minHeight: "72px", resize: "vertical" }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Findings, materials used, patient feedback, next steps…" />
+                  <div className={styles.clinicalNoteSection}>
+                    <label className={styles.clinicalNoteLabel} htmlFor="work-entry-clinical-note">Clinical Note</label>
+                    <textarea
+                      id="work-entry-clinical-note"
+                      className={styles.clinicalNoteInput}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Findings, materials used, patient feedback, next steps…"
+                    />
                   </div>
                 </section>
               )}
 
               {/* STEP 3 — TOOTH CHART */}
               {effStep === 3 && existing && (
-                <section style={card}>
-                  <StepNav top onBack={() => goToStep(2)} onNext={() => goToStep(4)} nextLabel="Perio Chart" />
+                <section style={fixedPatientFlow ? workflowPage : card}>
+                  <StepNav top onBack={() => goToStep(2)} onNext={() => goToStep(4, true)} nextLabel="Perio Chart" />
                   <h3 style={sectionTitle}>
                     <StepDot n={3} /> <Activity size={16} style={{ color: "#7c3aed" }} /> Chairside Tooth Chart
                   </h3>
@@ -2233,6 +2284,7 @@ export default function WorkEntryView({
                   <ChairsideChart
                     toothHistory={toothHistory}
                     onSave={(tooth, entry) => onSaveChartEntry(existing.id, tooth, { ...entry, dateISO, doctor })}
+                    onError={setSaveError}
                     onVoidEntry={(entry) => onVoidEntry?.(existing.id, entry)}
                   />
                 </section>
@@ -2240,7 +2292,7 @@ export default function WorkEntryView({
 
               {/* STEP 4 — PERIODONTAL CHART */}
               {effStep === 4 && (
-                <section style={card}>
+                <section style={fixedPatientFlow ? continuationStepFrame : card}>
                   {!fixedPatientFlow && (
                     <StepNav
                       top
@@ -2249,7 +2301,7 @@ export default function WorkEntryView({
                       saveLabel="Save perio chart"
                       saveDisabled={!perioTeeth}
                       saving={saving}
-                      onNext={() => goToStep(5)}
+                      onNext={() => goToStep(5, true)}
                       nextLabel="Imaging, Rx &amp; Lab"
                     />
                   )}
@@ -2270,8 +2322,8 @@ export default function WorkEntryView({
                     <StepNav
                       top
                       onBack={() => goToStep(4)}
-                      onNext={() => goToStep(6)}
-                      nextLabel={canCollectPayment ? "Payment" : "Recall"}
+                      onNext={() => goToStep(6, true)}
+                      nextLabel={paymentCollectionEnabled ? "Payment" : "Follow-up"}
                     />
                   )}
 
@@ -2290,6 +2342,7 @@ export default function WorkEntryView({
                         dateLabel={formatDateShort(dateISO)}
                         capturedOn={dateISO}
                         onUploaded={onMediaChanged}
+                        onError={setSaveError}
                         savedUploads={savedRadiographUploads}
                         onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
                         onRemoveSavedUpload={onRemoveXray ? async (mediaAssetId, reason) => {
@@ -2299,7 +2352,7 @@ export default function WorkEntryView({
                             showToast("Image removed successfully.");
                           } catch (cause) {
                             const message = cause instanceof Error ? cause.message : "Could not remove this image. Please try again.";
-                            showToast(message, "error");
+                            setSaveError(message);
                             throw cause;
                           }
                         } : undefined}
@@ -2315,7 +2368,7 @@ export default function WorkEntryView({
 
               {/* STEP 6 — ADMIN PAYMENT */}
               {paymentStep !== null && effStep === paymentStep && (
-                <section style={card}>
+                <section style={fixedPatientFlow ? continuationStepFrame : card}>
                   <h3 style={sectionTitle}><StepDot n={5} /> <Wallet size={16} style={{ color: "#15803d" }} /> Payment</h3>
                   <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "var(--fs-13)" }}>Record an optional payment or discount for this visit before scheduling the next recall.</p>
                   <WorkEntryPaymentPanel
@@ -2335,22 +2388,19 @@ export default function WorkEntryView({
 
               {/* SHARED RECALL — every role reaches this after optional Admin payment. */}
               {effStep === recallStep && (
-                <section style={card} onKeyDown={advanceOnEnter}>
+                <section style={fixedPatientFlow ? continuationStepFrame : { ...card, border: "none", boxShadow: "none" }} onKeyDown={advanceOnEnter}>
                   {!fixedPatientFlow && (
                     <StepNav
                       top
-                      onBack={() => goToStep(canCollectPayment ? 6 : 5)}
+                      onBack={() => goToStep(paymentCollectionEnabled ? 6 : 5)}
                       onSave={onSaveRecallTab ? () => void saveRecallTab() : undefined}
                       saveLabel="Save recall"
                       saving={saving}
                     />
                   )}
                   <h3 style={sectionTitle}>
-                    <StepDot n={canCollectPayment ? 6 : 5} /> <BellRing size={16} style={{ color: "#7c3aed" }} /> Recall
+                    <StepDot n={paymentCollectionEnabled ? 6 : 5} /> <BellRing size={16} style={{ color: "#7c3aed" }} /> Follow-up
                   </h3>
-                  <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "var(--fs-13)" }}>
-                    Schedule the next clinical visit or confirm that this visit does not need a recall.
-                  </p>
                   <DoctorRecallWorkspace
                     idPrefix="continued-case-recall"
                     date={fuDate}
@@ -2366,7 +2416,7 @@ export default function WorkEntryView({
                     onCloseCaseChange={onCommitWorkEntry ? setCloseCase : undefined}
                     upcoming={upcomingFollowUps}
                   />{false && <div className="workEntryRecallGrid" style={{ display: "grid", gap: "16px" }}>
-                    {canCollectPayment ? <WorkEntryPaymentPanel
+                    {paymentCollectionEnabled ? <WorkEntryPaymentPanel
                       idPrefix="continued-case-payment"
                       todayCharges={charges}
                       previousDue={currentOutstandingDue}
@@ -2438,29 +2488,13 @@ export default function WorkEntryView({
                     />
                     </div>
                   </div>}
-                  {saveError && (
-                    <div style={{ marginTop: "14px", background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)" }}>
-                      {saveError}
-                    </div>
-                  )}
                 </section>
               )}
 
               {/* STEP 7 — REVIEW & BILL */}
               {effStep === reviewStep && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <section style={{ ...card, padding: "20px" }}>
-                    <div style={{ marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <button
-                        type="button"
-                        onClick={() => goToStep(recallStep)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <ArrowLeft size={14} /> Back
-                      </button>
-                    </div>
-
+                  <section style={fixedPatientFlow ? workflowPage : { ...card, padding: "20px", border: "none", boxShadow: "none" }}>
                     {(() => {
                       const patientMeta = existing
                         ? [existing.patientNumber, `${existing.age} yrs`, existing.sex === "M" ? "Male" : "Female", existing.phone]
@@ -2493,7 +2527,7 @@ export default function WorkEntryView({
                           caseStatus={onCommitWorkEntry && closeCase ? "Closed after this visit" : undefined}
                           perio={perioRows}
                           prescriptions={prescriptions.filter((d) => d.medicine.trim())}
-                          labOrders={labOrders}
+                          labOrders={fixedPatientFlow ? [] : labOrders}
                           patientAlerts={patientAlerts}
                           money={{ todayCharges: charges, discount: discount > 0 ? discount : undefined, previousDue: priorBalance, paid, balance: newBalance }}
                         />
@@ -2501,13 +2535,7 @@ export default function WorkEntryView({
                     })()}
 
                     {/* A saved encounter ends in the same focused Finish flow as a new case. */}
-                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {saveError && (
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", borderRadius: "10px", fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)" }}>
-                          <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "1px" }} />
-                          <span>{saveError}</span>
-                        </div>
-                      )}
+                    {!fixedPatientFlow && <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "10px" }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                         <button
                           type="button"
@@ -2519,12 +2547,7 @@ export default function WorkEntryView({
                           <Check size={16} /> {saved ? "Finish" : saving ? "Saving…" : onCommitWorkEntry ? "Commit Work Entry" : "Confirm & Save Encounter"}
                         </button>
                       </div>
-                      {allergyConflict && (
-                        <div style={{ fontSize: "var(--fs-12)", color: "#dc2626", fontWeight: "var(--fw-bold)", textAlign: "center" }}>
-                          Resolve allergy conflict before saving encounter.
-                        </div>
-                      )}
-                    </div>
+                    </div>}
                   </section>
                 </div>
               )}
@@ -2959,6 +2982,17 @@ export default function WorkEntryView({
             </div>
           </ModalBody>
         </Modal>
+      )}
+      {saveError && (
+        <ConfirmDialog
+          title="Something needs attention"
+          body={<span role="alert">{saveError}</span>}
+          confirmLabel="OK"
+          showCancel={false}
+          centered
+          onConfirm={() => setSaveError("")}
+          onCancel={() => setSaveError("")}
+        />
       )}
     </div>
   );

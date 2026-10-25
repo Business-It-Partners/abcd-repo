@@ -27,6 +27,8 @@ const mediaAssetId = '88888888-8888-4888-8888-888888888888';
 const mediaAssetIds = [mediaAssetId, '99999999-9999-4999-8999-999999999999', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'];
 const mediaAssets = new Map();
 let nextMediaAssetIndex = 0;
+let caseWorklistStatus = 'in_progress';
+let mediaUploadDelayMs = 0;
 const calls = [];
 const roleDenied = process.env.M17_DENY_ROLE === '1';
 const caps = roleDenied ? [] : ['work_entry.access', 'patient_payments.collect', 'lab_tracker.access', 'staff.reference.read', 'treatment_protocols.reference.read', 'patient_billing_ledger.read', 'followups.access'];
@@ -66,7 +68,10 @@ global.fetch = async (url, init = {}) => {
     return json({ uploadIntent: { media: asset, uploadUrl: `${staging.apiBase}/v1/patient-media/${uploadMediaAssetId}/content`, uploadHeaders: { 'content-type': asset.mimeType } } }, 201);
   }
   const contentUploadId = /^\/v1\/patient-media\/([^/]+)\/content$/.exec(target.pathname)?.[1];
-  if (entry.method === 'PUT' && contentUploadId && mediaAssets.has(contentUploadId)) return new Response(null, { status: 204 });
+  if (entry.method === 'PUT' && contentUploadId && mediaAssets.has(contentUploadId)) {
+    if (mediaUploadDelayMs > 0) await new Promise(resolve => setTimeout(resolve, mediaUploadDelayMs));
+    return new Response(null, { status: 204 });
+  }
   const finaliseId = /^\/v1\/patient-media\/([^/]+)\/finalise$/.exec(target.pathname)?.[1];
   if (entry.method === 'POST' && finaliseId && mediaAssets.has(finaliseId)) {
     const asset = { ...mediaAssets.get(finaliseId), status: 'active', updatedAt: '2026-10-24T00:01:00.000Z' };
@@ -79,8 +84,8 @@ global.fetch = async (url, init = {}) => {
     return json({ withdrawn: true });
   }
   if (entry.method === 'GET' && target.pathname === '/v1/work-entry/cases') return json({ cases: [{ ...summary,
-    cases: [{ chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: 'in_progress' }],
-    latestCase: { chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: 'in_progress' },
+    cases: [{ chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: caseWorklistStatus }],
+    latestCase: { chiefComplaintId: caseId, chiefComplaint: caseValue.chiefComplaint, openedOn: caseValue.openedOn, status: 'open', rowVersion: 1, treatmentProtocolCount: 1, worklistStatus: caseWorklistStatus },
   }] });
   if (entry.method === 'GET' && target.pathname === '/v1/treatment-protocols') return json({ treatmentProtocols: [clone(protocolValue)] });
   if (entry.method === 'GET' && target.pathname === '/v1/clinic/staff-references') return json({ staff: [{ staffId, fullName: 'Synthetic Dentist', staffType: 'doctor', status: 'active' }] });
@@ -153,6 +158,8 @@ app.whenReady().then(async () => {
   ipcMain.on('runtime:module-selection-ack', (event, value) => { moduleAcks.push(value); runtime.acknowledgeModule(event, value); });
   global.m17WorkEntry = {
     calls, effects: () => effects, caseValue,
+    setWorklistStatus: status => { if (status !== 'open' && status !== 'in_progress') throw Error('Invalid fixture status'); caseWorklistStatus = status; },
+    setMediaUploadDelay: delayMs => { mediaUploadDelayMs = Math.max(0, Number(delayMs) || 0); },
     navigate: (direction, discardDirty = false, preserveDraft = false) => runtime.navigate(appId, direction, discardDirty, preserveDraft),
     navigation: () => runtime.entries.get(appId)?.state.navigation ?? null,
     module: async () => { moduleSelectionResult = await runtime.selectModule(appId, 'work-entry'); return moduleSelectionResult; },

@@ -40,6 +40,8 @@ interface ChairsideChartProps {
    * chart asks who did the work; the entry wizards already know, and pass it themselves.
    */
   onSave: (tooth: string, entry: ChairsideEntry, doctor?: string) => Promise<void>;
+  /** Route save failures to the containing workflow's shared error dialog. */
+  onError?: (message: string) => void;
   /**
    * Teeth with work PLANNED on them, read live from the patient's open cases. Drawn as a dashed
    * outline. Deliberately not stored: a plan is an intention, and the chart records only what
@@ -59,6 +61,7 @@ interface ChairsideChartProps {
 export default function ChairsideChart({
   toothHistory,
   onSave,
+  onError,
   plannedTeeth,
   onVoidEntry,
   doctors,
@@ -109,7 +112,9 @@ export default function ChairsideChart({
       await onSave(selectedTooth, { note: note.trim() }, who || undefined);
       setNote("");
     } catch (err) {
-      setError((err as Error).message || "Couldn't save this entry.");
+      const message = (err as Error).message || "Couldn't save this entry.";
+      if (onError) onError(message);
+      else setError(message);
     } finally {
       setSaving(false);
     }
@@ -247,7 +252,7 @@ export default function ChairsideChart({
                   Add
                 </button>
               </div>
-              {error && (
+              {!onError && error && (
                 <div style={{ marginTop: "7px", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)", color: "#b91c1c" }}>{error}</div>
               )}
             </div>

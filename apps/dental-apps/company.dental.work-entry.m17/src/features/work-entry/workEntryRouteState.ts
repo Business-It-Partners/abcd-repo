@@ -36,20 +36,18 @@ const inProgressClinicalTabByStep: Partial<Record<InProgressStep, string>> = {
 
 export const startCaseStepForTab = (workTab?: string): StartCaseStep => workTab ? startStepByTab[workTab] ?? 1 : 1;
 export const tabForStartCaseStep = (step: StartCaseStep): string | null => startTabByStep[step] ?? null;
-// An existing Work Entry case should open on the clinical work area. The
-// patient-only step remains available through `workTab=patient`, but it is
-// reference context rather than the fastest place to begin recording care.
-export const inProgressStepForTab = (workTab?: string, canCollectPayment = false): InProgressVisibleStep => {
-  if (!workTab) return 2;
-  if (workTab === "payment") return canCollectPayment ? 6 : 2;
-  if (workTab === "recall") return canCollectPayment ? 7 : 6;
-  if (workTab === "review") return canCollectPayment ? 8 : 7;
+// Resume an existing case from its first step unless the route explicitly
+// selects another tab. This keeps the case context visible on every fresh open.
+export const inProgressStepForTab = (workTab?: string): InProgressVisibleStep => {
+  if (!workTab) return 1;
+  // Old links to the removed Payment tab land on Follow-up instead.
+  if (workTab === "payment" || workTab === "recall") return 6;
+  if (workTab === "review") return 7;
   return inProgressClinicalStepByTab[workTab] ?? 2;
 };
 
-export const tabForInProgressStep = (step: InProgressStep, canCollectPayment = false): string | null => {
-  if (step === (canCollectPayment ? 6 : -1)) return "payment";
-  if (step === (canCollectPayment ? 7 : 6)) return "recall";
-  if (step === (canCollectPayment ? 8 : 7)) return "review";
+export const tabForInProgressStep = (step: InProgressStep): string | null => {
+  if (step === 6) return "recall";
+  if (step === 7) return "review";
   return inProgressClinicalTabByStep[step] ?? null;
 };

@@ -79,12 +79,12 @@ import { Page, PageHeader } from "@/shared/ui/workspace-primitives";
 import type { PatientPaymentInput } from "@/features/patients/types";
 import { parseWorkEntryPayment } from "@/features/work-entry/workEntryPayment";
 import { useSnackbar } from "@/shared/ui/SnackbarProvider";
-import WorkEntryPaymentPanel from "./WorkEntryPaymentPanel";
 import DoctorRecallWorkspace from "./DoctorRecallWorkspace";
 import type { FollowUpWorklistItem } from "@/features/patients/types";
 import type { PatientStepActions } from "@/features/work-entry/patientStepActions";
 import { useClinicLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { unpersistedLabOrderDrafts } from "@/features/work-entry/labOrderReview";
+import styles from "../WorkEntryWorkspace.module.css";
 
 // A stage is an imaging stage if its procedure involves a radiograph. Its type is inferred
 // from the wording so the upload prefills correctly.
@@ -285,7 +285,7 @@ const NEW_PATIENT_STEPS = [
   { n: 2, label: "Chart & plan" },
   { n: 3, label: "Imaging, Rx & lab" },
   { n: 4, label: "Today & payment" },
-  { n: 5, label: "Recall" },
+  { n: 5, label: "Follow-up" },
   { n: 6, label: "Review & commit" },
 ] as const;
 
@@ -453,15 +453,18 @@ export default function CaseEntryView({
   // Prefilled for an existing patient's new case, we skip registration and open on Purpose. The
   // parent remounts (key change) whenever this changes, so reading it once at mount is enough.
   const prefilled = initialPatientId != null;
+  const paymentCollectionEnabled = canCollectPayment && !existingCaseWorkflow;
   const showStandaloneRegistrationFields = showsStandalonePatientRegistrationFields({
     isNewPatient: !prefilled,
     hideStepTabs,
     patientStepOnly,
   });
   const [step, setStep] = useState(initialStep);
-  const wizardSteps = NEW_PATIENT_STEPS.map((wizardStep) =>
-    wizardStep.n === 4 && !canCollectPayment ? { ...wizardStep, label: "Today's work" } : wizardStep,
-  );
+  const wizardSteps = NEW_PATIENT_STEPS.map((wizardStep) => {
+    if (existingCaseWorkflow && wizardStep.n === 3) return { ...wizardStep, label: "Imaging & Rx" };
+    if (wizardStep.n === 4 && !paymentCollectionEnabled) return { ...wizardStep, label: "Today's work" };
+    return wizardStep;
+  });
 
   useEffect(() => {
     setStep(initialStep);
@@ -1333,7 +1336,7 @@ export default function CaseEntryView({
     const prescriptionItems = prescriptions.filter((item) => item.medicine.trim());
     const completedOn = todayISO();
     let payment: Omit<PatientPaymentInput, "patientId"> | null = null;
-    if (canCollectPayment) {
+    if (paymentCollectionEnabled) {
       try {
         payment = parseWorkEntryPayment({
           paymentDate: completedOn,
@@ -1348,7 +1351,7 @@ export default function CaseEntryView({
       }
     }
 
-    const draftLabOrders = unpersistedLabOrderDrafts(labOrders);
+    const draftLabOrders = existingCaseWorkflow ? [] : unpersistedLabOrderDrafts(labOrders);
     const odontogram = existingChartHasUnsavedChanges ? {
       recordedOn: dateISO,
       marks: Object.entries(chartMarks).map(([toothCode, mark]) => ({ toothCode, slot: mark.slot, value: mark.value })),
@@ -1379,7 +1382,7 @@ export default function CaseEntryView({
       }];
     });
     if (!completedStages.length && !payment && !followUp && !prescriptionItems.length && !draftLabOrders.length && !perioTeeth && !odontogram && !canalMeasurements.length && !existingPlanHasUnsavedChanges) {
-      setCreateError(canCollectPayment ? "Add or complete treatment, update a chart, record a payment, add a prescription or lab request, or schedule a follow-up before saving." : "Add or complete treatment, update a chart, add a prescription or lab request, or schedule a follow-up before saving.");
+      setCreateError(paymentCollectionEnabled ? "Add or complete treatment, update a chart, record a payment, add a prescription or lab request, or schedule a follow-up before saving." : "Add or complete treatment, update a chart, add a prescription, or schedule a follow-up before saving.");
       return;
     }
     if (completedStages.length && !selectedDoctors.length) {
@@ -1390,7 +1393,7 @@ export default function CaseEntryView({
     setCreateError("");
     const finishCommitLoading = beginOperation("Work Entry", {
       title: "Saving record…",
-      message: "Saving clinical work, lab work, payment, and follow-up details.",
+      message: existingCaseWorkflow ? "Saving clinical work and follow-up details." : "Saving clinical work, lab work, payment, and follow-up details.",
     }, true);
     if (!encounterCommandIdRef.current) encounterCommandIdRef.current = encounterDraftCommandId("work-entry");
     const commandId = encounterCommandIdRef.current;
@@ -1411,10 +1414,10 @@ export default function CaseEntryView({
         odontogram,
         canalMeasurements,
         doctorNames: selectedDoctors,
-        payment,
+        payment: null,
         followUp,
         prescriptionItems,
-        labOrders: draftLabOrders,
+        labOrders: [],
         periodontalTeeth: perioTeeth,
         closeCase,
       });
@@ -1479,12 +1482,12 @@ export default function CaseEntryView({
         </div>
       )}
 
-      <div style={{ marginTop: "16px", maxWidth: "100%" }}>
+      <div style={{ marginTop: embedded ? "8px" : "16px", maxWidth: "100%" }}>
         {/* The wizard — single column; the case summary lives in the final Review step. */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {/* Non-linear step header with integrated action button — perfectly aligned margins */}
-          {(!hideStepTabs || step !== 1) && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", background: "#f8fafc", padding: "10px 16px", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 2px 10px rgba(15,23,42,0.04)" }}>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          {(!hideStepTabs || step !== 1) && <div className={embedded ? styles.stepBar : undefined} style={embedded ? undefined : { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", background: "#f8fafc", padding: "10px 16px", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 2px 10px rgba(15,23,42,0.04)" }}>
+            <div className={embedded ? styles.stepTabs : undefined} data-work-entry-step-tabs={embedded ? "" : undefined} style={embedded ? undefined : { display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
               {wizardSteps.map((s) => {
                 const active = step === s.n;
                 const isCompleted = step > s.n;
@@ -1493,10 +1496,13 @@ export default function CaseEntryView({
                   <button
                     key={s.n}
                     type="button"
+                    className={embedded ? `${styles.stepButton}${active ? ` ${styles.stepButtonActive}` : isCompleted ? ` ${styles.stepButtonComplete}` : ""}` : undefined}
+                    aria-current={active ? "step" : undefined}
+                    data-work-entry-step={embedded ? s.n : undefined}
                     onClick={() => goToStep(s.n)}
                     disabled={blockedUntilSave}
                     title={blockedUntilSave ? "Save the Patient & case details before continuing." : undefined}
-                    style={{
+                    style={embedded ? undefined : {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "8px",
@@ -1514,7 +1520,8 @@ export default function CaseEntryView({
                     }}
                   >
                     <span
-                      style={{
+                      className={embedded ? `${styles.stepNumber}${active ? ` ${styles.stepNumberActive}` : isCompleted ? ` ${styles.stepNumberComplete}` : ""}` : undefined}
+                      style={embedded ? undefined : {
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -1527,16 +1534,16 @@ export default function CaseEntryView({
                         fontWeight: "var(--fw-bold)",
                       }}
                     >
-                      {isCompleted ? "✓" : s.n}
+                      {isCompleted ? embedded ? <Check size={14} aria-hidden="true" /> : "✓" : s.n}
                     </span>
-                    {s.label}
+                    {embedded ? <span className={styles.stepLabel}>{s.label}</span> : s.label}
                   </button>
                 );
               })}
             </div>
 
             {/* Header Right Action Button */}
-            <div className="clinicWizardHeaderActions">
+            <div className={embedded ? `clinicWizardHeaderActions ${styles.stepActions}` : "clinicWizardHeaderActions"} data-work-entry-step-actions={embedded ? "" : undefined}>
               {step === 1 && (
                 <button type="button" onClick={() => goToStep(2)} disabled={!patientChosen} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                   Next <ArrowRight size={14} />
@@ -1544,9 +1551,9 @@ export default function CaseEntryView({
               )}
               {step === 2 && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button type="button" onClick={() => goToStep(1)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(1)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>
+                  </button>}
                   <button type="button" onClick={() => goToStep(3)} disabled={groups.length === 0} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                     Next <ArrowRight size={14} />
                   </button>
@@ -1554,9 +1561,9 @@ export default function CaseEntryView({
               )}
               {step === 3 && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button type="button" onClick={() => goToStep(2)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(2)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>
+                  </button>}
                   <button type="button" onClick={() => goToStep(4)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                     Next <ArrowRight size={14} />
                   </button>
@@ -1564,9 +1571,9 @@ export default function CaseEntryView({
               )}
               {step === 4 && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button type="button" onClick={() => goToStep(3)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(3)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>
+                  </button>}
                   {existingCaseWorkflow ? (
                     <button type="button" onClick={() => goToStep(5)} disabled={createStatus === "saving"} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                       Next <ArrowRight size={14} />
@@ -1579,7 +1586,10 @@ export default function CaseEntryView({
                 </div>
               )}
               {step === 5 && createStatus !== "done" && (
-                <div style={{ display: "flex", gap: "8px" }}><button type="button" onClick={() => goToStep(4)} className="btn btn-secondary" style={{ borderRadius: "0px" }}><ArrowLeft size={14} /> Back</button><button type="button" onClick={() => goToStep(6)} className="btn btn-primary" style={{ borderRadius: "0px" }}>Next <ArrowRight size={14} /></button></div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(4)} className="btn btn-secondary" style={{ borderRadius: "0px" }}><ArrowLeft size={14} /> Back</button>}
+                  <button type="button" onClick={() => goToStep(6)} className="btn btn-primary" style={{ borderRadius: "0px" }}>Next <ArrowRight size={14} /></button>
+                </div>
               )}
             </div>
           </div>}
@@ -1619,7 +1629,7 @@ export default function CaseEntryView({
 
           {/* ============ STEP 1 — PATIENT & PURPOSE ============ */}
           {step === 1 && (
-            <section style={{ display: "flex", flexDirection: "column", gap: "20px" }} onKeyDown={advanceOnEnter}>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={{ display: "flex", flexDirection: "column", gap: "20px" }} onKeyDown={advanceOnEnter}>
 
               {createError ? <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)" }}>{createError}</div> : null}
 
@@ -1925,7 +1935,7 @@ export default function CaseEntryView({
 
           {/* ============ STEP 2 — CHART & PLAN ============ */}
           {step === 2 && (
-            <section style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
               <div style={card}>
                 <h3 style={sectionTitle}>
@@ -1969,6 +1979,7 @@ export default function CaseEntryView({
                       reorderGroupStage={reorderGroupStage}
                       canalDataMap={canalDataMap}
                       openCanalDrawer={openCanalDrawer}
+                      wideCards={existingCaseWorkflow}
                     />
                   </>
                 )}
@@ -2054,17 +2065,17 @@ export default function CaseEntryView({
             };
 
             return (
-              <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
 
                 {/* ── Main 2-column workbench ── */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", alignItems: "start" }}>
+                <div data-work-entry-open-imaging-layout={existingCaseWorkflow ? "" : undefined} style={{ display: "grid", gridTemplateColumns: existingCaseWorkflow ? "repeat(auto-fit, minmax(min(100%, 460px), 1fr))" : "1fr 1fr", gap: "14px", alignItems: "start" }}>
 
-                  {/* ════ LEFT COLUMN: X-Ray + Prescription ════ */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {/* New-patient intake stacks X-rays and prescription at left. Existing cases place prescription beside X-rays. */}
+                  <div style={{ display: existingCaseWorkflow ? "contents" : "flex", flexDirection: "column", gap: "14px" }}>
 
                     {/* X-RAY ZONE */}
                     {(step3SubTab === "all" || step3SubTab === "xray") && (
-                      <div style={{ ...card, padding: "16px" }}>
+                      <div data-work-entry-open-radiographs-card={existingCaseWorkflow ? "" : undefined} style={{ ...card, padding: "16px" }}>
                         <RadiographUploader
                           drafts={xrayDrafts}
                           setDrafts={setXrayDrafts}
@@ -2084,7 +2095,7 @@ export default function CaseEntryView({
 
                     {/* PRESCRIPTION ZONE */}
                     {(step3SubTab === "all" || step3SubTab === "rx") && (
-                      <div style={{ ...card, padding: "16px" }}>
+                      <div data-work-entry-open-prescription-card={existingCaseWorkflow ? "" : undefined} style={{ ...card, padding: "16px" }}>
                         {secLabel(<Pill size={14} />, "Prescription")}
 
                         {/* Quick-add regimens */}
@@ -2180,7 +2191,7 @@ export default function CaseEntryView({
                   </div>
 
                   {/* ════ RIGHT COLUMN: Lab Work ════ */}
-                  {(step3SubTab === "all" || step3SubTab === "lab") && (
+                  {!existingCaseWorkflow && (step3SubTab === "all" || step3SubTab === "lab") && (
                     <LabOrderBlock
                       orders={labOrders}
                       onChange={setLabOrders}
@@ -2197,58 +2208,21 @@ export default function CaseEntryView({
 
           {/* ============ STEP 4 — TODAY & PAYMENT / WORK ENTRY TODAY ============ */}
           {step === 4 && (
-            <section style={{ display: "flex", flexDirection: "column", gap: "14px" }} onKeyDown={advanceOnEnter}>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={{ display: "flex", flexDirection: "column", gap: "14px" }} onKeyDown={advanceOnEnter}>
               <h3 style={sectionTitle}>
-                <StepDot n={4} /> {existingCaseWorkflow ? <ListChecks size={15} /> : <Wallet size={15} />} {canCollectPayment ? "Today & payment" : "Today's work"}
+                <StepDot n={4} /> {existingCaseWorkflow ? <ListChecks size={15} /> : <Wallet size={15} />} {paymentCollectionEnabled ? "Today & payment" : "Today's work"}
               </h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
+              <div data-work-entry-open-today-work-grid={existingCaseWorkflow ? "" : undefined} style={{ display: "grid", gridTemplateColumns: existingCaseWorkflow ? "1fr" : "1fr 1fr", gap: "16px", alignItems: "start" }}>
 
                   {/* ── LEFT: Treatment cards ── */}
                   <div style={{ ...card, padding: "16px", display: "flex", flexDirection: "column", gap: "12px", background: "#f0f9ff", border: "1px solid #bae6fd", borderTop: "4px solid #0284c7" }}>
                     {groups.length > 0 ? <>
                       <DoneTodayGroups groups={groups} setGroupStage={setGroupStage} />
                     </> : <div style={{ fontSize: "var(--fs-13)", color: "#476a83", padding: "10px 11px", background: "#ffffff", border: "1px solid #bae6fd" }}>
-                      {canCollectPayment ? "Choose a plan in the Chart & plan step to mark what is done today. An existing patient balance can still be collected here." : "Choose a plan in the Chart & plan step to mark what is done today."}
+                      {paymentCollectionEnabled ? "Choose a plan in the Chart & plan step to mark what is done today. An existing patient balance can still be collected here." : "Choose a plan in the Chart & plan step to mark what is done today."}
                     </div>}
                   </div>
-
-                  {existingCaseWorkflow && canCollectPayment && <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                    {canCollectPayment ? <WorkEntryPaymentPanel
-                      idPrefix="start-case-payment"
-                      todayCharges={todaysCharges}
-                      previousDue={currentOutstandingDue}
-                      outstandingDue={workEntryOutstandingDue}
-                      paidToday={paidToday}
-                      discount={discountInput}
-                      paymentMethod={paymentMethod}
-                      onPaidTodayChange={setPaidToday}
-                      onDiscountChange={setDiscountInput}
-                      onPaymentMethodChange={setPaymentMethod}
-                    /> : null}
-                    <div style={{ display: "none", ...card, padding: "16px", flexDirection: "column", gap: "12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderTop: "4px solid #64748b" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
-                      <div style={{ width: "28px", height: "28px", display: "grid", placeItems: "center", borderRadius: "7px", background: "#e2e8f0", color: "#334155", flexShrink: 0 }}><BellRing size={15} /></div>
-                      <div><div style={{ ...workAreaTitle, color: "#1e293b" }}>Follow-up</div><div style={{ fontSize: "var(--fs-12)", color: "#64748b", marginTop: "2px" }}>Optional. Schedule the next clinical visit.</div></div>
-                    </div>
-                    <label style={{ order: 3, display: "flex", alignItems: "flex-start", gap: "10px", padding: "11px 12px", borderRadius: "9px", background: noFollowUpNeeded ? "#dcfce7" : "#f0fdf4", border: `1px solid ${noFollowUpNeeded ? "#22c55e" : "#86efac"}`, cursor: "pointer" }}>
-                      <input type="checkbox" checked={noFollowUpNeeded} onChange={(event) => { const checked = event.target.checked; setNoFollowUpNeeded(checked); if (checked) { setFuDate(""); setFuTime(""); setFuReason(""); } }} style={{ "--checkbox-color": "#16a34a", width: "18px", height: "18px", marginTop: "1px", flexShrink: 0 } as React.CSSProperties} />
-                      <span><strong style={{ display: "block", color: "#14532d", fontSize: "var(--fs-14)" }}>No follow-up needed for this visit</strong><span style={{ display: "block", marginTop: "3px", color: "#35654a", fontSize: "var(--fs-12)" }}>No future recall will be created.</span></span>
-                    </label>
-                    <div>
-                      <label style={label}><BellRing size={11} style={{ display: "inline", marginRight: "4px" }} /> Next visit date &amp; time</label>
-                      <div style={{ display: "grid", gridTemplateColumns: "minmax(150px, 190px) minmax(0, 1fr)", gap: "8px" }}>
-                        <DatePicker id="work-entry-follow-up-date" value={fuDate} onChange={setFuDate} fluid disabled={noFollowUpNeeded} />
-                        <TimePicker id="work-entry-follow-up-time" value={fuTime} onChange={setFuTime} fluid disabled={noFollowUpNeeded} />
-                      </div>
-                    </div>
-                    <ReasonPicker id="work-entry-follow-up-reason" label="Next visit reason" value={fuReason} onChange={setFuReason} options={remainingStages.filter((stage) => !stage.alreadyCompleted).map((stage) => `${stage.label}${stage.tooth ? ` · tooth ${stage.tooth}` : ""}`)} disabled={noFollowUpNeeded} />
-                    <label style={{ order: 4, display: "flex", alignItems: "flex-start", gap: "10px", padding: "11px 12px", background: closeCase ? "#fffbeb" : "#f8fafc", border: `1px solid ${closeCase ? "#f59e0b" : "#cbd5e1"}`, cursor: "pointer" }}>
-                      <input type="checkbox" checked={closeCase} onChange={(event) => setCloseCase(event.target.checked)} style={{ "--checkbox-color": "#d97706", width: "18px", height: "18px", marginTop: "1px", flexShrink: 0 } as React.CSSProperties} />
-                      <span><strong style={{ display: "block", color: "#92400e", fontSize: "var(--fs-14)" }}>Close the case</strong><span style={{ display: "block", marginTop: "3px", color: "#78716c", fontSize: "var(--fs-12)" }}>Any unfinished treatment stages remain pending in case history.</span></span>
-                    </label>
-                    </div>
-                  </div>}
 
                   {/* ── RIGHT: Payment inputs for new-patient intake. Existing Work Entry uses the trusted panel above. */}
                   {!existingCaseWorkflow && <div style={{ ...card, padding: "16px", display: "flex", flexDirection: "column", gap: "12px", background: "#f6fdf8", border: "1px solid #bbf7d0", borderTop: "4px solid #16a34a" }}>
@@ -2368,12 +2342,12 @@ export default function CaseEntryView({
 
           {/* ============ STEP 5 — SHARED RECALL ============ */}
           {step === 5 && (
-            <section style={card}><h3 style={sectionTitle}><StepDot n={5} /> <BellRing size={15} /> Recall</h3><DoctorRecallWorkspace idPrefix="start-case-recall" date={fuDate} time={fuTime} reason={fuReason} reasonOptions={remainingStages.filter((stage) => !stage.alreadyCompleted).map((stage) => `${stage.label}${stage.tooth ? ` · tooth ${stage.tooth}` : ""}`)} noFollowUpNeeded={noFollowUpNeeded} onDateChange={setFuDate} onTimeChange={setFuTime} onReasonChange={setFuReason} onNoFollowUpChange={(checked) => { setNoFollowUpNeeded(checked); if (checked) { setFuDate(""); setFuTime(""); setFuReason(""); } }} closeCase={closeCase} onCloseCaseChange={setCloseCase} upcoming={upcomingFollowUps} /></section>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={existingCaseWorkflow ? undefined : card}><h3 style={sectionTitle}><StepDot n={5} /> <BellRing size={15} /> Follow-up</h3><DoctorRecallWorkspace idPrefix="start-case-recall" date={fuDate} time={fuTime} reason={fuReason} reasonOptions={remainingStages.filter((stage) => !stage.alreadyCompleted).map((stage) => `${stage.label}${stage.tooth ? ` · tooth ${stage.tooth}` : ""}`)} noFollowUpNeeded={noFollowUpNeeded} onDateChange={setFuDate} onTimeChange={setFuTime} onReasonChange={setFuReason} onNoFollowUpChange={(checked) => { setNoFollowUpNeeded(checked); if (checked) { setFuDate(""); setFuTime(""); setFuReason(""); } }} closeCase={closeCase} onCloseCaseChange={setCloseCase} upcoming={upcomingFollowUps} /></section>
           )}
 
           {/* ============ REVIEW ============ */}
           {step === 6 && (
-            <section style={card}>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={existingCaseWorkflow ? undefined : card}>
               <h3 style={sectionTitle}>
                 <StepDot n={6} /> <ListChecks size={15} /> {existingCaseWorkflow ? "Review & commit" : "Review & create"}
               </h3>
@@ -2433,7 +2407,7 @@ export default function CaseEntryView({
                     perio={perioRows}
                     canalDataMap={canalDataMap}
                     prescriptions={prescriptions.filter((d) => d.medicine.trim())}
-                    labOrders={labOrders}
+                    labOrders={existingCaseWorkflow ? [] : labOrders}
                     patientAlerts={patientAlerts}
                     money={{ agreed: agreedTotal, todayCharges: todaysCharges, discount: discount > 0 ? discount : undefined, paid, balance }}
                   />
@@ -3127,6 +3101,7 @@ function PlanGroups({
   reorderGroupStage,
   canalDataMap,
   openCanalDrawer,
+  wideCards = false,
 }: {
   groups: PlanGroup[];
   feeName: (code: string) => string;
@@ -3138,10 +3113,11 @@ function PlanGroups({
   reorderGroupStage?: (gid: number, fromIdx: number, toIdx: number) => void;
   canalDataMap?: Record<string, CanalChartData>;
   openCanalDrawer?: (tooth: string) => void;
+  wideCards?: boolean;
 }) {
   const blockProps = { feeName, removeGroup, setGroupStage, addGroupStage, removeGroupStage, setGroupGrade, reorderGroupStage, canalDataMap, openCanalDrawer };
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))", gap: "16px", alignItems: "start" }}>
+    <div className={wideCards ? styles.treatmentProtocolGrid : undefined} data-work-entry-treatment-grid={wideCards ? "" : undefined} style={wideCards ? undefined : { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))", gap: "16px", alignItems: "start" }}>
       {groups.map((group) => (
         <div key={group.gid} style={{ ...card, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0px", padding: "16px", boxShadow: "0 2px 8px rgba(15, 23, 42, 0.03)" }}>
           <PlanGroupBlock group={group} {...blockProps} />

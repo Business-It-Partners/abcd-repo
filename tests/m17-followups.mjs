@@ -40,7 +40,7 @@ try {
   await assertStandardPageScroll(page, check, 'Follow-ups');
   await page.getByText('Synthetic M17 Patient', { exact: true }).waitFor();
   const initial = await inspect(); packageInfo = initial.package;
-  check('ephemeral signed package is the declared app and is below the 2 MiB package asset cap', packageInfo.version === '1.0.2' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('ephemeral signed package is Follow-ups 1.0.5 and is below the 2 MiB package asset cap', packageInfo.version === '1.0.5' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('app is isolated behind the current renderer-safe SDK with no credential or shell Files transfer getter', await page.evaluate(() => Object.keys(window.dentalApp).sort().join(',') === 'cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
   check('initial business reads use only the registered worklist and staff-reference routes', initial.calls.filter(call => call.method === 'GET').map(call => call.path.split('?')[0]).sort().join('|') === '/v1/clinic/staff-references|/v1/follow-ups');
   await fs.mkdir(path.dirname(screenshotPath), { recursive: true });

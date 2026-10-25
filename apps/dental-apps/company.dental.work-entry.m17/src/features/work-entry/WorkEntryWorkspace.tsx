@@ -18,7 +18,6 @@ import type { ClinicSupplier } from "@/features/finance/suppliers/types";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicDataTable } from "@/shared/ui/ClinicDataTable";
-import { ClinicDetailBackButton } from "@/shared/ui/ClinicDetailBackButton";
 import { CaseStatusUpdateModal, type CaseStatusValue } from "@/features/work-entry/CaseStatusUpdateModal";
 import { useClinicLoading, useClinicPageLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { ClinicPageRefreshAction, useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
@@ -35,7 +34,6 @@ import styles from "./WorkEntryWorkspace.module.css";
 import { StandardPageScroll } from "@/shared/ui/StandardPageScroll";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import { inProgressStepForTab, startCaseStepForTab, tabForInProgressStep, tabForStartCaseStep } from "./workEntryRouteState";
-import { invalidateLabOrdersAfterCommit } from "./labOrderInvalidation";
 
 type NewCaseDraft = { patient: PatientSummary | null; complaint: string };
 
@@ -274,7 +272,7 @@ function medicalProfileFromEntry(entry: CaseEntryData, current: PatientCore["med
   };
 }
 
-export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, onLabOrdersChanged }: {
+export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: {
   canCollectPayment: boolean;
   /** Doctors submit a supplier-free lab request and must not load the lab directory. */
   canChooseLabSupplier: boolean;
@@ -310,7 +308,9 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
   const [selectedPerio, setSelectedPerio] = useState<Record<string, ToothPerioData>>({});
   const [selectedCanalData, setSelectedCanalData] = useState<Record<string, CanalChartData>>({});
   const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUpWorklistItem[]>([]);
-  useWorkEntryNavigationBlocker(Boolean((selectedCase && selectedPatientCore && selectedFlow) || newCase));
+  // Existing cases already have the window's Back button as their page-level exit. Keep that
+  // history route available; only a brand-new unsaved case draft blocks host navigation.
+  useWorkEntryNavigationBlocker(Boolean(newCase));
   const [newCaseBusy, setNewCaseBusy] = useState(false);
   const [caseBusy, setCaseBusy] = useState(false);
   const statusFilter = route.params.status === "completed" || route.params.status === "closed" || route.params.status === "all" ? route.params.status : "active";
@@ -659,10 +659,10 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
       upcomingFollowUps={upcomingFollowUps}
       currentOutstandingDue={selectedLedger?.summary.outstandingDue ?? 0}
       canCollectPayment={canCollectPayment}
-      initialStep={inProgressStepForTab(route.params.workTab, canCollectPayment)}
-      onStepChange={(step) => patch({ workTab: tabForInProgressStep(step, canCollectPayment) }, "push")}
+      initialStep={inProgressStepForTab(route.params.workTab)}
+      onStepChange={(step) => patch({ workTab: tabForInProgressStep(step) }, "replace")}
       onCommit={async (draft, completedStages) => {
-        const { work, periodontalTeeth, prescriptionItems, labOrders, recall, closeCase } = draft;
+        const { work, periodontalTeeth, prescriptionItems, recall, closeCase } = draft;
         const doctorIdsByName = new Map(doctors.map((doctor) => [doctor.fullName, doctor.staffId]));
         const doctorStaffIds = work.doctorNames.map((name) => doctorIdsByName.get(name)).filter((staffId): staffId is string => Boolean(staffId));
         const completesNewStage = work.extraWork.some((stage) => stage.completeToday);
@@ -707,20 +707,14 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
               instructions: item.instructions.trim(),
             })),
           } : null,
-          labOrders: labOrders.map((order) => ({
-            supplierId: order.labId || null,
-            labWorkName: order.procedure.trim(),
-            toothScope: order.tooth.trim() || null,
-            shade: order.shade.trim() || null,
-            note: order.notes.trim() || null,
-          })),
+          labOrders: [],
           followUp: recall.followUp ? {
             dueOn: recall.followUp.dateISO,
             dueTime: recall.followUp.time ?? null,
             reason: recall.followUp.reason,
             requestedByStaffId,
           } : null,
-          payment: canCollectPayment ? recall.payment : null,
+          payment: null,
           caseDisposition: closeCase ? { status: "closed", reason: null } : null,
         }, recall.commandId);
         const [caseResult, ledger] = await Promise.all([
@@ -732,9 +726,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
         setSelectedLedger(ledger);
         setCompletedDoctorIds(updated.caseDoctorStaffIds);
         await load();
-        await invalidateLabOrdersAfterCommit(labOrders.length, onLabOrdersChanged, () => {
-          showError("Clinical work was saved, but Lab Tracker could not be refreshed. Open Lab Tracker and use Refresh; do not commit this visit again.");
-        });
         if (periodontalTeeth) setSelectedPerio(periodontalTeeth);
         return { workEntryCase: updated, chargeAmount: commit.chargeAmount };
       }}
@@ -790,7 +781,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
             <div>
               <p className={styles.caseContextEyebrow}>Patient &amp; case</p>
               <h2>{selectedPatientCore.fullName}</h2>
-              <p>{selectedPatientCore.patientNumber} · Opened {selectedCase.openedOn}</p>
+              <p className={styles.caseContextMeta}>{selectedPatientCore.patientNumber} · Opened {selectedCase.openedOn}</p>
             </div>
             <span className={`${styles.status} ${styles[selectedCase.status] ?? styles.open}`}>{displayStatus(selectedCase.status)}</span>
           </div>
@@ -817,7 +808,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
                 : "No active allergy alerts"}</strong>
             </div>
           </div>
-          <p className={styles.caseContextHint}>Patient and case details are managed from the patient record. Use the tabs here to prepare this visit, then commit the clinical work once from the final review.</p>
         </section>
       )}
       onExit={exitSelectedCase}
@@ -825,14 +815,13 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
   </section>;
 
   if (selectedCase && selectedPatientCore) return <section className={styles.workspace} key="work-entry-case">
-    <ClinicDetailBackButton label="Work Entry" onClick={exitSelectedCase} />
     <CaseEntryView
       key={selectedCase.chiefComplaintId}
       embedded
       existingCaseWorkflow
       canCollectPayment={canCollectPayment}
       initialStep={startCaseStepForTab(route.params.workTab)}
-      onStepChange={(step) => patch({ workTab: tabForStartCaseStep(step) }, "push")}
+      onStepChange={(step) => patch({ workTab: tabForStartCaseStep(step) }, "replace")}
       initialPatientId={selectedPatientCore.patientId}
       initialChiefComplaint={selectedCase.chiefComplaint}
       initialCaseOpenedOn={selectedCase.openedOn}
@@ -881,7 +870,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
         const chart = await clinicalChartsApi.savePatientPeriodontalChart(await token(), selectedCase.patientId, { patientId: selectedCase.patientId, chiefComplaintId: selectedCase.chiefComplaintId, recordedOn: today(), teeth: perioForApi(teeth) });
         setSelectedPerio(perioFromApi(chart.teeth));
       }}
-      onCommitTodayWork={async ({ commandId, completedOn, completedStages, planSelections, odontogram, canalMeasurements, doctorNames, payment, followUp, prescriptionItems, labOrders, periodontalTeeth, closeCase }) => {
+      onCommitTodayWork={async ({ commandId, completedOn, completedStages, planSelections, odontogram, canalMeasurements, doctorNames, followUp, prescriptionItems, periodontalTeeth, closeCase }) => {
         const idToken = await token();
         // Resolve against the latest durable case so optimistic concurrency is
         // checked at the final command boundary.
@@ -920,20 +909,14 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
                 instructions: item.instructions.trim(),
               })),
             } : null,
-            labOrders: labOrders.map((order) => ({
-              supplierId: order.labId || null,
-              labWorkName: order.procedure.trim(),
-              toothScope: order.tooth.trim() || null,
-              shade: order.shade.trim() || null,
-              note: order.notes.trim() || null,
-            })),
+            labOrders: [],
             followUp: followUp ? {
               dueOn: followUp.dueOn,
               dueTime: followUp.dueTime,
               reason: followUp.reason,
               requestedByStaffId: doctorStaffIds[0] ?? null,
             } : null,
-            payment,
+            payment: null,
             caseDisposition: closeCase ? { status: "closed", reason: null } : null,
           }, commandId);
           const [caseResult, ledger, chart, canals] = await Promise.all([
@@ -950,9 +933,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
           setCompletedDoctorIds(updatedCase.caseDoctorStaffIds);
           if (periodontalTeeth) setSelectedPerio(periodontalTeeth);
           await load();
-          await invalidateLabOrdersAfterCommit(labOrders.length, onLabOrdersChanged, () => {
-            showError("Clinical work was saved, but Lab Tracker could not be refreshed. Open Lab Tracker and use Refresh; do not commit this visit again.");
-          });
           return { receiptNumber: commit.receiptNumber };
         } catch (cause) {
           const [caseRefresh, ledgerRefresh] = await Promise.allSettled([
@@ -972,7 +952,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier, on
   </section>;
 
   if (selectedCase) return <section className={styles.workspace}>
-    <ClinicDetailBackButton label="Work Entry" onClick={exitSelectedCase} />
     <div className={styles.detailHeading}>
       <div><p className={styles.eyebrow}>WORK ENTRY · {selectedCase.patientNumber}</p><h2>{selectedCase.patientName}</h2><p>{selectedCase.chiefComplaint}</p></div>
       <span className={`${styles.status} ${styles[selectedCase.status]}`}>{displayStatus(selectedCase.status)}</span>

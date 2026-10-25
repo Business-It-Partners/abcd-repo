@@ -24,8 +24,99 @@ const sampleCalendarTask = {
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), rowVersion: 1,
 };
 
-function sampleBody(url, apiResponses) {
+const workEntryPreviewAppId = 'company.dental.work-entry.m17';
+const workEntryPatientId = '11111111-1111-4111-8111-111111111111';
+const workEntryCaseId = '22222222-2222-4222-8222-222222222222';
+const workEntryPatient = {
+  patientId: workEntryPatientId, patientNumber: 'SYN-001', fullName: 'Synthetic Work Entry Patient',
+  dateOfBirth: null, ageYears: 34, sex: 'female', phone: '+977-9800000000', status: 'active',
+  registeredOn: '2026-10-01', rowVersion: 1,
+};
+const makeProtocol = (idPrefix, name, category, toothScope, recordsCanalMeasurements, stages) => ({
+  protocolId: `${idPrefix}-0000-4000-8000-900000000001`, name, category, description: null, toothScope,
+  recordsCanalMeasurements, usesMobilityGrade: false, active: true, starterTemplateCode: null,
+  starterPackVersion: null, rowVersion: 1,
+  totalPrice: stages.reduce((total, [, price]) => total + price, 0),
+  stages: stages.map(([stageName, price], index) => ({
+    protocolStageId: `${idPrefix}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    stageOrder: index + 1, stageName, price, active: true, rowVersion: 1,
+  })),
+});
+const workEntryProtocols = [
+  {
+    patientProtocolId: 'b1000001-0000-4000-8000-900000000001', toothCode: '46', treatmentArea: null,
+    protocol: makeProtocol('a1000001', 'Root canal treatment', 'Endodontics', 'tooth', true, [
+      ['Clean and shape canals', 7500], ['Complete and restore', 5000],
+    ]),
+    completedStageIndexes: [0],
+  },
+  {
+    patientProtocolId: 'b1000002-0000-4000-8000-900000000002', toothCode: '46', treatmentArea: null,
+    protocol: makeProtocol('a1000002', 'Crown restoration', 'Restorative', 'tooth', false, [
+      ['Prepare tooth', 12000], ['Take digital impression', 6500], ['Fit temporary crown', 4000],
+      ['Check crown fit', 5000], ['Cement final crown', 18000],
+    ]),
+    completedStageIndexes: [],
+  },
+  {
+    patientProtocolId: 'b1000003-0000-4000-8000-900000000003', toothCode: null, treatmentArea: 'Full mouth',
+    protocol: makeProtocol('a1000003', 'Periodontal therapy', 'Periodontics', 'full_mouth', false, [
+      ['Full-mouth scaling', 5000], ['Root planing — upper right', 4000], ['Root planing — upper left', 4000],
+      ['Root planing — lower left', 4000], ['Root planing — lower right', 4000], ['Periodontal review', 3500],
+    ]),
+    completedStageIndexes: [],
+  },
+  {
+    patientProtocolId: 'b1000004-0000-4000-8000-900000000004', toothCode: '48', treatmentArea: null,
+    protocol: makeProtocol('a1000004', 'Surgical extraction', 'Oral surgery', 'tooth', false, [
+      ['Pre-operative assessment', 2500], ['Prepare and anesthetize', 4500], ['Remove tooth', 12000],
+      ['Clean and close socket', 5500], ['Post-operative review', 3500],
+    ]),
+    completedStageIndexes: [],
+  },
+];
+const workEntryCase = {
+  chiefComplaintId: workEntryCaseId, patientId: workEntryPatientId, patientNumber: workEntryPatient.patientNumber,
+  patientName: workEntryPatient.fullName, chiefComplaint: 'Molar pain · tooth 46', openedOn: '2026-10-22',
+  status: 'open', outcomeNote: null, closedOn: null, rowVersion: 1, caseDoctorStaffIds: [sampleDoctor.staffId],
+  protocols: workEntryProtocols.map(({ patientProtocolId, toothCode, treatmentArea, protocol, completedStageIndexes }) => ({
+    patientProtocolId, rowVersion: 1, sourceProtocolId: protocol.protocolId, protocolName: protocol.name,
+    toothCode, treatmentArea, status: 'active',
+    stages: protocol.stages.map((stage, index) => ({
+      stageId: `d${protocol.protocolId.slice(1, 8)}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      rowVersion: 1, sourceProtocolStageId: stage.protocolStageId, stageName: stage.stageName,
+      stageOrder: stage.stageOrder, price: stage.price,
+      status: completedStageIndexes.includes(index) ? 'done' : 'pending',
+    })),
+  })),
+};
+const workEntryCaseListItem = {
+  chiefComplaintId: workEntryCaseId, chiefComplaint: workEntryCase.chiefComplaint, openedOn: workEntryCase.openedOn,
+  status: 'open', rowVersion: 1, treatmentProtocolCount: workEntryCase.protocols.length, worklistStatus: 'in_progress',
+};
+
+function sampleBody(url, apiResponses, appId) {
   const pathname = url.pathname;
+  // Work Entry has a dedicated multi-protocol synthetic case for this preview.
+  // Resolve it before generic saved samples: an older api-responses.json may
+  // still be loaded by a preview server that was started before that file was
+  // removed, and would otherwise shadow this case with its single RCT plan.
+  if (appId === workEntryPreviewAppId) {
+    if (pathname === '/v1/work-entry/cases') return { cases: [{ ...workEntryPatient, cases: [workEntryCaseListItem], latestCase: workEntryCaseListItem }] };
+    if (pathname === `/v1/chief-complaints/${workEntryCaseId}/work-entry`) return { case: structuredClone(workEntryCase) };
+    if (pathname === '/v1/treatment-protocols') return { treatmentProtocols: workEntryProtocols.map(({ protocol }) => structuredClone(protocol)) };
+    if (pathname === `/v1/patients/${workEntryPatientId}/core`) return { patient: {
+      ...workEntryPatient, address: null, preferredLanguage: null, emergencyContactName: null, emergencyContactPhone: null,
+      chiefComplaintId: workEntryCaseId,
+      medicalProfile: { conditionsSummary: null, currentMedicationsSummary: null, habitsSummary: null, medicalNotes: null, verifiedOn: null, rowVersion: 1 },
+      allergies: [{ patientAllergyId: 'e1000001-0000-4000-8000-000000000001', allergen: 'Penicillin', reaction: 'Rash', severity: 'moderate', note: null, recordedOn: '2026-10-01', status: 'active', rowVersion: 1 }],
+    } };
+    if (pathname === `/v1/patients/${workEntryPatientId}/ledger`) return { ledger: { summary: { totalBilled: 0, totalCollected: 0, totalDiscount: 0, outstandingDue: 0 }, entries: [], nextCursor: null } };
+    if (pathname === `/v1/patients/${workEntryPatientId}/odontogram`) return { marks: [] };
+    if (pathname === `/v1/patients/${workEntryPatientId}/periodontal-chart`) return { chart: { patientId: workEntryPatientId, lastChartedOn: null, teeth: [] } };
+    if (pathname === `/v1/patients/${workEntryPatientId}/canal-measurements`) return { sessions: [] };
+    if (pathname === '/v1/follow-ups') return { followUps: [] };
+  }
   const exact = `GET ${pathname}${url.search}`;
   if (Object.hasOwn(apiResponses, exact)) return structuredClone(apiResponses[exact]);
   const pathOnly = `GET ${pathname}`;
@@ -33,6 +124,7 @@ function sampleBody(url, apiResponses) {
   if (pathname === '/v1/clinic/staff-references') return { staff: [sampleDoctor] };
   if (pathname === '/v1/follow-ups') return { followUps: [sampleFollowUp] };
   if (pathname === '/v1/patients') return { patients: [samplePatient], total: 1, counts: { all: 1, new: 1, regular: 0 }, nextCursor: null };
+  if (/^\/v1\/patients\/[^/]+\/media$/.test(pathname)) return { media: [] };
   if (pathname === '/v1/appointments/summary') return { summary: { todayBooked: 1, thisWeekBooked: 3, upcomingBooked: 4, cancelled: 0 } };
   if (pathname === '/v1/appointments') return { appointments: [sampleAppointment] };
   if (pathname === '/v1/calendar-tasks') return { calendarTasks: [sampleCalendarTask] };
@@ -89,7 +181,7 @@ export function installBrowserPreviewBridge(config) {
       if (request?.operation === 'clinic.api.request') {
         const input = request.input ?? {};
         const url = new URL(input.path ?? '/', 'https://browser-preview.invalid');
-        if (input.method === 'GET') return { ok: true, value: { status: 200, body: sampleBody(url, config.apiResponses ?? {}) } };
+        if (input.method === 'GET') return { ok: true, value: { status: 200, body: sampleBody(url, config.apiResponses ?? {}, manifest.appId) } };
         return { ok: true, value: { status: 403, body: { message: 'Writes are disabled in Browser Preview.' } } };
       }
       if (request?.operation === 'local.files.pick') return previewError('Device file selection is available in Dental OS Preview.');
@@ -107,16 +199,6 @@ export function installBrowserPreviewBridge(config) {
     },
     report() {},
   };
-
-  const badge = document.createElement('div');
-  badge.textContent = 'BROWSER PREVIEW · SYNTHETIC SESSION AND SAMPLE DATA · WRITES DISABLED';
-  badge.setAttribute('role', 'note');
-  Object.assign(badge.style, {
-    position: 'fixed', zIndex: '2147483647', top: '8px', right: '8px', maxWidth: 'calc(100vw - 16px)',
-    padding: '6px 10px', borderRadius: '8px', background: '#173c63', color: '#fff',
-    font: '600 10px/1.3 system-ui, sans-serif', letterSpacing: '.04em', boxShadow: '0 2px 12px #0003',
-  });
-  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(badge), { once: true });
 }
 
 if (typeof window !== 'undefined' && window.__DENTAL_BROWSER_PREVIEW__) {

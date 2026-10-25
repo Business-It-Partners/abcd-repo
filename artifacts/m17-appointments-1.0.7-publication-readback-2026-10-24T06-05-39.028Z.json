@@ -1,0 +1,42 @@
+{
+  "appId": "company.dental.appointments.m17",
+  "version": "1.0.7",
+  "sequence": 90,
+  "priorSequence": 89,
+  "environment": "cloudfare-staging",
+  "keyId": "company-staging-m17-20261022",
+  "packageSha256": "ae7f92daf961cb63085382cd98b56990074e64d293dd2cbea9bbdcbf5be80c8b",
+  "payloadDigest": "cf1cbd8942c8c1230d4a82e68223f13dace755f1be0a9c00b98ea4a4caecca91",
+  "packageBytes": 1243033,
+  "artworkObjectKey": "artwork/company.dental.appointments.m17/1.0.7/a64ac745c1ca44dc23e1ec90a22c41e73a18e6e3de62ae2ac697e452ff463d92.png",
+  "artworkSha256": "a64ac745c1ca44dc23e1ec90a22c41e73a18e6e3de62ae2ac697e452ff463d92",
+  "artworkBytes": 387506,
+  "retiredReleaseGrants": [
+    {
+      "apiOperations": [
+        "clinic.api.request"
+      ],
+      "packageSha256": "35ac80e60e34f1c9e2487c80052278e8978e5997d014eade7fa3d96b9ccfea16",
+      "payloadDigest": "1f58d8d787e9722c2359389171320b939179ee9e1d998bef116bf4c97e2cb410",
+      "version": "1.0.0"
+    }
+  ],
+  "retainedGrantVersions": [
+    "1.0.1",
+    "1.0.2",
+    "1.0.3",
+    "1.0.4",
+    "1.0.5",
+    "1.0.6",
+    "1.0.7"
+  ],
+  "checks": {
+    "publicationResult": true,
+    "signedFeeds": true,
+    "releaseRow": true,
+    "packageBytes": true,
+    "exactGrant": true,
+    "grantWindow": true,
+    "artwork": true
+  }
+}

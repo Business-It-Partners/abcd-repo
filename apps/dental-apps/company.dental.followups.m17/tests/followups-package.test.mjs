@@ -7,17 +7,24 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readText = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
-test('Follow-ups M17 package has its own current release identity', () => {
+test('Follow-ups M17 package has its own 1.0.5 update identity', () => {
   const pkg = JSON.parse(readText('package.json'));
   const manifest = JSON.parse(readText('app.manifest.json'));
   const metadata = JSON.parse(readText('app.json'));
   assert.equal(pkg.name, 'company.dental.followups.m17');
-  assert.equal(pkg.version, '1.0.3');
+  assert.equal(pkg.version, '1.0.5');
   assert.equal(manifest.appId, pkg.name);
-  assert.equal(manifest.version, '1.0.3');
+  assert.equal(manifest.version, '1.0.5');
   assert.equal(metadata.appId, pkg.name);
   assert.equal(metadata.title, 'Follow-ups');
   assert.deepEqual(manifest.capabilities, ['clinic.app.followups', 'clinic.api.request', 'session.context']);
+});
+
+test('Follow-ups summary cards span the full content width in four equal columns', async () => {
+  const view = readText('src/features/follow-ups/components/FollowUpsView.tsx');
+  const styles = readText('src/styles.css');
+  assert.match(view, /className="followUpsSummaryGrid"/);
+  assert.match(styles, /\.followUpsSummaryGrid\s*\{[^}]*width:\s*100%[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
 });
 
 test('Follow-ups M17 source keeps API calls behind the Dental OS SDK', () => {

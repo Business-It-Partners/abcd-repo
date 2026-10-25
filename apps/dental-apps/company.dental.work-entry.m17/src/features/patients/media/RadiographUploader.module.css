@@ -4,6 +4,10 @@
 .gallery { display:grid; grid-template-columns:repeat(auto-fill, 144px); align-items:start; gap:12px; min-width:0; max-width:568px; }
 .imageCard { position:relative; width:144px; min-width:0; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; background:#fff; }
 .imageButton { display:grid; place-items:center; width:100%; height:108px; padding:0; overflow:hidden; border:0; background:#f5f8fb; cursor:zoom-in; }
+.previewFrame { position:relative; width:100%; }
+.uploadingOverlay { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; background:rgb(255 255 255 / 28%); }
+.uploadSpinner { color:#0284c7; animation:radiographUploadSpin .85s linear infinite; }
+@keyframes radiographUploadSpin { to { transform:rotate(360deg); } }
 .imageButton:focus-visible,.addImage:focus-visible,.removeImage:focus-visible { outline:2px solid #0284c7; outline-offset:2px; }
 .image { display:block; width:100%; height:100%; object-fit:contain; }
 .imagePlaceholder { color:#64748b; }

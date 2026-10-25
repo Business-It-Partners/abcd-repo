@@ -72,8 +72,8 @@ try {
     && careWorkspaceGeometry.shellLeft === 0 && careWorkspaceGeometry.shellRight === 0 && careWorkspaceGeometry.padding === '0px');
   await page.getByText('Synthetic Patient', { exact: false }).first().waitFor();
   const initial = await inspect(app); packageInfo = initial.package;
-  check('updated package is Patient Record 1.0.10 with app assets and JSON/media grants',
-    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.10'
+  check('updated package is Patient Record 1.0.11 with app assets and JSON/media grants',
+    packageInfo.appId === 'company.dental.patient-record.m17' && packageInfo.version === '1.0.11'
       && packageInfo.wireBytes > 0 && packageInfo.assetCount >= 5
       && ['clinic.api.request', 'clinic.media.read', 'clinic.media.upload'].every(op => packageInfo.grants.includes(op)));
   check('renderer receives the SDK bridge without credential or direct-network accessors', await page.evaluate(() => {

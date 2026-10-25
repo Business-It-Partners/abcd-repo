@@ -8,12 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relativePath => fs.readFile(path.join(root, relativePath));
 const readText = async relativePath => (await read(relativePath)).toString('utf8');
 
-test('package identity is the 1.0.4 M17 Appointments update with the platform SDK grant', async () => {
+test('package identity is the 1.0.8 M17 Appointments update with the platform SDK grant', async () => {
   const packageJson = JSON.parse(await readText('package.json'));
   const manifest = JSON.parse(await readText('app.manifest.json'));
 
   assert.equal(packageJson.name, 'company.dental.appointments.m17');
-  assert.equal(packageJson.version, '1.0.5');
+  assert.equal(packageJson.version, '1.0.8');
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.publisher, 'company');
   assert.equal(manifest.version, packageJson.version);
@@ -24,15 +24,21 @@ test('package identity is the 1.0.4 M17 Appointments update with the platform SD
   assert.deepEqual(Object.keys(manifest).sort(), ['apiMajor', 'appId', 'capabilities', 'entry', 'publisher', 'sdkMajor', 'version']);
 });
 
-test('appointments table hides the Doctor column while keeping doctor selection and details', async () => {
+test('appointment table removes the phone and no-show columns and matches Follow-ups row typography', async () => {
   const source = await readText('src/main.tsx');
-  const table = source.slice(source.indexOf('<table className="appointmentTable"'), source.indexOf('</table>'));
-
-  assert.ok(table.length > 0);
-  assert.doesNotMatch(table, /data-label="Doctor"|>Doctor</);
-  assert.match(source, /className="appointmentDoctorFilter"/);
-  assert.match(source, /<label className="appointmentField"><span>Doctor<\/span>/);
-  assert.match(source, /<dt>Status<\/dt><dd>\{statusLabels\[appointment\.status\]\}<\/dd><dt>Reason<\/dt><dd>\{appointment\.reason\}<\/dd><dt>Doctor<\/dt>/);
+  const styles = await readText('src/styles.css');
+  assert.doesNotMatch(source, /<th[^>]*>Phone<\/th>|data-label="Phone"/);
+  assert.doesNotMatch(source, /No-show<\/th>|data-label="No-show"/);
+  assert.match(source, /className="btn btn-primary btn-sm" onClick=\{\(\) => setDetails\(item\)\}>Details/);
+  assert.match(styles, /\.appointmentTable td\s*\{[^}]*font-family:\s*ui-sans-serif,\s*system-ui,\s*sans-serif[^}]*font-size:\s*14px/);
+  assert.match(styles, /\.appointmentTable td > strong\s*\{[^}]*font-size:\s*14px/);
+  assert.match(styles, /\.appointmentSummary\s*\{[^}]*width:\s*100%[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)[^}]*margin:\s*0 0 16px/);
+  assert.match(source, /<col className="appointmentTimeColumn" \/><col className="appointmentPatientColumn" \/><col className="appointmentReasonColumn" \/><col className="appointmentDoctorColumn"/);
+  assert.match(styles, /\.appointmentTable\s*\{[^}]*table-layout:\s*fixed/);
+  assert.match(styles, /\.appointmentTimeColumn\s*\{\s*width:\s*9\.5%/);
+  assert.match(styles, /\.appointmentPatientColumn\s*\{\s*width:\s*19%/);
+  assert.match(styles, /\.appointmentReasonColumn, \.appointmentDoctorColumn\s*\{\s*width:\s*20%/);
+  assert.match(styles, /\.appointmentTable td\[data-label="Time"\]\s*\{\s*white-space:\s*nowrap/);
 });
 
 test('appointment business routes use the Dental OS client and have no direct transport or patient lookup', async () => {

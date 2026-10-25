@@ -54,7 +54,7 @@ export function useClinicNavigationGuard() {
   return value;
 }
 
-/** Marks an open case as in-progress work for both app navigation and host close/update safety. */
+/** Protects an unsaved Work Entry draft from host navigation and close. */
 export function useWorkEntryNavigationBlocker(active: boolean) {
   const { setBlockerActive } = useClinicNavigationGuard();
   const blockerId = useId();
