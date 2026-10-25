@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, dockZoneTop, statusBarHeightForWidth, dockWindowGap, type ResizeEdge } from '../src/windowGeometry';
+import { moveBounds, maximizedBounds, resizeBounds, fitBounds, initialBounds, workArea, dockZoneTop, statusBarHeightForWidth, dockWindowGap, WINDOW_IDS, type ResizeEdge } from '../src/windowGeometry';
 import { dockHeightForWidth } from '../src/motion';
 import { activeWindow, createDesktop, desktopReducer } from '../src/windowManager';
 
@@ -11,9 +11,18 @@ describe('Constrained window resizing', () => {
     expect(area.y).toBe(statusBarHeightForWidth(screen.width));
     expect(dockZoneTop(screen)).toBe(screen.height - dockHeightForWidth(screen.width));
     expect(area.y + area.height).toBe(dockZoneTop(screen) - dockWindowGap);
-    expect(initialBounds('store', screen)).toMatchObject({ y: area.y, height: area.height });
+    for (const id of WINDOW_IDS) expect(initialBounds(id, screen)).toEqual(area);
+    expect(initialBounds('company.sample.preview', screen)).toEqual(area);
     expect(initialBounds('records', screen)).toEqual(area);
     expect(initialBounds('store', { width: 580, height: 800 })).toMatchObject({ y: statusBarHeightForWidth(580), height: workArea({ width: 580, height: 800 }).height });
+  });
+  it('uses the same starting rectangle for registered apps and keeps content-width hints from changing it', () => {
+    const area = workArea(screen);
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'register', id: 'company.sample.preview', title: 'Dental Workspace Preview' });
+    expect(state.windows['company.sample.preview'].normalBounds).toEqual(area);
+    state = desktopReducer(state, { type: 'fit-content-width', id: 'company.sample.preview', preferredContentWidth: 1800, hasModuleSidebar: true });
+    expect(state.windows['company.sample.preview'].normalBounds).toEqual(area);
   });
   it('maximizes across the viewport underneath the floating status bar and dock', () => {
     expect(maximizedBounds(screen)).toEqual({ x: 0, y: 0, width: screen.width, height: screen.height });

@@ -39,6 +39,32 @@ async function waitForNativeBounds(shell, frame) {
   return waitForNative(view => view?.visible && Object.keys(expected).every(key => Math.abs(view.bounds[key] - expected[key]) <= 2));
 }
 
+async function mirrorPresentation(shell) {
+  return shell.locator('[data-runtime="studio"]').evaluate(surface => {
+    const probe = document.createElement('img');
+    probe.className = 'isolated-mirror';
+    surface.append(probe);
+    const result = {
+      nativeVisible: surface.dataset.nativeViewVisible,
+      presentation: surface.dataset.presentation,
+      clipPath: getComputedStyle(probe).clipPath,
+    };
+    probe.remove();
+    return result;
+  });
+}
+
+async function assertMirrorPresentation(shell, nativeVisible, fullscreen = false) {
+  await shell.waitForFunction(expected => {
+    const surface = document.querySelector('[data-runtime="studio"]');
+    return surface?.dataset.nativeViewVisible === (expected ? 'true' : 'false');
+  }, nativeVisible, { timeout: 8000 });
+  const state = await mirrorPresentation(shell);
+  assert.equal(state.nativeVisible, nativeVisible ? 'true' : 'false');
+  assert.equal(state.clipPath, nativeVisible && !fullscreen ? 'inset(0px 15px 15px 0px)' : 'none',
+    'the mirror must be clipped only while its native view covers the window');
+}
+
 try {
   const shell = await app.firstWindow();
   shell.setDefaultTimeout(8000);
@@ -48,6 +74,7 @@ try {
   await shell.waitForFunction(() => document.querySelector('[data-runtime="studio"]')?.dataset.runtimePhase === 'ready');
   console.log('PASS sample native app started');
   await waitForNative(view => view?.visible);
+  await assertMirrorPresentation(shell, true);
 
   async function resizeAt(edge, dx, dy) {
     const before = await frame.boundingBox();
@@ -57,10 +84,11 @@ try {
     console.log(`Checking ${edge} resize`);
     await shell.mouse.move(x, y);
     await shell.mouse.down();
-    await shell.waitForFunction(() => document.querySelector('[data-testid="studio-window"]')?.dataset.interaction === 'resizing');
+    await shell.waitForFunction(() => document.querySelector('[data-testid="studio-window"]')?.dataset.interaction === 'resizing', undefined, { timeout: 8000 });
+    await assertMirrorPresentation(shell, false);
     await shell.mouse.move(x + dx, y + dy, { steps: 6 });
     await shell.mouse.up();
-    await shell.waitForFunction(() => document.querySelector('[data-testid="studio-window"]')?.dataset.interaction === 'idle');
+    await shell.waitForFunction(() => document.querySelector('[data-testid="studio-window"]')?.dataset.interaction === 'idle', undefined, { timeout: 8000 });
     return { before, after: await frame.boundingBox() };
   }
 
@@ -72,17 +100,18 @@ try {
     'the native view must leave the OS bottom-edge and corner hit strips clear');
   console.log('PASS native view leaves right and bottom resize strips clear');
 
-  const right = await resizeAt('e', 24, 0);
-  assert.ok(right.after.width > right.before.width + 10, 'dragging the right edge must resize the OS window');
+  const right = await resizeAt('e', -24, 0);
+  assert.ok(right.before.width > right.after.width + 10, 'dragging the right edge inward must resize the OS window from its shared full-size default');
   await waitForNativeBounds(shell, frame);
+  await assertMirrorPresentation(shell, true);
   console.log('PASS right-edge resize with native app open');
   const bottom = await resizeAt('s', 0, -24);
   assert.ok(bottom.before.height > bottom.after.height + 10, 'dragging the bottom edge inward must resize the OS window');
   await waitForNativeBounds(shell, frame);
   console.log('PASS bottom-edge resize with native app open');
-  const corner = await resizeAt('se', 24, -24);
-  assert.ok(corner.after.width > corner.before.width + 10 && corner.before.height > corner.after.height + 10,
-    'dragging the bottom-right corner must resize the OS window in both directions');
+  const corner = await resizeAt('se', -24, -24);
+  assert.ok(corner.before.width > corner.after.width + 10 && corner.before.height > corner.after.height + 10,
+    'dragging the bottom-right corner inward must resize the OS window in both directions');
   await waitForNativeBounds(shell, frame);
   console.log('PASS bottom-right resize with native app open');
   console.log('PASS native app right, bottom, and corner resize gestures');
@@ -91,6 +120,7 @@ try {
   await shell.waitForFunction(() => document.querySelector('[data-testid="studio-window"]')?.dataset.presentation === 'fullscreen');
   const maximized = await waitForNativeBounds(shell, frame);
   assert.ok(maximized, 'fullscreen apps should continue to use the full content area');
+  await assertMirrorPresentation(shell, true, true);
   console.log('PASS native app view leaves the OS resize strips exposed and right, bottom, corner, and fullscreen sizing work');
 
   await shell.getByRole('button', { name: 'Close Motion Studio', exact: true }).click();

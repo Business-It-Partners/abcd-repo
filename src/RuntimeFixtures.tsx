@@ -1,5 +1,5 @@
 import { useSessionGeneration } from './SessionBoundary';
-import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type RefObject } from 'react';
 import { ManagedWindowFrame, useManagedWindow as useManagedWindowForDynamic, type WindowController } from './ManagedWindow';
 import { useWindowManager, activeWindow } from './windowManager';
 import { developmentRuntimeIdForPackage, runtimeIds, runtimeIdForPackage, type RuntimeState, type RuntimeId, type RuntimeLayout } from '../electron/runtime/contracts';
@@ -44,6 +44,14 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
   const managedApps=dynamicApps;
   const managedAppIds=new Set(managedApps.map(app=>app.id));
   const openManagedAppSignature=managedApps.filter(app=>state.windows[app.id]&&state.windows[app.id].phase!=='closed').map(app=>app.id).sort().join('|');
+  const nativeViewWillBeVisible=(id:RuntimeId,launchReady=true)=>{
+    const win=state.windows[id];
+    if(!win||blocked||front!==id||win.phase!=='visible'||peek||confirm||!launchReady)return false;
+    const bounds=surfaces.current.get(id)?.getBoundingClientRect();
+    const y=Math.max(0,Math.round(bounds?.y??43)),fullHeight=Math.max(1,Math.round(bounds?.height??1));
+    const height=win.presentation==='fullscreen'?fullHeight:Math.min(fullHeight,Math.floor(dockTop-y));
+    return height>0;
+  };
   useEffect(()=>{
     const current=new Map(dynamicApps.map(app=>[app.id,app.title]));
     for(const [id,title] of current)dispatch({type:'register',id,title});
@@ -160,19 +168,19 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
     void window.desktop?.runtime.sync(layouts, generation).catch(()=>setError('Runtime layout unavailable. Close and reopen the app.'));
   },[controllerIds,state,front,blocked,hostTransitioning,peek,confirm,generation,dockTop,launchFeedback]);
   return <>
-    {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirmAction={confirm?.id===id?'close':undefined} requestConfirm={()=>setConfirm({id,action:'close'})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)}/></ManagedWindowFrame>:null;})}
+    {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirmAction={confirm?.id===id?'close':undefined} requestConfirm={()=>setConfirm({id,action:'close'})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} nativeViewVisible={nativeViewWillBeVisible(id,!managedAppIds.has(id)||!!launchFeedback[id]&&launchFeedback[id].handoff!=='waiting')}/></ManagedWindowFrame>:null;})}
     {dynamicApps.filter(app=>state.windows[app.id]).map(app=>{
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm?.id===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState} nativeViewVisible={nativeViewWillBeVisible(id,!!feedback&&feedback.handoff!=='waiting')}
         moduleNavigation={entry?.moduleNavigation}
         onSelectModule={moduleId=>onSelectModule?.(id,moduleId)}/>;
     })}
   </>;
 }
 
-function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirmAction?:RuntimeConfirm['action'];requestConfirm(action:RuntimeConfirm['action']):void;cancel(accepted?:boolean):void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
+function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,requestConfirm,cancel,surface,error,activate,onControllerRef,launchFeedback,launchCountState,nativeViewVisible,moduleNavigation,onSelectModule}:{id:WindowId;title:string;target:RefObject<HTMLButtonElement|null>;entry?:RuntimeState;generation:number;confirmAction?:RuntimeConfirm['action'];requestConfirm(action:RuntimeConfirm['action']):void;cancel(accepted?:boolean):void;surface(el:HTMLDivElement|null):void;error:string;activate():void;onControllerRef(id:string,controller:ControllerRef|null):void;launchFeedback?:LaunchFeedback;launchCountState:string;nativeViewVisible:boolean;moduleNavigation?:WindowModuleNavigation;onSelectModule?(moduleId:string):void|Promise<void>}){
   const controller=useManagedWindowForDynamic(id,target),latest=useRef(controller);latest.current=controller;
   useLayoutEffect(()=>{onControllerRef(id,latest);return()=>onControllerRef(id,null);},[id,onControllerRef]);
   const navigationDisabled=entry?.phase!=='ready'||!!entry?.modal||!!entry?.writeState&&entry.writeState!=='none';
@@ -189,18 +197,18 @@ function DynamicRuntimeWindow({id,title,target,entry,generation,confirmAction,re
   };
   return <ManagedWindowFrame controller={controller} navigationDisabled={navigationDisabled} moduleNavigation={moduleNavigation} onSelectModule={onSelectModule}
     onNavigationBack={requestBack}>
-    <Surface id={id} title={title} controller={controller} entry={entry} confirmAction={confirmAction} requestConfirm={()=>requestConfirm('close')} cancel={cancel} acceptConfirm={confirmAction==='back'?acceptBack:undefined} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState}/>
+    <Surface id={id} title={title} controller={controller} entry={entry} confirmAction={confirmAction} requestConfirm={()=>requestConfirm('close')} cancel={cancel} acceptConfirm={confirmAction==='back'?acceptBack:undefined} surface={surface} error={error} activate={activate} launchFeedback={launchFeedback} launchCountState={launchCountState} nativeViewVisible={nativeViewVisible}/>
   </ManagedWindowFrame>;
 }
 
-function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cancel,acceptConfirm,surface,error,activate,launchFeedback,launchCountState}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirmAction?:RuntimeConfirm['action'];requestConfirm():void;cancel(accepted?:boolean):void;acceptConfirm?():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string}) {
+function Surface({id,title,controller:c,entry,confirmAction,requestConfirm,cancel,acceptConfirm,surface,error,activate,launchFeedback,launchCountState,nativeViewVisible}:{id:RuntimeId;title?:string;controller:WindowController;entry?:RuntimeState;confirmAction?:RuntimeConfirm['action'];requestConfirm():void;cancel(accepted?:boolean):void;acceptConfirm?():void;surface(el:HTMLDivElement|null):void;error:string;activate():void;launchFeedback?:LaunchFeedback;launchCountState?:string;nativeViewVisible:boolean}) {
   const generation=useSessionGeneration();
   const dirty=useRef(false);dirty.current=entry?.dirty??false;const unsafe=useRef(false);unsafe.current=!!entry?.writeState&&entry.writeState!=='none';
   useEffect(()=>{c.setCloseGuard(()=>{if(dirty.current||unsafe.current){requestConfirm();return false;}return true;});return()=>c.setCloseGuard();},[id]);
   useEffect(()=>{c.setModal(!!entry?.modal||!!confirmAction);},[entry?.modal,confirmAction]);
   const managedApp=launchFeedback!==undefined;
   const launchWaiting=managedApp&&c.win.phase!=='closed'&&(launchFeedback?.handoff??'waiting')==='waiting'&&entry?.phase!=='failed'&&entry?.phase!=='unresponsive';
-  return <div ref={surface} className="isolated-surface" data-runtime={id} data-runtime-phase={entry?.phase??'closed'} data-runtime-reason={entry?.reason??''} data-launch-handoff={managedApp?(launchFeedback?.handoff??'waiting'):undefined} data-launch-minimum-elapsed={managedApp?launchFeedback?.minimumElapsed??false:undefined} data-launch-count-state={managedApp?launchCountState:undefined} data-dirty={entry?.dirty??false} data-write-state={entry?.writeState??'none'} onPointerDown={()=>{c.focus();activate();}} tabIndex={-1} data-app-focus>
+  return <div ref={surface} className="isolated-surface" data-runtime={id} data-runtime-phase={entry?.phase??'closed'} data-runtime-reason={entry?.reason??''} data-native-view-visible={nativeViewVisible?'true':'false'} data-presentation={c.win.presentation} style={{'--native-runtime-resize-gutter':`${nativeRuntimeResizeGutter}px`} as CSSProperties} data-launch-handoff={managedApp?(launchFeedback?.handoff??'waiting'):undefined} data-launch-minimum-elapsed={managedApp?launchFeedback?.minimumElapsed??false:undefined} data-launch-count-state={managedApp?launchCountState:undefined} data-dirty={entry?.dirty??false} data-write-state={entry?.writeState??'none'} onPointerDown={()=>{c.focus();activate();}} tabIndex={-1} data-app-focus>
     {entry?.snapshot&&<img className="isolated-mirror" src={entry.snapshot} alt={`Inactive ${id} app`}/>}
     {launchWaiting&&<div className="app-launch-splash" data-testid="app-launch-splash" data-handoff={launchFeedback?.handoff??'waiting'} role="status" aria-live="polite" aria-busy="true"><div className="app-launch-content"><StoreArtwork appId={id} className="app-launch-artwork"/><h2>{title??id}</h2><p><span className="app-launch-spinner" aria-hidden="true"/>Opening your workspace…</p></div></div>}
     {!launchWaiting&&!entry?.snapshot&&entry?.phase==='loading'&&<p className="runtime-message">Starting app…</p>}

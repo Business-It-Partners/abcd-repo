@@ -11,14 +11,14 @@ export function WindowTitleBar({ title, active, maximized, disabled = false, nav
     onPointerDown={onDrag} onDoubleClick={event => {
       if (!disabled && !(event.target as HTMLElement).closest('button')) onToggleMaximize();
     }}>
-    <div className="window-controls" role="group" aria-label={`${title} window controls`}>
-      <button className="window-control window-control-maximize" aria-label={maximized ? `Restore ${title} size` : `Maximize ${title}`} title={maximized ? 'Restore window size' : 'Maximize window'} disabled={disabled} onClick={onToggleMaximize}>
-        {maximized ? <Minimize2 size={8.748} strokeWidth={2.2}/> : <Maximize2 size={8.748} strokeWidth={2.2}/>}
-      </button>
-      {!hideMinimize && <button className="window-control window-control-minimize" aria-label={`Minimize ${title}`} title={`Minimize ${title}`} disabled={disabled} onClick={onMinimize}><Minus size={10.206} strokeWidth={2.4}/></button>}
-      <button className="window-control window-control-close" aria-label={`Close ${title}`} title={`Close ${title}`} disabled={disabled} onClick={onClose}><X size={10.206} strokeWidth={2.4}/></button>
-    </div>
     <div className="window-titlebar-leading">
+      <div className="window-controls" role="group" aria-label={`${title} window controls`}>
+        <button className="window-control window-control-maximize" aria-label={maximized ? `Restore ${title} size` : `Maximize ${title}`} title={maximized ? 'Restore window size' : 'Maximize window'} disabled={disabled} onClick={onToggleMaximize}>
+          {maximized ? <Minimize2 size={8.748} strokeWidth={2.2}/> : <Maximize2 size={8.748} strokeWidth={2.2}/>}
+        </button>
+        {!hideMinimize && <button className="window-control window-control-minimize" aria-label={`Minimize ${title}`} title={`Minimize ${title}`} disabled={disabled} onClick={onMinimize}><Minus size={10.206} strokeWidth={2.4}/></button>}
+        <button className="window-control window-control-close" aria-label={`Close ${title}`} title={`Close ${title}`} disabled={disabled} onClick={onClose}><X size={10.206} strokeWidth={2.4}/></button>
+      </div>
       <div className="window-history-controls" role="group" aria-label="Page navigation">
         <button type="button" aria-label="Back" title="Back" disabled={disabled || navigationDisabled || !canGoBack} onClick={onBack}><ArrowLeft size={19} strokeWidth={1.8}/></button>
       </div>

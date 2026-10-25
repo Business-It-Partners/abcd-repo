@@ -6,8 +6,8 @@ export type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 export const nativeRuntimeResizeGutter = 15;
 const hiddenEdgeFraction = .7;
 export const dockWindowGap = 12;
-// Keep in sync with DesktopChrome.css responsive status-bar min-heights.
-export const statusBarHeightForWidth = (width: number) => width <= 760 ? 65 : 34;
+// Keep in sync with DesktopChrome.css responsive status-bar min-heights plus its 1px border.
+export const statusBarHeightForWidth = (width: number) => width <= 760 ? 66 : 35;
 const comingSoon = (title: string) => ({ title, preferred: { width: 760, height: 480 }, minimum: { width: 480, height: 300 } });
 export const WINDOW_SPECS = {
   'standard-window-1': { title: 'Standard Window 1', preferred: { width: 1080, height: 680 }, minimum: { width: 600, height: 400 } },
@@ -104,11 +104,8 @@ export function moveBounds(bounds: Rect, size: Size): Rect {
   };
 }
 
-export function initialBounds(id: WindowId, size: Size): Rect {
-  const spec = windowSpec(id), area = workArea(size);
-  if (id === 'records' || id === 'followups') return { ...area };
-  const width = Math.min(spec.preferred.width, area.width);
-  return fitBounds({ x: area.x + (area.width - width) / 2, y: area.y, width, height: area.height }, size, spec.minimum);
+export function initialBounds(_id: WindowId, size: Size): Rect {
+  return workArea(size);
 }
 
 export function resizeBounds(start: Rect, edge: ResizeEdge, dx: number, dy: number, size: Size, minimum: Size): Rect {
