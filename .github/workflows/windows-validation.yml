@@ -29,6 +29,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Validate documentation
         run: python tools/check-dental-docs.py
+      - name: Build test fixtures
+        run: npm run pretest
       - name: Unit and filesystem state checks
         shell: pwsh
         run: |

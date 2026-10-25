@@ -46,7 +46,9 @@ This verifies the application policy using synthetic identity responses and a pr
 
 ## M15.11 implementation update — 2026-10-25
 
-The current Linux candidate passes `npm run build` and `npm test -- --maxWorkers=1` (37 files, 527 tests). The first current-source suite run exposed two test-fixture issues: missing local Appointments `dist/` output and stale M17 package-version expectations. The root `pretest` hook now builds the local Appointments fixture before Vitest, and the release-identity test expects the package/manifest versions in this checkout. No app runtime behavior changed for these verification repairs. The Windows workflow uses the same `npm test` entry point.
+The current Linux candidate passes `npm run build` and `npm test -- --maxWorkers=1` (37 files, 527 tests). The first current-source suite run exposed two test-fixture issues: missing local Appointments `dist/` output and stale M17 package-version expectations. The root `pretest` hook now builds the local Appointments fixture before Vitest, and the release-identity test expects the package/manifest versions in this checkout. No app runtime behavior changed for these verification repairs.
+
+Windows workflow run [40213429732](https://github.com/Business-It-Partners/dental-os/actions/runs/40213429732) on `6e004b8b26967808971e8b02c5bbae6f54a0048f` passed documentation validation, then failed in the direct Vitest unit step because the workflow had not built `apps/dental-apps/company.dental.appointments.m17/dist/`. The run recorded 522 passed, 4 skipped, and 1 failed; build and M15-specific Windows proofs were skipped. The workflow has now been amended to run `npm run pretest` before Vitest. This correction is not yet pushed; exact-source Windows verification remains open pending the rerun.
 
 M15.11 remains open pending current-source Windows CI and independent technical review. The corrected staging upload-failure verifier has not been run: `DENTAL_OS_STAGING_CREDENTIAL_FILE` and the expected signer/seed inputs are unset and absent from the known local configuration paths. No staging request was made. The user's manual review and main-project integration remain M15.12.
 
