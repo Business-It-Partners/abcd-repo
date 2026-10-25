@@ -106,6 +106,56 @@ function buildDigest(manifest: Manifest, files: ReadonlyMap<string, Buffer>) {
   return hash.digest('hex');
 }
 
+function waitBriefly(milliseconds: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function acquireRegistryLock(storageRoot: string) {
+  const lockPath = path.join(storageRoot, '.registry.lock');
+  const token = randomUUID();
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 15_000) {
+    let fd: number | undefined;
+    let created = false;
+    try {
+      fd = openSync(lockPath, 'wx', 0o600);
+      created = true;
+      writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: Date.now(), token }));
+      fsyncSync(fd);
+      closeSync(fd);
+      fd = undefined;
+      return () => {
+        try {
+          const lock = safeJson(lockPath, 1024);
+          if (lock?.pid === process.pid && lock?.token === token) unlinkSync(lockPath);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
+      };
+    } catch (error) {
+      if (fd !== undefined) try { closeSync(fd); } catch {}
+      if (created) try { unlinkSync(lockPath); } catch {}
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      try {
+        const info = lstatSync(lockPath);
+        if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || info.size > 1024) throw new Error('Unsafe development app registry lock');
+        const lock = safeJson(lockPath, 1024);
+        const age = Date.now() - Number(lock?.createdAt);
+        let ownerAlive = false;
+        if (Number.isSafeInteger(lock?.pid) && lock.pid > 0) {
+          try { process.kill(lock.pid, 0); ownerAlive = true; }
+          catch (probeError) { ownerAlive = (probeError as NodeJS.ErrnoException).code === 'EPERM'; }
+        }
+        if (!ownerAlive && age > 2_000) unlinkSync(lockPath);
+      } catch (lockError) {
+        if ((lockError as NodeJS.ErrnoException).code !== 'ENOENT') throw lockError;
+      }
+      waitBriefly(50);
+    }
+  }
+  throw new Error('Timed out waiting for the shared development app bucket');
+}
+
 /** Source-only first-party app lane with its own on-disk registry and immutable build snapshots. */
 export class DevelopmentAppService {
   private definitions = new Map<string, Definition>();
@@ -143,7 +193,7 @@ export class DevelopmentAppService {
     return { enabled: this.enabled, apps: [...this.definitions.values()].map(({ id, title, thumbnail }) => ({ id, title, thumbnail })) };
   }
 
-  /** Imports the newest manually built output into the dev-only store and returns that immutable snapshot. */
+  /** Reads the active immutable snapshot from the development-only store. */
   getBuiltApp(appId: string): DevelopmentAppBuild | undefined {
     if (!this.enabled) return undefined;
     const definition = this.definitions.get(appId);
@@ -158,21 +208,24 @@ export class DevelopmentAppService {
         this.verifiedBuilds.add(build);
         return build;
       }
-      if (!existsSync(path.join(definition.sourceRoot, 'dist'))) {
-        const cached = this.readRegistry().apps[appId]?.active;
-        if (!cached) return undefined;
-        const build = this.readSnapshot(appId, cached);
-        this.verifiedBuilds.add(build);
-        return build;
-      }
-      const sourceBuild = this.loadSourceBuild(definition);
-      this.persistBuild(sourceBuild);
-      const build = this.readSnapshot(appId, sourceBuild.buildId);
+      const active = this.readRegistry().apps[appId]?.active;
+      if (!active) return undefined;
+      const build = this.readSnapshot(appId, active);
       this.verifiedBuilds.add(build);
       return build;
     } catch {
       return undefined;
     }
+  }
+
+  /** Validates this checkout's built output and publishes one immutable snapshot to the shared device bucket. */
+  publishBuild(appId: string): Readonly<{ appId: string; buildId: string; version: string }> {
+    if (!this.enabled) throw new Error('Development app publishing is available only in the local OS source run');
+    const definition = this.definitions.get(appId);
+    if (!definition) throw new Error('Unknown first-party development app');
+    const build = this.loadSourceBuild(definition);
+    this.persistBuild(build);
+    return { appId, buildId: build.buildId, version: build.manifest.version };
   }
 
   isAuthorizedBuild(build: DevelopmentAppBuild): boolean {
@@ -221,13 +274,16 @@ export class DevelopmentAppService {
   }
 
   private persistBuild(build: DevelopmentAppBuild) {
-    const registry = this.readRegistry();
-    const previous = registry.apps[build.appId];
-    if (previous?.active === build.buildId) return;
-    this.writeSnapshot(build.appId, build.buildId, build.manifest, build.files);
-    registry.apps[build.appId] = { active: build.buildId, previous: previous?.active ?? null };
-    this.writeRegistry(registry);
-    this.pruneSnapshots(build.appId, registry.apps[build.appId]);
+    const releaseLock = acquireRegistryLock(this.storageRoot);
+    try {
+      const registry = this.readRegistry();
+      const previous = registry.apps[build.appId];
+      if (previous?.active === build.buildId) return;
+      this.writeSnapshot(build.appId, build.buildId, build.manifest, build.files);
+      registry.apps[build.appId] = { active: build.buildId, previous: previous?.active ?? null };
+      this.writeRegistry(registry);
+      this.pruneSnapshots(build.appId, registry.apps[build.appId]);
+    } finally { releaseLock(); }
   }
 
   /** A synthetic local build used only by the guarded private UI fixture. */

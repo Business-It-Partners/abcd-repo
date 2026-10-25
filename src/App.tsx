@@ -91,9 +91,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [storeMessage, setStoreMessage] = useState('');
   const [developmentApps, setDevelopmentApps] = useState<DevelopmentAppView>({ enabled: false, apps: [] });
   const [developmentMessage, setDevelopmentMessage] = useState('');
-  const [developmentRuntimeAppId, setDevelopmentRuntimeAppId] = useState<string | null>(null);
-  const [developmentLaunch, setDevelopmentLaunch] = useState<{ appId: string; preferredContentWidth: number; hasModuleSidebar: boolean } | null>(null);
-  const [pendingDevelopmentSwitch, setPendingDevelopmentSwitch] = useState<{ appId: string; windowId: string } | null>(null);
+  const [developmentLaunches, setDevelopmentLaunches] = useState<Record<string, { preferredContentWidth: number; hasModuleSidebar: boolean }>>({});
   const queue = useRef<StaticWindowId[]>([]);
   const [reservation,setReservation]=useState(1);
   const [readyId,setReadyId]=useState<WindowId|null>(null);
@@ -101,6 +99,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [financeModule,setFinanceModule]=useState(FINANCE_MODULES[0]);
   const [launchNotice,setLaunchNotice]=useState('');
   const launchingPackage=useRef(false);
+  const launchingDevelopmentApps=useRef(new Set<string>());
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
@@ -142,55 +141,40 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   function openStoreApp(id:WindowId){const controller=allControllers[id];if(!controller){setReadyId(id);return;}if(arrivalId){finishArrival.current?.();setArrivalId(null);}setReadyId(null);controller.open();}
   async function prepareDevelopmentOpen(appId:string){
     const id=developmentRuntimeIdForPackage(appId);
-    if(launchingPackage.current)return;
-    launchingPackage.current=true;
+    if(launchingDevelopmentApps.current.has(appId))return;
+    launchingDevelopmentApps.current.add(appId);
     try{
       const result=await window.desktop?.runtime.discoverApp(id);
       if(!result?.ok){setDevelopmentMessage(result?.error?.message??'The local build could not be opened.');return;}
       const app=result.value;
       if(!app||app.runtimeId!==id){setDevelopmentMessage('The local app could not be opened.');return;}
-      setDevelopmentRuntimeAppId(appId);
-      setDevelopmentLaunch({appId,preferredContentWidth:app.preferredContentWidth??defaultTableContentWidth(app.appId)??960,hasModuleSidebar:app.modules.length>1});
+      setDevelopmentLaunches(previous=>({...previous,[appId]:{preferredContentWidth:app.preferredContentWidth??defaultTableContentWidth(app.appId)??960,hasModuleSidebar:app.modules.length>1}}));
       setDevelopmentMessage('');
     }catch{setDevelopmentMessage('The local app could not be opened. Build it from its project first, then try again.');}
-    finally{launchingPackage.current=false;}
+    finally{launchingDevelopmentApps.current.delete(appId);}
   }
   function openDevelopmentApp(appId:string){
     setDevelopmentMessage('');
-    const openDevelopmentId=developmentRuntimeAppId?developmentRuntimeIdForPackage(developmentRuntimeAppId):undefined;
-    const openWindowId=openDevelopmentId&&state.windows[openDevelopmentId]&&state.windows[openDevelopmentId].phase!=='closed'
-      ?openDevelopmentId
-      :state.windows[appId]&&state.windows[appId].phase!=='closed'?appId:undefined;
-    if(openWindowId){
-      const win=state.windows[openWindowId];
-      if(!win||win.modal||win.busy||win.interaction!=='idle'){
-        setDevelopmentMessage('Finish the open dialog or window action before restarting this app.');
-        return;
-      }
-      const controller=allControllers[openWindowId];
-      if(!controller){setDevelopmentMessage('Close the open app, then select it again to load the latest build.');return;}
-      setPendingDevelopmentSwitch({appId,windowId:openWindowId});
-      controller.close();
+    const id=developmentRuntimeIdForPackage(appId),win=state.windows[id];
+    if(win&&win.phase!=='closed'){
+      allControllers[id]?.open();
       return;
     }
     void prepareDevelopmentOpen(appId);
   }
   useEffect(()=>{
-    if(!pendingDevelopmentSwitch)return;
-    if(state.windows[pendingDevelopmentSwitch.windowId]?.phase!=='closed')return;
-    const {appId}=pendingDevelopmentSwitch;
-    setPendingDevelopmentSwitch(null);
-    void prepareDevelopmentOpen(appId);
-  },[pendingDevelopmentSwitch,state.windows]);
-  useEffect(()=>{
-    if(!developmentLaunch)return;
-    const id=developmentRuntimeIdForPackage(developmentLaunch.appId);
-    const controller=allControllers[id],win=state.windows[id];
-    if(!controller||!win||win.phase!=='closed')return;
-    dispatch({type:'fit-content-width',id,preferredContentWidth:developmentLaunch.preferredContentWidth,hasModuleSidebar:developmentLaunch.hasModuleSidebar});
-    setDevelopmentLaunch(null);
-    openStoreApp(id);
-  },[developmentLaunch,dynamicControllerRefs,state.windows]);
+    for(const [appId,launch] of Object.entries(developmentLaunches)){
+      const id=developmentRuntimeIdForPackage(appId);
+      const controller=allControllers[id],win=state.windows[id];
+      if(!controller||!win||win.phase!=='closed')continue;
+      dispatch({type:'fit-content-width',id,preferredContentWidth:launch.preferredContentWidth,hasModuleSidebar:launch.hasModuleSidebar});
+      setDevelopmentLaunches(previous=>{
+        if(previous[appId]!==launch)return previous;
+        const next={...previous};delete next[appId];return next;
+      });
+      openStoreApp(id);
+    }
+  },[developmentLaunches,dynamicControllerRefs,state.windows]);
   async function openInstalledApp(id:WindowId){
     if(!id.startsWith('company.')){openStoreApp(id);return;}
     if(launchingPackage.current)return;
@@ -321,7 +305,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps.filter(app=>app.id===developmentRuntimeAppId)} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onConfirmCancel={id=>setPendingDevelopmentSwitch(pending=>pending?.windowId===id?null:pending)} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>

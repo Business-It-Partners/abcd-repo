@@ -15,12 +15,11 @@ type DynamicApp = { id: string; title: string; target: RefObject<HTMLButtonEleme
 type LaunchHandoff = 'waiting'|'revealing'|'done';
 type LaunchFeedback = { minimumElapsed:boolean; handoff:LaunchHandoff };
 type RuntimeConfirm = { id: RuntimeId; action: 'close' | 'back' };
-export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], targets = {}, onControllerRef = () => {}, blocked, hostTransitioning, onSelectModule, onConfirmCancel }: {
+export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], targets = {}, onControllerRef = () => {}, blocked, hostTransitioning, onSelectModule }: {
   controllers: Record<string, WindowController>; apps?: StoreApp[]; developmentApps?: readonly DevelopmentAppItem[];
   targets?: Record<string, RefObject<HTMLButtonElement | null>>;
   onControllerRef?(id: string, controller: ControllerRef | null): void; blocked: boolean; hostTransitioning: boolean;
   onSelectModule?(id: RuntimeId, moduleId: string): void | Promise<void>;
-  onConfirmCancel?(id: RuntimeId): void;
 }) {
   const generation = useSessionGeneration();
   const { state, dispatch } = useWindowManager();
@@ -28,6 +27,7 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
   const [peek,setPeek]=useState(false), [error,setError]=useState('');
   const [launchFeedback,setLaunchFeedback]=useState<Record<string,LaunchFeedback>>({});
   const surfaces=useRef(new Map<RuntimeId,HTMLDivElement>()), liveControllers=useRef(controllers);
+  const controllerIds=Object.keys(controllers).sort().join('|');
   const registered=useRef(new Map<string,string>());
   const lastNativeTarget=useRef<RuntimeId | undefined>(undefined);
   const launchVisibleDuration=useRef(new Map<RuntimeId,number>()), launchVisibleSince=useRef(new Map<RuntimeId,number>());
@@ -38,7 +38,7 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
   const dockTop=dockZoneTop(state.size);
   const dynamicApps:DynamicApp[]=[
     ...apps.filter(app=>!!app.installedVersion&&!['company.sample.alpha','company.sample.beta'].includes(app.id)).flatMap(app=>{const id=runtimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{id,title:app.title,target}]:[];}),
-    ...developmentApps.slice(0,1).flatMap(app=>{const id=developmentRuntimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{id,title:app.title,target}]:[];}),
+    ...developmentApps.flatMap(app=>{const id=developmentRuntimeIdForPackage(app.id),target=targets[app.id]??targets[id];return target?[{id,title:app.title,target}]:[];}),
   ];
   const appSignature=dynamicApps.map(app=>`${app.id}:${app.title}`).sort().join('|');
   const managedApps=dynamicApps;
@@ -133,7 +133,10 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
       lastNativeTarget.current=undefined;
       return;
     }
-    const ids=Object.keys(controllers).filter(id=>state.windows[id]);
+    // The native runtime accepts only a bounded list of active windows. Sending
+    // every registered app (including closed windows) exceeded that limit once
+    // the installed and development app collections were both populated.
+    const ids=controllerIds?controllerIds.split('|').filter(id=>state.windows[id]&&state.windows[id].phase!=='closed'):[];
     const layouts:RuntimeLayout[]=ids.map(id=>{
       const element=surfaces.current.get(id),r=element?.getBoundingClientRect();
       const x=Math.round(r?.x??0),y=Math.max(0,Math.round(r?.y??43)),width=Math.max(1,Math.round(r?.width??1)),fullHeight=Math.max(1,Math.round(r?.height??1));
@@ -141,7 +144,7 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
       const height=fullscreen?fullHeight:Math.min(fullHeight,Math.floor(dockTop-y));
       const rect=height>0?{x,y,width,height}:{x:0,y:0,width:1,height:1};
       const launchReady=!managedAppIds.has(id)||!!launchFeedback[id]&&launchFeedback[id].handoff!=='waiting';
-      return {id,open:state.windows[id].phase!=='closed',visible:height>0&&front===id&&state.windows[id].phase==='visible'&&!peek&&!confirm&&launchReady,rect};
+      return {id,open:true,visible:height>0&&front===id&&state.windows[id].phase==='visible'&&!peek&&!confirm&&launchReady,rect};
     });
     const nextNativeTarget=layouts.find(layout=>layout.visible)?.id;
     if(lastNativeTarget.current!==nextNativeTarget){
@@ -151,14 +154,14 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
       lastNativeTarget.current=nextNativeTarget;
     }
     void window.desktop?.runtime.sync(layouts, generation).catch(()=>setError('Runtime layout unavailable. Close and reopen the app.'));
-  },[controllers,state,front,blocked,hostTransitioning,peek,confirm,generation,dockTop,launchFeedback]);
+  },[controllerIds,state,front,blocked,hostTransitioning,peek,confirm,generation,dockTop,launchFeedback]);
   return <>
     {runtimeIds.map(id=>{const controller=controllers[id];return controller?<ManagedWindowFrame key={id} controller={controller}><Surface id={id} controller={controller} entry={entries.find(e=>e.id===id)} confirmAction={confirm?.id===id?'close':undefined} requestConfirm={()=>setConfirm({id,action:'close'})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)}/></ManagedWindowFrame>:null;})}
     {dynamicApps.filter(app=>state.windows[app.id]).map(app=>{
       const id=app.id,win=state.windows[id],feedback=launchFeedback[id],entry=entries.find(value=>value.id===id);
       const open=!!win&&win.phase!=='closed';
       const countState=!open?'closed':win?.phase!=='visible'?'window-not-visible':front!==id?'not-foreground':blocked?'blocked':confirm?.id===id?'confirmation-open':feedback?.handoff!=='waiting'?'handoff-started':entry?.phase==='failed'||entry?.phase==='unresponsive'?'runtime-failed':launchCanCountId===id?'counting':'waiting';
-      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={accepted=>{setConfirm(undefined);if(!accepted)onConfirmCancel?.(id);}} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
+      return <DynamicRuntimeWindow key={id} id={id} title={app.title} target={app.target} entry={entry} generation={generation} confirmAction={confirm?.id===id?confirm.action:undefined} requestConfirm={action=>setConfirm({id,action})} cancel={()=>setConfirm(undefined)} surface={el=>{if(el)surfaces.current.set(id,el);else surfaces.current.delete(id);}} error={error} activate={()=>setPeek(false)} onControllerRef={onControllerRef} launchFeedback={feedback} launchCountState={countState}
         moduleNavigation={entry?.moduleNavigation}
         onSelectModule={moduleId=>onSelectModule?.(id,moduleId)}/>;
     })}
