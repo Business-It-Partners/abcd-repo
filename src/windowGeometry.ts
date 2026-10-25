@@ -85,7 +85,7 @@ export function fitContentWidthBounds(bounds: Rect, size: Size, minimum: Size, c
   if (hasModuleSidebar) {
     // Keep in sync with .studio-window[data-module-sidebar] in style.css.
     for (let pass = 0; pass < 3; pass++) {
-      const sidebar = Math.min(width <= 760 ? 164 : 188, width * .3);
+      const sidebar = Math.min(width <= 760 ? 164 : 190, width * .3);
       width = Math.max(bounds.width, content + sidebar);
     }
   }

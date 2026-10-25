@@ -12,6 +12,7 @@ export class SessionManager implements Identity {
   private phase:Phase='restoring'; private generation=1; private tokens?:Tokens; private clinic?:Clinic;
   private message=''; private remembered=false; private busy=false; private timer?:ReturnType<typeof setTimeout>;
   private accessCheck?:Promise<void>; private action?:AbortController; private renewal?:Promise<string>; private listeners=new Set<(v:SessionView)=>void>();
+  private clinicLogoGeneration?: number; private clinicLogoValue?: string; private clinicLogoRequest?: { generation: number; promise: Promise<string | undefined> }; private clinicLogoAbort?: AbortController;
   private storageChain:Promise<unknown>=Promise.resolve();
   constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000,private loginDiagnostic?:(value:LoginDiagnostic)=>void){}
   view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,message:this.message,mode:this.mode};}
@@ -21,7 +22,7 @@ export class SessionManager implements Identity {
   private persist<T>(fn:()=>Promise<T>):Promise<T>{const next=this.storageChain.then(fn,fn);this.storageChain=next.catch(()=>{});return next;}
   private reset(phase:Phase,message=''){
     this.generation++;this.renewal=undefined;this.accessCheck=undefined;this.phase=phase;this.message=message;this.tokens=undefined;this.clinic=undefined;this.remembered=false;
-    clearTimeout(this.timer);this.action?.abort();this.invalidate();this.emit();
+    clearTimeout(this.timer);this.action?.abort();this.clinicLogoAbort?.abort();this.clinicLogoAbort=undefined;this.clinicLogoGeneration=undefined;this.clinicLogoValue=undefined;this.clinicLogoRequest=undefined;this.invalidate();this.emit();
   }
   private async bounded<T>(fn:(signal:AbortSignal)=>Promise<T>):Promise<T>{
     const controller=new AbortController();this.action=controller;
@@ -69,6 +70,46 @@ export class SessionManager implements Identity {
   credential(generation:number,_signal:AbortSignal):Promise<string>{
     if(generation!==this.generation||this.phase!=='ready'||!this.tokens)return Promise.reject(new AuthFailure('denied'));
     return this.tokens.expiresAt-this.now()>60_000?Promise.resolve(this.tokens.idToken):this.refreshNow();
+  }
+  clinicLogo(): Promise<string | undefined> {
+    if (this.phase !== 'ready' || !this.tokens || !this.client.clinicLogo) return Promise.resolve(undefined);
+    const generation = this.generation;
+    if (this.clinicLogoGeneration === generation) return Promise.resolve(this.clinicLogoValue);
+    if (this.clinicLogoRequest?.generation === generation) return this.clinicLogoRequest.promise;
+
+    const controller = new AbortController();
+    this.clinicLogoAbort = controller;
+    const promise = (async (): Promise<string | undefined> => {
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const stopped = new Promise<never>((_resolve, reject) => {
+        controller.signal.addEventListener('abort', () => reject(new AuthFailure('unavailable')), { once: true });
+        timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+      });
+      try {
+        const loading = (async () => {
+          const token = await this.credential(generation, controller.signal);
+          if (controller.signal.aborted || generation !== this.generation || this.phase !== 'ready') return undefined;
+          return this.client.clinicLogo!(token, controller.signal);
+        })();
+        const value = await Promise.race([loading, stopped]);
+        if (!controller.signal.aborted && generation === this.generation && this.phase === 'ready') {
+          this.clinicLogoGeneration = generation;
+          this.clinicLogoValue = value;
+        }
+        return value;
+      } catch {
+        if (generation === this.generation && this.phase === 'ready') {
+          this.clinicLogoGeneration = generation;
+          this.clinicLogoValue = undefined;
+        }
+        return undefined;
+      } finally {
+        if (timeout) clearTimeout(timeout);
+        if (this.clinicLogoAbort === controller) this.clinicLogoAbort = undefined;
+      }
+    })();
+    this.clinicLogoRequest = { generation, promise };
+    return promise;
   }
   refreshNow():Promise<string>{
     if(this.renewal)return this.renewal;
@@ -123,5 +164,5 @@ export class SessionManager implements Identity {
       && clinicRequestAllowed(family, this.clinic.role, this.clinic.capabilities, path, method);
   }
   flush(){return this.storageChain;}
-  dispose(){this.generation++;this.phase='signed-out';clearTimeout(this.timer);this.action?.abort();this.tokens=undefined;this.clinic=undefined;this.listeners.clear();}
+  dispose(){this.generation++;this.phase='signed-out';clearTimeout(this.timer);this.action?.abort();this.clinicLogoAbort?.abort();this.clinicLogoAbort=undefined;this.clinicLogoGeneration=undefined;this.clinicLogoValue=undefined;this.clinicLogoRequest=undefined;this.tokens=undefined;this.clinic=undefined;this.listeners.clear();}
 }

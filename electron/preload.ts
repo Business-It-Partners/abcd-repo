@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   identity: {
     view: () => ipcRenderer.invoke('identity:view'),
+    clinicLogo: () => ipcRenderer.invoke('identity:clinic-logo') as Promise<string | undefined>,
     action: (kind: 'login' | 'lock' | 'logout', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
     devCredentialsAvailable: () => ipcRenderer.invoke('identity:dev-credentials-available'),
     devCredentials: () => ipcRenderer.invoke('identity:dev-credentials'),

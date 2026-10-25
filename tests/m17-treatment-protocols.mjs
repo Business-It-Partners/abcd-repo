@@ -69,7 +69,7 @@ try {
   check('Treatment Protocols removes its duplicate outer inset and matches the shared page gutter', pageLayout.canvasPadding === '0px' && pageLayout.contentPadding === '22px 26px 0px');
   check('Treatment Protocols keeps the narrow scrollbar track aligned to the page edge', pageLayout.trackWidth === '6px' && pageLayout.trackRight === '4px');
   const initial = await inspect(app); packageInfo = initial.package;
-  check('private signed package has the updated M17 identity and version 1.0.5', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.5' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
+  check('private signed package has the updated M17 identity and version 1.0.6', packageInfo.appId === 'company.dental.m17.treatment-protocols' && packageInfo.version === '1.0.6' && packageInfo.wireBytes > 0 && packageInfo.wireBytes < 2 * 1024 * 1024);
   check('renderer receives the SDK bridge without a credential getter', await page.evaluate(() => {
     const methods = Object.keys(window.dentalApp ?? {});
     return ['cancel', 'connect', 'getAppInfo', 'navigation', 'request', 'report'].every(method => methods.includes(method))
@@ -130,12 +130,22 @@ try {
   const afterRetry = await inspect(app), retryCalls = afterRetry.calls.filter(call => call.method === 'PUT' && call.path.endsWith('/44444444-4444-4444-8444-444444444444'));
   check('same-key retry confirms the original update without a duplicate effect', afterRetry.effects === beforeRetry.effects && retryCalls.at(-1).operationId === retryCalls.at(-2).operationId);
 
-  let confirmationAccepted = false;
-  page.once('dialog', async dialog => { confirmationAccepted = dialog.type() === 'confirm'; await dialog.accept(); });
+  let nativeDialogDetected = false;
+  page.on('dialog', async dialog => { nativeDialogDetected = true; await dialog.accept(); });
   await page.getByRole('button', { name: 'Delete protocol', exact: true }).click();
+  const removeDialog = page.getByRole('dialog', { name: 'Remove treatment protocol?' });
+  await removeDialog.waitFor();
+  check('protocol removal uses the shared in-app modal and explains existing plans stay unchanged', await removeDialog.getByText(/Remove “Synthetic Crown Protocol” from future treatment plans\? Existing patient plans remain unchanged\./).isVisible());
+  check('OS Back is blocked while the protocol removal modal is open', !(await app.evaluate(() => globalThis.m17.navigate('back'))));
+  await removeDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await removeDialog.waitFor({ state: 'detached' });
+  check('cancel closes the in-app modal without changing the protocol', (await inspect(app)).effects === 4 && (await inspect(app)).protocols.some(row => row.name === 'Synthetic Crown Protocol' && row.active));
+  await page.getByRole('button', { name: 'Delete protocol', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Remove treatment protocol?' }).getByRole('button', { name: 'Remove protocol', exact: true }).click();
   await page.getByRole('heading', { name: 'Treatment Protocols', exact: true }).waitFor();
   const retired = await inspect(app);
-  check('retire uses SaaS soft-delete semantics through PUT active=false', confirmationAccepted && retired.effects === 5 && retired.calls.some(call => call.method === 'PUT' && call.body.active === false));
+  check('confirming removal uses SaaS soft-delete semantics through PUT active=false', retired.effects === 5 && retired.calls.some(call => call.method === 'PUT' && call.body.active === false));
+  check('protocol removal no longer invokes a native browser confirmation', !nativeDialogDetected);
   check('all renderer errors stayed clear through the synthetic protocol workflow', errors.length === 0);
   await app.close(); app = undefined;
 

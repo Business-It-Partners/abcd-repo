@@ -33,6 +33,7 @@
 .clinic-widget-signout:hover{border-color:#55788a70;background:#fff;color:#173e47}
 .clinic-widget-signout:focus-visible{outline:2px solid #317d9b;outline-offset:2px}
 .clinic-widget-mark{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border:1px solid #ffffffc9;border-radius:15px;background:linear-gradient(145deg,#c7e8e2,#8cc3bc);box-shadow:0 5px 13px #1c58602b;color:#164d50;font-size:15px;font-weight:750;letter-spacing:.04em}
+.clinic-widget-mark.has-logo{padding:4px;background:#fff}.clinic-widget-mark.has-logo img{display:block;width:100%;height:100%;object-fit:contain;border-radius:10px}
 .clinic-widget-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
 .clinic-widget-copy strong,.clinic-widget-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clinic-widget-copy strong{font-size:14px;font-weight:700}.clinic-widget-copy span{font-size:13px;font-weight:600;color:#29383e}.clinic-widget-copy small{font-size:11px;font-weight:600;color:#3d494e}

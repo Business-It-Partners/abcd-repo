@@ -10,6 +10,7 @@ export interface AuthClient {
   signIn(email: string, password: string, signal: AbortSignal): Promise<Tokens>;
   refresh(token: string, signal: AbortSignal): Promise<Tokens>;
   resolve(token: string, signal: AbortSignal): Promise<Clinic>;
+  clinicLogo?(token: string, signal: AbortSignal): Promise<string | undefined>;
 }
 export class AuthFailure extends Error { constructor(readonly kind: 'denied' | 'unavailable') { super(kind === 'denied' ? 'Sign-in or clinic access denied.' : 'Staging identity service unavailable.'); } }
 export class FirebaseClient implements AuthClient {
@@ -47,6 +48,51 @@ export class FirebaseClient implements AuthClient {
   }
   async refresh(token:string,signal:AbortSignal) {
     return this.tokens(await this.json(`https://securetoken.googleapis.com/v1/token?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:token}).toString()},signal),true);
+  }
+  async clinicLogo(token: string, signal: AbortSignal): Promise<string | undefined> {
+    const endpoint = new URL('/v1/clinic/branding/logo/view', staging.apiBase);
+    if (endpoint.origin !== new URL(staging.apiBase).origin) return undefined;
+    try {
+      const response = await this.transport(endpoint.toString(), {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        signal,
+        redirect: 'manual',
+        credentials: 'omit',
+        cache: 'no-store',
+      });
+      const discard = () => { void response.body?.cancel().catch(() => {}); };
+      if (response.status === 404) { discard(); return undefined; }
+      if (response.redirected || response.status >= 300 && response.status < 400 || !response.ok) { discard(); return undefined; }
+
+      const mimeType = response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase();
+      if (!mimeType || !['image/png', 'image/jpeg', 'image/webp'].includes(mimeType) || !response.body) { discard(); return undefined; }
+      const contentLength = response.headers.get('content-length');
+      if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > 2_000_000)) { discard(); return undefined; }
+
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let length = 0;
+      try {
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          length += chunk.value.length;
+          if (length > 2_000_000) return undefined;
+          chunks.push(chunk.value);
+        }
+      } finally {
+        void reader.cancel().catch(() => {});
+        reader.releaseLock();
+      }
+      if (!length) return undefined;
+      const bytes = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+      return `data:${mimeType};base64,${Buffer.from(bytes).toString('base64')}`;
+    } catch {
+      return undefined;
+    }
   }
   async resolve(token:string,signal:AbortSignal):Promise<Clinic> {
     const data=await this.json(staging.apiBase+'/v1/me',{method:'GET',headers:{authorization:`Bearer ${token}`}},signal);
