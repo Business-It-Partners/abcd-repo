@@ -3,6 +3,8 @@ import { fitBounds, fitContentWidthBounds, initialBounds, WINDOW_IDS, windowSpec
 import type { Rect } from './motion';
 
 export type Phase = 'closed' | 'visible' | 'minimizing' | 'minimized' | 'restoring';
+export const MAX_OPEN_APP_WINDOWS = 2;
+export type OpenAppLimitPrompt = { requestedTitle: string; openAppTitles: string[] };
 /** Ephemeral opaque route keys; app page data remains inside the app. */
 export type WindowNavigation = { entries: string[]; index: number };
 const MAX_WINDOW_NAVIGATION_ENTRIES = 64;
@@ -10,10 +12,10 @@ export type ManagedWindow = {
   id: WindowId; title: string; phase: Phase; presentation: 'normal' | 'fullscreen'; normalBounds: Rect;
   busy: boolean; modal: boolean; interaction: 'idle' | 'moving' | 'resizing'; userResized: boolean; navigation: WindowNavigation;
 };
-export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean };
+export type DesktopState = { size: Size; windows: Record<WindowId, ManagedWindow>; order: WindowId[]; overview: boolean; openAppLimit: OpenAppLimitPrompt | null };
 export function createDesktop(size: Size): DesktopState {
   const window = (id: WindowId): ManagedWindow => ({ id, title: windowSpec(id).title, phase: 'closed', presentation: 'normal', normalBounds: initialBounds(id, size), busy: false, modal: false, interaction: 'idle', userResized: false, navigation: { entries: [], index: -1 } });
-  return { size, windows: Object.fromEntries([...WINDOW_IDS, 'image-viewer'].map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false };
+  return { size, windows: Object.fromEntries([...WINDOW_IDS, 'image-viewer'].map(id => [id, window(id)])) as Record<WindowId, ManagedWindow>, order: [], overview: false, openAppLimit: null };
 }
 export function activeWindow(state: DesktopState): WindowId | undefined {
   return [...state.order].reverse().find(id => state.windows[id].phase === 'visible');
@@ -32,6 +34,7 @@ export type WindowAction =
   | { type: 'navigation-back'; id: WindowId }
   | { type: 'navigation-forward'; id: WindowId }
   | { type: 'toggle'; id: WindowId }
+  | { type: 'dismiss-open-app-limit' }
   | { type: 'viewport'; size: Size };
 
 export function desktopReducer(state: DesktopState, action: WindowAction): DesktopState {
@@ -53,6 +56,7 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
       normalBounds: fitContentWidthBounds(win.normalBounds, state.size, windowSpec(action.id).minimum, action.preferredContentWidth, action.hasModuleSidebar) } } };
   }
   if (action.type === 'overview') return { ...state, overview: action.open };
+  if (action.type === 'dismiss-open-app-limit') return state.openAppLimit ? { ...state, openAppLimit: null } : state;
   if (action.type === 'viewport') {
     const windows = { ...state.windows };
     for (const id of Object.keys(windows) as WindowId[]) windows[id] = { ...windows[id], normalBounds: fitBounds(windows[id].normalBounds, action.size, windowSpec(id).minimum), interaction: 'idle' };
@@ -93,6 +97,12 @@ export function desktopReducer(state: DesktopState, action: WindowAction): Deskt
   if (action.type === 'patch') return { ...state, windows: { ...state.windows, [action.id]: { ...win, ...action.patch } } };
   const closed = action.phase === 'closed';
   const reopening = win.phase === 'closed' && action.phase === 'visible';
+  if (reopening) {
+    const openWindows = Object.values(state.windows).filter(openWindow => openWindow.phase !== 'closed');
+    if (openWindows.length >= MAX_OPEN_APP_WINDOWS) {
+      return { ...state, openAppLimit: { requestedTitle: win.title, openAppTitles: openWindows.map(openWindow => openWindow.title) } };
+    }
+  }
   return { ...state,
     order: action.phase === 'visible' ? focus() : state.order,
     windows: { ...state.windows, [action.id]: { ...win, phase: action.phase, interaction: 'idle', ...(reopening ? { normalBounds: fitBounds(win.normalBounds, state.size, windowSpec(action.id).minimum) } : {}), ...(closed ? { presentation: 'normal', busy: false, modal: false, navigation: { entries: [], index: -1 } } : {}) } },

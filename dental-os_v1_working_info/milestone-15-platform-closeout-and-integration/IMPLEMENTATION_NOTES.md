@@ -1,5 +1,11 @@
 # M15 Implementation Notes — Source Reconciliation and Execution Record
 
+## V1 two-open-app limit — local candidate (2026-10-25)
+
+Implemented ADR-034 in the existing `codex/clinic-logo-fix` worktree. The shared reducer rejects a closed-to-visible transition when two managed app windows are already non-closed, including minimized and transitioning windows. It records the requested app and current open app titles for a shell-owned blocking dialog. While shown, the desktop is inert, the overview shortcut is blocked, and `RuntimeFixtures` hides native app surfaces. Dismissing the dialog returns focus to its prior control; the user can close an app and retry. No automatic close, idle suspension, API cancellation, backend change or release action was added. This is a fixed V1 open-window cap, not a measured memory ceiling.
+
+`npm run build`, `python3 tools/check-dental-docs.py`, and `git diff --check` pass on the local candidate. Tests were not run. M15/G15 and the canonical `codex/milestone-15` branch status are unchanged. The running desktop was not restarted; it needs a later full user-controlled launch to load this build.
+
 ## Table-aware app window sizing — 2026-10-24
 
 The OS window manager now grows a closed app window to the app's preferred content width before launch, adds the OS-owned module sidebar width when verified role-visible modules require it, and clamps the result to the current work area. A drag resize marks the window as user-sized; subsequent opens retain that chosen width. The app remains responsible for horizontal table scrolling when its viewport is narrower. Signed app metadata may provide an integer `preferredContentWidth` from 520 to 2400 CSS pixels. For existing signed installs without the new field, the OS supplies widths for the shipped Dental table apps. The current local root build passes; tests were not run for this change, and this does not change M15/G15 acceptance or package publication state. The running desktop remains untouched and needs a full relaunch to load the build.
