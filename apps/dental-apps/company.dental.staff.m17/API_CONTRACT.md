@@ -34,5 +34,6 @@ For reference, M15 host transfer uses these existing Staff Worker routes interna
 - Staff updates submit the current `rowVersion`. A conflict preserves the user's draft, fetches the current profile, and requires an explicit choice to load the latest version. Unknown write outcomes retain the original idempotent command for retry; another write is blocked until the original resolves.
 - Work history is requested for doctor profiles only. Other staff types receive the SaaS explanation and no clinical-work request.
 - Salary history is fetched only with `finance.manage`; recorded and voided payout entries remain visible, while totals include recorded entries only.
+- Salary payout `payPeriod` uses the Finance/Worker's zero-padded Gregorian `YYYY-MM` format (for example, `2026-09`).
 
 These behaviors are implemented against the current M15 SDK and SaaS contract but have not been verified in M17.9 runtime/API acceptance. The package's exact signed media operation grants have not yet been issued.

@@ -15,6 +15,7 @@ const text = (value: unknown): value is string => typeof value === "string";
 const nullableText = (value: unknown): value is string | null => value === null || text(value);
 const finiteAmount = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const positiveInteger = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) > 0;
+const salaryPayPeriodPattern = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 const isoDate = (value: unknown): value is string =>
   text(value) && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && !Number.isNaN(Date.parse(value))
@@ -56,7 +57,7 @@ export function isStaffDocument(value: unknown): value is StaffDocument {
 export function isClinicSalaryPayout(value: unknown): value is ClinicSalaryPayout {
   if (!object(value)) return false;
   return text(value.salaryPayoutId) && text(value.staffId) && text(value.staffName)
-    && nullableText(value.branchId) && /^\d{4}-(?:[1-9]|1[0-2])$/.test(String(value.payPeriod))
+    && nullableText(value.branchId) && salaryPayPeriodPattern.test(String(value.payPeriod))
     && ["advance", "salary", "adjustment", "other"].includes(String(value.payoutType))
     && finiteAmount(value.baseAmount) && finiteAmount(value.bonusAmount) && finiteAmount(value.amount)
     && isoDate(value.paidOn)

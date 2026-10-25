@@ -1,5 +1,9 @@
 # Sajilo Dental — Work Checklist
 
+## Staff salary-history validation fix — 2026-10-25 (local source only)
+
+The Staff app's salary-payout validator rejected canonical zero-padded `YYYY-MM` periods for January through September, so any such payout caused the whole history list to show “The clinic returned an invalid salary history.” It now matches the Finance app's period format. The seven Staff package tests (including a validator regression), package typecheck/build, root build, 502 root tests and docs check pass. This local app source has not been published or installed; signed Staff 1.0.3 and the running OS remain unchanged.
+
 ## Patient Record request-capacity follow-up — 2026-10-25 (local source only)
 
 Patient Record now fetches its core record first and loads other records only when their section is selected. A tab loads at most three independent GETs; reads are cancelled when the user changes section or leaves the patient. Broker `BUSY` responses receive up to two short retries because they are rejected before dispatch. X-ray, lab, and periodontal sections show loading/error feedback while their data is being fetched. Clinic data remains authoritative in the SaaS Worker.

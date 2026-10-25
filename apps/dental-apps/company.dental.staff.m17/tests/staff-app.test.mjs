@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { createServer } from "vite";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readText = async (relative) => (await readFile(path.join(root, relative))).toString("utf8");
@@ -84,4 +85,57 @@ test("Staff reads and writes use ClinicClient and private documents use exact SD
   assert.match(media, /this\.request<unknown>\("clinic\.media\.upload"/);
   assert.match(main, /initialize\(APP_ID\)/);
   assert.doesNotMatch(`${api}\n${media}\n${main}`, /\bfetch\s*\(|XMLHttpRequest|authorization|access_token|refresh_token|window\.desktop/);
+});
+
+test("Staff salary history accepts zero-padded YYYY-MM pay periods", async () => {
+  const vite = await createServer({
+    configFile: false,
+    appType: "custom",
+    root,
+    optimizeDeps: { noDiscovery: true },
+    resolve: {
+      alias: [
+        {
+          find: /^@\/shared\/dates\/MonthPicker$/,
+          replacement: path.join(root, "src/shared/dates/MonthPicker.tsx"),
+        },
+        {
+          find: /^@\/shared\//,
+          replacement: path.resolve(root, "../../../packages/dental-ui/src/shared") + "/",
+        },
+        { find: /^@\//, replacement: path.join(root, "src") + "/" },
+      ],
+    },
+    server: { middlewareMode: true },
+  });
+  try {
+    const { isClinicSalaryPayout } = await vite.ssrLoadModule("/src/features/staff/api.ts");
+    const payout = {
+      salaryPayoutId: "payout-1",
+      staffId: "staff-1",
+      staffName: "Synthetic staff",
+      branchId: null,
+      payPeriod: "2026-09",
+      payoutType: "salary",
+      baseAmount: 45000,
+      bonusAmount: 0,
+      amount: 45000,
+      paidOn: "2026-09-30",
+      paymentMethod: "cash",
+      paymentReference: null,
+      note: null,
+      status: "recorded",
+      createdAt: "2026-09-30T12:00:00.000Z",
+      voidedAt: null,
+      voidReason: null,
+    };
+
+    assert.equal(isClinicSalaryPayout(payout), true);
+    assert.equal(isClinicSalaryPayout({ ...payout, payPeriod: "2026-01" }), true);
+    assert.equal(isClinicSalaryPayout({ ...payout, payPeriod: "2026-10" }), true);
+    assert.equal(isClinicSalaryPayout({ ...payout, payPeriod: "2026-9" }), false);
+    assert.equal(isClinicSalaryPayout({ ...payout, payPeriod: "2026-13" }), false);
+  } finally {
+    await vite.close();
+  }
 });
