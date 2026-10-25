@@ -253,7 +253,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   }
   return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { updateDockItemHover(false); setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
+    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}

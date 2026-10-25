@@ -1,82 +1,279 @@
 {
   "nativePointerMoves": [],
-  "checks": [
-    "dock-edge handoff keeps the last app frame visible until its replacement is captured",
-    "dock-edge app frame refreshes to current content after the OS hides its native surface",
-    "moving away from the dock edge restores the same live app surface",
-    "Finance explorer covers the native app surface instead of appearing beside it",
-    "Finance explorer receives keyboard focus above the native app",
-    "Finance explorer stays in front as the pointer moves near and away from the dock",
-    "Closing Finance explorer restores the foreground native app surface",
-    "covered app preview keeps native capture resolution without CSS blur",
-    "covered app window keeps its existing shadow",
-    "two isolated renderer processes and separate shell",
-    "sandbox/context isolation and no Node",
-    "apps have no Node or shell bridge",
-    "storage is separated by app",
-    "switching from an isolated app to a shell window hides its native surface before paint",
-    "forged report rejected",
-    "network and cross-origin fetch denied",
-    "popup denied",
-    "unknown runtime IDs/layouts denied",
-    "modal stays in app content",
-    "local modal traps keyboard focus",
-    "beta-to-alpha switch focuses the native foreground",
-    "alpha-to-beta switch focuses the native foreground",
-    "dirty close cancellation preserves draft",
-    "resize uses shared manager",
-    "overview shortcut starts in the visible focused native app",
-    "overview contains both isolated snapshots",
-    "overview clones have no runtime identities",
-    "maximized native app fills the viewport while keeping the app title bar below the Dental OS status-bar row",
-    "fullscreen native content bounds extend to the screen edge underneath the dock",
-    "top-edge status bar reveals over a stable fullscreen native window",
-    "native app bottom edge reveals fullscreen dock",
-    "bottom-edge dock overlays the native app without shrinking its frame",
-    "Genie thumbnail contains captured native app",
-    "minimize/restore retains isolated draft and process",
-    "discard destroys the app webContents",
-    "reopen creates clean workflow state",
-    "external navigation denied",
-    "crash is contained to alpha",
-    "watchdog terminates hung renderer without stopping beta",
-    "cleanup cycle 1: no closed sample webContents",
-    "cleanup cycle 2: no closed sample webContents",
-    "cleanup cycle 3: no closed sample webContents",
-    "native app surface hides synchronously when window movement starts",
-    "moving window uses its crisp full-resolution app preview",
-    "left-edge native surface keeps the window origin and full content width",
-    "right-edge native surface follows its window without extending its frame",
-    "bottom-edge native content ends at the dock-zone boundary",
-    "returning the window onscreen restores its live native surface",
-    "edge dragging leaves no selected app text",
-    "no shell renderer errors"
-  ],
-  "topology": {
-    "shell": 232207,
-    "apps": [
-      {
-        "id": 3,
-        "url": "dental-fixture://beta/",
-        "pid": 232521,
-        "prefs": {
-          "sandbox": true,
-          "contextIsolation": true,
-          "nodeIntegration": false
-        }
+  "runtimeEvents": [
+    {
+      "runtimeId": "studio",
+      "shell": {
+        "surface": {
+          "phase": "closed",
+          "reason": "",
+          "message": null
+        },
+        "status": {
+          "phase": "ready"
+        },
+        "body": "Sajilo\nDental\nApps\nWindows\nHelp\nOnline\nSat, Oct 24\n10:25 PM\nSD\nSajilo Dental\nSigned-in user\nNEPALI CALENDAR\nKartik 2083\nSu\nMo\nTu\nWe\nTh\nFr\nSa\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\nLOCAL TIME\n10:25 PM\nSat, Oct 24\nOctober 2026\nSu\nMo\nTu\nWe\nTh\nFr\nSa\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\nMotion Studio\n\nOpen the app from its dock icon.\n\nFiles\nStandard Window 1\nApp Store\nMotion Studio\nFollow-ups\nRecords\nAppointments\nWork Entry\nPatient Record\nTreatment Progress\nLab Tracker\nFinance\nStaff\nTreatment Protocols\nCalendar\nMotion Studio\nFollow-ups\nRecords",
+        "buttons": [
+          {
+            "label": "Open apps catalog",
+            "text": "Apps",
+            "disabled": false
+          },
+          {
+            "label": "Show open windows",
+            "text": "Windows",
+            "disabled": false
+          },
+          {
+            "label": "Open support diagnostics",
+            "text": "Help",
+            "disabled": false
+          },
+          {
+            "label": "Minimize Sajilo Dental",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Sajilo Dental",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Previous Nepali month",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Next Nepali month",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Previous English month",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Next English month",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Maximize Motion Studio",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Minimize Motion Studio",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Motion Studio",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Maximize Records",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Minimize Records",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Records",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Maximize Files",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Minimize Files",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Files",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Forward",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Up one folder",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Refresh folder",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Search files",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Grid view",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "List view",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Send selected files to active eligible app",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Maximize Image Viewer",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Image Viewer",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Previous picture",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Next picture",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Zoom out",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Zoom in",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Fit image to window",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Rotate picture left",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Rotate picture right",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": "Maximize Follow-ups",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Minimize Follow-ups",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Close Follow-ups",
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Back",
+            "text": "",
+            "disabled": true
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": null,
+            "text": "",
+            "disabled": false
+          },
+          {
+            "label": "Previous day",
+            "text": "",
+            "disabled": false
+          }
+        ]
       },
-      {
-        "id": 2,
-        "url": "dental-fixture://alpha/",
-        "pid": 232457,
-        "prefs": {
-          "sandbox": true,
-          "contextIsolation": true,
-          "nodeIntegration": false
-        }
-      }
-    ]
-  },
+      "processes": {
+        "contents": [],
+        "events": []
+      },
+      "errors": []
+    }
+  ],
+  "checks": [],
   "errors": [],
   "platform": "linux",
   "sha": null

@@ -72,6 +72,19 @@ describe('Constrained window resizing', () => {
   });
 });
 describe('Shared lifecycle and focus', () => {
+  it('keeps a third app closed while counting a minimized app toward the two-window limit', () => {
+    let state = createDesktop(screen);
+    state = desktopReducer(state, { type: 'phase', id: 'store', phase: 'visible' });
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'visible' });
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'minimizing' });
+    state = desktopReducer(state, { type: 'phase', id: 'records', phase: 'minimized' });
+
+    state = desktopReducer(state, { type: 'phase', id: 'followups', phase: 'visible' });
+
+    expect(state.windows.followups.phase).toBe('closed');
+    expect(state.openAppLimit).toEqual({ requestedTitle: 'Follow-ups', openAppTitles: ['App Store', 'Records'] });
+  });
+
   it('selects the next visible window after minimize or close', () => {
     let state = createDesktop(screen);
     state = desktopReducer(state, { type: 'phase', id: 'studio', phase: 'visible' });

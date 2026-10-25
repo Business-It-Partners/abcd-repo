@@ -1,7 +1,7 @@
 import type { Identity } from '../sdk/broker';
 import { PackageRegistry } from '../packages/registry';
 import { sha256, verifyPackage, isCompanyAppId, type TrustPolicy } from '../packages/format';
-import { verifyCatalogue, compareVersion, type Catalogue, type Release, type Watermark } from './catalogue';
+import { verifyCatalogue, type Catalogue, type Release, type Watermark } from './catalogue';
 import { verifyUpdatePolicy, allowUpdatedPackage, apiReleaseGrantForPackage, apiOperationsForPackage, apiReleaseGrantMatchesCatalogue, type UpdatePolicy } from './updatePolicy';
 import { clinicAppFamily } from '../sdk/appPolicy';
 import { apiOperations as apiOperationIds, type Operation } from '../sdk/contracts';
@@ -10,7 +10,7 @@ import type { StoreResult, StoreView } from './contracts';
 export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean };
 export interface FreshnessStore { load(): Watermark; save(value: Watermark): void; loadUpdate?(): Watermark; saveUpdate?(value: Watermark): void; loadMetadata?(): {catalogue:string;policy:string} | undefined; saveMetadata?(value:{catalogue:string;policy:string}): void }
 export class DistributionService {
- private updatePolicy?:UpdatePolicy; private policyBytes?:Buffer; private catalogueBytes?:Buffer; private updateTimer?:ReturnType<typeof setInterval>; private initialTimer?:ReturnType<typeof setTimeout>; private checking=false;
+ private updatePolicy?:UpdatePolicy; private policyBytes?:Buffer; private catalogueBytes?:Buffer; private updateTimer?:ReturnType<typeof setInterval>; private checking=false;
  private pendingVersions=new Map<string,string>(); private trialVersions=new Map<string,string>(); private knownGoodVersions=new Map<string,string>(); private pendingReady=new Set<string>(); private quarantined=new Set<string>();
  private artworkCache=new Map<string,{dataUrl:string;bytes:number}>(); private artworkCacheBytes=0;
  private catalogue?: Catalogue; private canInstall = false; private phase: StoreView['phase'] = 'idle'; private message = ''; private job: StoreView['job'] = null;
@@ -53,11 +53,12 @@ export class DistributionService {
  private emit() { const view = this.view(); for (const fn of this.listeners) fn(view); }
  private compatible(r: Release) { return !!this.catalogue && this.catalogue.expiresAt > this.now() && r.status === 'approved' && !this.quarantined.has(r.id+':'+r.payloadDigest) && r.platforms.includes(this.platform as 'linux' | 'win32') && r.capabilities.every(capability => this.identity.allowed?.(capability) !== false); }
  invalidate() { this.action?.abort(); this.canInstall = false; this.phase = 'idle'; this.message = ''; this.job = null; this.emit(); }
- dispose() { clearInterval(this.updateTimer);clearTimeout(this.initialTimer);this.invalidate(); this.listeners.clear(); this.artworkCache.clear(); this.artworkCacheBytes=0; }
+ dispose() { clearInterval(this.updateTimer);this.invalidate(); this.listeners.clear(); this.artworkCache.clear(); this.artworkCacheBytes=0; }
  private reloadInstalled(){const installed=new Map<string,string>(),pending=new Map<string,string>(),trials=new Map<string,string>(),knownGood=new Map<string,string>(),pendingReady=new Set<string>(),quarantined=new Set<string>();const apps=this.registry.inspect().apps;for(const id of Object.keys(apps)){for(const digest of apps[id].failed)quarantined.add(id+':'+digest);const v=this.registry.describe(id);installed.set(id,v.activeVersion);if(v.pendingVersion){pending.set(id,v.pendingVersion);try{if(this.registry.pendingActivationVersion(id)===v.pendingVersion)pendingReady.add(id);}catch{/* Keep showing the staged identity without claiming it can trial. */}}if(v.trialVersion)trials.set(id,v.trialVersion);if(v.knownGoodVersion)knownGood.set(id,v.knownGoodVersion);}this.installed=installed;this.pendingVersions=pending;this.trialVersions=trials;this.knownGoodVersions=knownGood;this.pendingReady=pendingReady;this.quarantined=quarantined;}
  changed(){this.reloadInstalled();this.emit();}
- startUpdates(){if(!this.config.updates||this.updateTimer)return;this.initialTimer=setTimeout(()=>void this.checkUpdates(),15000);this.updateTimer=setInterval(()=>void this.checkUpdates(),15*60*1000);this.updateTimer.unref?.();this.initialTimer.unref?.();}
- async checkUpdates(){if(!this.config.updates||this.checking||!this.identity.snapshot().active)return;this.checking=true;try{if(!(await this.refresh()).ok||!this.canInstall)return;for(const r of this.catalogue?.releases??[]){const current=this.installed.get(r.id);if(current&&this.compatible(r)&&!this.pendingVersions.has(r.id)&&compareVersion(r.version,current)>0)await this.install(r.id);}}finally{this.checking=false;}}
+ startUpdates(){if(!this.config.updates||this.updateTimer)return;this.updateTimer=setInterval(()=>void this.checkUpdates(),30*60*1000);this.updateTimer.unref?.();}
+ /** Periodically refresh signed offers for the home widget; downloads require an explicit Store Update action. */
+ async checkUpdates(){if(!this.config.updates||this.checking||!this.identity.snapshot().active)return;this.checking=true;try{await this.refresh();}finally{this.checking=false;}}
  private catalogueTrust(policy:UpdatePolicy|undefined=this.updatePolicy):TrustPolicy {return {...this.config.policy,keys:Object.fromEntries(Object.entries(this.config.policy.keys).filter(([id])=>!policy?.revokedKeys.includes(id)))};}
  private retainedApiGrantsPresent(policy:UpdatePolicy|undefined,catalogue:Catalogue|undefined){
   if(policy?.format!==2)return;

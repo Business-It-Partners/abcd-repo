@@ -1,0 +1,33 @@
+{
+  "passed": false,
+  "failure": "AssertionError: the OS receives the Work Entry navigation stack for its Back control\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/work-entry/cases\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/treatment-protocols\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/clinic/staff-references\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/chief-complaints/22222222-2222-4222-8222-222222222222/work-entry\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/core\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/ledger\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/odontogram\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/clinic/suppliers?scope=lab\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/periodontal-chart\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/canal-measurements\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/follow-ups\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/media\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"1\\nPatient & case\\n2\\nWork\\n3\\nPerio Chart\\n4\\nImaging, Rx & Lab\\n5\\nPayment\\n6\\nRecall\\n7\\nReview & commit\\nPayment\\nRadiographs (IOPA) — attach if taken\\nAdd Image\\nDrop or browse\\n\\nEach film is stored in this clinic’s private imaging record after upload. It is filed for 08/07/2083.\\n\\nPrescription\\nOptional\\n+ Amox · TDS · 5d\\n+ Ibu · TDS · 3d\\n+ Metro · TDS · 5d\\n+ PCM · SOS · 3d\\nDrug\\nSelect drug…\\nAmoxicillin 500mg\\nIbuprofen 400mg\\nParacetamol 500mg\\nMetronidazole 400mg\\nAugmentin 625mg\\nCHX 0.2% Mouthwash\\nDose\\nDuration\\nFrequency\\nTDS (3×/day)\\nBD (2×/day)\\nQD (once/day)\\nQID (4×/day)\\nSOS (as needed)\\nAdd medication\"}",
+  "checks": [
+    "private UI host uses its isolated temporary app profile",
+    "Work Entry uses the shared Standard Window scroll viewport",
+    "Work Entry scroll shell fills the Standard Window page",
+    "Work Entry uses the six-pixel overlay scrollbar four pixels from the page edge",
+    "private signed package has Work Entry identity, version 1.0.6, and packaged assets",
+    "renderer receives the SDK bridge without a credential getter",
+    "initial worklist reads use only its registered case, treatment-protocol, and staff-reference routes",
+    "worklist preserves the SaaS patient, complaint, protocol-count, and in-progress state",
+    "Work Entry module selection is acknowledged after the package opens",
+    "opening an in-progress case reads its clinical context through the approved SDK routes",
+    "the imaging step exposes the patient radiograph gallery and upload control",
+    "the continuation view does not duplicate the window navigation with a Back to Work Entry button",
+    "the workflow tabs stay on one row and the Next action remains visible beside them",
+    "workflow tabs show step numbers and labels without decorative icons",
+    "the active Work Entry step is reflected in its app-owned history"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.work-entry.m17",
+    "version": "1.0.6",
+    "packageSha256": "7eb448244885cd2b74076181dfc33b722e772ac790919eb0f5d937c5dd60fa52",
+    "payloadDigest": "0bdbb7cdd8c6c2e729fbbb16858eddfba48e2cb090f719d0016978ba026c46f5",
+    "wireBytes": 1810847,
+    "assetCount": 5
+  },
+  "scope": "Private headless GNOME/Electron acceptance using a test-only ephemeral signing key and in-memory synthetic clinic API. No live clinic data or publication.",
+  "screenshot": null,
+  "pickedImageScreenshot": null
+}

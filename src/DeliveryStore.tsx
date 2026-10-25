@@ -5,6 +5,7 @@ import { runtimeIdForPackage } from '../electron/runtime/contracts';
 import { useSessionGeneration } from './SessionBoundary';
 import { StoreArtwork } from './StoreArtwork';
 import type { WindowController } from './ManagedWindow';
+import { hasAvailableStoreUpdate } from './storeUpdateState';
 import './DeliveryStore.css';
 
 const brandMarkUrl = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
@@ -14,15 +15,11 @@ type DeliveryAction = 'refresh' | 'cancel' | 'install' | 'uninstall';
 type StoreApp = StoreView['apps'][number];
 type StoreTab = 'all' | 'updates';
 
-function hasAvailableUpdate(app: StoreApp) {
- return !!app.activeVersion && app.available && !app.reason && !app.pendingVersion && !app.trialVersion && app.version !== app.activeVersion;
-}
-
 function appStatus(app: StoreApp) {
  if (app.reason) return app.reason;
  if (app.trialVersion) return `Checking update · ${app.trialVersion}`;
  if (app.pendingVersion) return app.pendingReady ? `Update ready · ${app.pendingVersion}` : `Update staged · ${app.pendingVersion}`;
- if (hasAvailableUpdate(app)) return `Update available · ${app.version}`;
+ if (hasAvailableStoreUpdate(app)) return `Update available · ${app.version}`;
  if (app.activeVersion) return `Installed · ${app.activeVersion}`;
  if (app.available) return `Version ${app.version}`;
  return app.reason || 'Unavailable';
@@ -53,16 +50,20 @@ export function useDeliveryStore(enabled: boolean, onInstalled?: (id: string) =>
  const [installedOrder, setInstalledOrder] = useState<string[]>([]);
  const [installingId, setInstallingId] = useState<string | null>(null);
 
+ const publishView = (next: StoreView) => {
+  current.current = next;
+  setView(next);
+  const ids = next.apps.filter(app => app.installedVersion).map(app => app.id);
+  setInstalledOrder(previous => [...previous.filter(id => ids.includes(id)), ...ids.filter(id => !previous.includes(id))]);
+ };
+
  useEffect(() => {
   if (!enabled || !window.desktop) return;
   let alive = true;
   epoch.current++;
   const publish = (next: StoreView) => {
    if (!alive) return;
-   current.current = next;
-   setView(next);
-   const ids = next.apps.filter(app => app.installedVersion).map(app => app.id);
-   setInstalledOrder(previous => [...previous.filter(id => ids.includes(id)), ...ids.filter(id => !previous.includes(id))]);
+   publishView(next);
   };
   const unsubscribe = window.desktop.store.subscribe(publish);
   void window.desktop.store.action('view', undefined, generation).then(publish);
@@ -76,7 +77,11 @@ export function useDeliveryStore(enabled: boolean, onInstalled?: (id: string) =>
   if (firstInstall) setInstallingId(id!);
   try {
    const result = await window.desktop?.store.action(kind, id, generation);
-   if (result?.ok && firstInstall && started === epoch.current) onInstalled?.(id!);
+   if (started === epoch.current) {
+    const next = await window.desktop?.store.action('view', undefined, generation);
+    if (next && started === epoch.current) publishView(next);
+    if (result?.ok && firstInstall) onInstalled?.(id!);
+   }
   } catch { /* Store state owns operation errors; never celebrate a rejected IPC call. */ }
   finally { if (firstInstall && started === epoch.current) setInstallingId(null); }
  };
@@ -116,9 +121,9 @@ export function DeliveryStore({ view, action, open, locked, controller, settling
  const busy = !!view.job || view.phase === 'refreshing' || locked || settling;
  const unavailable = view.phase === 'unavailable';
  const notice = view.job ? '' : view.phase === 'refreshing' ? '' : view.message;
- const updateApps = view.apps.filter(hasAvailableUpdate);
+ const updateApps = view.apps.filter(hasAvailableStoreUpdate);
  const filteredApps = view.apps
-  .filter(item => tab === 'all' || hasAvailableUpdate(item))
+  .filter(item => tab === 'all' || hasAvailableStoreUpdate(item))
   .filter(item => item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 
  const image = (app: StoreApp, className = '') => <StoreArtwork appId={app.id} artworkSha256={app.iconSha256} className={className}/>;
@@ -156,7 +161,7 @@ export function DeliveryStore({ view, action, open, locked, controller, settling
    </div>;
   }
 
-  if (hasAvailableUpdate(item)) {
+  if (hasAvailableStoreUpdate(item)) {
    return <div className="store-action delivery-store-actions">
     <button className="delivery-store-primary" type="button" disabled={busy || !view.canInstall} onClick={() => action('install', item.id)}>Update</button>
     {showOpenAlongsideUpdate && <button className="delivery-store-secondary" type="button" disabled={locked} onClick={() => open(runtimeIdForPackage(item.id))}>Open</button>}

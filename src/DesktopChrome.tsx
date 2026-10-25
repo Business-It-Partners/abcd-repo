@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, LogOut, Minus, Wifi, WifiOff, X } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
+import type { StoreView } from '../electron/distribution/contracts';
 import type { SessionView } from '../electron/identity/contracts';
+import { hasAvailableStoreUpdate } from './storeUpdateState';
 import './DesktopChrome.css';
 
 const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
@@ -10,8 +12,13 @@ const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.
 type Props = {
   session?: SessionView;
   sessionControls?: ReactNode;
+  storeView: StoreView;
+  storeControlsLocked: boolean;
   statusbarVisible: boolean;
   onOpenApps?: () => void;
+  onRequestUpdate(id: string): void;
+  onCancelUpdate(): void;
+  onRefreshApps(): void;
   onShowWindows?: () => void;
   onSupport?: () => void;
   onRequestSignOut?: () => void;
@@ -23,7 +30,7 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ session, sessionControls, statusbarVisible, onOpenApps, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
+export function DesktopChrome({ session, sessionControls, storeView, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
   const [clinicLogo, setClinicLogo] = useState<{ generation: number; dataUrl: string }>();
@@ -67,6 +74,33 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
   const clinicLogoUrl = clinicLogo?.generation === session?.generation ? clinicLogo?.dataUrl : undefined;
   const formatDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' }).format(now);
   const formatTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(now);
+  const availableUpdateCount = storeView.apps.filter(hasAvailableStoreUpdate).length;
+  const updateApps = storeView.apps.filter(app => !!app.activeVersion && (
+    hasAvailableStoreUpdate(app)
+    || !!app.pendingVersion
+    || !!app.trialVersion
+    || storeView.job?.appId === app.id
+  ));
+  const hasPendingUpdate = updateApps.some(app => !!app.pendingVersion || !!app.trialVersion);
+  const canRequestUpdate = !storeControlsLocked && storeView.phase === 'ready' && storeView.canInstall && !storeView.job;
+  const widgetMessage = storeView.phase === 'refreshing' && updateApps.length === 0
+    ? 'Checking the App Store for updates…'
+    : storeView.phase === 'idle'
+      ? 'Connecting to the App Store…'
+      : storeView.phase === 'unavailable'
+        ? storeView.message || 'App Store unavailable. Refresh to try again.'
+        : storeView.message
+          || (!storeView.canInstall && availableUpdateCount > 0
+            ? 'A clinic administrator is required to update apps.'
+            : updateApps.length === 0
+              ? storeView.apps.some(app => !!app.activeVersion)
+                ? 'All installed apps are up to date.'
+                : 'Updates for installed apps will appear here.'
+              : storeView.job
+                ? 'The active app stays in place while this update is prepared.'
+                : hasPendingUpdate
+                  ? 'Pending updates apply on a later full app launch.'
+                  : 'Select Update to prepare a verified release for the next app launch.');
 
   return <>
     <header className={`desktop-statusbar ${statusbarVisible ? 'chrome-shown' : 'chrome-hidden'}`} aria-label="Desktop status bar" aria-hidden={!statusbarVisible} inert={!statusbarVisible}>
@@ -109,7 +143,7 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
       {onRequestSignOut && <button className="clinic-widget-signout" type="button" aria-label="Sign out" title="Sign out" onClick={onRequestSignOut}><LogOut size={15} aria-hidden="true"/><span>Sign out</span></button>}
     </section>}
 
-    <section className="desktop-widget-collection" aria-label="Calendar and time widgets">
+    <section className="desktop-widget-collection" aria-label="Desktop widgets">
       <section className="desktop-widget nepali-calendar-widget" aria-label="Nepali calendar">
         <div className="widget-kicker">NEPALI CALENDAR</div>
         <div className="calendar-widget-heading">
@@ -143,6 +177,48 @@ export function DesktopChrome({ session, sessionControls, statusbarVisible, onOp
           {weekdays.map((day, index) => <span key={`english-weekday-${index}`} role="columnheader" aria-label={new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(new Date(2024, 0, 7 + index))}>{day}</span>)}
           {gregorianCalendar.days.map((day, index) => <span key={`english-day-${index}`} role="gridcell" aria-selected={!!day && isCurrentGregorianMonth && day === today} aria-label={day ? new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date(shownGregorianMonth.getFullYear(), shownGregorianMonth.getMonth(), day)) : undefined} className={day && isCurrentGregorianMonth && day === today ? 'is-today' : ''}>{day || ''}</span>)}
         </div>
+      </section>
+
+      <section className="desktop-widget app-updates-widget" aria-label="App updates">
+        <div className="updates-widget-heading">
+          <div>
+            <div className="widget-kicker">APP UPDATES</div>
+            <span className="updates-widget-subtitle">{availableUpdateCount > 0 ? 'Ready to install' : 'Keep your apps current'}</span>
+          </div>
+          <span className="updates-widget-tools">
+            <span className="updates-count">{availableUpdateCount} available</span>
+            <button className="updates-refresh-button" type="button" aria-label="Check for app updates" title="Check for app updates" disabled={storeControlsLocked || storeView.phase === 'refreshing' || !!storeView.job} onClick={onRefreshApps}><RefreshCw size={13} aria-hidden="true"/></button>
+          </span>
+        </div>
+        {updateApps.length > 0 ? <div className="updates-list" aria-label="Installed app updates">
+          {updateApps.map(app => {
+            const job = storeView.job?.appId === app.id ? storeView.job : null;
+            const targetVersion = app.pendingVersion || app.trialVersion || app.version;
+            const percent = job && job.total > 0 ? Math.min(100, Math.floor(job.received / job.total * 100)) : 0;
+            const phase = job?.phase === 'downloading' ? 'Downloading'
+              : job?.phase === 'verifying' ? 'Verifying'
+                : job?.phase === 'installing' ? 'Preparing'
+                  : job ? 'Checking permission' : '';
+            const state = job ? `${phase} · ${percent}%`
+              : app.trialVersion ? `Starting update · ${app.trialVersion}`
+                : app.pendingVersion ? app.pendingReady ? `Ready · applies next launch` : `Staged · checking readiness`
+                  : `Update available · ${app.version}`;
+            return <div className="update-app-row" key={app.id}>
+              <span className="update-app-icon" aria-hidden="true"><PackageCheck size={16} strokeWidth={1.8} /></span>
+              <div className="update-app-copy">
+                <strong title={app.title}>{app.title}</strong>
+                <small><span>{app.activeVersion}</span><ArrowRight size={11} aria-hidden="true"/><span>{targetVersion}</span><span className="update-app-state">· {state}</span></small>
+                {job && <progress className="update-app-progress" aria-label={`${app.title} update progress`} max={Math.max(1, job.total)} value={job.received}/>}
+              </div>
+              {job
+                ? <button className="update-app-button update-app-cancel" type="button" aria-label={`Cancel update for ${app.title}`} disabled={storeControlsLocked} onClick={onCancelUpdate}>Cancel</button>
+                : app.pendingVersion || app.trialVersion
+                  ? <span className="update-app-staged" role="status">{app.pendingReady ? 'Ready' : app.trialVersion ? 'Starting' : 'Staged'}</span>
+                  : <button className="update-app-button" type="button" aria-label={`Update ${app.title}`} disabled={!canRequestUpdate || !app.available} onClick={() => onRequestUpdate(app.id)}>Update</button>}
+            </div>;
+          })}
+        </div> : <div className="updates-empty" role={storeView.phase === 'unavailable' ? 'alert' : 'status'}>{widgetMessage}</div>}
+        {updateApps.length > 0 && <div className="updates-widget-footnote" aria-live="polite">{widgetMessage}</div>}
       </section>
     </section>
   </>;

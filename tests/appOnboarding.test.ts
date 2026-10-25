@@ -70,6 +70,8 @@ describe('generic first-party app onboarding and isolated app releases',()=>{
     for(const next of ['1.1.0','1.2.0']){
       version=next;sequence++;
       await service.checkUpdates();
+      expect(service.view().apps[0].pendingVersion).toBeNull();
+      expect((await service.install(id)).ok).toBe(true);
       expect(service.view().apps[0].pendingVersion).toBe(next);
       let running='';
       expect((await service.updateNow(id,appId=>{const lease=registry.launch(appId);running=lease.manifest.version;registry.markHealthy(appId,lease.release.digest);lease.releaseLease();})).ok).toBe(true);

@@ -1,5 +1,11 @@
 # Sajilo Dental — Work Checklist
 
+## Home App Updates widget Store wiring — 2026-10-25 (local source only)
+
+Replaced the Home-page dummy update entries with live signed Store offers for installed apps. The widget shows current and offered versions, uses the existing verified Store Update action, reflects staging/progress/readiness and cancellation, and can refresh the catalogue. Catalogue checks now refresh offers at sign-in and every 30 minutes without downloading or staging packages; the user must click Update. A staged candidate does not replace the active version, and the widget does not call it ready until the Store launch-health gate allows that state.
+
+`npm run build`, all 502 root unit tests across 34 files, the private synthetic widget flow (4/4 checks), `python3 tools/check-dental-docs.py`, and `git diff --check` pass. The connected synthetic screenshot and report are `artifacts/app-updates-widget-connected.png` and `artifacts/home-app-updates-verification.json`. Changes remain local on the M15 worktree: no commit, push, Store publication, or app restart. The running OS will load the shell update on its next full launch; M15/G15 acceptance status is unchanged.
+
 ## Staff salary-history validation fix — 2026-10-25 (local source only)
 
 The Staff app's salary-payout validator rejected canonical zero-padded `YYYY-MM` periods for January through September, so any such payout caused the whole history list to show “The clinic returned an invalid salary history.” It now matches the Finance app's period format. The seven Staff package tests (including a validator regression), package typecheck/build, root build, 502 root tests and docs check pass. This local app source has not been published or installed; signed Staff 1.0.3 and the running OS remain unchanged.

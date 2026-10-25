@@ -1,10 +1,10 @@
 # Dental OS — Install, Update and Uninstall
 
-**Updated:** 2026-10-22. **Authority:** single source of truth for V1 app installation, update, activation, recovery and uninstall behavior. Accepted behavior is specified below; current implementation and outstanding acceptance are identified separately. ADR-025 supersedes ADR-024's close-first target. M15 integrated the staged/next-full-launch source path and focused synthetic checks; final combined-source acceptance remains pending.
+**Updated:** 2026-10-25. **Authority:** single source of truth for V1 app installation, update, activation, recovery and uninstall behavior. Accepted behavior is specified below; current implementation and outstanding acceptance are identified separately. ADR-025 supersedes ADR-024's close-first target. M15 integrated the staged/next-full-launch source path and focused synthetic checks; final combined-source acceptance remains pending.
 
 ## Product rule and ownership
 
-Dental OS prepares app updates without disturbing running work. A verified update takes effect on the next full launch; startup failure recovers to an eligible known-good version. No live code injection, mandatory update-time close, process kill or automatic app relaunch is part of the normal update action.
+Dental OS prepares app updates without disturbing running work. Signed catalogue offers are refreshed at sign-in and on a 30-minute read-only cadence, then shown in the home-page App Updates widget and Store. These checks do not download or stage app packages; the user selects Update to prepare a release. A verified update takes effect on the next full launch; startup failure recovers to an eligible known-good version. No live code injection, mandatory update-time close, process kill or automatic app relaunch is part of the normal update action.
 
 All executable apps are developed/controlled and approved by the product owner's organization. There is no third-party submission or public developer marketplace. The internal publisher builds, tests, signs and publishes approved releases. The trusted platform verifies and installs them. Clinic users consume releases through the Store; server-side clinic/user authorization remains on the existing SaaS Worker. First-party ownership does not waive integrity, compatibility, permission or recovery checks.
 
@@ -18,10 +18,10 @@ Store discovery/module visibility is not authorization. Current role/install pol
 
 ## Normal Update action
 
-1. User selects Update for an approved compatible release. Routine checks may discover offers; only the existing authorized download policy may prepare bytes. This decision introduces no additional automatic installation authority.
+1. The user selects Update for an approved compatible release from the home-page App Updates widget or Store. Routine checks may discover offers but never download or stage package bytes. The explicit action still requires current authenticated install authority and signed policy.
 2. Download, verify, safely extract and atomically record one pending candidate in a separate immutable directory. Recheck current authority, release identity and policy before committing it.
 3. If the app is running, keep its exact code/assets pinned. Its window, draft, requests and session continue unchanged. Preparation neither closes nor reloads it and does not require a save/discard decision.
-4. Show Update ready — applies next time you open this app. Keep the running version distinct from the pending version. Open while already running only focuses/restores that existing instance.
+4. Show the pending version separately from the active version. Show Update ready — applies next time you open this app — only when the Store launch-health gate permits the candidate trial; otherwise show that the update is staged and readiness is still pending. Open while already running only focuses/restores that existing instance.
 5. When the user normally closes the app, perform the shared close checks. Closing releases runtime resources/leases; it need not activate the candidate or start a replacement.
 6. On the next full launch, revalidate the candidate and current controls. With no runtime/lease or unresolved transition safety gate, atomically select the pending candidate as a persisted trial and launch it. If the app was already closed when preparation finished, the next Open follows the same path.
 7. Mark the candidate known-good only after bounded startup health succeeds. Only then present the new version as successfully running/updated. Keep an eligible fallback with bounded retention.
@@ -37,7 +37,8 @@ Download and activation are separate operations. Do not replace executing files 
 | Not installed | Get installs the approved release; Open appears after verified registration. |
 | Update available | Update prepares the offered release; the installed app remains usable if currently allowed. |
 | Downloading / verifying / preparing | Show actual operation/progress, cancellation where safe, and retryable failures. |
-| Update ready | Name pending version and explain next full launch. Open focuses the old instance if still running; otherwise starts the candidate trial. |
+| Staged / readiness pending | Name the pending version, keep the active version usable, and do not imply the candidate can launch yet. |
+| Update ready | The Store launch-health gate permits the candidate trial; name the pending version and explain next full launch. Open focuses the old instance if still running; otherwise starts the candidate trial. |
 | Starting updated app | Candidate is in startup trial; do not label it known-good prematurely. |
 | Updated | Startup health acknowledged for the active version; Open uses it. |
 | Update failed / recovery | Explain whether the old version was retained, restored, or no eligible fallback exists; provide a bounded recovery/retry action. |

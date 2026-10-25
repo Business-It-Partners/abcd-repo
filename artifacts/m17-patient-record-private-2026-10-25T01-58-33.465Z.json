@@ -1,0 +1,42 @@
+{
+  "passed": false,
+  "failure": "AssertionError: opening a patient fetches its core record without eagerly dispatching every section read\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/patients?limit=10&monthStart=2026-10-18&monthEnd=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients?limit=10\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patient-intakes/context\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/clinic/suppliers?scope=lab\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/treatment-protocols\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients?limit=10&monthStart=2026-10-18&monthEnd=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/core\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients?limit=10&monthStart=2026-10-18&monthEnd=2026-11-16\",\"method\":\"GET\",\"operationId\":null,\"body\":null},{\"path\":\"/v1/patients/11111111-1111-4111-8111-111111111111/core\",\"method\":\"GET\",\"operationId\":null,\"body\":null}],\"body\":\"PATIENT RECORD\\nPatient Profile\\nChief Complaints\\nPatient Notes\\nClinical Timeline\\nPeriodontal Chart\\nTreatment Plan\\nLab\\nX-Ray Imaging\\nPrescriptions\\nFollow-Ups\\n Demographics & Contact\\nEdit Profile\\nFull Name\\nSynthetic Patient\\nAge\\n34 yrs\\nGender\\nFemale\\nPhone Number\\n+977-9800000000\\nAddress\\nSynthetic address\\nPreferred Language\\nEnglish\\n Clinical Parameters & Warnings\\nPatient Record ID\\n11111111-1111-4111-8111-111111111111\\nMedical Warnings\\nSynthetic pollen allergy, Synthetic condition\\nEmergency Contact\\nSynthetic Contact\\nEmergency Phone\\n+977-9800000001\"}\nPrivate host stderr: [28244:1025/074334.400679:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n[28120:1025/074340.452760:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.452844:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.452935:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.453027:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.489344:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.489388:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.489418:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.489432:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.617468:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.617495:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.617518:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.617530:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.832647:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.832816:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[28120:1025/074340.832880:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[28120:1025/074340.832915:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n",
+  "checks": [
+    "Patient Record uses the shared Standard Window scroll viewport",
+    "Patient Record scroll shell fills the Standard Window page",
+    "Patient Record uses the six-pixel overlay scrollbar four pixels from the page edge",
+    "Patient Record list removes the legacy care-workspace gutter",
+    "updated package is Patient Record 1.0.10 with app assets and JSON/media grants",
+    "renderer receives the SDK bridge without credential or direct-network accessors",
+    "SaaS directory uses the scoped patient search route and validated Nepali-month filters",
+    "production SaaS directory is displayed without the former custom app header or copy",
+    "registration uses the OS window navigation and keeps its production save control",
+    "SaaS registration displays the patient number returned by its scoped intake-context route",
+    "OS Back requires the discard confirmation while registration is unfinished",
+    "confirmed OS Back discards the unfinished registration and returns to the directory",
+    "patient detail reports only opaque UUID entries to the OS",
+    "OS Back returns from patient detail to the directory",
+    "OS Forward restores the patient detail page",
+    "patient detail no longer renders its own Back button",
+    "patient detail sidebar uses the slightly narrower 190px width"
+  ],
+  "errors": [],
+  "package": {
+    "appId": "company.dental.patient-record.m17",
+    "version": "1.0.10",
+    "packageSha256": "2e1b740cfd3d12e468d757e6680d0290c2815bbb44b794cede540471b814cd7a",
+    "payloadDigest": "6a9179fb67008f28ea61a4dafe7eb2e173394fbf324ea46df7d0b0160febfc10",
+    "wireBytes": 1819432,
+    "assetCount": 5,
+    "grants": [
+      "clinic.api.request",
+      "clinic.media.read",
+      "clinic.media.upload"
+    ]
+  },
+  "scope": "Private headless Electron acceptance of the pinned SaaS Patient Record screens using only synthetic clinic/media data and test-only signing keys. No live patient data, staging publication or clinic credential was used.",
+  "screenshot": "m17-patient-record-private-2026-10-25T01-58-33.465Z.png",
+  "intakeScreenshot": "m17-patient-record-intake-private-2026-10-25T01-58-33.465Z.png",
+  "detailScreenshot": "m17-patient-record-detail-private-2026-10-25T01-58-33.465Z.png",
+  "labScreenshot": null
+}
