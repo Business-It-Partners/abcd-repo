@@ -13,6 +13,7 @@
     radial-gradient(ellipse at 51% 39%, #477e8d38, transparent 43%),
     radial-gradient(ellipse at 100% 100%, #168d8361, transparent 60%),
     linear-gradient(133deg, #10162e 0%, #192b49 49%, #144b54 100%);
+  background-color: #10162e;
 }
 .brand-splash__ambient {
   position: absolute;
