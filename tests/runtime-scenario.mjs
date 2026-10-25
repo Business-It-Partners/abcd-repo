@@ -148,6 +148,11 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.waitForFunction(()=>document.querySelector('[data-window-id="finance"]')?.dataset.phase==='closed');
   const restoredAfterFinanceWindow=await waitExpectedNative('alpha');
   check('Closing Finance window restores the foreground native app surface',restoredAfterFinanceWindow.visible);
+  await shell.getByRole('button',{name:'Open apps catalog'}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible');
+  const desktopFrame=await shell.evaluate(()=>window.desktop.capture({x:0,y:250,width:20,height:20}));
+  const corner=await app.evaluate(({nativeImage},data)=>{const pixel=nativeImage.createFromDataURL(data).getBitmap();return [...pixel.slice(0,3)];},desktopFrame);
+  check('switching from an isolated app to a shell window hides its native surface before paint',Math.max(...corner)<190);
+  await shell.getByRole('button',{name:'Close App Store',exact:true}).click();
   await activateDockApp('Records');await ready('records');const beta=await guest('beta');
   const inactiveMirror=shell.locator('[data-runtime="studio"] .isolated-mirror');
   await inactiveMirror.waitFor();
@@ -159,11 +164,6 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('apps have no Node, shell bridge or Files transfer API',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
   await alpha.evaluate(()=>localStorage.setItem('isolation','alpha-only'));
   check('storage is separated by app',await beta.evaluate(()=>localStorage.getItem('isolation'))===null);
-  await shell.getByRole('button',{name:'Open apps catalog'}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible');
-  const desktopFrame=await shell.evaluate(()=>window.desktop.capture({x:0,y:250,width:20,height:20}));
-  const corner=await app.evaluate(({nativeImage},data)=>{const pixel=nativeImage.createFromDataURL(data).getBitmap();return [...pixel.slice(0,3)];},desktopFrame);
-  check('switching from an isolated app to a shell window hides its native surface before paint',Math.max(...corner)<190);
-  await shell.getByRole('button',{name:'Close App Store',exact:true}).click();
   check('forged report rejected',await beta.evaluate(()=>{try{window.dentalApp.report({dirty:false,modal:false,id:'studio'});return false;}catch{return true;}}));
   check('network and cross-origin fetch denied',await beta.evaluate(async()=>{for(const url of ['http://127.0.0.1:9/','dental-fixture://alpha/app.js','file:///etc/passwd']){try{await fetch(url);return false;}catch{}}return true;}));
   await beta.evaluate(()=>window.open('https://example.com'));check('popup denied',app.context().pages().length===3);
