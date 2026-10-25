@@ -30,7 +30,8 @@ async function waitForNative(predicate) {
 async function expectedNativeBounds(shell, frame) {
   const surface = await shell.locator('[data-runtime="studio"]').boundingBox();
   const fullscreen = await frame.getAttribute('data-presentation') === 'fullscreen';
-  const gutter = fullscreen ? 0 : 15;
+  const gutter = fullscreen ? 0 : await shell.locator('[data-runtime="studio"]').evaluate(element =>
+    Number.parseFloat(getComputedStyle(element).getPropertyValue('--native-runtime-resize-gutter')) || 0);
   return { x: Math.round(surface.x), y: Math.round(surface.y), width: Math.max(1, Math.round(surface.width) - gutter), height: Math.max(1, Math.round(surface.height) - gutter) };
 }
 
@@ -47,6 +48,7 @@ async function mirrorPresentation(shell) {
     const result = {
       nativeVisible: surface.dataset.nativeViewVisible,
       presentation: surface.dataset.presentation,
+      gutter: Number.parseFloat(getComputedStyle(surface).getPropertyValue('--native-runtime-resize-gutter')) || 0,
       clipPath: getComputedStyle(probe).clipPath,
     };
     probe.remove();
@@ -61,7 +63,7 @@ async function assertMirrorPresentation(shell, nativeVisible, fullscreen = false
   }, nativeVisible, { timeout: 8000 });
   const state = await mirrorPresentation(shell);
   assert.equal(state.nativeVisible, nativeVisible ? 'true' : 'false');
-  assert.equal(state.clipPath, nativeVisible && !fullscreen ? 'inset(0px 15px 15px 0px)' : 'none',
+  assert.equal(state.clipPath, nativeVisible && !fullscreen ? `inset(0px ${state.gutter}px ${state.gutter}px 0px)` : 'none',
     'the mirror must be clipped only while its native view covers the window');
 }
 
@@ -76,11 +78,22 @@ try {
   await waitForNative(view => view?.visible);
   await assertMirrorPresentation(shell, true);
 
+  const frameBeforeDockHover = await frame.boundingBox();
+  await shell.locator('[data-dock-app="studio"]').hover();
+  await shell.waitForTimeout(200);
+  assert.equal((await nativeView())?.visible, true, 'hovering the dock must not swap the live app view for its screenshot mirror');
+  assert.deepEqual(await frame.boundingBox(), frameBeforeDockHover, 'dock hover must not move or resize the app window');
+  console.log('PASS dock hover keeps the live app content and window geometry stable');
+  await shell.mouse.move(20, 20);
+  await waitForNative(view => view?.visible);
+
   async function resizeAt(edge, dx, dy) {
     const before = await frame.boundingBox();
     const handle = await frame.locator(`[data-resize="${edge}"]`).boundingBox();
-    const x = handle.x + handle.width / 2;
-    const y = handle.y + handle.height / 2;
+    // The frame rounds its corners; aim within the exposed inner part of the
+    // bottom-right hitbox rather than at a point clipped by that rounded edge.
+    const x = edge === 'se' ? handle.x + handle.width - 5 : handle.x + handle.width / 2;
+    const y = edge === 'se' ? handle.y + handle.height - 5 : handle.y + handle.height / 2;
     console.log(`Checking ${edge} resize`);
     await shell.mouse.move(x, y);
     await shell.mouse.down();
@@ -94,9 +107,17 @@ try {
 
   const initial = await waitForNative(view => view?.visible);
   let frameBounds = await frame.boundingBox();
-  assert.ok(Math.abs(frameBounds.x + frameBounds.width - initial.bounds.x - initial.bounds.width - 15) <= 2,
+  const gutter = await shell.locator('[data-runtime="studio"]').evaluate(element =>
+    Number.parseFloat(getComputedStyle(element).getPropertyValue('--native-runtime-resize-gutter')) || 0);
+  assert.equal(gutter, 7, 'the native app should reserve only the compact resize gutter');
+  const edgeHandle = await frame.locator('[data-resize="e"]').boundingBox();
+  const bottomHandle = await frame.locator('[data-resize="s"]').boundingBox();
+  const cornerHandle = await frame.locator('[data-resize="se"]').boundingBox();
+  assert.ok(edgeHandle.width >= gutter && bottomHandle.height >= gutter && cornerHandle.width >= gutter && cornerHandle.height >= gutter,
+    'all native-view resize strips must remain reachable');
+  assert.ok(Math.abs(frameBounds.x + frameBounds.width - initial.bounds.x - initial.bounds.width - gutter) <= 2,
     'the native view must leave the OS right-edge hit strip clear');
-  assert.ok(Math.abs(frameBounds.y + frameBounds.height - initial.bounds.y - initial.bounds.height - 15) <= 2,
+  assert.ok(Math.abs(frameBounds.y + frameBounds.height - initial.bounds.y - initial.bounds.height - gutter) <= 2,
     'the native view must leave the OS bottom-edge and corner hit strips clear');
   console.log('PASS native view leaves right and bottom resize strips clear');
 

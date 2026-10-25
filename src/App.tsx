@@ -204,8 +204,6 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [count, setCount] = useState(0);
   const [note, setNote] = useState('A little space to make something great.');
   const [dockRevealed, setDockRevealed] = useState(false);
-  const [dockItemHovered, setDockItemHovered] = useState(false);
-  const dockItemHoveredRef = useRef(false);
   const [statusbarRevealed, setStatusbarRevealed] = useState(false);
   const [hostTransitioning, setHostTransitioning] = useState(false);
   const frontApp = activeWindow(state);
@@ -214,20 +212,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const showStatusbar = !immersive || statusbarRevealed || anyMotion || hostTransitioning;
   useEffect(() => { const edge=()=>setDockRevealed(true); window.addEventListener('runtime:dock-edge',edge); return()=>window.removeEventListener('runtime:dock-edge',edge); }, []);
   useEffect(() => { setDockRevealed(false); setStatusbarRevealed(false); }, [immersive, frontApp]);
-  function updateDockItemHover(hovered:boolean) {
-    if (dockItemHoveredRef.current === hovered) return;
-    dockItemHoveredRef.current = hovered;
-    setDockItemHovered(hovered);
-  }
   function trackChrome(event: React.PointerEvent<HTMLElement>) {
-    if (state.overview) { updateDockItemHover(false); dock.leave(); return; }
+    if (state.overview) { dock.leave(); return; }
     const { clientX: px, clientY: py } = event;
     const target = event.target as HTMLElement;
     // Start magnification only inside the dock's visible hit area; the sheet
     // itself moves with the live dock width, so use its current rendered box.
     const overWindow = !!target.closest('[data-window-id]');
     const overDock = !!target.closest('.dock-region');
-    updateDockItemHover(showDock && !!target.closest('.dock-icon, .dock-preview'));
     const hitZone = document.querySelector<HTMLElement>('.dock-hit-zone')?.getBoundingClientRect();
     const insideDock = !!hitZone && px >= hitZone.left && px <= hitZone.right && py >= hitZone.top && py <= hitZone.bottom;
     if (showDock && insideDock && (!overWindow || overDock)) dock.move(px);
@@ -298,14 +290,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       setLaunchNotice('This app could not switch modules. Close and reopen the app, or update it from Apps.');
     }
   }
-  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { updateDockItemHover(false); setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
+  return <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
     {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} developmentApps={developmentApps} developmentMessage={developmentMessage} developmentTargets={Object.fromEntries(developmentApps.apps.map(app=>[app.id,dynamicTargets.current[developmentRuntimeIdForPackage(app.id)]]))} onOpenDevelopmentApp={openDevelopmentApp} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || dockItemHovered || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>

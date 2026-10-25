@@ -152,7 +152,7 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
       const height=fullscreen?fullHeight:Math.min(fullHeight,Math.floor(dockTop-y));
       // WebContentsView is composited above this renderer, so React resize
       // handles at the right/bottom edges cannot receive input beneath it.
-      // Leave their 15px corner hit areas exposed for every normal window.
+      // Leave the compact edge and corner hit areas exposed for every normal window.
       const resizeGutter=fullscreen?0:nativeRuntimeResizeGutter;
       const rect=height>0?{x,y,width:Math.max(1,width-resizeGutter),height:Math.max(1,height-resizeGutter)}:{x:0,y:0,width:1,height:1};
       const launchReady=!managedAppIds.has(id)||!!launchFeedback[id]&&launchFeedback[id].handoff!=='waiting';
