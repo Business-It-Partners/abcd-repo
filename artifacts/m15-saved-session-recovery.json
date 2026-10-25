@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "checks": [
+    "test profile starts with an encrypted synthetic saved credential",
+    "temporary restore outage enters retryable unavailable state",
+    "login screen exposes Retry saved session during the outage",
+    "outage leaves the saved credential byte-for-byte intact",
+    "retry restores the workspace without asking for a password",
+    "successful retry stores only encrypted rotated credentials",
+    "renderer session view exposes no token or credential value",
+    "recovery UI has no renderer errors"
+  ],
+  "platform": "linux",
+  "scope": "Private Linux fixture: pre-seeded encrypted synthetic credential, injected one-time refresh outage, unchanged file check, and successful user-triggered retry.",
+  "sourceIdentity": {
+    "gitHead": "6e3a92f3e201e4d9a3385ac8c67060cadb07eaac",
+    "sha256": {
+      "electron/identity/client.ts": "3701355568980493f768161e3954cbd5659e4e7685c6ff9927d516f9f9590555",
+      "electron/identity/contracts.ts": "9c6b9ee48bf15c433a8734ec5a89af4d58dcf651cc6ee6a4fbdf0df55c01b837",
+      "electron/identity/fixtures.ts": "bac380ff6658097be5a19423850aeec71374fa1262a150f263893b86a3670ad3",
+      "electron/identity/session.ts": "fabbe52c168e8f7fd6e11f6742b7bf78f382ebb6863569264a5d74925b85325e",
+      "electron/identity/storage.ts": "4f824b1832938c2cdd838a551533d4a82806eb023591f63b4b118cbf9b8b4b59",
+      "electron/main.ts": "6aa9d50ed36e969268a02af9f296bf57c93dfed80ac6a5e4c2cd3935e06bf270",
+      "electron/preload.ts": "cbfee0ae91eebd50e5b47e44315532e9549703646f5eb5c99ba6044a5326f73e",
+      "src/IdentityGate.tsx": "58beae7389669708d69b1f11ddea98443a1e548a4a9c3287f7f94bb1f7ad5125",
+      "src/IdentityGate.css": "fc4cfcaab21f66c7a1d513d84bb0b01ffaffe7135e3df527a3a2593d8b28e0d7",
+      "src/global.d.ts": "185f5b1a293646e218bf915c7dc8c1c3b8d5068d38b02aada1a646da64039e5d",
+      "tests/identity.test.ts": "8c9f304b1aaa72d1d935d395498a345a94e61cf308800d21d6bb50159a00f5cb",
+      "tests/identity-recovery.mjs": "450c4d9a27a9ebd1e94e25da2a32989e6af51d49db355000698e88c63f822a00",
+      "package.json": "84415ddb32e0005b5856943c46019950af3bf2ba93892bcf227097c280403e3a"
+    }
+  }
+}

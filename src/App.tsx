@@ -120,11 +120,42 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups } = controllers;
   const phase = studio.win.phase;
+  const [resourceNotice,setResourceNotice]=useState('');
+  const [resourcePressureActive,setResourcePressureActive]=useState(false);
+  const resourceStoreClosedForPressure=useRef(false);
+  const resourcePressureHandler=useRef<(value:unknown)=>void>(()=>{});
   const [installed, setInstalled] = useState<StaticWindowId[]>(catalogIds.filter(id => id !== 'calendar' && id !== 'protocols'));
   const [dynamicControllerRefs,setDynamicControllerRefs]=useState<Record<string,MutableRefObject<WindowController>>>({});
   const onControllerRef=useCallback((id:string,ref:MutableRefObject<WindowController>|null)=>setDynamicControllerRefs(previous=>{if(ref){if(previous[id]===ref)return previous;return{...previous,[id]:ref};}if(!previous[id])return previous;const next={...previous};delete next[id];return next;}),[]);
   const dynamicControllers:Record<string,WindowController>=Object.fromEntries(Object.entries(dynamicControllerRefs).map(([id,ref])=>[id,ref.current]));
   const allControllers:Record<string,WindowController>={...staticControllers,...dynamicControllers};
+  resourcePressureHandler.current=(value:unknown)=>{
+    if(!value||typeof value!=='object')return;
+    const event=value as {phase?:unknown;requestId?:unknown;pressureActive?:unknown;reclaimedCount?:unknown;skippedAppCount?:unknown};
+    if(event.phase==='prepare'&&typeof event.requestId==='string'){
+      const store=allControllers.store;
+      resourceStoreClosedForPressure.current=!!store&&store.win.phase!=='closed';
+      if(resourceStoreClosedForPressure.current)store?.close();
+      setResourcePressureActive(event.pressureActive===true);
+      setResourceNotice('System memory is low. Dental OS is closing the App Store and pausing safe app windows.');
+      requestAnimationFrame(()=>window.desktop?.resourcePressure.acknowledge(event.requestId as string));
+    }else if(event.phase==='complete'){
+      setResourcePressureActive(event.pressureActive===true);
+      const reclaimed=typeof event.reclaimedCount==='number'?event.reclaimedCount:0;
+      const blocked=typeof event.skippedAppCount==='number'?event.skippedAppCount:0;
+      const storeClosed=resourceStoreClosedForPressure.current;
+      resourceStoreClosedForPressure.current=false;
+      setResourceNotice(reclaimed
+        ?`Dental OS ${storeClosed?'closed the App Store and ':''}paused ${reclaimed} app${reclaimed===1?'':'s'} to free memory. Reopen after system memory recovers.${blocked?` ${blocked} app${blocked===1?' was':'s were'} left open because work may be unsaved or saving.`:''}`
+        :blocked
+          ?`Dental OS ${storeClosed?'closed the App Store. ':''}left open apps alone because work may be unsaved or saving. Save or finish that work, then close an app to free more memory.`
+          :storeClosed?'Dental OS closed the App Store window. Open it again from Apps when needed.':'System memory is low; no eligible app renderer was available to pause.');
+    }else if(event.phase==='recovered'){
+      setResourcePressureActive(false);
+      setResourceNotice('System memory has recovered. Paused apps can be reopened.');
+    }
+  };
+  useEffect(()=>window.desktop?.resourcePressure.subscribe(value=>resourcePressureHandler.current(value)),[]);
   const pendingCapacityReplacement=useRef<{closingId:WindowId;requestedId:WindowId;prompt:OpenAppLimitPrompt}|null>(null);
   const [updates, setUpdates] = useState<StaticWindowId[]>(['staff', 'lab']);
   const [job, setJob] = useState<StoreJob|null>(null);
@@ -366,7 +397,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onCapacityCloseCommitted={finishCapacityReplacement} onCapacityCloseCancelled={cancelCapacityReplacement} hostTransitioning={hostTransitioning} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onCapacityCloseCommitted={finishCapacityReplacement} onCapacityCloseCancelled={cancelCapacityReplacement} hostTransitioning={hostTransitioning} resourcePressureActive={resourcePressureActive} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -384,7 +415,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       moduleNavigation={id === 'finance' ? { activeModuleId: financeModule, activeLabel: financeModule, modules: FINANCE_MODULES.map(label=>({id:label,label})) } : undefined}
       onSelectModule={id === 'finance' ? selectFinanceModule : undefined}>
       <WindowContentBoundary title={windowSpec(id).title} resetKey={staticControllers[id].win.phase}>
-      {id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore controller={staticControllers.store} settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
+      {id === 'store' && staticControllers.store.win.phase === 'closed' ? null : id === 'store' && (!fixtures || resourceFixtures) ? <DeliveryStore controller={staticControllers.store} settling={!!arrivalId} view={delivery.view} action={delivery.action} open={openInstalledApp} locked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> : id === 'store' ? <StoreApp locked={!!arrivalId || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} uninstall={id=>{
         if(job || arrivalId || Object.values(getState().windows).some(w=>w.busy || w.interaction!=='idle'))return;
         dispatch({type:'phase',id,phase:'closed'});
         setInstalled(old=>old.filter(app=>app!==id));setUpdates(old=>old.filter(app=>app!==id));
@@ -417,6 +448,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     </nav>
     {readyId && !state.overview && !hostTransitioning && <div className="store-ready" role="status" style={{left: Math.max(12,Math.min(size.width-235,(dock.layout.items.find(item=>item.id===readyId)?.x??size.width/2)-90)),bottom:dockHeight+22*dockScale}}>{readyId.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(readyId)}/> : <img src={dockArtwork(readyId)} alt=""/>}<span>{state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId}<small>Ready to open</small></span><button aria-label={`Open ${state.windows[readyId]?.title ?? titleByWindow[readyId] ?? readyId} from dock`} onClick={()=>openStoreApp(readyId)}>Open</button><button aria-label="Dismiss app ready" onClick={()=>setReadyId(null)}>×</button></div>}
     {launchNotice && !state.overview && <div className="app-launch-notice" role="alert"><span>{launchNotice}</span><button aria-label="Dismiss app message" onClick={()=>setLaunchNotice('')}>×</button></div>}
+    {resourceNotice && !state.overview && !hostTransitioning && <div className="resource-pressure-notice" role="status"><span>{resourceNotice}</span><button aria-label="Dismiss resource pressure notice" onClick={()=>setResourceNotice('')}>×</button></div>}
     {immersive && !state.overview && <>
       <div className="statusbar-reveal-edge" onPointerEnter={() => setStatusbarRevealed(true)} aria-hidden="true"/>
       <div className="dock-reveal-edge" onPointerEnter={() => setDockRevealed(true)} aria-hidden="true"/>

@@ -9,6 +9,7 @@
     "preview:browser": "node tools/development-apps/preview-browser.mjs",
     "build": "npm run typecheck && vite build && tsc -p tsconfig.electron.json",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "pretest": "node tools/app-packages/build-appointments-m17.mjs",
     "test": "vitest run --exclude \"apps/dental-apps/**\"",
     "test:electron": "node tools/run-ui-test.mjs tests/electron.mjs",
     "test:scaling": "node tools/run-ui-test.mjs tests/scaling.mjs",
@@ -41,6 +42,7 @@
     "test:app-launch-feedback": "node tools/run-ui-test.mjs tests/app-launch-feedback.mjs",
     "test:sdk": "node tools/run-ui-test.mjs tests/sdk.mjs",
     "test:identity": "node tools/run-ui-test.mjs tests/identity.mjs",
+    "test:identity-recovery": "node tools/run-ui-test.mjs tests/identity-recovery.mjs",
     "test:packages": "node tools/run-ui-test.mjs tests/packages.mjs",
     "test:integration": "node tools/run-ui-test.mjs tests/integration.mjs",
     "test:updates": "node tools/run-ui-test.mjs tests/updates.mjs",
@@ -53,7 +55,8 @@
     "test:onboarding": "node tools/run-ui-test.mjs tests/onboarding.mjs",
     "test:staging-onboarding-desktop": "node tools/run-ui-test.mjs tests/staging-onboarding-desktop.mjs",
     "test:staging-media-dock": "node tools/run-ui-test.mjs tests/media-staging-dock.mjs",
-    "test:app-failure-containment": "node tools/run-ui-test.mjs tests/app-failure-containment.mjs"
+    "test:app-failure-containment": "node tools/run-ui-test.mjs tests/app-failure-containment.mjs",
+    "test:resource-pressure": "node tools/run-ui-test.mjs tests/resource-pressure.mjs"
   },
   "keywords": [],
   "author": "Sajilo Dental",

@@ -6,16 +6,16 @@ import { loginInput, type ActionResult, type Phase, type SessionView } from './c
 import type { CredentialStore } from './storage';
 import { appAllowed, clinicRequestAllowed, clinicAppPolicies, type ClinicAppFamily } from '../sdk/appPolicy';
 import { uploadKindForFamily } from '../sdk/mediaUpload';
-export type LoginDiagnostic = { stage: 'credential-store-clear' | 'firebase-sign-in' | 'clinic-session-resolve' | 'session-install'; outcome: 'started' | 'complete' | 'denied' | 'unavailable' | 'other' | 'timeout' };
+export type LoginDiagnostic = { stage: 'firebase-sign-in' | 'clinic-session-resolve' | 'session-install'; outcome: 'started' | 'complete' | 'denied' | 'unavailable' | 'other' | 'timeout' };
 /** One platform-owned clinic session. Only view() crosses shell IPC. */
 export class SessionManager implements Identity {
   private phase:Phase='restoring'; private generation=1; private tokens?:Tokens; private clinic?:Clinic;
-  private message=''; private remembered=false; private busy=false; private timer?:ReturnType<typeof setTimeout>;
+  private message=''; private remembered=false; private restoreAvailable=false; private busy=false; private timer?:ReturnType<typeof setTimeout>;
   private accessCheck?:Promise<void>; private action?:AbortController; private renewal?:Promise<string>; private listeners=new Set<(v:SessionView)=>void>();
   private clinicLogoGeneration?: number; private clinicLogoValue?: string; private clinicLogoRequest?: { generation: number; promise: Promise<string | undefined> }; private clinicLogoAbort?: AbortController;
   private storageChain:Promise<unknown>=Promise.resolve();
   constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000,private loginDiagnostic?:(value:LoginDiagnostic)=>void){}
-  view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,message:this.message,mode:this.mode};}
+  view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,restoreAvailable:this.restoreAvailable,message:this.message,mode:this.mode};}
   snapshot(){return{generation:this.generation,active:this.phase==='ready',userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',...(this.phase==='ready'&&this.clinic?.clinicSession?{clinicSession:this.clinic.clinicSession}:{})};}
   subscribe(listener:(v:SessionView)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
   private emit(){const v=this.view();for(const fn of this.listeners)fn(v);}
@@ -37,31 +37,42 @@ export class SessionManager implements Identity {
     let remembered=false,warning='';
     if(this.store.available()){
       try{await this.persist(()=>this.store.save(tokens.refreshToken));remembered=true;}
-      catch{warning='Protected storage unavailable. This login is session-only.';if(epoch===this.generation)await this.persist(()=>this.store.clear()).catch(()=>{});}
+      catch{warning='Protected storage could not save this sign-in. The current session is session-only.';}
     }else warning='Protected storage unavailable. This login is session-only.';
     if(epoch!==this.generation)throw new Error('Stale');
-    this.remembered=remembered;if(warning)this.message=warning;this.tokens=tokens;this.clinic=clinic;this.phase='ready';this.schedule();this.emit();
+    this.remembered=remembered;if(remembered)this.restoreAvailable=true;if(warning)this.message=warning;this.tokens=tokens;this.clinic=clinic;this.phase='ready';this.schedule();this.emit();
   }
   async restore():Promise<ActionResult>{
+    if(this.busy)return{ok:false,code:'BUSY'};
+    if(this.phase!=='restoring'&&this.phase!=='unavailable'&&!(this.phase==='signed-out'&&this.restoreAvailable))return{ok:false,code:'STALE'};
+    if(this.phase==='unavailable'||this.phase==='signed-out')this.reset('restoring','Checking the saved session again…');
     const epoch=this.generation;this.busy=true;
     try{
       const token=await this.persist(()=>this.store.load());
       if(epoch!==this.generation)return{ok:false,code:'STALE'};
-      if(!token){this.phase='signed-out';this.message=this.store.available()?'':'Protected storage unavailable. Sign in for this session only.';this.emit();return{ok:true};}
+      if(!token){this.restoreAvailable=false;this.phase='signed-out';this.message=this.store.available()?'':'Protected storage unavailable. Sign in for this session only.';this.emit();return{ok:true};}
+      this.restoreAvailable=true;
       const {tokens,clinic}=await this.bounded(async signal=>{const tokens=await this.client.refresh(token,signal);const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
       await this.install(tokens,clinic,epoch);return{ok:true};
-    }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'signed-out','Saved session could not be restored. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});return{ok:false,code:error instanceof AuthFailure&&error.kind==='denied'?'DENIED':'STORAGE_UNAVAILABLE'};}
+    }catch(error){
+      if(epoch!==this.generation)return{ok:false,code:'STALE'};
+      const credentialInvalid=error instanceof AuthFailure&&error.credentialInvalid;
+      if(credentialInvalid)this.restoreAvailable=false;
+      this.reset(credentialInvalid?'expired':'unavailable',credentialInvalid
+        ?'The saved sign-in is no longer valid. Sign in again.'
+        :'Could not verify the saved sign-in. It has been kept; check the connection and retry.');
+      if(credentialInvalid)await this.persist(()=>this.store.clear()).catch(()=>{});
+      return{ok:false,code:credentialInvalid||error instanceof AuthFailure&&error.kind==='denied'?'DENIED':'UNAVAILABLE'};
+    }
     finally{this.busy=false;}
   }
   async login(input:unknown):Promise<ActionResult>{
     if(!loginInput(input))return{ok:false,code:'INVALID_INPUT'};
     if(this.busy)return{ok:false,code:'BUSY'};this.busy=true;this.reset('signing-in');const epoch=this.generation;
-    let stage:LoginDiagnostic['stage']='credential-store-clear';
+    let stage:LoginDiagnostic['stage']='firebase-sign-in';
     const report=(outcome:LoginDiagnostic['outcome'])=>{try{this.loginDiagnostic?.({stage,outcome});}catch{/* Optional private test observer cannot affect authentication. */}};
-    report('started');
     try{
-      await this.persist(()=>this.store.clear());
-      const {tokens,clinic}=await this.bounded(async signal=>{signal.addEventListener('abort',()=>report('timeout'),{once:true});stage='firebase-sign-in';report('started');const tokens=await this.client.signIn(input.email,input.password,signal);stage='clinic-session-resolve';report('started');const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
+      const {tokens,clinic}=await this.bounded(async signal=>{signal.addEventListener('abort',()=>report('timeout'),{once:true});report('started');const tokens=await this.client.signIn(input.email,input.password,signal);stage='clinic-session-resolve';report('started');const clinic=await this.client.resolve(tokens.idToken,signal);return{tokens,clinic};});
       stage='session-install';report('started');
       await this.install(tokens,clinic,epoch);report('complete');return{ok:true};
     }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};const denied=error instanceof AuthFailure&&error.kind==='denied';report(error instanceof AuthFailure?error.kind:'other');this.reset(denied?'signed-out':'unavailable',denied?'Sign-in or clinic access denied.':'Staging sign-in is unavailable. Retry when connected.');return{ok:false,code:denied?'DENIED':'UNAVAILABLE'};}
@@ -123,15 +134,22 @@ export class SessionManager implements Identity {
           this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation);throw new AuthFailure('denied');
         }
         await this.install(tokens,clinic,epoch);return tokens.idToken;
-      }catch(error){if(epoch===this.generation){this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Session expired or access could not be verified. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});}throw error;}
+      }catch(error){if(epoch===this.generation){
+        const credentialInvalid=error instanceof AuthFailure&&error.credentialInvalid;
+        if(credentialInvalid)this.restoreAvailable=false;
+        this.reset(credentialInvalid?'expired':'unavailable',credentialInvalid
+          ?'The saved sign-in is no longer valid. Sign in again.'
+          :'Session service is unavailable. Your saved sign-in was kept; retry when connected.');
+        if(credentialInvalid){await this.persist(()=>this.store.clear()).catch(()=>{});this.emit();}
+      }throw error;}
     };
     const promise=run();this.renewal=promise;void promise.finally(()=>{if(this.renewal===promise)this.renewal=undefined;}).catch(()=>{});return promise;
   }
-  lock(){if(this.phase!=='ready')return;this.reset('locked','Session locked. Sign in to continue. In-memory workspaces were cleared.');void this.persist(()=>this.store.clear()).catch(()=>{});}
-  async logout():Promise<ActionResult>{this.reset('signed-out','Signed out. In-memory workspaces were cleared.');try{await this.persist(()=>this.store.clear());return{ok:true};}catch{this.message='Signed out locally, but protected storage could not be cleared. Contact support before sharing this device.';this.emit();return{ok:false,code:'STORAGE_UNAVAILABLE'};}}
+  lock(){if(this.phase!=='ready')return;this.restoreAvailable=false;this.reset('locked','Session locked. Sign in to continue. In-memory workspaces were cleared.');void this.persist(()=>this.store.clear()).catch(()=>{});}
+  async logout():Promise<ActionResult>{this.restoreAvailable=false;this.reset('signed-out','Signed out. In-memory workspaces were cleared.');try{await this.persist(()=>this.store.clear());return{ok:true};}catch{this.message='Signed out locally, but protected storage could not be cleared. Contact support before sharing this device.';this.emit();return{ok:false,code:'STORAGE_UNAVAILABLE'};}}
   async rejected(status:401|403):Promise<void>{
     if(this.phase!=='ready'||!this.tokens)return;
-    if(status===401){this.reset('expired','Session access was revoked. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});return;}
+    if(status===401){this.restoreAvailable=false;this.reset('expired','Session access was revoked. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});return;}
     // An operation-level 403 is not proof that the entire clinic session was revoked.
     // Re-resolve /v1/me once; deny/changed membership clears all old workspaces.
     if(this.accessCheck)return this.accessCheck;
@@ -141,7 +159,14 @@ export class SessionManager implements Identity {
       const clinic=await this.bounded(signal=>this.client.resolve(tokens.idToken,signal));
       if(epoch!==this.generation)return;
       if(JSON.stringify(clinic)!==JSON.stringify(prior)){this.reset('signing-in','Clinic access changed. Workspaces were cleared.');await this.install(tokens,clinic,this.generation);}
-    }catch(error){if(epoch===this.generation){this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Clinic access could not be verified. Sign in again.');await this.persist(()=>this.store.clear()).catch(()=>{});}}};
+    }catch(error){if(epoch===this.generation){
+      const credentialInvalid=error instanceof AuthFailure&&error.credentialInvalid;
+      if(credentialInvalid)this.restoreAvailable=false;
+      this.reset(credentialInvalid?'expired':'unavailable',credentialInvalid
+        ?'Session access was revoked. Sign in again.'
+        :'Clinic access could not be checked. Your saved sign-in was kept; retry when connected.');
+      if(credentialInvalid){await this.persist(()=>this.store.clear()).catch(()=>{});this.emit();}
+    }}};
     const promise=run();this.accessCheck=promise;try{await promise;}finally{if(this.accessCheck===promise)this.accessCheck=undefined;}
   }
   allowed(operation:Operation){

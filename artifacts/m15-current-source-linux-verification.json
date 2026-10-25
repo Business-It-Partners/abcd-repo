@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-25",
+  "worktree": "/home/master-x/.codex/worktrees/dental-os-audit/fewa_business_os",
+  "branch": "codex/m15-readiness",
+  "gitHeadBeforeCommit": "6e3a92f3e201e4d9a3385ac8c67060cadb07eaac",
+  "scope": "Linux verification of the M15 readiness candidate before its exact-source Windows run. Modified source/test/workflow files are SHA-256 bound below.",
+  "checks": [
+    {
+      "command": "npm run build",
+      "result": "PASS",
+      "detail": "Root TypeScript checks, Vite production build and Electron compilation."
+    },
+    {
+      "command": "npm test -- --maxWorkers=1",
+      "result": "PASS",
+      "files": 37,
+      "testsPassed": 527,
+      "testsFailed": 0,
+      "detail": "The npm pretest hook builds the local Appointments fixture required by the development-app tests."
+    },
+    {
+      "command": "python3 tools/check-dental-docs.py",
+      "result": "PASS",
+      "errors": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "relatedLinuxEvidence": [
+    "artifacts/m15-resource-pressure-verification.json",
+    "artifacts/m15-saved-session-recovery.json"
+  ],
+  "remainingM15_11": [
+    "Current-source Windows workflow has not run yet.",
+    "Staging upload-failure verification awaits protected Clinic A credential, signer and seed-journal inputs; no staging request was made.",
+    "Independent technical review is still open."
+  ],
+  "sourceSha256": {
+    ".github/workflows/windows-validation.yml": "d1ac53e23f7d71f748b5a71ae24517f6d0aa010b75eaecb47d2eed79a884c97b",
+    "package.json": "22213b38da16a9a7055e236ad2937d672b10fcf4b4d7365640db6fd4eed91903",
+    "electron/host/resourcePressure.ts": "d4b73640ebd317918d71a499f6d25cb0aafd5018b94b9caa177d78f603e84de2",
+    "electron/identity/client.ts": "3701355568980493f768161e3954cbd5659e4e7685c6ff9927d516f9f9590555",
+    "electron/identity/contracts.ts": "9c6b9ee48bf15c433a8734ec5a89af4d58dcf651cc6ee6a4fbdf0df55c01b837",
+    "electron/identity/fixtures.ts": "bac380ff6658097be5a19423850aeec71374fa1262a150f263893b86a3670ad3",
+    "electron/identity/session.ts": "fabbe52c168e8f7fd6e11f6742b7bf78f382ebb6863569264a5d74925b85325e",
+    "electron/identity/storage.ts": "4f824b1832938c2cdd838a551533d4a82806eb023591f63b4b118cbf9b8b4b59",
+    "electron/main.ts": "6aa9d50ed36e969268a02af9f296bf57c93dfed80ac6a5e4c2cd3935e06bf270",
+    "electron/preload.ts": "cbfee0ae91eebd50e5b47e44315532e9549703646f5eb5c99ba6044a5326f73e",
+    "electron/runtime/contracts.ts": "e974470f14e08e832eb97d3a6c0e68704b916e04d352c2655d19294e531b1444",
+    "electron/runtime/manager.ts": "77f7f47b59c00c0f8d7d1ce68c91e565a05fa613125b4d487255c5deba2daadf",
+    "src/App.tsx": "924f621d97b36f6400e37278449c1f772d3e24f32491d739771aadd1bcebfd55",
+    "src/IdentityGate.css": "fc4cfcaab21f66c7a1d513d84bb0b01ffaffe7135e3df527a3a2593d8b28e0d7",
+    "src/IdentityGate.tsx": "58beae7389669708d69b1f11ddea98443a1e548a4a9c3287f7f94bb1f7ad5125",
+    "src/RuntimeFixtures.tsx": "d19e474017c0df85b7894030dd14288290ee7f4d81aa75fb082a478174b76169",
+    "src/global.d.ts": "185f5b1a293646e218bf915c7dc8c1c3b8d5068d38b02aada1a646da64039e5d",
+    "src/style.css": "7343702b951ac081c6754b55b46979bd3428641e72603675c34b8e620aa3b3ef",
+    "tests/identity-recovery.mjs": "450c4d9a27a9ebd1e94e25da2a32989e6af51d49db355000698e88c63f822a00",
+    "tests/identity.test.ts": "8c9f304b1aaa72d1d935d395498a345a94e61cf308800d21d6bb50159a00f5cb",
+    "tests/m17ReleaseIdentity.test.ts": "1fcb2b342d65257da1c11ac0103026f9e8830f12c113a557934563dd1afdf56b",
+    "tests/resource-pressure.mjs": "468ef8cda9b04ce66f7da812d5632714276c95f91e2b835e593edb207927f610",
+    "tests/resourcePressure.test.ts": "c8a35c1000802c7dc468b34e1d6df0ec77dbd8c55f94cc057a1d853f8a3012a0"
+  }
+}

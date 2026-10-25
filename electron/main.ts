@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen, protocol, powerMonitor, session, dialog, shell } from 'electron';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import {writeFileSync} from 'node:fs';
@@ -15,7 +16,7 @@ import { FirebaseClient } from './identity/client';
 import { CredentialStore } from './identity/storage';
 import { systemSecretProvider } from './identity/provider';
 import { loadDevelopmentCredentials } from './identity/devCredentials';
-import { identityFixtures } from './identity/fixtures';
+import { identityFixtureSecretProvider, identityFixtures } from './identity/fixtures';
 import { fixtureRegistry } from './packages/fixtures';
 import { PackageRegistry } from './packages/registry';
 import { stagingDistribution } from './distribution/staging';
@@ -25,6 +26,7 @@ import { distributionFixtures as createDistributionFixtures } from './distributi
 import { fixtureServices } from './sdk/fixtures';
 import { DevelopmentAppService } from './developmentApps';
 import type { SessionView } from './identity/contracts';
+import { ResourcePressureGate, resourceBudgets, type ResourcePressureLevel, type SystemMemorySample } from './host/resourcePressure';
 protocol.registerSchemesAsPrivileged([{ scheme: 'dental-fixture', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let diagnostics:DiagnosticStore|undefined;
 let recoveryWindow:BrowserWindow|undefined;
@@ -54,6 +56,7 @@ const identityStageDiagnostics = (() => {
   return (value: { stage: string; outcome: string }) => writeFileSync(target, JSON.stringify(value), { mode: 0o600, flag: 'w' });
 })();
 const runtimeFixtureAppCount = runtimeFixtures && app.commandLine.hasSwitch('runtime-app-count') ? Number(app.commandLine.getSwitchValue('runtime-app-count')) : 2;
+const resourcePressureFixtures = privateRuntimeDisplay && runtimeFixtures && app.commandLine.hasSwitch('resource-pressure-fixtures');
 const modulePreviewFixtures = runtimeFixtures && app.commandLine.hasSwitch('module-preview-fixtures');
 const slowModuleAckFixtures = modulePreviewFixtures && app.commandLine.hasSwitch('slow-module-ack-fixtures');
 const launchFeedbackFixture = runtimeFixtures && app.commandLine.hasSwitch('launch-feedback-fixtures');
@@ -64,16 +67,22 @@ const developmentAppBuildFixtures = privateRuntimeDisplay && app.commandLine.has
 const storeFixtures = trustedTest && app.commandLine.hasSwitch('distribution-fixtures');
 const onboardingFixtures = storeFixtures && app.commandLine.hasSwitch('onboarding-fixtures');
 const identityFixture = trustedTest && app.commandLine.hasSwitch('identity-fixtures');
+const identityPersistentFixture = privateRuntimeDisplay && identityFixture && app.commandLine.hasSwitch('identity-persistent-fixtures');
+const identityRestoreOutageFixture = identityPersistentFixture && app.commandLine.hasSwitch('identity-restore-outage-once');
 const devCredentialFixtures = trustedTest && app.commandLine.hasSwitch('dev-credentials-fixtures');
 const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSwitch('identity-staging');
 let identity: SessionManager | undefined;
 const canUseWorkspace = () => identityBypass || identity?.view().phase === 'ready';
-const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
+const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, restoreAvailable: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
 const isShell = (event: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => !!hostWindow && !shellRecoveryActive && bootPhase === 'ready' && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
 let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
 let bootPhase: 'initializing' | 'ready' | 'recovery' | 'exiting' = 'initializing';
+const resourcePressureGate = new ResourcePressureGate();
+let resourcePressureTimer: ReturnType<typeof setInterval> | undefined;
+let resourcePressureActionPending = false;
+let resourcePressureAck: { requestId: string; resolve: () => void; timer: ReturnType<typeof setTimeout> } | undefined;
 const appIconPath = path.join(__dirname, '../assets/electron-os.png');
 
 if (process.platform === 'linux') app.setDesktopName('electron-os.desktop');
@@ -400,6 +409,80 @@ ipcMain.handle('os:status', event => {
   if (!isShell(event)) throw new Error('Invalid caller');
   return { phase: bootPhase };
 });
+function resourceMemorySample() {
+  const system=process.getSystemMemoryInfo();
+  const totalKiB=system.total;
+  const availableKiB=process.platform==='linux'
+    ?system.available??system.free
+    :process.platform==='darwin'
+      ?system.free+(system.purgeable??0)
+      :system.free;
+  const renderers=runtime?.rendererProcesses()??[];
+  const rendererPids=new Set(renderers.map(value=>value.pid));
+  const rendererMetrics=app.getAppMetrics().filter(metric=>rendererPids.has(metric.pid));
+  const sample:SystemMemorySample={
+    totalKiB,
+    availableKiB,
+    managedRendererWorkingSetKiB:rendererMetrics.reduce((sum,metric)=>sum+metric.memory.workingSetSize,0),
+  };
+  return {sample,managedRendererCount:rendererPids.size,budgets:resourceBudgets(totalKiB)};
+}
+async function applyResourcePressure(level:ResourcePressureLevel) {
+  if(resourcePressureActionPending||!runtime||!hostWindow||hostWindow.isDestroyed()||bootPhase!=='ready')return;
+  resourcePressureActionPending=true;
+  const win=hostWindow,requestId=randomUUID(),before=resourceMemorySample();
+  try{
+    if(!shellRecoveryActive&&!win.webContents.isDestroyed()){
+      await new Promise<void>(resolve=>{
+        let settled=false;
+        const finish=()=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          if(resourcePressureAck?.requestId===requestId)resourcePressureAck=undefined;
+          resolve();
+        };
+        const timer=setTimeout(finish,1200);
+        resourcePressureAck={requestId,resolve:finish,timer};
+        try{win.webContents.send('resource:pressure',{phase:'prepare',requestId,level,before,pressureActive:resourcePressureGate.currentLevel!=='normal'});}
+        catch{finish();}
+      });
+    }
+    const result=runtime.reclaimUnderPressure(level);
+    await new Promise(resolve=>setTimeout(resolve,800));
+    if(!win.isDestroyed()&&!win.webContents.isDestroyed())win.webContents.send('resource:pressure',{
+      phase:'complete',requestId,level,before,after:resourceMemorySample(),pressureActive:resourcePressureGate.currentLevel!=='normal',
+      reclaimedCount:result.reclaimed.length,skippedAppCount:result.skippedAppCount,
+      skippedUnsavedCount:result.skippedUnsaved,skippedWritingCount:result.skippedWriting,eligibleCount:result.eligible,
+    });
+  }catch{/* Renderer cleanup is best-effort; the shell and main-process services stay available. */}
+  finally{
+    if(resourcePressureAck?.requestId===requestId){clearTimeout(resourcePressureAck.timer);resourcePressureAck=undefined;}
+    resourcePressureActionPending=false;
+  }
+}
+function startResourcePressureMonitor() {
+  if(resourcePressureTimer)clearInterval(resourcePressureTimer);
+  resourcePressureTimer=setInterval(()=>{
+    if(!runtime||bootPhase!=='ready')return;
+    try{
+      const previous=resourcePressureGate.currentLevel;
+      const next=resourcePressureGate.observe(resourceMemorySample().sample);
+      if(next)void applyResourcePressure(next);
+      else if(previous!=='normal'&&resourcePressureGate.currentLevel==='normal'&&hostWindow&&!hostWindow.isDestroyed()&&!hostWindow.webContents.isDestroyed())
+        hostWindow.webContents.send('resource:pressure',{phase:'recovered',pressureActive:false});
+    }catch{/* A failed system telemetry read must not trigger destructive cleanup. */}
+  },10_000);
+  resourcePressureTimer.unref?.();
+}
+ipcMain.on('resource:pressure-ack',(event,requestId:unknown)=>{
+  if(!isShell(event)||typeof requestId!=='string'||requestId!==resourcePressureAck?.requestId)return;
+  resourcePressureAck.resolve();
+});
+if(resourcePressureFixtures)ipcMain.on('resource:pressure-fixture',(event,level:unknown)=>{
+  if(!isShell(event)||(level!=='warning'&&level!=='critical'))return;
+  void applyResourcePressure(level);
+});
 ipcMain.handle('runtime:sync', (event, value: unknown, generation: unknown) => {
   if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable');
   runtime.sync(value);
@@ -416,6 +499,7 @@ ipcMain.on('runtime:hide-all', (event, generation: unknown) => {
   event.returnValue = true;
 });
 ipcMain.handle('runtime:restart', (event, id: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); runtime.restart(id); });
+ipcMain.handle('runtime:resume', (event, id: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); if(resourcePressureGate.currentLevel!=='normal')throw new Error('Wait for system memory to recover before reopening this app.'); runtime.resume(id); });
 ipcMain.handle('runtime:app-info', event => runtime?.appInfo(event) ?? {ok:false,code:'UNAVAILABLE'});
 ipcMain.handle('runtime:open-explorer', event => runtime?.openExplorer(event) ?? {ok:false,code:'UNAVAILABLE'});
 ipcMain.handle('runtime:discover-app', (event,id:unknown) => {
@@ -441,6 +525,7 @@ ipcMain.handle('identity:action', (event, kind: unknown, input: unknown) => {
   if (!isShell(event) || !identity) return { ok: false, code: 'UNAVAILABLE' };
   if (kind === 'login') return identity.login(input);
   if (input !== undefined) return { ok: false, code: 'INVALID_INPUT' };
+  if (kind === 'restore') return identity.restore();
   if (kind === 'lock') { identity.lock(); return { ok: true }; }
   if (kind === 'logout') return identity.logout();
   return { ok: false, code: 'INVALID_INPUT' };
@@ -482,8 +567,10 @@ if (primary) void app.whenReady().then(async () => {
     if (!runtimeFixtures) packages.initialize();
     developmentApps = new DevelopmentAppService(app.getAppPath(), path.join(app.getPath('userData'), 'development-apps'), !app.isPackaged && (!trustedTest || developmentAppUiFixtures) && !app.commandLine.hasSwitch('identity-staging'), developmentAppBuildFixtures);
     if (!identityBypass) {
-      const provider = identityFixture ? { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } } : systemSecretProvider;
-      identity = new SessionManager(identityFixture ? identityFixtures() : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging', Date.now, 8000, identityFixture ? undefined : identityStageDiagnostics);
+      const provider = identityFixture
+        ? identityPersistentFixture ? identityFixtureSecretProvider() : { available: () => false, encrypt: async () => { throw new Error('Unavailable'); }, decrypt: async () => { throw new Error('Unavailable'); } }
+        : systemSecretProvider;
+      identity = new SessionManager(identityFixture ? identityFixtures({ failFirstRefresh: identityRestoreOutageFixture }) : new FirebaseClient(), new CredentialStore(path.join(app.getPath('userData'), 'identity'), provider), () => { diagnostics?.record('session-reset');runtime?.clearSession(); distribution?.invalidate(); }, identityFixture ? 'fixture' : 'staging', Date.now, 8000, identityFixture ? undefined : identityStageDiagnostics);
       identity.subscribe(view => { filePicker?.cancelAll();localFiles?.invalidateGeneration(view.generation); if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('identity:state', view); });
       powerMonitor.on('lock-screen', () => identity?.lock()); powerMonitor.on('suspend', () => identity?.lock());
     }
@@ -491,7 +578,7 @@ if (primary) void app.whenReady().then(async () => {
     if(!trustedTest)distribution.startUpdates();
     distribution.subscribe(view => { if(view.phase==='unavailable')diagnostics?.record('store-unavailable');if (hostWindow && !hostWindow.isDestroyed()) hostWindow.webContents.send('store:state', view); });
     localFiles = new LocalFileService();
-    bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); if (identity) void identity.restore();
+    bootPhase = 'ready';diagnostics?.record('boot-ready'); createWindow(); startResourcePressureMonitor(); if (identity) void identity.restore();
   } catch {
     bootPhase = 'recovery';diagnostics?.record('boot-recovery');
     const recovery = new BrowserWindow({ width: 680, height: 340, title: 'Sajilo Dental recovery', icon: appIconPath, webPreferences: { preload:path.join(__dirname,'recoveryPreload.js'),sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck:false } });
@@ -505,7 +592,7 @@ if (primary) void app.whenReady().then(async () => {
 let quitFlushed = false;
 app.on('before-quit', event => {
   if(runtime?.blockUnsafeExit()){event.preventDefault();return;}
-  bootPhase = 'exiting'; shellRecoveryActive = false; retryShellRenderer = undefined; filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
+  bootPhase = 'exiting'; shellRecoveryActive = false; retryShellRenderer = undefined; if(resourcePressureTimer)clearInterval(resourcePressureTimer);resourcePressureTimer=undefined;resourcePressureAck?.resolve();resourcePressureAck=undefined;filePicker?.cancelAll();localFiles?.dispose(); distribution?.dispose();
   if (identity && !quitFlushed) { event.preventDefault(); identity.dispose(); void identity.flush().finally(() => { quitFlushed = true; app.quit(); }); }
 });
 app.on('window-all-closed', () => app.quit());

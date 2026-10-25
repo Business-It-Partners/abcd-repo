@@ -87,6 +87,8 @@
   font-weight: 650;
 }
 .identity-submit:hover:not(:disabled) { background: linear-gradient(135deg, #c0e9df, #9dd9d3); }
+.identity-retry { width: 100%; min-height: 40px; margin-top: 9px; padding: 8px 14px; border: 1px solid #b3d3dc55; border-radius: 10px; background: #d9eef010; color: #d2e5e9; font-size: 12px; font-weight: 550; }
+.identity-retry:hover:not(:disabled) { border-color: #b3d3dc88; background: #d9eef01b; }
 .identity-gate button:disabled { opacity: .55; cursor: default; }
 .identity-development { align-self: center; margin-top: 13px; background: transparent; padding: 5px 8px; color: #c3d8e0; font-size: 11px; border-radius: 5px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #c3d8e055; }
 .identity-note { display: flex; justify-content: center; align-items: flex-start; gap: 7px; margin: 15px 0 0; color: #b0c7d1; font-size: 10px; line-height: 1.6; text-align: left; }

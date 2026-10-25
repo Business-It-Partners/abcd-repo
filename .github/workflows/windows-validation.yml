@@ -1,7 +1,7 @@
 name: Windows milestone validation
 on:
   push:
-    branches: [main, 'codex/milestone-*']
+    branches: [main, 'codex/milestone-*', 'codex/m15-readiness']
   pull_request:
     branches: [main]
   workflow_dispatch:

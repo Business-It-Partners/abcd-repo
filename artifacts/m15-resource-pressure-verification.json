@@ -1,0 +1,241 @@
+{
+  "passed": true,
+  "checks": [
+    "App Store and one app can be open together before cleanup",
+    "the clean app renderer is measured before cleanup",
+    "pressure unmounts App Store content and releases the clean app renderer",
+    "App Store content is released before the eligible app renderer is paused",
+    "shell explains that Store and app content were closed to free memory",
+    "the shell and session authority stay available during cleanup",
+    "the user can reopen an app after memory cleanup",
+    "the App Store can be reopened after its content was released",
+    "two isolated app renderers are measured before the unsaved-work check",
+    "unsaved work keeps the dirty app open while the clean app is paused",
+    "the clean renderer is released and offers a reopen action",
+    "pressure reports a protected app as skipped",
+    "shell explains why the unsaved app remains open",
+    "the paused clean app can be reopened after the cleanup pass",
+    "both cleanup passes report prepare and completion"
+  ],
+  "samples": {
+    "storeAndAppBefore": {
+      "time": 1792945057994,
+      "system": {
+        "total": 12011048,
+        "free": 501512,
+        "available": 3544808,
+        "swapTotal": 17692384,
+        "swapFree": 15062496
+      },
+      "guestCount": 1,
+      "guestPids": [
+        471177
+      ],
+      "guestWorkingSetKiB": 106832,
+      "allAppWorkingSetKiB": 1142180,
+      "appProcessCount": 7
+    },
+    "storeAndAppAfter": {
+      "time": 1792945058958,
+      "system": {
+        "total": 12011048,
+        "free": 512312,
+        "available": 3376732,
+        "swapTotal": 17692384,
+        "swapFree": 15062496
+      },
+      "guestCount": 0,
+      "guestPids": [],
+      "guestWorkingSetKiB": 0,
+      "allAppWorkingSetKiB": 1039848,
+      "appProcessCount": 6
+    },
+    "reclamationOrder": [
+      "store-content-unmounted",
+      "studio-renderer-paused"
+    ],
+    "twoAppsBefore": {
+      "time": 1792945060425,
+      "system": {
+        "total": 12011048,
+        "free": 387816,
+        "available": 3268488,
+        "swapTotal": 17692384,
+        "swapFree": 15062496
+      },
+      "guestCount": 2,
+      "guestPids": [
+        471246,
+        471223
+      ],
+      "guestWorkingSetKiB": 220292,
+      "allAppWorkingSetKiB": 1382032,
+      "appProcessCount": 8
+    },
+    "twoAppsAfter": {
+      "time": 1792945061301,
+      "system": {
+        "total": 12011048,
+        "free": 338396,
+        "available": 3218692,
+        "swapTotal": 17692384,
+        "swapFree": 15062496
+      },
+      "guestCount": 1,
+      "guestPids": [
+        471223
+      ],
+      "guestWorkingSetKiB": 113192,
+      "allAppWorkingSetKiB": 1309812,
+      "appProcessCount": 7
+    },
+    "pressureEvents": [
+      {
+        "phase": "prepare",
+        "requestId": "21151a72-1301-4918-8dc9-d9ef80b03fd2",
+        "level": "critical",
+        "before": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3544936,
+            "managedRendererWorkingSetKiB": 106836
+          },
+          "managedRendererCount": 1,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "pressureActive": false
+      },
+      {
+        "phase": "complete",
+        "requestId": "21151a72-1301-4918-8dc9-d9ef80b03fd2",
+        "level": "critical",
+        "before": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3544936,
+            "managedRendererWorkingSetKiB": 106836
+          },
+          "managedRendererCount": 1,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "after": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3377484,
+            "managedRendererWorkingSetKiB": 0
+          },
+          "managedRendererCount": 0,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "pressureActive": false,
+        "reclaimedCount": 1,
+        "skippedAppCount": 0,
+        "skippedUnsavedCount": 0,
+        "skippedWritingCount": 0,
+        "eligibleCount": 1
+      },
+      {
+        "phase": "prepare",
+        "requestId": "56fd02ac-a5c7-4482-8199-1646fc59605f",
+        "level": "critical",
+        "before": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3266664,
+            "managedRendererWorkingSetKiB": 220292
+          },
+          "managedRendererCount": 2,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "pressureActive": false
+      },
+      {
+        "phase": "complete",
+        "requestId": "56fd02ac-a5c7-4482-8199-1646fc59605f",
+        "level": "critical",
+        "before": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3266664,
+            "managedRendererWorkingSetKiB": 220292
+          },
+          "managedRendererCount": 2,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "after": {
+          "sample": {
+            "totalKiB": 12011048,
+            "availableKiB": 3218640,
+            "managedRendererWorkingSetKiB": 113192
+          },
+          "managedRendererCount": 1,
+          "budgets": {
+            "warningAvailableKiB": 1801657.2,
+            "criticalAvailableKiB": 960883.84,
+            "warningRendererWorkingSetKiB": 1441325.76,
+            "criticalRendererWorkingSetKiB": 2097152
+          }
+        },
+        "pressureActive": false,
+        "reclaimedCount": 1,
+        "skippedAppCount": 1,
+        "skippedUnsavedCount": 1,
+        "skippedWritingCount": 0,
+        "eligibleCount": 1
+      }
+    ]
+  },
+  "sourceIdentity": {
+    "gitHead": "6e3a92f3e201e4d9a3385ac8c67060cadb07eaac",
+    "sha256": {
+      "electron/main.ts": "78c950c3c61e89c7b15c3e74c9ef4e91b86306c4036a7bd88cce357cbdeb9a28",
+      "electron/host/resourcePressure.ts": "d4b73640ebd317918d71a499f6d25cb0aafd5018b94b9caa177d78f603e84de2",
+      "electron/preload.ts": "9b098e4af2cedd7a9ed99c8821324e0efe4b5de92a64323a65601f73d86b2fdf",
+      "electron/runtime/contracts.ts": "e974470f14e08e832eb97d3a6c0e68704b916e04d352c2655d19294e531b1444",
+      "electron/runtime/manager.ts": "77f7f47b59c00c0f8d7d1ce68c91e565a05fa613125b4d487255c5deba2daadf",
+      "src/App.tsx": "924f621d97b36f6400e37278449c1f772d3e24f32491d739771aadd1bcebfd55",
+      "src/RuntimeFixtures.tsx": "d19e474017c0df85b7894030dd14288290ee7f4d81aa75fb082a478174b76169",
+      "src/global.d.ts": "57e955e02606728930785291fe75dfe5aeacbc67193d62f493010ac5d9a81015",
+      "src/style.css": "7343702b951ac081c6754b55b46979bd3428641e72603675c34b8e620aa3b3ef",
+      "package.json": "3baaeb88d385d44e3e8b4fe013a193f79ecac1b7dca4fd9317773c6486a69f6d",
+      "tests/resourcePressure.test.ts": "c8a35c1000802c7dc468b34e1d6df0ec77dbd8c55f94cc057a1d853f8a3012a0",
+      "tests/resource-pressure.mjs": "468ef8cda9b04ce66f7da812d5632714276c95f91e2b835e593edb207927f610"
+    }
+  },
+  "platform": "linux",
+  "source": null,
+  "thresholds": {
+    "warningAvailable": "max(768 MiB, 15% of system RAM), capped at 25%",
+    "criticalAvailable": "max(384 MiB, 8% of system RAM), capped at 12%",
+    "warningGuestWorkingSet": "max(512 MiB, 12% of system RAM), capped at 1.5 GiB",
+    "criticalGuestWorkingSet": "max(768 MiB, 20% of system RAM), capped at 2 GiB",
+    "ordinaryPressureSamples": 2,
+    "recoverySamples": 3
+  },
+  "scope": "Private Linux fixture: critical pressure is injected through a test-only main-process hook; host memory and guest working sets are sampled before/after. Dirty and saving apps remain protected. This is not physical-device low-memory certification."
+}

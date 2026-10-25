@@ -60,6 +60,7 @@ export function IdentityGate(){
   return()=>{mounted=false;unsubscribe?.();};
  },[]);
  async function login(event:FormEvent){event.preventDefault();setError('');const input={email,password};setPassword('');setPasswordVisible(false);const result=await window.desktop?.identity.action('login',input);if(!result?.ok)setError(result?.code==='DENIED'?'Sign-in or clinic access denied.':result?.code==='BUSY'?'A sign-in request is already running.':'Staging sign-in is unavailable. Please try again.');}
+ async function retryRestore(){setError('');const result=await window.desktop?.identity.action('restore');if(!result?.ok&&result?.code==='BUSY')setError('A saved-session check is already running.');}
  async function fillDevelopmentLogin(){setError('');const credentials=await window.desktop?.identity.devCredentials().catch(()=>undefined);if(!credentials){setDevLoginAvailable(false);setError('Development sign-in details are unavailable.');return;}updateEmail(credentials.email);setPassword(credentials.password);}
  if(!startupMinimumElapsed||!startupResolved)return <BrandSplash stage={!startupResolved?'checking':error?'unavailable':view?.phase==='ready'?'workspace':'sign-in'}/>;
  if(view?.phase==='ready')return <>
@@ -102,6 +103,7 @@ export function IdentityGate(){
       <button className="identity-submit" type="submit" disabled={busy}><span>{busy?'Please wait…':'Sign in'}</span>{busy?<LoaderCircle className="identity-spinner" size={17} aria-hidden="true"/>:<ArrowRight size={17} aria-hidden="true"/>}</button>
       {devLoginAvailable&&<button className="identity-development" type="button" disabled={busy} onClick={()=>void fillDevelopmentLogin()}>Fill development sign-in</button>}
      </form>
+     {(view?.phase==='unavailable'||view?.phase==='restoring'||view?.restoreAvailable)&&<button className="identity-retry" type="button" onClick={()=>void retryRestore()} disabled={busy} aria-busy={view?.phase==='restoring'}>{view?.phase==='restoring'?'Checking saved session…':'Retry saved session'}</button>}
      <p className="identity-note"><ShieldCheck size={14} aria-hidden="true"/><span>{rememberEmail?'Your email is remembered on this device. Sign out clears the secure session, not this email.':'Your email is not remembered. Secure session restore uses protected storage separately.'}</span></p>
     </section>
    </div>

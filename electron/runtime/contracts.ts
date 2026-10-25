@@ -13,7 +13,7 @@ export type RuntimeRect = { x: number; y: number; width: number; height: number 
 export type RuntimeLayout = { id: RuntimeId; open: boolean; visible: boolean; rect: RuntimeRect };
 export type RuntimeState = {
   id: RuntimeId;
-  phase: 'loading' | 'ready' | 'unresponsive' | 'failed';
+  phase: 'loading' | 'ready' | 'unresponsive' | 'failed' | 'suspended';
   dirty: boolean;
   modal: boolean;
   writeState?: 'none' | 'pending' | 'unknown';

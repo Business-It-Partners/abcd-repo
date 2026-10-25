@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('desktop', {
   identity: {
     view: () => ipcRenderer.invoke('identity:view'),
     clinicLogo: () => ipcRenderer.invoke('identity:clinic-logo') as Promise<string | undefined>,
-    action: (kind: 'login' | 'lock' | 'logout', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
+    action: (kind: 'login' | 'lock' | 'logout' | 'restore', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
     devCredentialsAvailable: () => ipcRenderer.invoke('identity:dev-credentials-available'),
     devCredentials: () => ipcRenderer.invoke('identity:dev-credentials'),
     subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('identity:state', listener); return () => ipcRenderer.removeListener('identity:state', listener); },
@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('desktop', {
     navigate: (id: string, direction: 'back' | 'forward', generation?: number, discardDirty?: boolean, preserveDraft?: boolean) => ipcRenderer.invoke('runtime:navigate', id, direction, generation, discardDirty, preserveDraft) as Promise<boolean>,
     hideAll: (generation?: number) => ipcRenderer.sendSync('runtime:hide-all', generation) === true,
     restart: (id: string, generation?: number) => ipcRenderer.invoke('runtime:restart', id, generation),
+    resume: (id: string, generation?: number) => ipcRenderer.invoke('runtime:resume', id, generation),
     selectModule: (id: string, moduleId: string) => ipcRenderer.invoke('runtime:select-module', id, moduleId),
     discoverApp: (id: string) => ipcRenderer.invoke('runtime:discover-app', id),
     subscribe: (callback: (kind: string, value: unknown) => void) => {
@@ -45,6 +46,10 @@ contextBridge.exposeInMainWorld('desktop', {
       ipcRenderer.on('runtime:state',state); ipcRenderer.on('runtime:key',key); ipcRenderer.on('runtime:edge',edge); ipcRenderer.on('runtime:close-blocked',closeBlocked);
       return () => { ipcRenderer.removeListener('runtime:state',state); ipcRenderer.removeListener('runtime:key',key); ipcRenderer.removeListener('runtime:edge',edge); ipcRenderer.removeListener('runtime:close-blocked',closeBlocked); };
     },
+  },
+  resourcePressure: {
+    subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('resource:pressure', listener); return () => ipcRenderer.removeListener('resource:pressure', listener); },
+    acknowledge: (requestId: string) => ipcRenderer.send('resource:pressure-ack', requestId),
   },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),

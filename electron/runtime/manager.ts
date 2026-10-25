@@ -13,11 +13,12 @@ import { appInfo, parseDentalAppMetadata, type DentalAppInfo, type DentalAppMeta
 import type { EventCode, Target } from '../diagnostics/store';
 import { randomUUID } from 'node:crypto';
 import { compositePixels, isDevelopmentRuntimeId, isRuntimeId, packageIdForRuntime, runtimeHost, runtimeIdForPackage, parseLayout, type RuntimeId, type RuntimeLayout, type RuntimeState, type RuntimeRect } from './contracts';
+import type { ResourcePressureLevel } from '../host/resourcePressure';
 import type { DevelopmentAppBuild, DevelopmentAppService } from '../developmentApps';
 const moduleSelectionAckTimeoutMs=10_000;
 const appLaunchHealthTimeoutMs=20_000;
 type RuntimePackage = Pick<VerifiedPackage, 'manifest' | 'files' | 'capabilities'>;
-type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; developmentBuild?:DevelopmentAppBuild; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
+type Entry = { connected?: boolean; healthy?:boolean; healthTimer?:ReturnType<typeof setTimeout>; view: WebContentsView; lease?: Lease; developmentBuild?:DevelopmentAppBuild; appMetadata?: DentalAppMetadata; moduleId?: string; moduleAcks?: Map<string,{resolve:(accepted:boolean)=>void;timer:ReturnType<typeof setTimeout>}>; state: RuntimeState; rect: RuntimeRect; lastActiveAt:number; image?: NativeImage; capturePromise?: Promise<void>; captureTimer?: ReturnType<typeof setTimeout>; watchdog?: ReturnType<typeof setInterval>; pingTimer?: ReturnType<typeof setTimeout>; launchFadePrepared?:boolean; launchFadeStarted?:boolean };
 export class FixtureRuntime {
   private services = fixtureServices();
   private filePicker?: FilePickerCoordinator;
@@ -26,6 +27,7 @@ export class FixtureRuntime {
   private broker: ApiBroker;
   private identity: Identity;
   private entries = new Map<RuntimeId, Entry>();
+  private suspended = new Map<RuntimeId, { state: RuntimeState; rect: RuntimeRect }>();
   private desired: RuntimeLayout[] = [];
   private sessions = new Map<RuntimeId, ReturnType<typeof session.fromPartition>>();
   private selectedModules = new Map<RuntimeId, string>();
@@ -46,7 +48,7 @@ export class FixtureRuntime {
   }
   private diagnostic:(code:EventCode,target:Target)=>void;
   private emit(force = false) {
-    const states=[...this.entries.values()].map(e=>e.state), key=JSON.stringify(states);
+    const states=[...this.entries.values()].map(e=>e.state).concat([...this.suspended.values()].map(e=>e.state)), key=JSON.stringify(states);
     if (!this.win.isDestroyed() && (force || key!==this.lastEmission)) { this.lastEmission=key; this.win.webContents.send('runtime:state', states); }
   }
   /** Re-send the live guest state when the shell renderer has been replaced. */
@@ -84,6 +86,7 @@ export class FixtureRuntime {
     const wanted = this.desired.find(v => v.id === e.state.id);
     const visible = !!wanted?.visible && e.state.phase === 'ready';
     if (visible) {
+      e.lastActiveAt=Date.now();
       e.view.setVisible(true);
       if(e.launchFadePrepared&&!e.launchFadeStarted){
         e.launchFadeStarted=true;
@@ -259,7 +262,7 @@ export class FixtureRuntime {
     });
     }
     const view = new WebContentsView({ webPreferences: { session: ses, preload: this.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false, webSecurity: true, backgroundThrottling: false } });
-    const e: Entry = { view, state: { id, phase: 'loading', dirty: false, modal: false, navigation: { entries: [], index: -1 } }, rect };
+    const e: Entry = { view, state: { id, phase: 'loading', dirty: false, modal: false, navigation: { entries: [], index: -1 } }, rect, lastActiveAt: Date.now() };
     this.entries.set(id, e); view.setVisible(false); this.win.contentView.addChildView(view);
     view.setBounds(rect);
     const wc = view.webContents;
@@ -370,10 +373,13 @@ export class FixtureRuntime {
     if (this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId ?? '')) { e.view.setVisible(false); this.win.webContents.send('runtime:close-blocked', { id }); }
       else this.close(id);
     }
+    for (const id of [...this.suspended.keys()]) if (!retained.has(id)) this.suspended.delete(id);
     for (const layout of this.desired) {
       let e = this.entries.get(layout.id);
       if (!layout.open) { if (e) {if(this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??'')){e.view.setVisible(false);this.win.webContents.send('runtime:close-blocked',{id:layout.id});}else this.close(layout.id);} continue; }
       const rect = Object.fromEntries(Object.entries(layout.rect).map(([k, v]) => [k, Math.round(v)])) as RuntimeRect;
+      const paused=this.suspended.get(layout.id);
+      if(paused){paused.rect=rect;continue;}
       e ??= this.create(layout.id, rect);
       e.rect = rect; e.view.setBounds(rect); e.view.setBorderRadius(rect.x===0&&rect.width===width?0:10);
       this.applyVisibility(e);
@@ -399,6 +405,42 @@ export class FixtureRuntime {
       throw Error('Restart limit reached. Wait one minute, then try again.');
     }
     this.diagnostic('app-restarted',id==='studio'||id==='records'?id:'company-app');const rect = e.rect; this.close(id); this.create(id, rect);
+  }
+  resume(id: unknown) {
+    if(!isRuntimeId(id))throw new Error('Invalid runtime');
+    const paused=this.suspended.get(id);
+    if(!paused)throw new Error('Runtime is not paused for resource pressure');
+    const rect=paused.rect;
+    this.suspended.delete(id);
+    this.create(id,rect);
+    this.emit();
+  }
+  rendererProcesses() {
+    return [...this.entries.values()].flatMap(entry=>['ready','unresponsive'].includes(entry.state.phase)&&!entry.view.webContents.isDestroyed()
+      ?[{id:entry.state.id,pid:entry.view.webContents.getOSProcessId()}]:[]);
+  }
+  reclaimUnderPressure(level:ResourcePressureLevel) {
+    const entries=[...this.entries.values()];
+    const skippedUnsaved=entries.filter(entry=>entry.state.dirty||entry.state.modal).length;
+    const skippedWriting=entries.filter(entry=>!!entry.state.writeState&&entry.state.writeState!=='none'||this.broker.hasUnsafeWrites(this.runtimePackage(entry)?.manifest.appId??'')).length;
+    const skippedAppCount=entries.filter(entry=>entry.state.dirty||entry.state.modal||!!entry.state.writeState&&entry.state.writeState!=='none'||this.broker.hasUnsafeWrites(this.runtimePackage(entry)?.manifest.appId??'')).length;
+    const candidates=entries.filter(entry=>['ready','unresponsive'].includes(entry.state.phase)&&!entry.state.dirty&&!entry.state.modal&&
+      (!entry.state.writeState||entry.state.writeState==='none')&&
+      !this.broker.hasUnsafeWrites(this.runtimePackage(entry)?.manifest.appId??'')&&
+      (level==='critical'||!entry.view.getVisible()))
+      .sort((a,b)=>Number(a.view.getVisible())-Number(b.view.getVisible())||a.lastActiveAt-b.lastActiveAt);
+    const reclaimed:string[]=[];
+    for(const entry of candidates){
+      const id=entry.state.id;
+      const state:RuntimeState={...entry.state,phase:'suspended',reason:'resource-pressure',snapshot:undefined};
+      const rect=entry.rect;
+      this.close(id);
+      void this.sessions.get(id)?.clearCache().catch(()=>{});
+      this.suspended.set(id,{state,rect});
+      reclaimed.push(id);
+    }
+    if(reclaimed.length)this.emit();
+    return {reclaimed,skippedUnsaved,skippedWriting,skippedAppCount,eligible:candidates.length};
   }
   report(event: IpcMainEvent, input: unknown) {
     const e = [...this.entries.values()].find(e => e.view.webContents === event.sender);
@@ -473,6 +515,7 @@ export class FixtureRuntime {
     return nativeImage.createFromBitmap(bytes, { width: size.width, height: size.height });
   }
   close(id: RuntimeId) {
+    this.suspended.delete(id);
     const e = this.entries.get(id); if (!e) return;
     this.resolveModuleAcks(e,false);
     this.fileActivation.delete(e.view.webContents);
@@ -492,11 +535,12 @@ export class FixtureRuntime {
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
     this.fileActivation.clear();this.filePicker?.cancelAll();
+    this.suspended.clear();
     this.broker.invalidateSession();for(const id of [...this.entries.keys()])this.close(id);
     // Closing a WebContents does not erase session storage. Never reuse a prior
     // account's in-memory partition, even while asynchronous erasure completes.
     const previous=[...this.sessions.values()];this.sessions.clear();this.instance=randomUUID();
     for(const ses of previous){try{ses.protocol.unhandle('dental-fixture');}catch{}void ses.clearStorageData().catch(()=>{});void ses.clearCache().catch(()=>{});}
   }
-  dispose() { this.fileActivation.clear();this.filePicker?.cancelAll();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
+  dispose() { this.fileActivation.clear();this.filePicker?.cancelAll();this.suspended.clear();for (const id of [...this.entries.keys()]) this.close(id); this.broker.dispose(); }
 }

@@ -1,5 +1,5 @@
 export type Phase = 'restoring' | 'signed-out' | 'signing-in' | 'ready' | 'locked' | 'expired' | 'unavailable';
-export type SessionView = { phase: Phase; generation: number; userLabel: string; clinicLabel: string; role: string; rememberAvailable: boolean; remembered: boolean; message: string; mode: 'staging' | 'fixture' | 'demo-fixture' };
+export type SessionView = { phase: Phase; generation: number; userLabel: string; clinicLabel: string; role: string; rememberAvailable: boolean; remembered: boolean; restoreAvailable: boolean; message: string; mode: 'staging' | 'fixture' | 'demo-fixture' };
 export type LoginInput = { email: string; password: string };
 export type ActionResult = { ok: true } | { ok: false; code: 'INVALID_INPUT' | 'BUSY' | 'DENIED' | 'UNAVAILABLE' | 'STORAGE_UNAVAILABLE' | 'STALE' };
 export function loginInput(input: unknown): input is LoginInput {

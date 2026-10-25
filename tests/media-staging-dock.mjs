@@ -59,7 +59,7 @@ async function readSafeAuthDiagnostic() {
     const stat = await fs.lstat(authDiagnosticFile);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > 256 || (process.platform !== 'win32' && (stat.mode & 0o077) !== 0)) return null;
     const value = JSON.parse(await fs.readFile(authDiagnosticFile, 'utf8'));
-    if (!['credential-store-clear', 'firebase-sign-in', 'clinic-session-resolve', 'session-install'].includes(value?.stage) || !['started', 'complete', 'denied', 'unavailable', 'other', 'timeout'].includes(value?.outcome)) return null;
+    if (!['firebase-sign-in', 'clinic-session-resolve', 'session-install'].includes(value?.stage) || !['started', 'complete', 'denied', 'unavailable', 'other', 'timeout'].includes(value?.outcome)) return null;
     return { stage: value.stage, outcome: value.outcome };
   } catch { return null; }
 }

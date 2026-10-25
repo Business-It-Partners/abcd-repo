@@ -12,16 +12,66 @@ export interface AuthClient {
   resolve(token: string, signal: AbortSignal): Promise<Clinic>;
   clinicLogo?(token: string, signal: AbortSignal): Promise<string | undefined>;
 }
-export class AuthFailure extends Error { constructor(readonly kind: 'denied' | 'unavailable') { super(kind === 'denied' ? 'Sign-in or clinic access denied.' : 'Staging identity service unavailable.'); } }
+export class AuthFailure extends Error {
+  constructor(readonly kind: 'denied' | 'unavailable', readonly credentialInvalid = false) {
+    super(kind === 'denied' ? 'Sign-in or clinic access denied.' : 'Staging identity service unavailable.');
+  }
+}
 export class FirebaseClient implements AuthClient {
   constructor(private transport: typeof fetch = fetch, private now = Date.now) {}
-  private async json(url: string, init: RequestInit, signal: AbortSignal): Promise<Record<string, unknown>> {
+  private async errorCode(response: Response): Promise<string | undefined> {
+    if (!response.headers.get('content-type')?.includes('application/json') || !response.body) {
+      void response.body?.cancel();
+      return undefined;
+    }
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    try {
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        length += chunk.value.length;
+        if (length > 16_384) { void reader.cancel().catch(() => {}); return undefined; }
+        chunks.push(chunk.value);
+      }
+      const bytes = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+      const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as Record<string, unknown>;
+      const error = payload.error && typeof payload.error === 'object' && !Array.isArray(payload.error)
+        ? payload.error as Record<string, unknown>
+        : undefined;
+      const code = typeof error?.code === 'string' ? error.code : error?.message;
+      return typeof code === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(code) ? code : undefined;
+    } catch {
+      return undefined;
+    } finally {
+      void reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
+  }
+  private async json(url: string, init: RequestInit, signal: AbortSignal, purpose: 'sign-in' | 'refresh' | 'clinic-session'): Promise<Record<string, unknown>> {
     const allowed = [staging.apiBase, 'https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com'];
     if (!allowed.includes(new URL(url).origin)) throw new AuthFailure('unavailable');
     try {
       const response = await this.transport(url, { ...init, signal, redirect: 'manual', credentials: 'omit', cache: 'no-store' });
-      if (response.redirected || response.status >= 300 && response.status < 400 || !response.headers.get('content-type')?.includes('application/json')) { void response.body?.cancel(); throw new AuthFailure('unavailable'); }
-      if (!response.ok) { void response.body?.cancel(); throw new AuthFailure([400,401,403].includes(response.status) ? 'denied' : 'unavailable'); }
+      if (response.redirected || response.status >= 300 && response.status < 400) { void response.body?.cancel(); throw new AuthFailure('unavailable'); }
+      if (!response.ok) {
+        const code = await this.errorCode(response);
+        if (response.status === 401 && purpose === 'clinic-session' && code === 'clinic_auth_required') throw new AuthFailure('denied', true);
+        if (response.status === 403 && purpose === 'clinic-session' && code === 'clinic_access_denied') throw new AuthFailure('denied');
+        if (purpose === 'refresh' && [400, 401, 403].includes(response.status)
+          && ['INVALID_REFRESH_TOKEN', 'TOKEN_EXPIRED', 'TOKEN_REVOKED', 'USER_DISABLED', 'USER_NOT_FOUND', 'CREDENTIAL_TOO_OLD_LOGIN_AGAIN'].includes(code ?? '')) {
+          throw new AuthFailure('denied', true);
+        }
+        if (purpose === 'sign-in' && [400, 401, 403].includes(response.status)
+          && ['EMAIL_NOT_FOUND', 'INVALID_PASSWORD', 'INVALID_LOGIN_CREDENTIALS', 'USER_DISABLED', 'INVALID_EMAIL'].includes(code ?? '')) {
+          throw new AuthFailure('denied');
+        }
+        throw new AuthFailure('unavailable');
+      }
+      if (!response.headers.get('content-type')?.includes('application/json')) { void response.body?.cancel(); throw new AuthFailure('unavailable'); }
       if (Number(response.headers.get('content-length') ?? 0) > 65_536 || !response.body) { void response.body?.cancel(); throw new AuthFailure('unavailable'); }
       const reader=response.body.getReader();let length=0;const chunks:Uint8Array[]=[];
       try {
@@ -44,10 +94,10 @@ export class FirebaseClient implements AuthClient {
     }catch{throw new AuthFailure('denied');}
   }
   async signIn(email: string,password: string,signal: AbortSignal) {
-    return this.tokens(await this.json(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})},signal),false);
+    return this.tokens(await this.json(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})},signal,'sign-in'),false);
   }
   async refresh(token:string,signal:AbortSignal) {
-    return this.tokens(await this.json(`https://securetoken.googleapis.com/v1/token?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:token}).toString()},signal),true);
+    return this.tokens(await this.json(`https://securetoken.googleapis.com/v1/token?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:token}).toString()},signal,'refresh'),true);
   }
   async clinicLogo(token: string, signal: AbortSignal): Promise<string | undefined> {
     const endpoint = new URL('/v1/clinic/branding/logo/view', staging.apiBase);
@@ -95,9 +145,9 @@ export class FirebaseClient implements AuthClient {
     }
   }
   async resolve(token:string,signal:AbortSignal):Promise<Clinic> {
-    const data=await this.json(staging.apiBase+'/v1/me',{method:'GET',headers:{authorization:`Bearer ${token}`}},signal);
+    const data=await this.json(staging.apiBase+'/v1/me',{method:'GET',headers:{authorization:`Bearer ${token}`}},signal,'clinic-session');
     const s=data.session as Record<string,unknown>|undefined,u=s?.clinicUser as Record<string,unknown>|undefined,c=s?.clinic as Record<string,unknown>|undefined,rawBranches=s?.branches;
-    if(!u||!c||!text(u.displayName,160)||!text(c.displayName,160)||!['admin','doctor','reception'].includes(u.role as string)||!text(u.clinicUserId,128)||!text(c.tenantId,128)||!Array.isArray(u.capabilities)||u.capabilities.length>200||!u.capabilities.every(v=>text(v,100)))throw new AuthFailure('denied');
+    if(!u||!c||!text(u.displayName,160)||!text(c.displayName,160)||!['admin','doctor','reception'].includes(u.role as string)||!text(u.clinicUserId,128)||!text(c.tenantId,128)||!Array.isArray(u.capabilities)||u.capabilities.length>200||!u.capabilities.every(v=>text(v,100)))throw new AuthFailure('unavailable');
     let clinicSession:ClinicSessionContext|undefined;
     if(text(c.timezone,100)&&text(c.currency,8)&&(c.defaultBranchId===null||text(c.defaultBranchId,128))&&typeof c.hasActiveTrial==='boolean'&&Array.isArray(rawBranches)&&rawBranches.length<=100&&rawBranches.every(v=>!!v&&typeof v==='object'&&text((v as Record<string,unknown>).branchId,128)&&text((v as Record<string,unknown>).branchCode,40)&&text((v as Record<string,unknown>).name,160))){
       clinicSession={clinicUser:{clinicUserId:u.clinicUserId,displayName:u.displayName,role:u.role as ClinicSessionContext['clinicUser']['role'],capabilities:[...u.capabilities] as string[]},clinic:{tenantId:c.tenantId,displayName:c.displayName,timezone:c.timezone,currency:c.currency,defaultBranchId:c.defaultBranchId as string|null,hasActiveTrial:c.hasActiveTrial},branches:rawBranches.map(v=>{const b=v as Record<string,unknown>;return{branchId:b.branchId as string,branchCode:b.branchCode as string,name:b.name as string};})};
