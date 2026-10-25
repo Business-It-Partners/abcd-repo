@@ -29,6 +29,14 @@ The source-only development workflow now has separate Browser Preview and Dental
 
 On this Linux M15 profile, the existing bucket is `/home/master-x/.config/electron-desktop-prototype/development-apps`; the publisher reuses it and creates it if absent. The separate `packages/` and `distribution/` release storage is not touched. Root `AGENTS.md` and ADR-036 now define the three lanes, bucket resolution/reuse, and the explicit user-requested release-bundle gate. `npm run build`, `python3 tools/check-dental-docs.py`, all three new Node script syntax checks, and `git diff --check` pass. UI tests and preview-server behavior were not run; the live OS and bucket were left untouched. No release bundle, Cloudflare action, push, or OS restart occurred for this follow-up; this record was written before the local commit. A live launch exposed a runtime layout limit: closed registered windows pushed the payload over 16 entries, leaving app launches loading. The shell now sends only open windows. The M15 build passed after the fix, and the invalid-layout error count did not increase in subsequent samples. No app-launch acceptance is claimed.
 
+## Native app-view resize hit areas — local source follow-up — 2026-10-25
+
+The shared runtime layout leaves a 15-logical-pixel gutter at the right and bottom of normal app windows so Electron `WebContentsView` children cannot cover the OS-owned resize handles. Fullscreen views keep their existing full-area bounds. This applies at the OS runtime boundary to Store and development apps alike; no app package or release metadata changed.
+
+The root build and 511 unit tests pass. The focused private `npm run test:runtime-resize` verifies the real native view bounds, successful right-edge, bottom-edge and bottom-right resize gestures, and full-area fullscreen sizing. The broader `npm run test:runtime` remains incomplete in the private Linux harness: its dock-edge handoff test moves the injected pointer in the guest, but receives no shell pointer event and reports host cursor `(0, 0)`. This stops that suite before its later assertions; it is not counted as a pass.
+
+The work is local to M15 and unpushed. The running OS was not restarted; it loads the rebuilt shell on the next full launch. No push, device install, app publication, or M15/G15 status change is claimed.
+
 ## What is complete
 
 | Work | Evidence-backed disposition |

@@ -5,7 +5,7 @@ import { useWindowManager, activeWindow } from './windowManager';
 import { developmentRuntimeIdForPackage, runtimeIds, runtimeIdForPackage, type RuntimeState, type RuntimeId, type RuntimeLayout } from '../electron/runtime/contracts';
 import type { StoreApp } from '../electron/distribution/contracts';
 import type { DevelopmentAppItem } from '../electron/developmentApps';
-import { dockZoneTop, type WindowId } from './windowGeometry';
+import { dockZoneTop, nativeRuntimeResizeGutter, type WindowId } from './windowGeometry';
 import { StoreArtwork } from './StoreArtwork';
 import type { WindowModuleNavigation } from './WindowModuleSidebar';
 import { AlertTriangle } from 'lucide-react';
@@ -142,7 +142,11 @@ export function RuntimeFixtures({ controllers, apps = [], developmentApps = [], 
       const x=Math.round(r?.x??0),y=Math.max(0,Math.round(r?.y??43)),width=Math.max(1,Math.round(r?.width??1)),fullHeight=Math.max(1,Math.round(r?.height??1));
       const fullscreen=state.windows[id].presentation==='fullscreen';
       const height=fullscreen?fullHeight:Math.min(fullHeight,Math.floor(dockTop-y));
-      const rect=height>0?{x,y,width,height}:{x:0,y:0,width:1,height:1};
+      // WebContentsView is composited above this renderer, so React resize
+      // handles at the right/bottom edges cannot receive input beneath it.
+      // Leave their 15px corner hit areas exposed for every normal window.
+      const resizeGutter=fullscreen?0:nativeRuntimeResizeGutter;
+      const rect=height>0?{x,y,width:Math.max(1,width-resizeGutter),height:Math.max(1,height-resizeGutter)}:{x:0,y:0,width:1,height:1};
       const launchReady=!managedAppIds.has(id)||!!launchFeedback[id]&&launchFeedback[id].handoff!=='waiting';
       return {id,open:true,visible:height>0&&front===id&&state.windows[id].phase==='visible'&&!peek&&!confirm&&launchReady,rect};
     });

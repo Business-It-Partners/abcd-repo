@@ -2,6 +2,8 @@ import { clamp, DOCK, dockHeightForWidth, type Rect } from './motion';
 
 export type Size = { width: number; height: number };
 export type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
+/** Native app views paint above React, so keep their bounds clear of shell resize hit areas. */
+export const nativeRuntimeResizeGutter = 15;
 const hiddenEdgeFraction = .7;
 export const dockWindowGap = 12;
 // Keep in sync with DesktopChrome.css responsive status-bar min-heights.

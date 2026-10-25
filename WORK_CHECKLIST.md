@@ -1,5 +1,11 @@
 # Sajilo Dental — Work Checklist
 
+## Native app-view resize hit areas — 2026-10-25 (local OS source only)
+
+Native app views now stop 15 logical pixels short of the right and bottom edges in normal windows, leaving the OS resize strips and corner exposed. Fullscreen apps retain the full content area. This is shared window/runtime behavior for every managed app; no dental app package changed.
+
+`npm run build`, all 511 root unit tests, and the focused private `npm run test:runtime-resize` pass. The broader `npm run test:runtime` stops at its dock-edge handoff check under the private Wayland harness: the guest receives the injected pointer, but the shell receives no dock-edge event and the reported host cursor remains `(0, 0)`. The running OS was not restarted; it will load the build on the next full launch. The fix is local to M15; no push, install or M15/G15 status change.
+
 ## Home App Updates widget Store wiring — 2026-10-25 (local source only)
 
 Replaced the Home-page dummy update entries with live signed Store offers for installed apps. The widget shows current and offered versions, uses the existing verified Store Update action, reflects staging/progress/readiness and cancellation, and can refresh the catalogue. Catalogue checks now refresh offers at sign-in and every 30 minutes without downloading or staging packages; the user must click Update. A staged candidate does not replace the active version, and the widget does not call it ready until the Store launch-health gate allows that state.
