@@ -259,14 +259,15 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.mouse.move(dragX-2000,dragY,{steps:8});await shell.mouse.up();await shell.waitForFunction(()=>document.querySelector('[data-testid="records-window"]').dataset.interaction==='idle');
   let edgeBounds=await recordsFrame.boundingBox(),edgeView=await waitExpectedNative('beta');
   const leftSurface=await state('records').boundingBox();
-  check('left-edge native surface keeps the window origin and full content width',edgeBounds.x<0&&geometryMatches(edgeBounds.x+edgeBounds.width*.7,0)&&geometryMatches(edgeView.bounds.x,leftSurface.x)&&geometryMatches(edgeView.bounds.width,leftSurface.width));
+  const resizeGutter=Number.parseFloat(await state('records').evaluate(element=>getComputedStyle(element).getPropertyValue('--native-runtime-resize-gutter')))||0;
+  check('left-edge native surface follows the window origin and preserves the resize gutter',edgeBounds.x<0&&geometryMatches(edgeBounds.x+edgeBounds.width*.7,0)&&geometryMatches(edgeView.bounds.x,leftSurface.x)&&geometryMatches(edgeView.bounds.width,leftSurface.width-resizeGutter));
   await shot('runtime-edge-left.png');
   edgeBounds=await dragWindow('records',2000,0);edgeView=await waitExpectedNative('beta');
   check('right-edge native surface follows its window without extending its frame',edgeBounds.x>0&&geometryMatches(edgeBounds.x+edgeBounds.width*.3,viewport.width)&&geometryMatches(edgeView.bounds.x,(await state('records').boundingBox()).x)&&edgeView.bounds.x+edgeView.bounds.width>viewport.width);
   await shot('runtime-edge-right.png');
   const dockTop=await shell.locator('.window-stage').evaluate(e=>e.getBoundingClientRect().bottom);
   edgeBounds=await dragWindow('records',0,10000);edgeView=await waitExpectedNative('beta');
-  check('bottom-edge native content ends at the dock-zone boundary',edgeBounds.y+edgeBounds.height*.3<=dockTop-11&&geometryMatches(edgeView.bounds.y+edgeView.bounds.height,dockTop));
+  check('bottom-edge native content ends above the dock-zone boundary by the resize gutter',edgeBounds.y+edgeBounds.height*.3<=dockTop-11&&geometryMatches(edgeView.bounds.y+edgeView.bounds.height,dockTop-resizeGutter));
   await shot('runtime-edge-bottom.png');
   edgeBounds=await recordsFrame.boundingBox();await dragWindow('records',originalBounds.x-edgeBounds.x,originalBounds.y-edgeBounds.y);edgeView=await waitExpectedNative('beta');
   check('returning the window onscreen restores its live native surface',edgeView.visible&&edgeView.bounds.x>=0&&edgeView.bounds.y+edgeView.bounds.height<=dockTop+geometryTolerance);
