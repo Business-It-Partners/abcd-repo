@@ -180,9 +180,11 @@ export async function verifyRuntime(profileArgs, reportName) {
   await alpha.getByLabel('Your draft').fill('alpha-independent');
   await activateDockApp('Records');
   check('alpha-to-beta switch focuses the native foreground',await app.evaluate(({webContents})=>webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://beta/')).isFocused()));
-  await beta.getByRole('button',{name:'Close dialog'}).click();
-  await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('dialog',{name:'Unsaved app work'}).waitFor();
-  await shell.getByRole('button',{name:'Keep working',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
+  await beta.getByRole('button',{name:'Close dialog'}).click();await beta.getByRole('dialog').waitFor({state:'detached'});
+  await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"] .mac-titlebar')?.inert===false);
+  check('Records draft remains dirty after closing its local dialog',await shell.locator('[data-runtime="records"]').getAttribute('data-dirty')==='true');
+  await shell.getByRole('button',{name:'Close Records',exact:true}).click();const closePrompt=shell.getByRole('alertdialog',{name:'Discard unfinished app work?'});await closePrompt.waitFor();
+  await closePrompt.getByRole('button',{name:'Cancel',exact:true}).click();check('dirty close cancellation preserves draft',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory');
   await activateDockApp('Motion Studio');
   const handle=shell.locator('[data-window-id="studio"] [data-resize="se"]'),before=await handle.boundingBox();
   await moveShell(before.x+before.width/2,before.y+before.height/2);await shell.mouse.down();await shell.mouse.move(before.x+before.width/2+60,before.y+before.height/2+25,{steps:4});await shell.mouse.up();
@@ -224,7 +226,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('Genie thumbnail contains captured native app',await shell.locator('[data-preview-app="records"] img').count()>0 || await shell.locator('[aria-label="Restore Records"] img').count()>0);
   await shell.getByRole('button',{name:'Restore Records',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='visible');
   check('minimize/restore retains isolated draft and process',await beta.getByLabel('Your draft').inputValue()==='beta-kept-in-memory'&&(await native()).apps.find(w=>w.url.includes('beta')).pid===topology.apps.find(w=>w.url.includes('beta')).pid);
-  await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('button',{name:'Discard and close',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='closed');
+  await shell.getByRole('button',{name:'Close Records',exact:true}).click();await shell.getByRole('alertdialog',{name:'Discard unfinished app work?'}).getByRole('button',{name:'OK',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='closed');
   check('discard destroys the app webContents',(await native()).apps.length===1);
   await activateDockApp('Records');await ready('records');const betaNew=await guest('beta');
   check('reopen creates clean workflow state',await betaNew.getByLabel('Your draft').inputValue()==='');
