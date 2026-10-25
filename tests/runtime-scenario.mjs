@@ -99,6 +99,10 @@ export async function verifyRuntime(profileArgs, reportName) {
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
   await alpha.evaluate(()=>{const marker=document.createElement('div');marker.id='module-preview-probe';Object.assign(marker.style,{position:'fixed',inset:'0',zIndex:'2147483647',pointerEvents:'none',background:'rgb(20,220,80)'});document.body.append(marker);});
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await shell.getByRole('button',{name:'Maximize Motion Studio',exact:true}).click();
+  await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.presentation==='fullscreen');
+  const maximizedAlpha=await waitExpectedNative('alpha');
+  await alpha.waitForFunction(({width,height,tolerance})=>Math.abs(innerWidth-width)<=tolerance&&Math.abs(innerHeight-height)<=tolerance,{...maximizedAlpha.bounds,tolerance:geometryTolerance});
   const alphaSize=await alpha.evaluate(()=>({width:innerWidth,height:innerHeight})),shellSize=await shell.evaluate(()=>({width:innerWidth,height:innerHeight}));
   // Windows can route the first post-hide move in shell coordinates, so keep
   // that injected point inside the shell reveal band too. Linux retains the
@@ -124,6 +128,9 @@ export async function verifyRuntime(profileArgs, reportName) {
   await alpha.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   await moveGuest(alpha,'alpha',alphaSize.width/2,edgeY);await waitNativeView('alpha',view=>view&&!view.visible);await shell.waitForTimeout(160);
   await moveShell(20,20);await waitNativeView('alpha',view=>view?.visible);
+  await shell.getByRole('button',{name:'Restore Motion Studio size',exact:true}).click();
+  await shell.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.presentation==='normal');
+  await waitExpectedNative('alpha');
   await shell.getByRole('button',{name:'Finance',exact:true}).click();
   const financeExplorer=shell.getByTestId('finance-explorer');await financeExplorer.waitFor();
   const hiddenForExplorer=await waitNativeView('alpha',view=>view&&!view.visible);
