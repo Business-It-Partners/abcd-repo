@@ -28,7 +28,9 @@ export async function verifyRuntime(profileArgs, reportName) {
   if(process.platform==='win32'){
    if(process.env.GITHUB_ACTIONS!=='true'||process.env.RUNNER_OS!=='Windows'||process.env.CI!=='true')throw Error('Native pointer input requires the isolated hosted Windows CI job');
    const point=await app.evaluate(({BrowserWindow,screen},{x,y,host})=>{
-    const win=BrowserWindow.getAllWindows()[0],content=win.getContentBounds();
+    const win=BrowserWindow.getAllWindows().find(candidate=>candidate.webContents.getURL().includes('runtimeFixtures=1'));
+    if(!win)throw Error('Runtime fixture shell window missing');
+    const content=win.getContentBounds();
     const view=host?win.contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`)):undefined;
     if(host&&!view)throw Error('Native pointer target missing');
     const bounds=view?.getBounds()??{x:0,y:0};
@@ -72,8 +74,8 @@ export async function verifyRuntime(profileArgs, reportName) {
    throw new Error(`${error.message}; runtime startup diagnostic ${JSON.stringify(diagnostic)}`);
   }
  };
- const native=()=>app.evaluate(({webContents,BrowserWindow})=>({shell:BrowserWindow.getAllWindows()[0].webContents.getOSProcessId(),apps:webContents.getAllWebContents().filter(w=>w.getURL().startsWith('dental-fixture:')).map(w=>({id:w.id,url:w.getURL(),pid:w.getOSProcessId(),prefs:{sandbox:w.getLastWebPreferences().sandbox,contextIsolation:w.getLastWebPreferences().contextIsolation,nodeIntegration:w.getLastWebPreferences().nodeIntegration}}))}));
- const nativeView=host=>app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)return null;const b=view.getBounds();return{visible:view.getVisible(),bounds:{x:b.x,y:b.y,width:b.width,height:b.height}};},host);
+ const native=()=>app.evaluate(({webContents,BrowserWindow})=>{const shell=BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().includes('runtimeFixtures=1'));if(!shell)throw Error('Runtime fixture shell window missing');return{shell:shell.webContents.getOSProcessId(),apps:webContents.getAllWebContents().filter(w=>w.getURL().startsWith('dental-fixture:')).map(w=>({id:w.id,url:w.getURL(),pid:w.getOSProcessId(),prefs:{sandbox:w.getLastWebPreferences().sandbox,contextIsolation:w.getLastWebPreferences().contextIsolation,nodeIntegration:w.getLastWebPreferences().nodeIntegration}}))};});
+ const nativeView=host=>app.evaluate(({BrowserWindow},host)=>{const shell=BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().includes('runtimeFixtures=1'));if(!shell)throw Error('Runtime fixture shell window missing');const view=shell.contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)return null;const b=view.getBounds();return{visible:view.getVisible(),bounds:{x:b.x,y:b.y,width:b.width,height:b.height}};},host);
  async function waitNativeView(host,predicate){
   for(let i=0;i<500;i++){const view=await nativeView(host);if(predicate(view))return view;await new Promise(r=>setTimeout(r,20));}
   const diagnostics=await app.evaluate(({BrowserWindow,webContents},expectedHost)=>({
@@ -108,7 +110,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await alpha.evaluate(()=>{window.__runtimeEdgeTrace=[];window.addEventListener('pointermove',event=>{if(event.clientY>=innerHeight-200)window.__runtimeEdgeTrace.push({x:event.clientX,y:event.clientY,height:innerHeight,trusted:event.isTrusted});});});
   await shell.evaluate(()=>{window.__runtimeDockEdgeEvents=0;window.__runtimeShellPointerTrace=[];window.addEventListener('runtime:dock-edge',()=>window.__runtimeDockEdgeEvents++);window.addEventListener('pointermove',event=>{window.__runtimeShellPointerTrace.push({x:event.clientX,y:event.clientY,trusted:event.isTrusted});if(window.__runtimeShellPointerTrace.length>20)window.__runtimeShellPointerTrace.shift();},true);});
   await shell.waitForTimeout(180);
-  await app.evaluate(({BrowserWindow},host)=>{const view=BrowserWindow.getAllWindows()[0].contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)throw new Error('Native app view missing');const webContents=view.webContents,original=webContents.capturePage.bind(webContents);webContents.capturePage=async(...args)=>{webContents.capturePage=original;await new Promise(resolve=>setTimeout(resolve,400));return original(...args);};},'alpha');
+  await app.evaluate(({BrowserWindow},host)=>{const shell=BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().includes('runtimeFixtures=1'));if(!shell)throw Error('Runtime fixture shell window missing');const view=shell.contentView.children.find(child=>child.webContents?.getURL().startsWith(`dental-fixture://${host}/`));if(!view)throw new Error('Native app view missing');const webContents=view.webContents,original=webContents.capturePage.bind(webContents);webContents.capturePage=async(...args)=>{webContents.capturePage=original;await new Promise(resolve=>setTimeout(resolve,400));return original(...args);};},'alpha');
   await moveGuest(alpha,'alpha',alphaSize.width/2,edgeY);
   try{await waitNativeView('alpha',view=>view&&!view.visible);}catch(error){const diagnostics={guest:await alpha.evaluate(()=>({width:innerWidth,height:innerHeight,edgeMoves:window.__runtimeEdgeTrace})),shell:await shell.evaluate(()=>({width:innerWidth,height:innerHeight,dockTop:document.querySelector('.window-stage')?.getBoundingClientRect().bottom,dockEdgeEvents:window.__runtimeDockEdgeEvents,pointerMoves:window.__runtimeShellPointerTrace})),native:await nativeView('alpha'),cursor:await app.evaluate(({screen})=>screen.getCursorScreenPoint()),nativePointerMoves};throw new Error(`${error.message}; edge diagnostics ${JSON.stringify(diagnostics)}`);}
   await shell.waitForTimeout(60);
