@@ -83,6 +83,10 @@ global.fetch = async (input, init = {}) => {
     return json({ context: { patientNumberPrefix: 'SYN-PR-', currentCounter: 1, nextPatientNumber: 'SYN-PR-002' } });
   }
   if (method === 'GET' && target.pathname === `/v1/patients/${patientId}/core`) return json({ patient: clone(patient) });
+  if (method === 'GET' && target.pathname === `/v1/patients/${patientId}/notes`) return json({ notes: [] });
+  if (method === 'GET' && target.pathname === `/v1/patients/${patientId}/prescriptions`) return json({ prescriptions: [] });
+  if (method === 'GET' && target.pathname === `/v1/patients/${patientId}/follow-ups`) return json({ followUps: [] });
+  if (method === 'GET' && target.pathname === '/v1/clinic/staff-references') return json({ doctors: [{ name: 'Synthetic dentist' }] });
   if (method === 'GET' && target.pathname === `/v1/patients/${patientId}/timeline`) return json({ timeline: [
     { eventId: 'evt-clinical-1', occurredOn: '2026-10-20', recordedAt: '2026-10-20T04:00:00.000Z', eventType: 'clinical_work', title: 'Synthetic crown preparation', detail: 'Clinical stage', chiefComplaintId: caseId, doctors: ['Synthetic dentist'], patientProtocolId: 'synthetic-protocol', protocolName: 'Synthetic Root Canal', toothCode: '16', treatmentArea: null },
     { eventId: 'evt-clinical-2', occurredOn: '2026-10-20', recordedAt: '2026-10-20T05:00:00.000Z', eventType: 'clinical_work', title: 'Synthetic canal measurement', detail: 'Clinical stage', chiefComplaintId: caseId, doctors: ['Synthetic dentist'], patientProtocolId: 'synthetic-protocol', protocolName: 'Synthetic Root Canal', toothCode: '16', treatmentArea: null },

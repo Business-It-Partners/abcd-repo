@@ -84,6 +84,8 @@ interface PatientDrawerProps {
   onClose: () => void;
   /** Hide the legacy in-content Back control when the host window owns page navigation. */
   showBackButton?: boolean;
+  /** Let the Dental OS adapter load only the data required by the active section. */
+  onSubTabChange?: (tab: TabKey) => void;
   patientCases?: Case[];
   /** This patient's lab orders, grouped by case in the Lab tab. */
   patientLabOrders: LabOrder[];
@@ -97,12 +99,15 @@ interface PatientDrawerProps {
   onUpdateCase?: (caseId: string, patch: Partial<Case>) => Promise<void> | void;
   onAppendTrustedPlan?: (clinicalCase: Case, draft: PlanAppendDraft) => Promise<boolean>;
   patientXrays?: XrayImage[];
+  patientXraysLoading?: boolean;
   /** Visible error state when the private image list cannot be loaded. */
   xrayLoadError?: string | null;
   onMediaChanged?: () => Promise<void> | void;
   onRemoveXray: (id: string, reason: string) => Promise<void>;
   /** The patient's CURRENT gum readings, merged one-per-tooth across all charting sessions. */
   currentPerio?: Record<string, ToothPerioData>;
+  patientPeriodontalLoading?: boolean;
+  patientPeriodontalError?: string | null;
   /** When the gums were last charted, for the "charted on" line. */
   lastPerioDate?: string;
   onSavePerioChart: (teeth: Record<string, ToothPerioData>) => Promise<void>;
@@ -126,6 +131,8 @@ interface PatientDrawerProps {
   protocols?: TreatmentProtocol[];
   feeSchedule?: FeeScheduleItem[];
   patientCanalMeasurements?: PatientCanalMeasurement[];
+  patientLabLoading?: boolean;
+  patientLabError?: string | null;
   patientCanalMeasurementsLoading?: boolean;
   patientCanalMeasurementsError?: string | null;
   canViewBillingLedger: boolean;
@@ -1254,6 +1261,7 @@ export default function PatientDrawer({
   selectedPatient,
   onClose,
   showBackButton = true,
+  onSubTabChange,
   patientCases,
   patientLabOrders,
   labs,
@@ -1267,6 +1275,9 @@ export default function PatientDrawer({
   onMediaChanged,
   onRemoveXray,
   currentPerio,
+  patientXraysLoading = false,
+  patientPeriodontalLoading = false,
+  patientPeriodontalError,
   lastPerioDate,
   onSavePerioChart,
   patientPrescriptions = [],
@@ -1286,6 +1297,8 @@ export default function PatientDrawer({
   followUpList,
   doctorsList,
   patientCanalMeasurements = [],
+  patientLabLoading = false,
+  patientLabError,
   canViewBillingLedger,
   patientLedger,
   ledgerLoading = false,
@@ -1318,6 +1331,9 @@ export default function PatientDrawer({
   useEffect(() => {
     setActiveSubTab(requestedSubTab);
   }, [requestedSubTab]);
+  useEffect(() => {
+    onSubTabChange?.(activeSubTab);
+  }, [activeSubTab, onSubTabChange]);
   useEffect(() => {
     if (route.params.subpage === "odontogram" || (!canViewBillingLedger && route.params.subpage === "ledger")) patch({ subpage: null, month: null }, "replace");
   }, [canViewBillingLedger, patch, route.params.subpage]);
@@ -1563,11 +1579,12 @@ export default function PatientDrawer({
             )}
 
             {activeSubTab === "periodontal" && (
-              <PeriodontalChart
-                initialPerioData={currentPerio}
-                lastChartedOn={lastPerioDate}
-                onSave={onSavePerioChart}
-              />
+              <>
+                {patientPeriodontalError && <div role="alert" style={{ marginBottom: "14px", padding: "10px 12px", border: "1px solid #fecaca", background: "#fef2f2", color: "#b91c1c", fontSize: "var(--fs-13)" }}>{patientPeriodontalError}</div>}
+                {patientPeriodontalLoading
+                  ? <p role="status">Loading periodontal chart…</p>
+                  : <PeriodontalChart initialPerioData={currentPerio} lastChartedOn={lastPerioDate} onSave={onSavePerioChart} />}
+              </>
             )}
 
              {activeSubTab === "plan" && <PatientTreatmentPlansTab plans={treatmentPlanCases} timeline={patientTimeline} canalMeasurements={patientCanalMeasurements} loading={patientTreatmentPlansLoading || patientTimelineLoading} error={patientTreatmentPlansError || patientTimelineError} selectedCaseId={treatmentPlanCases[treatmentPlanCaseIndex]?.chiefComplaintId} />}
@@ -1582,6 +1599,8 @@ export default function PatientDrawer({
                 onAssignPendingLabOrder={onAssignPendingLabOrder}
                 onAddLabOrder={onAddLabOrder}
                 onRemoveOrder={onRemoveOrder}
+                loading={patientLabLoading}
+                loadError={patientLabError}
                 patientId={selectedPatient.id}
                 patientName={selectedPatient.name}
               />
@@ -1621,6 +1640,7 @@ export default function PatientDrawer({
                 </Card>
                 <XRayGallery
                   xrays={patientXrays}
+                  isLoading={patientXraysLoading}
                   onDeleteXray={onRemoveXray}
                 />
               </>

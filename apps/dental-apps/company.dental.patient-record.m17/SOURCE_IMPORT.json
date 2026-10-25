@@ -5,7 +5,7 @@
   "method": "Directly import the pinned SaaS patient-record presentation and workflow components. Adapt only their app-shell, session, route, JSON API, and media transport seams to the Dental OS SDK.",
   "uiParity": {
     "vendoredFiles": 128,
-    "byteIdenticalFiles": 117,
+    "byteIdenticalFiles": 116,
     "adapterFiles": [
       {
         "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
@@ -13,7 +13,7 @@
       },
       {
         "path": "apps/clinic-web/src/features/patients/components/XRayGallery.tsx",
-        "purpose": "Read patient-scoped image bytes through the Dental OS media SDK instead of Firebase and direct media HTTP."
+        "purpose": "Read patient-scoped image bytes through the Dental OS media SDK instead of Firebase and direct media HTTP; show the metadata loading state while the X-ray section fetches on demand."
       },
       {
         "path": "apps/clinic-web/src/features/patients/hooks/useServerPatientDirectory.ts",
@@ -52,7 +52,11 @@
       },
       {
         "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
-        "purpose": "Add a semantic patient-record navigation heading and align tab icons with the Files-inspired sidebar while retaining every tab and its behavior."
+        "purpose": "Add a semantic patient-record navigation heading, align tab icons with the Files-inspired sidebar, notify the adapter when the active section changes, and show loading states while lazy section reads are pending."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientLabTab.tsx",
+        "purpose": "Show loading and error feedback while lab orders and supplier references load on demand for the Lab section."
       },
       {
         "path": "apps/clinic-web/src/features/patients/patient-record.module.css",

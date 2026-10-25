@@ -127,8 +127,10 @@ try {
   check('patient detail sidebar uses the slightly narrower 190px width', Math.round(sidebarWidth) === 190);
   await fs.writeFile(detailScreenshotPath, await page.screenshot(), { flag: 'wx' }); detailScreenshotWritten = true;
   const profileRead = await inspect(app);
-  check('SaaS patient profile reads the authoritative clinic record through ClinicClient',
-    profileRead.calls.some(call => call.method === 'GET' && call.path === '/v1/patients/11111111-1111-4111-8111-111111111111/core'));
+  const patientDetailReads = profileRead.calls.filter(call => call.method === 'GET'
+    && call.path.startsWith('/v1/patients/11111111-1111-4111-8111-111111111111/'));
+  check('opening a patient fetches its core record without eagerly dispatching every section read',
+    patientDetailReads.some(call => call.path.endsWith('/core')) && patientDetailReads.every(call => call.path.endsWith('/core')));
   check('billing navigation stays hidden when the clinic role lacks the ledger capability',
     await page.getByRole('button', { name: 'Billing Ledger', exact: true }).count() === 0);
 
@@ -151,6 +153,13 @@ try {
       && JSON.stringify(profileWrites[0].body) === JSON.stringify(profileWrites[1].body)
       && profileWrites[1].body.expectedPatientRowVersion === 4 && profileWrites[1].body.expectedMedicalProfileRowVersion === 3
       && afterRetry.snapshot.writeEffects === 1);
+
+  await page.getByRole('button', { name: 'Prescriptions', exact: true }).click();
+  await page.getByText('No issued prescriptions recorded for this patient.', { exact: true }).waitFor();
+  const prescriptionRead = await waitForHost(app, state => state.calls.some(call => call.method === 'GET' && call.path.endsWith('/prescriptions')));
+  check('the prescription route loads only when its Patient Record section is selected',
+    prescriptionRead.calls.some(call => call.method === 'GET' && call.path.endsWith('/prescriptions'))
+      && !prescriptionRead.calls.some(call => call.method === 'GET' && /\/(media|follow-ups|ledger)$/.test(call.path)));
 
   await page.getByRole('button', { name: 'Periodontal Chart', exact: true }).click();
   await page.getByText('Pocket Probing Depth', { exact: false }).waitFor();

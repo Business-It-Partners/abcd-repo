@@ -13,7 +13,7 @@ Patient Record does not have a custom replacement UI. It renders the pinned SaaS
 
 The Files-inspired patient-section sidebar is 190 px wide. The active patient section and sidebar keep separate vertical scroll areas.
 
-Of the 128 vendored source files, 121 are byte-identical to the pinned production revision. Seven files are adapted at the Dental OS boundary for SDK-mediated requests, private image transfer, in-memory app routing, platform role context, or patient-scoped chart media. Those adapters do not replace the production view markup or CSS. File-level provenance and adapter scope are recorded in [`SOURCE_IMPORT.json`](SOURCE_IMPORT.json).
+Of the 128 vendored source files, 116 are byte-identical to the pinned production revision. Seven files are adapted at the Dental OS boundary for SDK-mediated requests, private image transfer, in-memory app routing, platform role context, or patient-scoped chart media. Six local UI paths retain the Files-inspired sidebar and add focused loading feedback for section-scoped reads. The adapters do not replace the production clinic screens. File-level provenance and adapter scope are recorded in [`SOURCE_IMPORT.json`](SOURCE_IMPORT.json).
 
 ## Runtime boundary
 

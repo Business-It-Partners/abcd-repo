@@ -49,7 +49,7 @@ Reference: `dental-saas/production` @ `f44d3e30ca6f79cba61e32601c53d58826500201`
 
 ## UI source and platform limits
 
-The visible Patient Record views are the pinned SaaS components and styles, not a Dental OS redesign. The app renders `PatientRecordView`, `CaseEntryView`, `PatientDrawer` and the source detail tabs from the production revision. Its outer layout follows the same `clinicApp` → `clinicWorkspaceCanvas` → `clinicCareWorkspace` structure. A file-by-file comparison found 121 of 128 vendored files byte-identical; the seven adapter files and their SDK-boundary changes are listed in `SOURCE_IMPORT.json`. Visible markup and styles are unchanged.
+The Patient Record screens remain the pinned SaaS components and styles, not a Dental OS redesign. The app renders `PatientRecordView`, `CaseEntryView`, `PatientDrawer` and the source detail tabs from the production revision. Its outer layout follows the same `clinicApp` → `clinicWorkspaceCanvas` → `clinicCareWorkspace` structure. A file-by-file comparison found 116 of 128 vendored files byte-identical; the seven adapter files and six local UI paths are listed in `SOURCE_IMPORT.json`. The adapter loads section data on demand, cancels obsolete reads, and shows loading/error feedback for X-ray, lab, and periodontal data without replacing the source workflows.
 
 The adapter maps the existing Dental OS SDK routes and capabilities to the source component callbacks. The Worker remains the business authority and may reject a write based on its current clinic role or record version.
 

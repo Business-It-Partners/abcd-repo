@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PatientDrawer from "@/features/patients/components/PatientDrawer";
 import type { PatientDetail as SaaSPatientDetail, LabOrder as SaaSLabOrder, LabSupplier as SaaSLabSupplier } from "@/features/patients/model/domain";
 import { formatDateShort, todayISO } from "@/features/patients/model/domain";
@@ -12,9 +12,39 @@ import type { PatientCore, PatientMediaAsset, PatientTreatmentPlan, PatientTimel
 import { errorText, useApp } from "./main";
 
 type ReadResult<T> = { value: T; error: string | null };
-async function read<T>(promise: Promise<T>, empty: T): Promise<ReadResult<T>> {
-  try { return { value: await promise, error: null }; }
-  catch (cause) { return { value: empty, error: errorText(cause) }; }
+type LoadedRead<T> = ReadResult<T> & { loading: boolean; loaded: boolean };
+function waitForRetry(delay: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(signal.reason ?? new Error("Request stopped locally.")); return; }
+    const finish = () => { signal.removeEventListener("abort", abort); resolve(); };
+    const timeout = setTimeout(finish, delay);
+    const abort = () => {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", abort);
+      reject(signal.reason ?? new Error("Request stopped locally."));
+    };
+    signal.addEventListener("abort", abort, { once: true });
+  });
+}
+async function readWithBrokerCapacityRetry<T>(load: () => Promise<T>, signal: AbortSignal): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    if (signal.aborted) throw signal.reason ?? new Error("Request stopped locally.");
+    try { return await load(); }
+    catch (cause) {
+      const capacityRejected = !!cause && typeof cause === "object" && "code" in cause
+        && (cause as { code?: unknown }).code === "BUSY";
+      if (!capacityRejected || attempt >= 2 || signal.aborted) throw cause;
+      // BUSY is a pre-dispatch rejection. Retry only these idempotent GETs, with a short bound.
+      await waitForRetry(200 * (attempt + 1), signal);
+    }
+  }
+}
+async function read<T>(load: () => Promise<T>, empty: T, signal: AbortSignal): Promise<LoadedRead<T>> {
+  try { return { value: await readWithBrokerCapacityRetry(load, signal), error: null, loading: false, loaded: true }; }
+  catch (cause) {
+    if (signal.aborted) return { value: empty, error: null, loading: false, loaded: false };
+    return { value: empty, error: errorText(cause), loading: false, loaded: true };
+  }
 }
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
@@ -109,30 +139,103 @@ function perioForApi(teeth: Record<string, ToothPerioData>) {
   return Object.values(teeth).map((tooth) => ({ toothCode: tooth.tooth, probingDepths: tooth.probingDepths, recession: tooth.recession, bleedingOnProbing: tooth.bop, mobilityGrade: tooth.mobility }));
 }
 
-type Snapshot = {
-  core: ReadResult<PatientCore | null>;
-  plans: ReadResult<PatientTreatmentPlan[]>;
-  timeline: ReadResult<PatientTimelineEvent[]>;
-  notes: ReadResult<PatientNote[]>;
-  prescriptions: ReadResult<PatientPrescription[]>;
-  followUps: ReadResult<PatientFollowUp[]>;
-  ledger: ReadResult<PatientLedger | null>;
-  media: ReadResult<PatientMediaAsset[]>;
-  odontogram: ReadResult<unknown>;
-  periodontal: ReadResult<unknown>;
-  canals: ReadResult<unknown>;
-  labOrders: ReadResult<Record<string, unknown>[]>;
-  suppliers: ReadResult<SaaSLabSupplier[]>;
-  staff: ReadResult<string[]>;
+type SnapshotValues = {
+  core: PatientCore | null;
+  plans: PatientTreatmentPlan[];
+  timeline: PatientTimelineEvent[];
+  notes: PatientNote[];
+  prescriptions: PatientPrescription[];
+  followUps: PatientFollowUp[];
+  ledger: PatientLedger | null;
+  media: PatientMediaAsset[];
+  periodontal: unknown;
+  canals: unknown;
+  labOrders: Record<string, unknown>[];
+  suppliers: SaaSLabSupplier[];
+  staff: string[];
 };
+type SnapshotKey = keyof SnapshotValues;
+type Snapshot = { [K in SnapshotKey]: LoadedRead<SnapshotValues[K]> };
+type PatientSection = "profile" | "cases" | "notes" | "timeline" | "periodontal" | "plan" | "lab" | "xrays" | "prescriptions" | "followups" | "ledger";
+const SECTION_READS: Record<PatientSection, SnapshotKey[]> = {
+  profile: ["staff"],
+  cases: ["plans"],
+  notes: ["notes"],
+  timeline: ["plans", "timeline"],
+  periodontal: ["periodontal"],
+  plan: ["plans", "timeline", "canals"],
+  lab: ["labOrders", "suppliers"],
+  xrays: ["media"],
+  prescriptions: ["prescriptions"],
+  followups: ["followUps"],
+  ledger: ["ledger"],
+};
+function emptyRead<T>(value: T): LoadedRead<T> { return { value, error: null, loading: false, loaded: false }; }
+function emptySnapshot(): Snapshot {
+  return {
+    core: emptyRead(null), plans: emptyRead([]), timeline: emptyRead([]), notes: emptyRead([]),
+    prescriptions: emptyRead([]), followUps: emptyRead([]), ledger: emptyRead(null), media: emptyRead([]),
+    periodontal: emptyRead(null), canals: emptyRead(null), labOrders: emptyRead([]), suppliers: emptyRead([]), staff: emptyRead([]),
+  };
+}
+function invalidateRead<K extends SnapshotKey>(snapshot: Snapshot, key: K): Snapshot {
+  return { ...snapshot, [key]: { ...snapshot[key], error: null, loaded: false } } as Snapshot;
+}
 
 export function SaaSPatientDetail({ patientId }: { patientId: string }) {
   const { api, media, session, run, capabilities } = useApp();
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot>(emptySnapshot);
+  const snapshotRef = useRef(snapshot);
+  const inFlightReads = useRef(new Map<SnapshotKey, AbortController>());
+  const activeSectionRef = useRef<PatientSection | null>(null);
+  const [activeSection, setActiveSection] = useState<PatientSection | null>(null);
   const [revision, setRevision] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [reloadError, setReloadError] = useState<string | null>(null);
-  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const updateSnapshot = useCallback((update: (current: Snapshot) => Snapshot) => {
+    const next = update(snapshotRef.current);
+    snapshotRef.current = next;
+    setSnapshot(next);
+  }, []);
+  const loadField = useCallback(<K extends SnapshotKey,>(
+    key: K,
+    empty: SnapshotValues[K],
+    load: (signal: AbortSignal) => Promise<SnapshotValues[K]>,
+    controller: AbortController,
+  ) => {
+    if (snapshotRef.current[key].loaded || inFlightReads.current.has(key)) return;
+    inFlightReads.current.set(key, controller);
+    updateSnapshot((current) => ({
+      ...current,
+      [key]: { ...current[key], loading: true, error: null },
+    } as Snapshot));
+    void read(() => load(controller.signal), empty, controller.signal).then((result) => {
+      if (controller.signal.aborted) return;
+      updateSnapshot((current) => ({ ...current, [key]: result } as Snapshot));
+    }).finally(() => {
+      if (inFlightReads.current.get(key) === controller) inFlightReads.current.delete(key);
+    });
+  }, [updateSnapshot]);
+  const cancelReads = useCallback((controller: AbortController, keys: SnapshotKey[]) => {
+    controller.abort();
+    const cancelled = keys.filter((key) => inFlightReads.current.get(key) === controller);
+    for (const key of cancelled) inFlightReads.current.delete(key);
+    if (cancelled.length) updateSnapshot((current) => cancelled.reduce((next, key) => ({
+      ...next,
+      [key]: { ...next[key], loading: false, loaded: false },
+    } as Snapshot), current));
+  }, [updateSnapshot]);
+  const selectSection = useCallback((section: PatientSection) => {
+    activeSectionRef.current = section;
+    setActiveSection(section);
+  }, []);
+  const refresh = useCallback(() => {
+    updateSnapshot((current) => {
+      let next = invalidateRead(current, "core");
+      const active = activeSectionRef.current;
+      if (active) for (const key of SECTION_READS[active]) next = invalidateRead(next, key);
+      return next;
+    });
+    setRevision((value) => value + 1);
+  }, [updateSnapshot]);
   const execute = useCallback(async <T,>(label: string, command: import("../../../../packages/app-sdk/src/clinicClient").ClinicCommand<T>): Promise<T> => {
     let result!: T;
     await run(label, command, (value) => { result = value; refresh(); });
@@ -140,48 +243,78 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
   }, [refresh, run]);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setReloadError(null);
-    const canReadLedger = capabilities.has("patient_billing_ledger.read");
-    const canReadClinicalCharts = capabilities.has("work_entry.access");
-    const canReadLabs = capabilities.has("lab_tracker.access");
-    void Promise.all([
-      read(api.core(patientId), null),
-      read(api.plans(patientId), []),
-      read(api.timeline(patientId), []),
-      read(api.notes(patientId), []),
-      read(api.prescriptions(patientId), []),
-      read(api.followUps(patientId), []),
-      read(canReadLedger ? api.ledger(patientId) : Promise.resolve(null), null),
-      read(api.media(patientId), []),
-      read(canReadClinicalCharts ? api.odontogram(patientId) : Promise.resolve(null), null),
-      read(canReadClinicalCharts ? api.periodontal(patientId) : Promise.resolve(null), null),
-      read(canReadClinicalCharts ? api.canals(patientId) : Promise.resolve(null), null),
-      read(canReadLabs ? api.labOrders(patientId).then((value) => arrayFrom<Record<string, unknown>>(value, "labOrders")) : Promise.resolve([]), []),
-      read(canReadLabs ? api.labSuppliers().then((rows) => rows.map((row) => legacySupplier(row as unknown as Record<string, unknown>))) : Promise.resolve([]), []),
-      read(api.staffReferences().then((value) => {
-        const staff = arrayFrom<Record<string, unknown>>(value, "doctors");
-        return staff.map((person) => String(person.name ?? "")).filter(Boolean);
-      }), []),
-    ]).then(([core, plans, timeline, notes, prescriptions, followUps, ledger, imageList, odontogram, periodontal, canals, labOrders, suppliers, staff]) => {
-      if (!active) return;
-      const next: Snapshot = { core, plans, timeline, notes, prescriptions, followUps, ledger, media: imageList, odontogram, periodontal, canals, labOrders, suppliers, staff };
-      setSnapshot(next);
-      setReloadError(core.error && !core.value ? core.error : null);
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [api, capabilities, media, patientId, revision]);
+    const controller = new AbortController();
+    loadField("core", null, (signal) => api.core(patientId, signal), controller);
+    return () => cancelReads(controller, ["core"]);
+  }, [api, cancelReads, loadField, patientId, revision]);
 
-  const core = snapshot?.core.value ?? null;
-  const plans = snapshot?.plans.value ?? [];
-  const timeline = snapshot?.timeline.value ?? [];
-  const patientLedger = snapshot?.ledger.value ?? null;
+  const canReadLedger = capabilities.has("patient_billing_ledger.read");
+  const canReadClinicalCharts = capabilities.has("work_entry.access");
+  const canReadLabs = capabilities.has("lab_tracker.access");
+  useEffect(() => {
+    if (!activeSection) return;
+    const controller = new AbortController();
+    const keys: SnapshotKey[] = [];
+    const queue = <K extends SnapshotKey,>(key: K, empty: SnapshotValues[K], load: (signal: AbortSignal) => Promise<SnapshotValues[K]>) => {
+      keys.push(key);
+      loadField(key, empty, load, controller);
+    };
+    switch (activeSection) {
+      case "profile":
+        queue("staff", [], (signal) => api.staffReferences(signal).then((value) => {
+          const staff = arrayFrom<Record<string, unknown>>(value, "doctors");
+          return staff.map((person) => String(person.name ?? "")).filter(Boolean);
+        }));
+        break;
+      case "cases":
+        queue("plans", [], (signal) => api.plans(patientId, signal));
+        break;
+      case "notes":
+        queue("notes", [], (signal) => api.notes(patientId, signal));
+        break;
+      case "timeline":
+        queue("plans", [], (signal) => api.plans(patientId, signal));
+        queue("timeline", [], (signal) => api.timeline(patientId, signal));
+        break;
+      case "periodontal":
+        if (canReadClinicalCharts) queue("periodontal", null, (signal) => api.periodontal(patientId, signal));
+        break;
+      case "plan":
+        queue("plans", [], (signal) => api.plans(patientId, signal));
+        queue("timeline", [], (signal) => api.timeline(patientId, signal));
+        if (canReadClinicalCharts) queue("canals", null, (signal) => api.canals(patientId, signal));
+        break;
+      case "lab":
+        if (canReadLabs) {
+          queue("labOrders", [], (signal) => api.labOrders(patientId, signal).then((value) => arrayFrom<Record<string, unknown>>(value, "labOrders")));
+          queue("suppliers", [], (signal) => api.labSuppliers(signal).then((rows) => rows.map((row) => legacySupplier(row as unknown as Record<string, unknown>))));
+        }
+        break;
+      case "xrays":
+        queue("media", [], (signal) => api.media(patientId, signal));
+        break;
+      case "prescriptions":
+        queue("prescriptions", [], (signal) => api.prescriptions(patientId, signal));
+        break;
+      case "followups":
+        queue("followUps", [], (signal) => api.followUps(patientId, signal));
+        break;
+      case "ledger":
+        if (canReadLedger) queue("ledger", null, (signal) => api.ledger(patientId, "", "", signal));
+        break;
+    }
+    return () => cancelReads(controller, keys);
+  }, [activeSection, api, canReadClinicalCharts, canReadLabs, canReadLedger, cancelReads, loadField, patientId, revision]);
+
+  const core = snapshot.core.value;
+  const plans = snapshot.plans.value;
+  const timeline = snapshot.timeline.value;
+  const patientLedger = snapshot.ledger.value;
   const selectedPatient = useMemo(() => core ? legacyPatient(core, plans, timeline, patientLedger?.summary.outstandingDue ?? 0) : null, [core, plans, timeline, patientLedger]);
-  const rawLabOrder = (id: string) => snapshot?.labOrders.value.find((order) => String(order.labOrderId) === id);
+  const rawLabOrder = (id: string) => snapshot.labOrders.value.find((order) => String(order.labOrderId) === id);
   const role = session.clinicUser.role === "admin" ? "admin" : session.clinicUser.role === "doctor" ? "doctor" : "assistant";
-  const labOrders = useMemo(() => snapshot?.labOrders.value.map((order) => workerLabOrder(order, core?.fullName ?? "Patient")) ?? [], [snapshot, core?.fullName]);
-  const xrayRows = useMemo<XrayImage[]>(() => (snapshot?.media.value ?? []).filter((asset) => asset.status === "active").map((asset) => ({
+  const labOrders = useMemo(() => snapshot.labOrders.value.map((order) => workerLabOrder(order, core?.fullName ?? "Patient")), [snapshot.labOrders.value, core?.fullName]);
+  const xrayRows = useMemo<XrayImage[]>(() => snapshot.media.value.filter((asset) => asset.status === "active").map((asset) => ({
     id: asset.mediaAssetId,
     imageId: asset.mediaAssetId,
     patientId: asset.patientId,
@@ -192,20 +325,19 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
     tooth: asset.toothCode ?? undefined,
     note: asset.clinicalNote ?? undefined,
     isCloudflareImage: true,
-  })), [snapshot?.media.value, core?.fullName]);
+  })), [snapshot.media.value, core?.fullName]);
 
-  if (loading && !core) return <main className="saasAdapterMessage" role="status">Loading patient record…</main>;
+  if (!snapshot.core.loaded && !snapshot.core.error) return <main className="saasAdapterMessage" role="status">Loading patient record…</main>;
   if (!selectedPatient) return <main className="saasAdapterMessage" role="alert">
-    <h2>Patient record unavailable</h2><p>{reloadError ?? "The clinic could not load this patient record."}</p>
+    <h2>Patient record unavailable</h2><p>{snapshot.core.error ?? "The clinic could not load this patient record."}</p>
     <button type="button" onClick={refresh}>Retry</button>
   </main>;
 
-  const perioChart = record(record(snapshot?.periodontal.value)?.chart);
+  const perioChart = record(record(snapshot.periodontal.value)?.chart);
   const perioTeeth = Array.isArray(perioChart?.teeth) ? perioChart.teeth as Record<string, unknown>[] : [];
   const currentPerio = toPerio(perioTeeth);
   const lastPerioDate = typeof perioChart?.lastChartedOn === "string" ? perioChart.lastChartedOn : undefined;
-  const rawCanals = arrayFrom<SaaSPatientCanalMeasurement>(snapshot?.canals.value, "sessions");
-  const rowLoading = loading;
+  const rawCanals = arrayFrom<SaaSPatientCanalMeasurement>(snapshot.canals.value, "sessions");
   const profileSave = async (patch: Partial<PatientDetailType>) => {
     const current = core;
     if (!current) throw new Error("The patient profile is not available.");
@@ -287,61 +419,64 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
   return <PatientMediaProvider sdk={media}><ClinicRoleProvider role={role}>
     <PatientDrawer
       selectedPatient={selectedPatient}
+      onSubTabChange={selectSection}
       clinicName={session.clinic.displayName}
       isClosing={false}
       onClose={() => {}}
       showBackButton={false}
       patientCases={[] as Case[]}
       patientLabOrders={labOrders}
-      labs={snapshot?.suppliers.value ?? []}
+      labs={snapshot.suppliers.value}
       onUpdateOrderStatus={updateOrderStatus}
       onAssignPendingLabOrder={assignPendingOrder}
       patientXrays={xrayRows}
-      xrayLoadError={snapshot?.media.error}
+      patientXraysLoading={snapshot.media.loading}
+      xrayLoadError={snapshot.media.error}
       onMediaChanged={refresh}
       onRemoveXray={async (id, reason) => { await execute("Withdraw patient X-ray", api.withdrawMedia(id, reason)); }}
       currentPerio={currentPerio}
+      patientPeriodontalLoading={snapshot.periodontal.loading}
+      patientPeriodontalError={snapshot.periodontal.error}
       lastPerioDate={lastPerioDate}
       onSavePerioChart={periodForApiSave}
-      patientPrescriptions={snapshot?.prescriptions.value ?? []}
-      patientPrescriptionsLoading={rowLoading}
-      patientPrescriptionsError={snapshot?.prescriptions.error}
+      patientPrescriptions={snapshot.prescriptions.value}
+      patientPrescriptionsLoading={snapshot.prescriptions.loading}
+      patientPrescriptionsError={snapshot.prescriptions.error}
       onWithdrawPrescription={async (prescription, reason) => { await execute("Withdraw prescription", api.withdrawPrescription(prescription.prescriptionId, prescription.rowVersion, reason)); }}
       onCorrectPrescription={correctPrescription}
-      patientNotes={snapshot?.notes.value ?? []}
-      patientNotesLoading={rowLoading}
-      patientNotesError={snapshot?.notes.error}
+      patientNotes={snapshot.notes.value}
+      patientNotesLoading={snapshot.notes.loading}
+      patientNotesError={snapshot.notes.error}
       onCreatePatientNote={createPatientNote}
       onWithdrawPatientNote={withdrawPatientNote}
       patientTimeline={timeline}
-      patientTimelineLoading={rowLoading}
-      patientTimelineError={snapshot?.timeline.error}
+      patientTimelineLoading={snapshot.timeline.loading}
+      patientTimelineError={snapshot.timeline.error}
       onUpdatePatient={(_id, patch) => profileSave(patch)}
       followUpList={[]}
-      doctorsList={snapshot?.staff.value ?? []}
+      doctorsList={snapshot.staff.value}
       procedureCatalog={[]}
       patientCanalMeasurements={rawCanals}
-      patientCanalMeasurementsLoading={rowLoading}
-      patientCanalMeasurementsError={snapshot?.canals.error}
+      patientLabLoading={snapshot.labOrders.loading || snapshot.suppliers.loading}
+      patientLabError={snapshot.labOrders.error ?? snapshot.suppliers.error}
+      patientCanalMeasurementsLoading={snapshot.canals.loading}
+      patientCanalMeasurementsError={snapshot.canals.error}
       canViewBillingLedger={capabilities.has("patient_billing_ledger.read")}
       patientLedger={patientLedger}
-      ledgerLoading={rowLoading}
-      ledgerError={snapshot?.ledger.error}
+      ledgerLoading={snapshot.ledger.loading}
+      ledgerError={snapshot.ledger.error}
       onCorrectLedgerEntry={correctLedger}
       onReverseLedgerEntry={reverseLedger}
       onRecordPatientPayment={recordPayment}
-      patientCoreError={snapshot?.core.error}
-      patientFollowUps={snapshot?.followUps.value ?? []}
-      patientFollowUpsLoading={rowLoading}
-      patientFollowUpsError={snapshot?.followUps.error}
+      patientCoreError={snapshot.core.error}
+      patientFollowUps={snapshot.followUps.value}
+      patientFollowUpsLoading={snapshot.followUps.loading}
+      patientFollowUpsError={snapshot.followUps.error}
       onCreatePatientFollowUp={createFollowUp}
       patientTreatmentPlans={plans}
-      patientTreatmentPlansLoading={rowLoading}
-      patientTreatmentPlansError={snapshot?.plans.error}
+      patientTreatmentPlansLoading={snapshot.plans.loading}
+      patientTreatmentPlansError={snapshot.plans.error}
       onUpdateCaseStatus={changeCaseStatus}
-      patientOdontogram={arrayFrom(snapshot?.odontogram.value, "marks") as import("./types").OdontogramMark[]}
-      patientOdontogramLoading={rowLoading}
-      patientOdontogramError={snapshot?.odontogram.error}
     />
   </ClinicRoleProvider></PatientMediaProvider>;
 }

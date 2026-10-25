@@ -76,28 +76,28 @@ export class PatientApi {
     return { patients: raw.patients as PatientSummary[], total: raw.total as number, counts, nextCursor: raw.nextCursor as string | null };
   }
   context() { return this.sdk.read("/v1/patient-intakes/context").then(v => field<PatientRegistrationContext>(v, "context", isObject)); }
-  core(id: string) { return this.sdk.read("/v1/patients/" + id + "/core").then(v => field<PatientCore>(v, "patient", isCore)); }
-  plans(id: string) { return this.sdk.read("/v1/patients/" + id + "/treatment-plans").then(v => field<PatientTreatmentPlan[]>(v, "treatmentPlans", isArray)); }
-  timeline(id: string) { return this.sdk.read("/v1/patients/" + id + "/timeline").then(v => field<PatientTimelineEvent[]>(v, "timeline", isArray)); }
-  notes(id: string) { return this.sdk.read("/v1/patients/" + id + "/notes").then(v => field<PatientNote[]>(v, "notes", isArray)); }
-  prescriptions(id: string) { return this.sdk.read("/v1/patients/" + id + "/prescriptions").then(v => field<PatientPrescription[]>(v, "prescriptions", isArray)); }
-  followUps(id: string) { return this.sdk.read("/v1/patients/" + id + "/follow-ups").then(v => field<PatientFollowUp[]>(v, "followUps", isArray)); }
-  ledger(id: string, month = "", cursor = "") {
+  core(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/core", signal).then(v => field<PatientCore>(v, "patient", isCore)); }
+  plans(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/treatment-plans", signal).then(v => field<PatientTreatmentPlan[]>(v, "treatmentPlans", isArray)); }
+  timeline(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/timeline", signal).then(v => field<PatientTimelineEvent[]>(v, "timeline", isArray)); }
+  notes(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/notes", signal).then(v => field<PatientNote[]>(v, "notes", isArray)); }
+  prescriptions(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/prescriptions", signal).then(v => field<PatientPrescription[]>(v, "prescriptions", isArray)); }
+  followUps(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/follow-ups", signal).then(v => field<PatientFollowUp[]>(v, "followUps", isArray)); }
+  ledger(id: string, month = "", cursor = "", signal?: AbortSignal) {
     const params = new URLSearchParams();
     if (month) params.set("month", month);
     if (cursor) params.set("cursor", cursor);
-    return this.sdk.read("/v1/patients/" + id + "/ledger" + (params.size ? "?" + params : ""))
+    return this.sdk.read("/v1/patients/" + id + "/ledger" + (params.size ? "?" + params : ""), signal)
       .then(v => field<PatientLedger>(v, "ledger", x => isObject(x) && isObject(x.summary) && Array.isArray(x.entries)));
   }
-  media(id: string) { return this.sdk.read("/v1/patients/" + id + "/media").then(v => field<PatientMediaAsset[]>(v, "media", isArray)); }
+  media(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/media", signal).then(v => field<PatientMediaAsset[]>(v, "media", isArray)); }
   withdrawMedia(id: string, reason: string) {
     return this.sdk.command<unknown>("POST", "/v1/patient-media/" + id + "/withdraw", { reason }, isObject);
   }
-  odontogram(id: string) { return this.sdk.read("/v1/patients/" + id + "/odontogram"); }
-  periodontal(id: string) { return this.sdk.read("/v1/patients/" + id + "/periodontal-chart"); }
-  canals(id: string) { return this.sdk.read("/v1/patients/" + id + "/canal-measurements"); }
-  labOrders(id: string) { return this.sdk.read("/v1/patients/" + id + "/lab-orders"); }
-  staffReferences() { return this.sdk.read("/v1/clinic/staff-references"); }
+  odontogram(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/odontogram", signal); }
+  periodontal(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/periodontal-chart", signal); }
+  canals(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/canal-measurements", signal); }
+  labOrders(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/lab-orders", signal); }
+  staffReferences(signal?: AbortSignal) { return this.sdk.read("/v1/clinic/staff-references", signal); }
   workEntryCase(id: string) { return this.sdk.read<{ case: import("./types").WorkEntryCase }>("/v1/chief-complaints/" + id + "/work-entry").then(v => field<import("./types").WorkEntryCase>(v, "case", isObject)); }
   treatmentProtocols() { return this.sdk.read<{ treatmentProtocols: PatientTreatmentProtocolReference[] }>("/v1/treatment-protocols").then(v => field<PatientTreatmentProtocolReference[]>(v, "treatmentProtocols", isArray)); }
   addWorkEntryProtocol(id: string, input: import("./types").WorkEntryProtocolAddInput) {
@@ -112,7 +112,7 @@ export class PatientApi {
   cancelWorkEntryStage(id: string, protocolId: string, stageId: string, input: import("./types").WorkEntryStageCancelInput) {
     return this.sdk.command<{ case: import("./types").WorkEntryCase }>("POST", "/v1/chief-complaints/" + id + "/treatment-protocols/" + protocolId + "/stages/" + stageId + "/cancel", input, x => isObject(x) && isObject(x.case));
   }
-  labSuppliers() { return this.sdk.read<{ suppliers: PatientLabSupplier[] }>("/v1/clinic/suppliers?scope=lab").then(v => field<PatientLabSupplier[]>(v, "suppliers", isArray)); }
+  labSuppliers(signal?: AbortSignal) { return this.sdk.read<{ suppliers: PatientLabSupplier[] }>("/v1/clinic/suppliers?scope=lab", signal).then(v => field<PatientLabSupplier[]>(v, "suppliers", isArray)); }
   assignLabOrder(id: string, input: { supplierId: string; labWorkName: string; toothScope: string | null; shade: string | null; sentOn: string; receptionNote: string | null; expectedRowVersion: number }) {
     return this.sdk.command<{ labOrder: unknown }>("POST", "/v1/lab-orders/" + id + "/assign", input, isReceipt("labOrder"));
   }

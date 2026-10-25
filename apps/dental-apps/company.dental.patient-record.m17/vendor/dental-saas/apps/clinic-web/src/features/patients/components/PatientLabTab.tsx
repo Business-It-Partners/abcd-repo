@@ -26,6 +26,8 @@ interface PatientLabTabProps {
   /** The browser-session adapter owns this local preview id. */
   onAddLabOrder?: (newOrder: Omit<LabOrder, "id">, commandId: string) => Promise<void> | void;
   onRemoveOrder?: (id: string, reason: string) => Promise<void> | void;
+  loading?: boolean;
+  loadError?: string | null;
   patientId?: string;
   patientName?: string;
 }
@@ -38,6 +40,8 @@ export default function PatientLabTab({
   onAssignPendingLabOrder,
   onAddLabOrder,
   onRemoveOrder,
+  loading = false,
+  loadError,
   patientId = "",
   patientName = "",
 }: PatientLabTabProps) {
@@ -124,25 +128,26 @@ export default function PatientLabTab({
       </Card>
 
       {/* Unified Single Data Table for All Patient Lab Orders */}
-      <DataTable<LabOrder>
-        rows={orders}
-        rowKey={(order) => order.id}
-        noun="lab orders"
-        minWidth={980}
-        empty={<EmptyState message="No lab work recorded for this patient yet." />}
-        columns={[
-          { key: "sn", header: "S.N.", width: 45, render: (_order, index) => index + 1 },
-          { key: "work", header: "Lab work", sortable: true, value: (order) => order.procedure, render: (order) => <strong>{order.procedure}</strong> },
-          { key: "tooth", header: "Tooth", width: 70, render: (order) => order.tooth ? <span style={{ background: "#f1f5f9", padding: "2px 8px", borderRadius: "6px", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)" }}>{order.tooth}</span> : "—" },
-          { key: "lab", header: "Lab name", render: (order) => order.labName || "—" },
-          { key: "shade", header: "Shade", width: 70, render: (order) => order.shade || "—" },
-          { key: "sentDate", header: "Sent date", width: 95, sortable: true, value: (order) => order.sentDate, render: (order) => order.sentDate ? formatDateShort(order.sentDate) : "—" },
-          { key: "sent", header: "Sent", width: 56, align: "center", render: (order) => { const status = normaliseLabStatus(order.status); return statusToggle(order, "Sent", status === "Sent" || status === "Received" || status === "Fitted", "#2563eb"); } },
-          { key: "received", header: "Received", width: 76, align: "center", render: (order) => { const status = normaliseLabStatus(order.status); return statusToggle(order, "Received", status === "Received" || status === "Fitted", "#059669"); } },
-          { key: "fitted", header: "Fitted", width: 56, align: "center", render: (order) => statusToggle(order, "Fitted", normaliseLabStatus(order.status) === "Fitted", "#16a34a") },
-          { key: "actions", header: "Action", align: "right", render: (order) => <RowActions><button type="button" onClick={() => setViewingOrder(order)} className="btn btn-secondary btn-sm"><Eye size={12} /> View</button>{onUpdateOrder ? <button type="button" onClick={() => setEditingOrder(order)} className="btn btn-secondary btn-sm"><Pencil size={12} /> Edit</button> : null}{onRemoveOrder ? <button type="button" onClick={() => { setDeletingOrder(order); setRemovalReason(""); }} className="btn btn-secondary btn-sm" style={{ color: "#dc2626", borderColor: "#fca5a5" }} title="Remove lab order from active records"><Trash2 size={12} /> Remove</button> : null}</RowActions> },
-        ]}
-      />
+      {loadError ? <p role="alert">Lab orders could not be loaded. {loadError}</p> : null}
+      {loading ? <p role="status">Loading lab orders…</p> : <DataTable<LabOrder>
+          rows={orders}
+          rowKey={(order) => order.id}
+          noun="lab orders"
+          minWidth={980}
+          empty={<EmptyState message="No lab work recorded for this patient yet." />}
+          columns={[
+            { key: "sn", header: "S.N.", width: 45, render: (_order, index) => index + 1 },
+            { key: "work", header: "Lab work", sortable: true, value: (order) => order.procedure, render: (order) => <strong>{order.procedure}</strong> },
+            { key: "tooth", header: "Tooth", width: 70, render: (order) => order.tooth ? <span style={{ background: "#f1f5f9", padding: "2px 8px", borderRadius: "6px", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)" }}>{order.tooth}</span> : "—" },
+            { key: "lab", header: "Lab name", render: (order) => order.labName || "—" },
+            { key: "shade", header: "Shade", width: 70, render: (order) => order.shade || "—" },
+            { key: "sentDate", header: "Sent date", width: 95, sortable: true, value: (order) => order.sentDate, render: (order) => order.sentDate ? formatDateShort(order.sentDate) : "—" },
+            { key: "sent", header: "Sent", width: 56, align: "center", render: (order) => { const status = normaliseLabStatus(order.status); return statusToggle(order, "Sent", status === "Sent" || status === "Received" || status === "Fitted", "#2563eb"); } },
+            { key: "received", header: "Received", width: 76, align: "center", render: (order) => { const status = normaliseLabStatus(order.status); return statusToggle(order, "Received", status === "Received" || status === "Fitted", "#059669"); } },
+            { key: "fitted", header: "Fitted", width: 56, align: "center", render: (order) => statusToggle(order, "Fitted", normaliseLabStatus(order.status) === "Fitted", "#16a34a") },
+            { key: "actions", header: "Action", align: "right", render: (order) => <RowActions><button type="button" onClick={() => setViewingOrder(order)} className="btn btn-secondary btn-sm"><Eye size={12} /> View</button>{onUpdateOrder ? <button type="button" onClick={() => setEditingOrder(order)} className="btn btn-secondary btn-sm"><Pencil size={12} /> Edit</button> : null}{onRemoveOrder ? <button type="button" onClick={() => { setDeletingOrder(order); setRemovalReason(""); }} className="btn btn-secondary btn-sm" style={{ color: "#dc2626", borderColor: "#fca5a5" }} title="Remove lab order from active records"><Trash2 size={12} /> Remove</button> : null}</RowActions> },
+          ]}
+        />}
 
       {/* Add Lab Order Popup Input Form Modal */}
       {showAddModal && (

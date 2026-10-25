@@ -22,6 +22,7 @@ import { usePatientMediaSdk } from "@/saasMediaContext";
 
 interface XRayGalleryProps {
   xrays?: XrayImage[];
+  isLoading?: boolean;
   onDeleteXray: (id: string, reason: string) => Promise<void>;
 }
 
@@ -83,7 +84,7 @@ function RadiographImage({ image, alt, style, onDragStart }: RadiographImageProp
   return <img src={sourceUrl} alt={alt} style={style} onDragStart={onDragStart} />;
 }
 
-export default function XRayGallery({ xrays = [], onDeleteXray }: XRayGalleryProps) {
+export default function XRayGallery({ xrays = [], isLoading = false, onDeleteXray }: XRayGalleryProps) {
   const [items, setItems] = useState<XrayImage[]>(xrays);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -211,7 +212,7 @@ export default function XRayGallery({ xrays = [], onDeleteXray }: XRayGalleryPro
               fontWeight: "var(--fw-medium)",
             }}
           >
-            No radiographs attached to this patient record yet.
+            {isLoading ? <span role="status">Loading radiographs…</span> : "No radiographs attached to this patient record yet."}
           </div>
         </div>
       </div>
