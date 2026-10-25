@@ -3,6 +3,10 @@ export {};
 declare global {
   interface Window {
     desktop?: {
+      dockCaption: {
+        show(input: { label: string; rect: { x: number; y: number; width: number; height: number } }): void;
+        hide(): void;
+      };
       support():Promise<{ok:boolean;cancelled?:boolean}>;
       store: { action(kind: 'view', input?: undefined, generation?: number): Promise<import('../electron/distribution/contracts').StoreView>; action(kind: 'refresh' | 'cancel' | 'install' | 'uninstall' | 'update-now', input?: string, generation?: number): Promise<import('../electron/distribution/contracts').StoreResult>; artwork(appId: string, expectedSha256?: string, generation?: number): Promise<string | null>; subscribe(callback: (value: import('../electron/distribution/contracts').StoreView) => void): () => void };
       developmentApps: { view(): Promise<import('../electron/developmentApps').DevelopmentAppView> };

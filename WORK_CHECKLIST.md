@@ -1,5 +1,11 @@
 # Sajilo Dental — Work Checklist
 
+## M15 — Dock caption layering over native app views — 2026-10-25 (local source only)
+
+Dock hover captions now render through a transparent, click-through Electron child window above native app views. The overlay follows the caption bounds during dock magnification; app view bounds and app packages are unchanged. Browser preview retains its existing CSS caption, and that caption also remains a fallback if the native overlay cannot load. No Genie geometry changed.
+
+`npm run build` passes. Automated UI/runtime suites were not run for this source update. The running OS session was left untouched; the existing launcher loads this source after the next full launch. M15/G15 acceptance remains open.
+
 ## Staff, Patient Record and Work Entry Store updates — 2026-10-25
 
 Built and published Staff 1.0.4 (salary-history validation fix) at Cloudflare staging sequence 99, Patient Record 1.0.11 (request-capacity fix) at sequence 100, and Work Entry 1.0.7 (native picker and Back-navigation app changes) at sequence 101. The final signed public readback passed 33 checks across all ten M17 packages, including exact bytes, signatures and grants plus isolated install/launch/uninstall. Per-app receipts are in the M17 evidence ledger. These releases are in the staging App Store; they were not installed into the user's running OS, and no OS restart, production release or backend change was performed.

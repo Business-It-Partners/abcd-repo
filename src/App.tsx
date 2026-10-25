@@ -34,6 +34,8 @@ const fixtures = new URLSearchParams(location.search).get('prototypeFixtures') =
 const makeIcons = (ids: string[], titles: Record<string,string>) => ids.map(id => ({ id, label: titles[id] ?? windowSpec(id).title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
 const previewId = (id: WindowId) => id === 'studio' ? 'preview' : `${id}-preview`;
 const isPrototype = (id: WindowId) => id === 'studio' || id === 'records' || id === 'followups';
+type DockCaptionSource = 'pointer' | 'focus';
+type DockCaptionActivity = { button: HTMLButtonElement; label: string; pointer: boolean; focus: boolean };
 function useDock(size: { width: number; height: number }, frozen: boolean, specs: DockSpec[], scale: number) {
   const [field, setField] = useState({ x: null as number | null, intensity: 0 });
   const motion = useRef({ cursor: new Spring(1200), intensity: new Spring(700), inside: false, raf: 0, previous: 0 });
@@ -77,6 +79,41 @@ export function App({ session, sessionControls, onRequestClose, onRequestSignOut
 function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
+  const dockCaptionActivity = useRef<DockCaptionActivity | undefined>(undefined);
+  const refreshDockCaption = useCallback(() => {
+    if (!window.desktop?.dockCaption) return;
+    const active = dockCaptionActivity.current;
+    const caption = active?.button.querySelector<HTMLElement>('.dock-caption');
+    if (!active || !caption || !active.button.isConnected) return;
+    const rect = caption.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    window.desktop.dockCaption.show({ label: active.label, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } });
+  }, []);
+  useLayoutEffect(() => {
+    if (dockCaptionActivity.current && !dockCaptionActivity.current.button.isConnected) {
+      dockCaptionActivity.current = undefined;
+      window.desktop?.dockCaption.hide();
+      return;
+    }
+    refreshDockCaption();
+  });
+  const showDockCaption = useCallback((button: HTMLButtonElement, label: string, source: DockCaptionSource) => {
+    const active = dockCaptionActivity.current?.button === button
+      ? dockCaptionActivity.current
+      : { button, label, pointer: false, focus: false };
+    active.label = label;
+    active[source] = true;
+    dockCaptionActivity.current = active;
+    refreshDockCaption();
+  }, [refreshDockCaption]);
+  const hideDockCaption = useCallback((button: HTMLButtonElement, source: DockCaptionSource) => {
+    const active = dockCaptionActivity.current;
+    if (!active || active.button !== button) return;
+    active[source] = false;
+    if (active.pointer || active.focus) { refreshDockCaption(); return; }
+    dockCaptionActivity.current = undefined;
+    window.desktop?.dockCaption.hide();
+  }, [refreshDockCaption]);
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups } = controllers;
@@ -103,6 +140,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
+  useEffect(() => () => { dockCaptionActivity.current = undefined; window.desktop?.dockCaption.hide(); }, []);
   useEffect(()=>{
     let alive=true;
     void window.desktop?.developmentApps.view().then(view=>{if(alive)setDevelopmentApps(view);}).catch(()=>{});
@@ -333,12 +371,12 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
           const controller = allControllers[previewApp];
           const dockLabel = icons.find(icon => icon.id === previewApp)?.label ?? titleByWindow[previewApp] ?? previewApp;
           const title = state.windows[previewApp]?.title ?? dockLabel;
-          return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
+          return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onPointerEnter={event=>showDockCaption(event.currentTarget,dockLabel,'pointer')} onPointerLeave={event=>hideDockCaption(event.currentTarget,'pointer')} onFocus={event=>showDockCaption(event.currentTarget,dockLabel,'focus')} onBlur={event=>hideDockCaption(event.currentTarget,'focus')} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
             {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{dockLabel}</span>
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
-      return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostTransitioning} onClick={()=>icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
+      return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostTransitioning} onPointerEnter={event=>showDockCaption(event.currentTarget,icon.label,'pointer')} onPointerLeave={event=>hideDockCaption(event.currentTarget,'pointer')} onFocus={event=>showDockCaption(event.currentTarget,icon.label,'focus')} onBlur={event=>hideDockCaption(event.currentTarget,'focus')} onClick={()=>icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
           {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
           {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;

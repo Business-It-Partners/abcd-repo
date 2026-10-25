@@ -8,6 +8,10 @@ function publishHostTransition(transitioning: boolean) {
 }
 ipcRenderer.on('window:host-transition', (_event, value: boolean) => publishHostTransition(value));
 contextBridge.exposeInMainWorld('desktop', {
+  dockCaption: {
+    show: (input: { label: string; rect: { x: number; y: number; width: number; height: number } }) => ipcRenderer.send('dock-caption:show', input),
+    hide: () => ipcRenderer.send('dock-caption:hide'),
+  },
   support:()=>ipcRenderer.invoke('support:action','preview'),
   store: {
     action: (kind: string, input?: unknown, generation?: number) => ipcRenderer.invoke('store:action', kind, input, generation),

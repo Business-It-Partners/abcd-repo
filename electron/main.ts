@@ -3,6 +3,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import {writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
+import { DockCaptionOverlay } from './host/dockCaptionOverlay';
 import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
@@ -28,6 +29,7 @@ let diagnostics:DiagnosticStore|undefined;
 let recoveryWindow:BrowserWindow|undefined;
 let hostWindow: BrowserWindow | undefined;
 let runtime: FixtureRuntime | undefined;
+let dockCaptionOverlay: DockCaptionOverlay | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
 let developmentApps: DevelopmentAppService | undefined;
@@ -61,7 +63,7 @@ const identityBypass = trustedTest && !identityFixture && !app.commandLine.hasSw
 let identity: SessionManager | undefined;
 const canUseWorkspace = () => identityBypass || identity?.view().phase === 'ready';
 const identityView = (): SessionView => identity?.view() ?? { phase: 'ready', generation: 1, userLabel: '', clinicLabel: '', role: '', rememberAvailable: false, remembered: false, message: 'Private synthetic regression mode.', mode: 'demo-fixture' };
-const isShell = (event: Electron.IpcMainInvokeEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
+const isShell = (event: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => !!hostWindow && event.sender === hostWindow.webContents && event.senderFrame === event.sender.mainFrame;
 let osStore: OsStateStore;
 let localFiles: LocalFileService | undefined;
 let filePicker: FilePickerCoordinator | undefined;
@@ -88,6 +90,8 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
   });
   hostWindow = win;
+  const captionOverlay = new DockCaptionOverlay(win, path.join(__dirname, 'dockCaptionOverlayPreload.js'), path.join(__dirname, '../dist/dock-caption.html'));
+  dockCaptionOverlay = captionOverlay;
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,developmentApps,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
   if(filePicker)runtime?.setFilePicker(filePicker);
@@ -135,7 +139,7 @@ function createWindow() {
   });
   win.on('enter-full-screen', () => { if (restoring) settleRestore(); });
   win.on('resize', () => { if (restoring) settleRestore(); });
-  win.on('closed', () => { if (settleTimer) clearTimeout(settleTimer); });
+  win.on('closed', () => { if (settleTimer) clearTimeout(settleTimer); captionOverlay.dispose(); if(dockCaptionOverlay===captionOverlay)dockCaptionOverlay=undefined; });
   activateExisting = () => {
     if (win.isDestroyed()) return;
     if (win.isMinimized() || transitioning) {
@@ -192,6 +196,14 @@ ipcMain.handle('window:control', (event, action: unknown) => {
     win.minimize();
   }
   else throw new Error('Unknown control');
+});
+ipcMain.on('dock-caption:show', (event, input: unknown) => {
+  if (!isShell(event)) return;
+  dockCaptionOverlay?.show(input);
+});
+ipcMain.on('dock-caption:hide', event => {
+  if (!isShell(event)) return;
+  dockCaptionOverlay?.hide();
 });
 // Capture only this application's main frame, in device-independent pixels.
 ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknown) => {
