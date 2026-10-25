@@ -166,7 +166,10 @@ export async function verifyRuntime(profileArgs, reportName) {
   check('storage is separated by app',await beta.evaluate(()=>localStorage.getItem('isolation'))===null);
   check('forged report rejected',await beta.evaluate(()=>{try{window.dentalApp.report({dirty:false,modal:false,id:'studio'});return false;}catch{return true;}}));
   check('network and cross-origin fetch denied',await beta.evaluate(async()=>{for(const url of ['http://127.0.0.1:9/','dental-fixture://alpha/app.js','file:///etc/passwd']){try{await fetch(url);return false;}catch{}}return true;}));
-  await beta.evaluate(()=>window.open('https://example.com'));check('popup denied',app.context().pages().length===3);
+  const popupBaseline=await app.evaluate(({BrowserWindow,webContents})=>({windows:BrowserWindow.getAllWindows().map(win=>win.id),contents:webContents.getAllWebContents().map(wc=>wc.id)}));
+  await beta.evaluate(()=>window.open('https://example.com'));await new Promise(resolve=>setTimeout(resolve,100));
+  const popupAfter=await app.evaluate(({BrowserWindow,webContents})=>({windows:BrowserWindow.getAllWindows().map(win=>win.id),contents:webContents.getAllWebContents().map(wc=>wc.id)}));
+  check(`popup denied (${JSON.stringify({popupBaseline,popupAfter})})`,popupAfter.windows.join(',')===popupBaseline.windows.join(',')&&popupAfter.contents.join(',')===popupBaseline.contents.join(','));
   check('unknown runtime IDs/layouts denied',await shell.evaluate(async()=>{try{await window.desktop.runtime.sync([{id:'forged'}]);return false;}catch{return true;}}));
   await beta.getByLabel('Your draft').fill('beta-kept-in-memory');await shell.waitForFunction(()=>document.querySelector('[data-runtime="records"]').dataset.dirty==='true');
   await beta.getByRole('button',{name:'Open local dialog'}).click();await beta.getByRole('dialog').waitFor();
