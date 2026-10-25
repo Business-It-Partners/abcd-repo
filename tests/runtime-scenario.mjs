@@ -153,7 +153,7 @@ export async function verifyRuntime(profileArgs, reportName) {
   await inactiveMirror.waitFor();
   await shell.waitForFunction(()=>{const image=document.querySelector('[data-runtime="studio"] .isolated-mirror');return image?.complete&&image.naturalWidth>0;});
   check('covered app preview keeps native capture size within the resize gutter, without CSS blur',await inactiveMirror.evaluate(hasNativeResolution));
-  check('covered app window keeps its existing shadow',await shell.locator('[data-testid="studio-window"]').evaluate(frame=>getComputedStyle(frame).boxShadow!=='none'));
+  check('covered app window keeps its existing shadow',await shell.locator('[data-window-id="studio"]').evaluate(frame=>{const shadow=frame.previousElementSibling;return shadow?.classList.contains('studio-window-shadow')&&getComputedStyle(shadow).boxShadow!=='none'&&getComputedStyle(shadow).visibility==='visible';}));
   topology=await native();check('two isolated renderer processes and separate shell',topology.apps.length===2&&new Set([topology.shell,...topology.apps.map(w=>w.pid)]).size===3);
   check('sandbox/context isolation and no Node',topology.apps.every(w=>w.prefs.sandbox&&w.prefs.contextIsolation&&!w.prefs.nodeIntegration));
   check('apps have no Node, shell bridge or Files transfer API',await beta.evaluate(()=>typeof window.require==='undefined'&&typeof window.desktop==='undefined'&&Object.keys(window.dentalApp).sort().join()==='cancel,connect,getAppInfo,navigation,onModuleSelected,openAppExplorer,report,request'));
