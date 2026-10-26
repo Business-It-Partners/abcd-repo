@@ -35,10 +35,23 @@ export async function verifyIdentity(profileArgs,reportName){
   await shell.screenshot({path:path.join(loginArtifacts,'sajilo-dental-login-compact.png')});
   await shell.setViewportSize(loginViewport);
   check('login window exposes minimize and close controls without a status bar',await shell.getByRole('group',{name:'Window controls'}).getByRole('button').count()===2&&await shell.locator('.desktop-statusbar').count()===0);
+  // The dock-caption overlay is a separate BrowserWindow; locate the native
+  // shell by its loaded URL and parentless ownership, never by list order.
+  const nativeShellUrl=await shell.url();
   await shell.getByRole('button',{name:'Minimize Sajilo Dental'}).click();
   await shell.waitForTimeout(300);
-  check('top-right minimize control minimizes the native Sajilo window',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0]?.isMinimized())===true);
-  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0]?.restore());
+  const nativeShellState=await app.evaluate(({BrowserWindow},url)=>{
+    const windows=BrowserWindow.getAllWindows();
+    const matches=windows.filter(win=>!win.getParentWindow()&&win.webContents.getURL()===url);
+    return {matches:matches.length,minimized:matches[0]?.isMinimized()??false,topLevel:windows.filter(win=>!win.getParentWindow()).length};
+  },nativeShellUrl);
+  if(nativeShellState.matches!==1||!nativeShellState.minimized)console.log('Native shell minimize diagnostics',JSON.stringify(nativeShellState));
+  check('top-right minimize control minimizes the native Sajilo window',nativeShellState.matches===1&&nativeShellState.minimized);
+  await app.evaluate(({BrowserWindow},url)=>{
+    const nativeShell=BrowserWindow.getAllWindows().find(win=>!win.getParentWindow()&&win.webContents.getURL()===url);
+    if(!nativeShell)throw Error('Native Sajilo shell not found for restore');
+    nativeShell.restore();
+  },nativeShellUrl);
   await shell.waitForLoadState('domcontentloaded');
   await shell.getByRole('button',{name:'Fill development sign-in',exact:true}).click();
   await shell.waitForFunction(()=>document.querySelector('input[type="email"]')?.value==='dev-login@fixture.invalid'&&document.querySelector('input[type="password"]')?.value==='synthetic-dev-fill-only');

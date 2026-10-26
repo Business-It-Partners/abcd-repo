@@ -307,7 +307,11 @@ try {
     check(`${kind} ${mismatch} reaches the real staging Worker and is rejected with HTTP 422`, contentRequests.length === 1 && contentRequests[0].status === 422 && contentRequests[0].code === (kind === 'patient_media' ? 'invalid_patient_media' : 'invalid_staff_document'));
     check(`${kind} ${mismatch} does not dispatch finalisation and leaves the app result unknown`, finaliseRequests.length === 0 && !result.ok && result.error.code === 'UNKNOWN_OUTCOME' && result.error.outcome === 'unknown');
     const cancelled = await cancelHostUpload(appId, transfer.transferId, transfer.key);
-    check(`${kind} ${mismatch} pending intent is resolved through the existing SaaS abort action`, cancelled.ok && cancelled.value.cancelled === true && cancelled.value.committed === false);
+    const abortConfirmed = cancelled.ok && cancelled.value.cancelled === true && cancelled.value.committed === false;
+    check(`${kind} ${mismatch} pending intent is resolved through the existing SaaS abort action`, abortConfirmed);
+    // A missing active-list file does not establish pending-intent or R2 cleanup.
+    // Stop before allocating any subsequent staging transfer if abort is 404.
+    if (!abortConfirmed) throw Error('SaaS abort unconfirmed: inspect exact staging intent before new writes');
     if (!id) throw Error('Staging Worker did not return the bounded synthetic upload identity');
     const rows = await activeList(kind, recordId);
     const idField = kind === 'patient_media' ? 'mediaAssetId' : 'staffDocumentId';

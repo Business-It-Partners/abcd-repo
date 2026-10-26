@@ -1,5 +1,6 @@
 # Dental OS V1 — Master Roadmap
 
+**M15.11 correction checkpoint — 2026-10-26:** Focused Windows [run 40254615828](https://github.com/Business-It-Partners/abcd-repo/actions/runs/40254615828) on `76fd5b6e42a60476ab7a36581fddcaa9b6f929f9` **FAILED** at the native identity-window minimize assertion after other focused Windows checks passed. The old test used `BrowserWindow.getAllWindows()[0]`, which may select the independent dock-caption child instead of the OS shell. A test-only fix selects the parentless native shell by the loaded page URL; a corrected Windows pass is **PENDING**. The earlier staging synthetic wrong-MIME upload was rejected (422), but SaaS abort returned 404; exact intent and storage cleanup remain **UNCONFIRMED**, so no further staging writes have been made and subsequent cases are **NOT RUN**. Independent technical review is **NOT PERFORMED** (self-review does not qualify). M15.11 and G12/G13/G15 remain OPEN; M15.12, owner manual review, main Dental OS merge, production and deploy are untouched.
 **Purpose:** execution map for the OS platform and its first-party app delivery milestones. Baseline: 2026-10-15; milestone sequence amended 2026-10-19, 2026-10-20, 2026-10-21 and 2026-10-22.
 
 ## Authority
