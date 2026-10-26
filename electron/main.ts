@@ -117,6 +117,7 @@ function createWindow() {
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   let transitioning = false, restoring = false, wantsFocus = false;
   let restoreAttempts = 0;
+  let restoreFullscreenRequested = false;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let shellUnresponsiveTimer: ReturnType<typeof setTimeout> | undefined;
   let shellLoadTimer: ReturnType<typeof setTimeout> | undefined;
@@ -226,8 +227,17 @@ function createWindow() {
   const settleRestore = () => {
     if (settleTimer) clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
-      if (win.isDestroyed() || win.isMinimized()) return;
-      // Fullscreen is asynchronous on some hosts; resume only after it settles.
+      if (win.isDestroyed()) return;
+      // Win32 may emit restore before the minimized flag clears. Do not leave
+      // renderer layout suspended indefinitely after a transient native state.
+      if (win.isMinimized()) {
+        if (++restoreAttempts < 100) settleRestore();
+        return;
+      }
+      if (!win.isFullScreen() && !restoreFullscreenRequested) {
+        restoreFullscreenRequested = true;
+        win.setFullScreen(true);
+      }
       if (!win.isFullScreen() && ++restoreAttempts < 100) { settleRestore(); return; }
       restoring = false;
       publish(false);
@@ -275,19 +285,19 @@ function createWindow() {
   win.on('minimize', () => {
     if (settleTimer) clearTimeout(settleTimer);
     restoring = false;
+    restoreFullscreenRequested = false;
     // Hide child WebContents without a fresh screenshot; the host window is leaving the screen.
     runtime?.hideAll(false);
     publish(true);
   });
   win.on('restore', () => {
     if (restoring || !transitioning && win.isFullScreen()) return;
-    restoring = true; restoreAttempts = 0;
+    restoring = true; restoreAttempts = 0; restoreFullscreenRequested = false;
     publish(true);
-    // Do not setBounds/focus here: either can reenter the host restore event.
-    // Defer fullscreen until the native restore callback has completed.
+    // Do not setBounds/focus here: either can reenter the native restore event.
+    // Bounded settlement handles a transient minimized flag after callback.
     setImmediate(() => {
-      if (win.isDestroyed() || win.isMinimized()) return;
-      if (!win.isFullScreen()) win.setFullScreen(true);
+      if (win.isDestroyed()) return;
       settleRestore();
     });
   });

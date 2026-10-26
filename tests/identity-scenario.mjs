@@ -38,6 +38,10 @@ export async function verifyIdentity(profileArgs,reportName){
   // The dock-caption overlay is a separate BrowserWindow; locate the native
   // shell by its loaded URL and parentless ownership, never by list order.
   const nativeShellUrl=await shell.url();
+  await shell.evaluate(()=>{
+    window.__identityHostTransitionEvents=[];
+    window.desktop?.onHostTransition(value=>window.__identityHostTransitionEvents.push(value));
+  });
   await shell.getByRole('button',{name:'Minimize Sajilo Dental'}).click();
   await shell.waitForTimeout(300);
   const nativeShellState=await app.evaluate(({BrowserWindow},url)=>{
@@ -52,6 +56,21 @@ export async function verifyIdentity(profileArgs,reportName){
     if(!nativeShell)throw Error('Native Sajilo shell not found for restore');
     nativeShell.restore();
   },nativeShellUrl);
+  // Native Windows minimize/restore must release renderer layout before
+  // viewport-dependent Dock assertions. Do not fake the transition state.
+  try {
+    await shell.waitForFunction(()=>{
+      const events=window.__identityHostTransitionEvents??[];
+      const suspended=events.indexOf(true);
+      return suspended>=0&&events.slice(suspended+1).includes(false);
+    },null,{timeout:12000});
+  } catch(error) {
+    console.error('Native host restore failed to resume shell layout',JSON.stringify({
+      events:await shell.evaluate(()=>window.__identityHostTransitionEvents).catch(()=>[])
+    }));
+    throw error;
+  }
+  check('native Windows restore releases the shell layout transition');
   await shell.waitForLoadState('domcontentloaded');
   await shell.getByRole('button',{name:'Fill development sign-in',exact:true}).click();
   await shell.waitForFunction(()=>document.querySelector('input[type="email"]')?.value==='dev-login@fixture.invalid'&&document.querySelector('input[type="password"]')?.value==='synthetic-dev-fill-only');
