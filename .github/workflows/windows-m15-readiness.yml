@@ -42,6 +42,8 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content artifacts/windows-build.log
           exit $code
+      - name: Windows protected credential storage (real Electron safeStorage)
+        run: npm run test:windows-safe-storage
       - name: Windows shell and app failure containment
         run: |
           node tests/runtime-ci.mjs

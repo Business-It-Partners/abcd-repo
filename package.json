@@ -56,7 +56,8 @@
     "test:staging-onboarding-desktop": "node tools/run-ui-test.mjs tests/staging-onboarding-desktop.mjs",
     "test:staging-media-dock": "node tools/run-ui-test.mjs tests/media-staging-dock.mjs",
     "test:app-failure-containment": "node tools/run-ui-test.mjs tests/app-failure-containment.mjs",
-    "test:resource-pressure": "node tools/run-ui-test.mjs tests/resource-pressure.mjs"
+    "test:resource-pressure": "node tools/run-ui-test.mjs tests/resource-pressure.mjs",
+    "test:windows-safe-storage": "node tools/desktop-release/windows-safe-storage/run.mjs"
   },
   "keywords": [],
   "author": "Sajilo Dental",

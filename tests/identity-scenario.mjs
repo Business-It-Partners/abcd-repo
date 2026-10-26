@@ -72,7 +72,30 @@ export async function verifyIdentity(profileArgs,reportName){
   const menuBar=shell.locator('.desktop-statusbar');const menuBarStyle=await menuBar.evaluate(e=>({height:e.getBoundingClientRect().height,color:getComputedStyle(e).color,background:getComputedStyle(e).backgroundImage,reduced:matchMedia('(prefers-reduced-transparency: reduce)').matches,items:[...e.querySelectorAll('.statusbar-menu > button')].map(button=>button.innerText)}));const chromeCss=await fs.readFile(path.join(root,'src/DesktopChrome.css'),'utf8');const menuBarOkay=menuBarStyle.height>=34&&menuBarStyle.height<=38&&menuBarStyle.color==='rgb(32, 44, 49)'&&menuBarStyle.background.includes('linear-gradient')&&(chromeCss.includes('backdrop-filter:blur(28px) saturate(170%)')||menuBarStyle.reduced)&&menuBarStyle.items.join('|')==='Apps|Windows|Help';if(!menuBarOkay)console.log('Menu bar diagnostics',JSON.stringify({menuBarStyle,expectedGlassRule:chromeCss.includes('backdrop-filter:blur(28px) saturate(170%)')}));check('menu bar uses the Sajilo light frosted-glass style and expected top-level controls',menuBarOkay);
   check('clinic widget uses the authenticated clinic, user and role',await shell.locator('.clinic-widget-copy').innerText()==='Synthetic clinic\nfirst@fixture.invalid\nDoctor');
   check('status bar and time card expose current date/time',!!await shell.locator('.statusbar-date').getAttribute('datetime')&&!!await shell.locator('.statusbar-time').innerText()&&!!(await shell.locator('.clock-widget-time').getAttribute('aria-label'))?.startsWith('Current time '));
-  await shell.getByRole('button',{name:'Open apps catalog'}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible');check('menu-bar Apps opens the signed-in app catalog');await shell.getByRole('button',{name:'Close App Store',exact:true}).click();await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='closed');await shell.getByRole('button',{name:'Show open windows'}).click();await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='true');check('menu-bar Windows opens the shared window overview');await shell.keyboard.press('Escape');await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='false');
+  await shell.getByRole('button',{name:'Open apps catalog'}).click();
+   try {
+     await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='visible',null,{timeout:10000});
+   } catch(error) {
+     // Preserve the genuine open-window requirement; distinguish a stuck native
+     // overlay / modal / reducer gate from a missing or closed Store window.
+     const diagnostic=await shell.evaluate(()=>({
+       store:[...document.querySelectorAll('[data-window-id="store"]')].map(node=>({phase:node.dataset.phase,visibility:getComputedStyle(node).visibility,hidden:node.getAttribute('aria-hidden')})),
+       windows:[...document.querySelectorAll('[data-window-id]')].filter(node=>node.dataset.phase!=='closed').map(node=>({id:node.dataset.windowId,phase:node.dataset.phase})).slice(0,12),
+       dialog:[...document.querySelectorAll('[role="dialog"]')].filter(node=>node.getAttribute('aria-hidden')!=='true').map(node=>node.textContent?.trim().slice(0,120)).slice(0,3),
+       disabled:document.querySelector('button[aria-label="Open apps catalog"]')?.disabled??null,
+       overview:document.querySelector('main')?.dataset.overview
+     })).catch(()=>({unavailable:true}));
+     console.error('Windows Apps menu catalog did not open; bounded diagnostic:',JSON.stringify(diagnostic));
+     throw error;
+   }
+   check('menu-bar Apps opens the signed-in app catalog');
+   await shell.getByRole('button',{name:'Close App Store',exact:true}).click();
+   await shell.waitForFunction(()=>document.querySelector('[data-window-id="store"]')?.dataset.phase==='closed');
+   await shell.getByRole('button',{name:'Show open windows'}).click();
+   await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='true');
+   check('menu-bar Windows opens the shared window overview');
+   await shell.keyboard.press('Escape');
+   await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='false');
   const nepaliCalendar=shell.locator('.nepali-calendar-grid'),gregorianCalendar=shell.locator('.gregorian-calendar-grid');
   const widgetPlacement=await shell.evaluate(()=>{const box=(selector)=>document.querySelector(selector).getBoundingClientRect();const updates=box('.app-updates-widget');return{updatesTop:updates.top,calendarsBottom:Math.max(box('.nepali-calendar-widget').bottom,box('.time-widget').bottom,box('.gregorian-calendar-widget').bottom)}});
   check('calendar and time widgets remain, with the App Updates widget below them',await shell.locator('.desktop-widget-collection .desktop-widget').count()===4&&await shell.getByRole('region',{name:'Nepali calendar'}).isVisible()&&await shell.getByRole('region',{name:'Local time'}).isVisible()&&await shell.getByRole('region',{name:'English calendar'}).isVisible()&&await shell.getByRole('region',{name:'App updates'}).isVisible()&&widgetPlacement.updatesTop>=widgetPlacement.calendarsBottom&&await shell.locator('.calendar-today-line').count()===0);

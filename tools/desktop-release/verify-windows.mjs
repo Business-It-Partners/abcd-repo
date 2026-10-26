@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { listPackage, extractFile } from '@electron/asar';
+import { normalizeAsarEntry } from './asar-paths.mjs';
 const root=path.resolve(import.meta.dirname,'../..'),release=path.join(root,'release/windows');
 const version=JSON.parse(readFileSync(path.join(root,'package.json'))).version;
 const installer=path.join(release,`Sajilo-Dental-Setup-${version}-x64.exe`);
@@ -14,7 +15,9 @@ const check=(name,value)=>{assert.ok(value,name);checks.push(name);};
 function peMachine(file){const data=readFileSync(file);assert.equal(data.toString('ascii',0,2),'MZ');const pe=data.readUInt32LE(0x3c);assert.equal(data.readUInt32LE(pe),0x4550);return data.readUInt16LE(pe+4);}
 check('Application is a Windows x64 PE executable',peMachine(exe)===0x8664);
 check('Installer is a Windows PE executable',peMachine(installer)===0x14c);
-const entries=listPackage(archive),tops=[...new Set(entries.map(entry=>entry.split('/')[1]))];
+// ASAR paths can use Windows backslashes. Canonicalize (and reject traversal)
+// before applying allowlists and checking for sensitive bundled files.
+const entries=listPackage(archive).map(normalizeAsarEntry),tops=[...new Set(entries.map(entry=>entry.split('/')[1]))];
 check('Package contains only allowlisted application and dependency roots',tops.every(top=>['node_modules','assets','dist-electron','dist','package.json'].includes(top)));
 check('No repository credentials or environment files are included',!entries.some(entry=>/(^|\/)(serviceAccountKey\.json|\.env(?:\..+)?|[^/]+\.(?:pem|key))$/.test(entry)));
 const metadata=JSON.parse(extractFile(archive,'package.json'));
