@@ -44,7 +44,17 @@ export async function verifyRuntime(profileArgs, reportName) {
    // sources so the test exercises the same native mouse path as a user.
    const source='using System; using System.Runtime.InteropServices; public static class DentalCiPointer { [DllImport("user32.dll", SetLastError=true)] public static extern bool SetCursorPos(int x,int y); [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr value); }';
    const script=`$ErrorActionPreference='Stop'; Add-Type -TypeDefinition '${source}'; [void][DentalCiPointer]::SetProcessDpiAwarenessContext([IntPtr]::new(-4)); if(-not [DentalCiPointer]::SetCursorPos(${point.physical.x},${point.physical.y})){throw 'Native CI pointer move failed'}`;
-   execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:10000,stdio:'pipe'});
+   // On hosted Windows runners, cold PowerShell startup and Add-Type (C#
+   // compilation) can exceed 10s under CPU pressure. Retain the native pointer
+   // assertion; do not substitute a CDP-only input or silently ignore a failure.
+   try {
+    execFileSync('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:30000,stdio:'pipe'});
+   } catch(error) {
+    console.error('Windows native-pointer helper failed',JSON.stringify({
+     code:error?.code??null,signal:error?.signal??null,status:error?.status??null,timeoutMs:30000
+    }));
+    throw error;
+   }
    const actual=await app.evaluate(({screen})=>screen.getCursorScreenPoint());
    assert.ok(Math.abs(actual.x-point.dip.x)<=2&&Math.abs(actual.y-point.dip.y)<=2,'OS cursor must match injected runtime input');
    nativePointerMoves.push({host:host??'shell',...point,actual});
