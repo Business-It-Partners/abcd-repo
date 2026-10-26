@@ -1,4 +1,4 @@
-name: M15 Windows readiness validation
+name: M15 cross-platform readiness validation
 on:
   push:
     branches: ['codex/m15-readiness']
@@ -85,3 +85,26 @@ jobs:
             artifacts/identity-gate.png
           if-no-files-found: warn
           retention-days: 30
+
+  linux-m15:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate documentation
+        run: python3 tools/check-dental-docs.py
+      - name: Build test fixtures
+        run: npm run pretest
+      - name: Run Linux unit and integration checks
+        run: npm test -- --maxWorkers=1 --no-file-parallelism
+      - name: Typecheck and build Linux source
+        run: npm run build

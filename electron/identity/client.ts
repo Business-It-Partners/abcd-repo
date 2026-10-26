@@ -107,7 +107,7 @@ export class FirebaseClient implements AuthClient {
       method: 'PUT',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: JSON.stringify(body),
-    }, signal);
+    }, signal, 'clinic-session');
     const workspace = response.workspace as Record<string, unknown> | undefined;
     if (!workspace || workspace.role !== role) throw new AuthFailure('unavailable');
   }
