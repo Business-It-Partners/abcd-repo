@@ -50,6 +50,9 @@ jobs:
       # do not consume resource-pressure and integration CI minutes.
       - name: Windows saved identity and session recovery
         run: node tests/identity-ci.mjs
+      # Run integrated business-flow checks before the long resource samples.
+      - name: Windows integrated shell and API contract
+        run: node tests/integration-ci.mjs
       - name: Windows shell and app failure containment
         run: |
           node tests/runtime-ci.mjs
@@ -62,8 +65,6 @@ jobs:
           node tests/resources-ci.mjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node tests/resources-limit-ci.mjs
-      - name: Windows integrated shell and API contract
-        run: node tests/integration-ci.mjs
       - name: Retain M15 evidence
         if: always()
         uses: actions/upload-artifact@v4
