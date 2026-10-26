@@ -36,6 +36,7 @@ const definitions = {
   },
   'company.dental.lab-tracker.m17': { title: 'Lab Tracker', moduleIds: ['lab-tracker', 'lab-suppliers'], family: 'clinic.app.lab-tracker' },
   'company.dental.staff.m17': { title: 'Staff', moduleIds: ['staff'], family: 'clinic.app.staff' },
+  'company.dental.user-management.m17': { title: 'User Management', moduleIds: ['user-management'], family: 'clinic.app.user-management' },
 };
 const [guard, keyInput, rawSequence, appId, outputInput, catalogueInput, policyInput, ...modes] = process.argv.slice(2);
 const sequence = Number(rawSequence);

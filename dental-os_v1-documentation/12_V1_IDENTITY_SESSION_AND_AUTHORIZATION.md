@@ -12,6 +12,18 @@ Lock hides sensitive views/previews and gates interactions. Logout invalidates l
 
 Worker authorization remains mandatory on every request. A valid Firebase token or local capability list is not sufficient authority. Desktop app capability enforcement is a local boundary; if server-verifiable app identity is later needed, add a designed backend mechanism rather than trusting a client app-ID header.
 
+User Management is shown only to a current admin profile with `clinic_users.manage`; the existing Worker checks that capability again on each account operation. The role and capability come from the current authenticated profile, not an app-owned local user record.
+
+## Clinic workspace role switching — M15 implementation
+
+The Clinic user’s stored account role is unchanged when moving between temporary workspaces. The Worker returns `accountRole`, active `role`, and allowed `workspaceRoles` from `/v1/me`; the OS uses this response for the status-bar **Switch role** menu, app visibility and capabilities. Admin accounts can choose Admin, Doctor or Reception. Doctor and Reception accounts can switch between Doctor and Reception, but cannot enter Admin.
+
+For V1, Admin does not configure a PIN before leaving the Admin workspace. Returning to Admin requires the fixed four-digit PIN `9876`. The OS never persists the entered PIN; the Worker verifies it and rate-limits invalid attempts. Admin-created PIN setup is deferred to V2. The account role still controls which workspaces are allowed, so a Doctor or Reception account cannot enter Admin by supplying the PIN. See the Dental SaaS `SYS-0014` contract for the current lockout policy.
+
+The OS sends role/PIN operations only to the fixed Worker endpoint `PUT /v1/clinic/workspace-role`; bearer credentials remain in the trusted host process. The PIN is included only when returning to Admin. After a successful role change, the host invalidates the prior session generation, app runtimes and capabilities, then resolves `/v1/me` again before restoring access. A role is never saved as an independent local authority. Switching warns that open apps close and unfinished local work can be lost; a pending or uncertain clinic write blocks the transition.
+
+The fixed-PIN Worker contract is deployed to Cloudflare staging on `cloudfare-staging` commit `e802b6ac4d651f1708f4331eb2a67729afa3c8b1` ([successful deploy workflow](https://github.com/Business-It-Partners/dental-saas/actions/runs/40268063042)). Staging `/health` returned 200 with `environment: cloudfare-staging`; unauthenticated `/v1/me` returned the expected 401. This change adds no database migration and reuses the existing lockout-counter table. No clinic credentials were available for authenticated live-switch testing; Worker behavior is covered by its service/controller tests, while the OS client is covered by private session and UI fixtures. Production was not changed.
+
 ## Existing staging identity
 
 Reuse the Firebase identity and Worker access configuration belonging to the verified `fewa_demo` staging setup. Do not create a second identity system, modify production users/settings, or add OS-only duplicates of existing identity routes. Confirm Firebase project/API/Worker alignment before integration; never fall back to production to bypass staging login failure. Retain separate Super Admin and clinic authorization. See [staging/resource policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).

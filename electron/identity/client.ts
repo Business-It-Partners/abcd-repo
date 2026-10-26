@@ -1,15 +1,17 @@
 import { staging } from '../sdk/environment';
 import { text } from '../sdk/contracts';
 import type { ClinicSessionContext } from '../sdk/contracts';
+import { isClinicRole, type ClinicRole } from './contracts';
 export type { ClinicSessionContext } from '../sdk/contracts';
 // Firebase client API key is public project configuration, not an administrative credential.
 export const firebaseApiKey = 'AIzaSyDA9f3oRA07zV4YdtF7P7ZUVY6iScEku1c';
 export type Tokens = { idToken: string; refreshToken: string; uid: string; expiresAt: number };
-export type Clinic = { userLabel: string; clinicLabel: string; role: 'admin' | 'doctor' | 'reception'; tenantId: string; clinicUserId: string; capabilities: string[]; clinicSession?: ClinicSessionContext };
+export type Clinic = { userLabel: string; clinicLabel: string; role: ClinicRole; accountRole?: ClinicRole; workspaceRoles?: ClinicRole[]; tenantId: string; clinicUserId: string; capabilities: string[]; clinicSession?: ClinicSessionContext };
 export interface AuthClient {
   signIn(email: string, password: string, signal: AbortSignal): Promise<Tokens>;
   refresh(token: string, signal: AbortSignal): Promise<Tokens>;
   resolve(token: string, signal: AbortSignal): Promise<Clinic>;
+  switchWorkspaceRole?(token: string, role: ClinicRole, pin: string | undefined, signal: AbortSignal): Promise<void>;
   clinicLogo?(token: string, signal: AbortSignal): Promise<string | undefined>;
 }
 export class AuthFailure extends Error {
@@ -99,6 +101,16 @@ export class FirebaseClient implements AuthClient {
   async refresh(token:string,signal:AbortSignal) {
     return this.tokens(await this.json(`https://securetoken.googleapis.com/v1/token?key=${firebaseApiKey}`,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:token}).toString()},signal,'refresh'),true);
   }
+  async switchWorkspaceRole(token: string, role: ClinicRole, pin: string | undefined, signal: AbortSignal): Promise<void> {
+    const body = { role, ...(pin ? { pin } : {}) };
+    const response = await this.json(staging.apiBase + '/v1/clinic/workspace-role', {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }, signal);
+    const workspace = response.workspace as Record<string, unknown> | undefined;
+    if (!workspace || workspace.role !== role) throw new AuthFailure('unavailable');
+  }
   async clinicLogo(token: string, signal: AbortSignal): Promise<string | undefined> {
     const endpoint = new URL('/v1/clinic/branding/logo/view', staging.apiBase);
     if (endpoint.origin !== new URL(staging.apiBase).origin) return undefined;
@@ -147,11 +159,17 @@ export class FirebaseClient implements AuthClient {
   async resolve(token:string,signal:AbortSignal):Promise<Clinic> {
     const data=await this.json(staging.apiBase+'/v1/me',{method:'GET',headers:{authorization:`Bearer ${token}`}},signal,'clinic-session');
     const s=data.session as Record<string,unknown>|undefined,u=s?.clinicUser as Record<string,unknown>|undefined,c=s?.clinic as Record<string,unknown>|undefined,rawBranches=s?.branches;
-    if(!u||!c||!text(u.displayName,160)||!text(c.displayName,160)||!['admin','doctor','reception'].includes(u.role as string)||!text(u.clinicUserId,128)||!text(c.tenantId,128)||!Array.isArray(u.capabilities)||u.capabilities.length>200||!u.capabilities.every(v=>text(v,100)))throw new AuthFailure('unavailable');
+    if(!u||!c||!text(u.displayName,160)||!text(c.displayName,160)||!isClinicRole(u.role)||!text(u.clinicUserId,128)||!text(c.tenantId,128)||!Array.isArray(u.capabilities)||u.capabilities.length>200||!u.capabilities.every(v=>text(v,100)))throw new AuthFailure('unavailable');
+    const accountRole = isClinicRole(u.accountRole) ? u.accountRole : u.role;
+    let workspaceRoles: ClinicRole[] = [u.role];
+    if (u.workspaceRoles !== undefined) {
+      if (!Array.isArray(u.workspaceRoles) || u.workspaceRoles.length < 1 || u.workspaceRoles.length > 3 || !u.workspaceRoles.every(isClinicRole) || new Set(u.workspaceRoles).size !== u.workspaceRoles.length || !u.workspaceRoles.includes(u.role)) throw new AuthFailure('denied');
+      workspaceRoles = [...u.workspaceRoles] as ClinicRole[];
+    }
     let clinicSession:ClinicSessionContext|undefined;
     if(text(c.timezone,100)&&text(c.currency,8)&&(c.defaultBranchId===null||text(c.defaultBranchId,128))&&typeof c.hasActiveTrial==='boolean'&&Array.isArray(rawBranches)&&rawBranches.length<=100&&rawBranches.every(v=>!!v&&typeof v==='object'&&text((v as Record<string,unknown>).branchId,128)&&text((v as Record<string,unknown>).branchCode,40)&&text((v as Record<string,unknown>).name,160))){
       clinicSession={clinicUser:{clinicUserId:u.clinicUserId,displayName:u.displayName,role:u.role as ClinicSessionContext['clinicUser']['role'],capabilities:[...u.capabilities] as string[]},clinic:{tenantId:c.tenantId,displayName:c.displayName,timezone:c.timezone,currency:c.currency,defaultBranchId:c.defaultBranchId as string|null,hasActiveTrial:c.hasActiveTrial},branches:rawBranches.map(v=>{const b=v as Record<string,unknown>;return{branchId:b.branchId as string,branchCode:b.branchCode as string,name:b.name as string};})};
     }
-    return {userLabel:u.displayName,clinicLabel:c.displayName,role:u.role as Clinic['role'],clinicUserId:u.clinicUserId,tenantId:c.tenantId,capabilities:u.capabilities as string[],...(clinicSession?{clinicSession}:{})};
+    return {userLabel:u.displayName,clinicLabel:c.displayName,role:u.role,accountRole,workspaceRoles,clinicUserId:u.clinicUserId,tenantId:c.tenantId,capabilities:u.capabilities as string[],...(clinicSession?{clinicSession}:{})};
   }
 }

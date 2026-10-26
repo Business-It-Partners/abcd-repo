@@ -24,6 +24,8 @@ const check = (name, value = true) => {
 try {
   const widget = page.locator('.app-updates-widget');
   await widget.waitFor({ state: 'visible' });
+  await widget.getByText('No app updates available', { exact: true }).waitFor();
+  check('empty home widget clearly reports that no app updates are available', await widget.locator('.updates-empty-icon').isVisible());
   const store = page.getByTestId('store-window');
   await page.getByRole('button', { name: 'App Store', exact: true }).click();
   await store.getByRole('heading', { name: 'App Store' }).waitFor();
@@ -53,6 +55,8 @@ try {
     && await appUpdate.getByRole('button', { name: 'Update Motion Studio', exact: true }).isEnabled());
   check('home widget counts only installed apps with an available signed update', await widget.locator('.updates-count').innerText() === '1 available');
 
+  const dismissReady = page.getByRole('button', { name: 'Dismiss app ready' });
+  if (await dismissReady.isVisible()) await dismissReady.click();
   const screenshot = path.join(root, 'artifacts', 'app-updates-widget-connected.png');
   await fs.mkdir(path.dirname(screenshot), { recursive: true });
   await page.screenshot({ path: screenshot, fullPage: true });

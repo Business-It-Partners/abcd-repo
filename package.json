@@ -52,6 +52,7 @@
     "test:shell-recovery": "node tools/run-ui-test.mjs tests/shell-recovery.mjs",
     "test:store-arrival": "node tools/run-ui-test.mjs tests/store-arrival-delivery.mjs",
     "test:development-apps": "node tools/run-ui-test.mjs tests/development-apps.mjs",
+    "test:app-explorer": "node tools/run-ui-test.mjs tests/app-explorer.mjs",
     "test:onboarding": "node tools/run-ui-test.mjs tests/onboarding.mjs",
     "test:staging-onboarding-desktop": "node tools/run-ui-test.mjs tests/staging-onboarding-desktop.mjs",
     "test:staging-media-dock": "node tools/run-ui-test.mjs tests/media-staging-dock.mjs",

@@ -12,10 +12,18 @@ Preserve backend request/response contracts, material-write idempotency keys and
 
 Errors distinguish authentication, access denial, conflict, validation, connectivity, server maintenance, incompatible contract and unknown outcome. Correlation IDs exclude secrets. Logout blocks new calls; cancellation cannot undo a committed server operation. Drop old-session results without pretending the write was cancelled server-side.
 
+## Host-owned request deadlines
+
+The local M15 timeout-policy candidate separates credential acquisition from API transport: credentials have an 8-second cap, ordinary API calls have 30 seconds after credentials are ready, and host-classified report/list reads can take up to 60 seconds. The host selects the class from the closed route contract; apps cannot request a longer deadline. Finance collection reads, transaction and patient-payment reports, ledgers, and supplier statements use the report class. Existing media-read, media-upload, and native file-picker limits remain independent.
+
+The response deadline covers transport and bounded response reading. A dispatched write that times out remains an unknown outcome and must be reconciled with its original operation key; the longer deadline does not enable automatic retries or change Worker authority. This is a source-only candidate until its milestone verification is complete.
+
 ## Route and environment selection
 
 Keep existing SaaS business/identity routes; only new OS services use `/v1/dental-os/...`. Do not duplicate business handlers to create an OS namespace. Desktop integration targets the verified `fewa_demo` staging API base URL, not production. Bind authentication, API base, catalogue and download configuration to the same verified environment; reject incompatible/mixed environment configuration without automatic production fallback. See [staging/resource policy](09_V1_STORE_AND_CLOUDFLARE_DISTRIBUTION.md).
 
+
+SDK 1.7 adds the Admin-only `clinic.app.user-management` family and four fixed `/v1/clinic/users` routes. The host requires `clinic_users.manage` before credential acquisition; the existing Worker independently enforces that capability for each operation. See the [clinic JSON contract](../docs/CLINIC_JSON_API_CONTRACT.md). Account records, login passwords, Firebase identity changes and audit/idempotency records remain SaaS-owned.
 
 ## M04 implemented contract
 

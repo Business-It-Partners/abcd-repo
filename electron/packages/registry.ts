@@ -7,7 +7,7 @@ import { apiOperations, type ApiOperationId } from '../sdk/contracts';
 type Installed = { active: string; versions: string[]; pending: string | null; knownGood: string | null; trial: string | null; failed: string[] };
 type State = { format: 2; apps: Record<string, Installed> };
 type Journal = { format: 1; kind: 'install' | 'uninstall' | 'evict'; appId: string; digest: string; stage: string };
-export type Checkpoint = 'journal' | 'asset-write' | 'extracted' | 'published' | 'committed' | 'removed' | 'staged' | 'trial-committed' | 'health-committed' | 'rollback-committed' | 'retention-committed';
+export type Checkpoint = 'journal' | 'asset-write' | 'extracted' | 'published' | 'committed' | 'removed' | 'staged' | 'trial-committed' | 'health-committed' | 'rollback-committed' | 'retention-committed' | 'pending-recovered';
 export type Lease = VerifiedPackage & { releaseLease(): void };
 const digestPattern = /^[a-f0-9]{64}$/;
 const uuidPattern = /^[a-f0-9-]{36}$/;
@@ -264,10 +264,24 @@ export class PackageRegistry {
       // A prior trial without health acknowledgement is failed, including process exit.
       if (!this.leases.get(id) && v.trial) this.rollback(s,id);
       let activeAllowed=true;try{this.guard(this.verified(id,v.active));}catch{activeAllowed=false;}
-      if (!this.leases.get(id) && v.pending && (v.knownGood || !activeAllowed)) {
-        this.guard(this.verified(id,v.pending));
-        v.active=v.pending; v.pending=null; v.trial=v.active;
-        this.writeState(s); this.checkpoint('trial-committed');
+      if (!this.leases.get(id) && v.pending) {
+        const candidateDigest=v.pending;
+        let candidate: VerifiedPackage;
+        try {
+          candidate=this.verified(id,candidateDigest);
+          this.guard(candidate);
+        } catch (error) {
+          // A bad successor must not block a still-authorized installed version.
+          // If current policy also blocks the active package, preserve state and fail closed.
+          if (!activeAllowed) throw error;
+          v.pending=null;
+          v.failed=[...new Set([...v.failed,candidateDigest])].slice(-3);
+          this.writeState(s); this.checkpoint('pending-recovered');
+        }
+        if (v.pending && (v.knownGood || !activeAllowed)) {
+          v.active=v.pending; v.pending=null; v.trial=v.active;
+          this.writeState(s); this.checkpoint('trial-committed');
+        }
       }
       const verified = this.verified(id,v.active); this.guard(verified);
       this.leases.set(id, (this.leases.get(id) ?? 0) + 1); const digest=verified.release.digest; this.digestLeases.set(digest,(this.digestLeases.get(digest)??0)+1); let released = false;

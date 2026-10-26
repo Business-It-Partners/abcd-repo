@@ -41,6 +41,7 @@ const definitions = {
   'company.dental.finance.m17': { title: 'Finance', initialVersion: '1.7.0' },
   'company.dental.lab-tracker.m17': { title: 'Lab Tracker' },
   'company.dental.staff.m17': { title: 'Staff' },
+  'company.dental.user-management.m17': { title: 'User Management' },
 };
 function read(name, max = 2_097_152) {
   const file = path.join(root, name), info = fs.lstatSync(file);

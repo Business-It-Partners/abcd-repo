@@ -4,6 +4,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { apiOperations, apiResponse, bounded, cancelRequest, handshake, parseRequest, SDK, type ApiOperationId, type Cancel, type Connection, type ErrorCode, type Operation, type Outcome, type Request, type Result } from './contracts';
 import { bindEnvironment, type Environment } from './environment';
 import { allowedClinicApiPath, clinicAppFamily, containsPresignedHandle, type ClinicAppFamily } from './appPolicy';
+import { resolveClinicJsonRoute } from './clinicRoutes';
 import type { FilePickInput } from '../host/filePickerContract';
 
 export type Caller = { sender: object; frame: object | null; url: string };
@@ -19,6 +20,7 @@ export type Identity = {
 type Registration = { authorize?(): boolean; authorizeApiOperation?(operation: ApiOperationId): boolean; authorizeLocalPick?(): boolean; pickLocal?(input:FilePickInput,requestId:string,signal:AbortSignal):Promise<unknown>; sender: object; frame: object; origin: string; appId: string; appVersion: string; capabilities: Operation[]; family?: ClinicAppFamily; connection?: string; generation?: number; preferences: { textScale: number }; report(value: { dirty: boolean; modal: boolean }): void };
 const apiEntryPoints: readonly Operation[] = [...apiOperations, 'clinic.api.request', 'clinic.api.blob.read'];
 type Pending = { controller: AbortController; write: boolean; media?: boolean };
+type BrokerLimits = { timeoutMs: number; credentialTimeoutMs?: number; reportTimeoutMs?: number; responseBytes: number; perApp: number; total: number; operationKeys: number };
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
 export type ApiTraceRecord = {
   appId: string;
@@ -64,7 +66,7 @@ export class ApiBroker {
   private flight?: { generation: number; controller: AbortController; promise: Promise<string> };
   private environment: Environment;
   private generation: number;
-  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits = { timeoutMs: 8000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }, private activity:(appId:string)=>void=()=>{}, private apiTrace?:(record:ApiTraceRecord)=>void) {
+  constructor(environment: unknown, private identity: Identity, private transport: Transport = fetch, private limits: BrokerLimits = { timeoutMs: 30_000, credentialTimeoutMs: 8_000, reportTimeoutMs: 60_000, responseBytes: 262_144, perApp: 4, total: 8, operationKeys: 128 }, private activity:(appId:string)=>void=()=>{}, private apiTrace?:(record:ApiTraceRecord)=>void) {
     this.environment = bindEnvironment(environment); this.generation = identity.snapshot().generation;
   }
   register(input: Omit<Registration, 'preferences' | 'connection' | 'generation'>) {
@@ -178,7 +180,23 @@ export class ApiBroker {
       this.writes.set(key, fingerprint); this.writing.add(key);
     }
     const controller = new AbortController(); active.set(v.requestId, { controller, write, media: v.operation === 'clinic.media.read' }); this.pending.set(r, active);
-    const timer = setTimeout(() => controller.abort('timeout'), v.operation === 'local.files.pick' ? 180_000 : v.operation === 'clinic.media.upload' ? 60_000 : v.operation === 'clinic.media.read' ? 30_000 : this.limits.timeoutMs);
+    const reportRoute = v.operation === 'clinic.api.request'
+      && resolveClinicJsonRoute(r.family, v.input.path as string, v.input.method as string)?.timeoutClass === 'report';
+    const apiTimeoutMs = reportRoute ? this.limits.reportTimeoutMs ?? 60_000 : this.limits.timeoutMs;
+    const credentialTimeoutMs = this.limits.credentialTimeoutMs ?? 8_000;
+    const credentialed = v.operation.startsWith('appointments.') || v.operation === 'clinic.api.request'
+      || v.operation === 'clinic.api.blob.read' || v.operation === 'clinic.media.read'
+      || v.operation === 'clinic.media.upload' && v.input.action === 'commit' && this.uploads.needsRemote(r, v.input);
+    const operationTimeoutMs = v.operation === 'local.files.pick' ? 180_000 : v.operation === 'clinic.media.upload' ? 60_000
+      : v.operation === 'clinic.media.read' ? 30_000 : apiTimeoutMs;
+    let timer = setTimeout(() => controller.abort('timeout'), credentialed ? credentialTimeoutMs : operationTimeoutMs);
+    const resetDeadline = (timeoutMs: number) => { clearTimeout(timer); timer = setTimeout(() => controller.abort('timeout'), timeoutMs); };
+    const getCredential = async () => {
+      resetDeadline(credentialTimeoutMs);
+      const token = await abortable(this.credential(v.generation), controller.signal);
+      if (!controller.signal.aborted) resetDeadline(operationTimeoutMs);
+      return token;
+    };
     let dispatched = false;
     let trace: Omit<ApiTraceRecord,'status'|'responseContentType'|'responseBodyKeys'|'responseArrayCounts'|'elapsedMs'|'transportError'> | undefined;
     let traceStarted = 0, traceRecorded = false;
@@ -192,7 +210,7 @@ export class ApiBroker {
         else if (v.input.action === 'chunk') value = this.uploads.chunk(r, v.input);
         else {
           const remote = this.uploads.needsRemote(r, v.input);
-          const token = remote ? await abortable(this.credential(v.generation), controller.signal) : 'local-transfer-only';
+          const token = remote ? await getCredential() : 'local-transfer-only';
           const assertCurrent = () => { if (!this.connected(r, v) || r.authorize?.() === false || !this.apiAllowed(r, v)) throw new MediaUploadError('ACCESS_DENIED', dispatched ? 'unknown' : 'not_sent'); };
           assertCurrent();
           if (typeof token !== 'string' || !token || token.length > 8192 || /[\r\n]/.test(token)) return failure('AUTH_REQUIRED', 'not_sent', v);
@@ -202,7 +220,7 @@ export class ApiBroker {
           }), controller.signal);
         }
       } else       if (v.operation === 'clinic.media.read') {
-        const token = await abortable(this.credential(v.generation), controller.signal);
+        const token = await getCredential();
         const assertCurrent = () => {
           if (!this.connected(r, v) || r.authorize?.() === false || !this.apiAllowed(r, v)) throw new MediaReadError('ACCESS_DENIED');
         };
@@ -213,7 +231,7 @@ export class ApiBroker {
           transport: this.transport, assertCurrent, rejected: status => this.identity.rejected?.(status),
         }), controller.signal);
       } else if (v.operation.startsWith('appointments.') || v.operation === 'clinic.api.request' || v.operation === 'clinic.api.blob.read') {
-        const token = await abortable(this.credential(v.generation), controller.signal);
+        const token = await getCredential();
         if (!this.connected(r, v)) return failure('STALE_SESSION', 'not_sent', v);
         if(r.authorize?.()===false)return failure('ACCESS_DENIED','not_sent',v);
         if (!this.apiAllowed(r, v)) return failure('FORBIDDEN', 'not_sent', v);
@@ -345,7 +363,7 @@ export class ApiBroker {
   private credential(generation: number): Promise<string> {
     if (this.flight?.generation === generation) return this.flight.promise;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort('timeout'), this.limits.timeoutMs);
+    const timer = setTimeout(() => controller.abort('timeout'), this.limits.credentialTimeoutMs ?? 8_000);
     const promise = abortable(Promise.resolve().then(() => this.identity.credential(generation, controller.signal)), controller.signal);
     const flight = { generation, controller, promise }; this.flight = flight;
     void promise.finally(() => { clearTimeout(timer); if (this.flight === flight) this.flight = undefined; }).catch(() => {});

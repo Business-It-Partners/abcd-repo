@@ -243,7 +243,7 @@ try {
   await page.getByRole('button', { name: 'Refresh Work Entry', exact: true }).click();
   await page.getByRole('row').filter({ hasText: 'Synthetic Work Entry Patient' }).getByText('Open', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Start work', exact: true }).click();
-  await page.getByRole('button', { name: /Patient & purpose/ }).waitFor();
+  await page.getByRole('button', { name: /Patient & Case/ }).waitFor();
   const assertOpenCaseTabbarHasNoBack = async step => check(`Open Case tab ${step} has no in-tab Back button`,
     await page.locator('[data-work-entry-step-actions]').getByRole('button', { name: 'Back', exact: true }).count() === 0);
   check('the Open Case flow uses the window Back control without an in-page Back to Work Entry button',
@@ -253,11 +253,18 @@ try {
       && await page.locator('[data-work-entry-workflow-page]').evaluate(panel => getComputedStyle(panel).borderTopWidth === '1px'));
   await page.locator('[data-work-entry-step="2"]').click();
   await page.getByText('Treatment Plan (1)', { exact: true }).waitFor();
-  await assertOpenCaseTabbarHasNoBack('Chart & plan');
+  await assertOpenCaseTabbarHasNoBack('Today’s Work');
   check('the Open Case treatment plan uses the responsive protocol-card grid',
     await page.locator('[data-work-entry-treatment-grid] > *').count() === 1);
+  const stageCheckboxes = page.locator('[data-work-entry-treatment-grid] input[type="checkbox"]');
+  check('Open Case treatment steps have completion checkboxes before their numbered labels',
+    await stageCheckboxes.count() > 0
+      && await stageCheckboxes.first().getAttribute('aria-label') !== null
+      && await stageCheckboxes.first().evaluate(input => input.compareDocumentPosition(input.parentElement.querySelector('div')) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
+  await stageCheckboxes.first().check();
+  check('checking a treatment stage marks it complete in Today’s Work', await stageCheckboxes.first().isChecked());
   await page.locator('[data-work-entry-step="3"]').click();
-  await assertOpenCaseTabbarHasNoBack('Imaging & Rx');
+  await assertOpenCaseTabbarHasNoBack('Imaging, Rx & Lab');
   const openImagingLayout = page.locator('[data-work-entry-open-imaging-layout]');
   await openImagingLayout.waitFor();
   check('Open Case replaces Lab with Prescription in the right column beside Radiographs',
@@ -269,26 +276,28 @@ try {
         return radiographs.width > 0 && prescription.width > 0 && Math.abs(radiographs.top - prescription.top) < 2
           && radiographs.left < prescription.left;
       }));
-  await page.locator('[data-work-entry-step="4"]').click();
-  await assertOpenCaseTabbarHasNoBack("Today's work");
-  await page.locator('[data-work-entry-open-today-work-grid]').waitFor();
-  check('Open Case Today’s work uses the full width and has no payment or lab-entry form',
-    await page.locator('[data-work-entry-open-today-work-grid]').evaluate(grid => {
-      const bounds = grid.getBoundingClientRect();
-      const card = grid.firstElementChild.getBoundingClientRect();
-      return card.width > bounds.width * 0.9;
-    })
+  const openCaseTabs = await page.locator('[data-work-entry-step]').evaluateAll(tabs => tabs.map(tab => ({
+    id: tab.getAttribute('data-work-entry-step'),
+    text: tab.textContent?.replace(/\s+/g, ' ').trim(),
+  })));
+  check('Open Case shows five tabs and removes the separate completion page',
+    openCaseTabs.length === 5
+      && openCaseTabs.map(tab => tab.id).join('|') === '1|2|3|5|6'
+      && openCaseTabs.some(tab => /Today.s Work/.test(tab.text ?? ''))
+      && await page.locator('[data-work-entry-open-today-work-grid]').count() === 0
       && await page.locator('[data-work-entry-open-payment-panel]').count() === 0
       && await page.getByText('Paid today (NPR)', { exact: true }).count() === 0
       && await page.getByText('Discount (Rs)', { exact: true }).count() === 0
       && await page.getByText('Payment method', { exact: true }).count() === 0
       && await page.getByText('Lab requirement', { exact: true }).count() === 0);
-  check('Open Case tabs omit Payment and show Imaging & Rx',
+  check('Open Case tabs omit Payment and show Imaging, Rx & Lab',
     await page.locator('[data-work-entry-step]').filter({ hasText: /^Payment$/ }).count() === 0
-      && await page.locator('[data-work-entry-step]').filter({ hasText: /Imaging & Rx/ }).count() === 1);
+      && await page.locator('[data-work-entry-step]').filter({ hasText: /Imaging, Rx & Lab/ }).count() === 1);
   check('the Open Case flow labels the recall step Follow-up',
     await page.getByRole('button', { name: /Follow-up/ }).count() === 1);
-  await page.locator('[data-work-entry-step="5"]').click();
+  await page.locator('[data-work-entry-step="3"]').click();
+  await page.locator('[data-work-entry-step-actions]').getByRole('button', { name: /Next/ }).click();
+  await page.locator('[data-work-entry-step="5"][aria-current="step"]').waitFor();
   await assertOpenCaseTabbarHasNoBack('Follow-up');
   await page.locator('[data-work-entry-step="6"]').click();
   await assertOpenCaseTabbarHasNoBack('Review & commit');

@@ -41,6 +41,25 @@ test('existing-case edits and the final clinical commit use separate persisted c
   assert.match(source, /clearEncounterDraftId\("work-entry-case-update"\)/);
 });
 
+test('Open Case combines Today’s Work and stage completion in the plan without reordering stages', () => {
+  const source = read('src/features/work-entry/components/CaseEntryView.tsx');
+  const routes = read('src/features/work-entry/workEntryRouteState.ts');
+  const workspace = read('src/features/work-entry/WorkEntryWorkspace.tsx');
+  assert.match(source, /filter\(\(wizardStep\) => wizardStep\.n !== 4\)/);
+  assert.match(source, /"Today.s Work"/);
+  assert.match(source, /showCompletionCheckboxes=\{existingCaseWorkflow\}/);
+  assert.match(source, /checked=\{stage\.doneToday\}/);
+  assert.match(source, /setGroupStage\(group\.gid, stage\.key, \{ doneToday: event\.currentTarget\.checked \}\)/);
+  assert.match(source, /stage\.doneToday && !stage\.alreadyCompleted/);
+  assert.match(workspace, /plannedCompletedStages:\s*completedStages/);
+  assert.match(source, /step === 4 && !existingCaseWorkflow/);
+  assert.doesNotMatch(source, /data-drag-handle|reorderGroupStage|draggable/);
+  assert.match(routes, /work:\s*2/);
+  assert.match(routes, /plan:\s*2/);
+  assert.match(routes, /2:\s*"work"/);
+  assert.doesNotMatch(routes, /4:\s*"work"/);
+});
+
 test('radiographs are uploaded, previewed, listed, and withdrawn through approved host APIs', () => {
   const source = read('src/features/patients/media/RadiographUploader.tsx');
   const mediaApi = read('src/features/patients/media/api.ts');

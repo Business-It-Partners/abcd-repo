@@ -21,7 +21,7 @@ export async function verifyUpdates(profileArgs,report){const root=path.resolve(
   await wait(()=>app.evaluate(({webContents})=>webContents.getAllWebContents().some(w=>w.getURL().startsWith('dental-fixture://beta/'))));
   await app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(w=>w.getURL().startsWith('dental-fixture://beta/'));if(!wc)throw Error('Missing beta trial');wc.forcefullyCrashRenderer();});
   await wait(async()=>{const b=(await state()).apps['company.sample.beta'];return b.active===oldBeta&&!b.trial&&b.failed.length===1;});check('failed successor launch rolls back only its own verified known-good pointer');
-  await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();await shell.locator('.delivery-store-reason[role="alert"]').filter({hasText:'This update failed its launch check'}).waitFor();check('failed update shows rollback and recovery guidance in Store details');
+  await shell.getByRole('button',{name:'Open apps catalog',exact:true}).click();await shell.locator('.delivery-store-reason[role="alert"]').filter({hasText:'Update recovery:'}).waitFor();check('failed update shows rollback and recovery guidance in Store details');
   await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts','updates-store.png'),await shell.screenshot());
  }finally{await fs.mkdir(path.join(root,'artifacts'),{recursive:true});await fs.writeFile(path.join(root,'artifacts',report),JSON.stringify({checks,platform:process.platform,sha:process.env.GITHUB_SHA??null},null,2));if(app)await app.close();}
 }

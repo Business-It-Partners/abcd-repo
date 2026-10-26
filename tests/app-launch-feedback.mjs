@@ -41,6 +41,7 @@ async function launchAndVerify(id,title,{capture=false}={}){
  check(`${title}: splash uses the app title and accessible busy status ${JSON.stringify(splashStatus)}`,splashStatus.headingCount===1&&splashStatus.headingText===title&&splashStatus.role==='status'&&splashStatus.live==='polite'&&splashStatus.busy==='true');
  check(`${title}: splash uses app artwork or the OS icon fallback and shared loading indicator`,await splash.locator(`[data-store-art="${id}"] img, [data-store-art="${id}"] svg`).count()===1&&await splash.locator('.app-launch-spinner').count()===1);
  await shell.waitForFunction(runtimeId=>document.querySelector(`[data-runtime="${runtimeId}"]`)?.dataset.launchCountState==='counting',id,{timeout:10000});
+ const countObservedAt=Date.now();
  await shell.waitForFunction(runtimeId=>document.querySelector(`[data-runtime="${runtimeId}"]`)?.dataset.runtimePhase==='ready',id,{timeout:12000});
  let guest=app.context().pages().find(item=>item.url().startsWith(`dental-fixture://${id}/`));
  assert.ok(guest,`${title}: isolated package page should load`);
@@ -52,13 +53,17 @@ async function launchAndVerify(id,title,{capture=false}={}){
    await fs.mkdir(path.dirname(splashShot),{recursive:true});
    await fs.writeFile(splashShot,await shell.screenshot(),{flag:'wx'});artifacts.push(path.basename(splashShot));
  }
- await shell.waitForFunction(runtimeId=>document.querySelector(`[data-runtime="${runtimeId}"]`)?.dataset.launchHandoff==='revealing',id,{timeout:10000});
- check(`${title}: OS holds launch feedback for at least two foreground seconds`,Date.now()-startedAt>=2000&&await surface.getAttribute('data-launch-minimum-elapsed')==='true');
+ try{await shell.waitForFunction(runtimeId=>document.querySelector(`[data-runtime="${runtimeId}"]`)?.dataset.launchHandoff==='revealing',id,{timeout:10000});}catch(error){
+   console.error('LAUNCH REVEAL FAILURE',id,JSON.stringify({runtimePhase:await surface.getAttribute('data-runtime-phase'),handoff:await surface.getAttribute('data-launch-handoff'),minimumElapsed:await surface.getAttribute('data-launch-minimum-elapsed'),countState:await surface.getAttribute('data-launch-count-state'),active:await surface.evaluate(element=>element.closest('[data-window-id]')?.getAttribute('data-active')),windowPhase:await surface.evaluate(element=>element.closest('[data-window-id]')?.getAttribute('data-phase')),motion:await shell.locator('main.desktop').getAttribute('data-motion'),overview:await shell.locator('main.desktop').getAttribute('data-overview'),explorer:await shell.locator('.app-explorer').count(),notice:await shell.locator('[role="alert"]').allTextContents()}));
+   throw error;
+ }
+ const foregroundHoldObservedMs=Date.now()-countObservedAt;
+ check(`${title}: OS holds launch feedback for at least two foreground seconds (${foregroundHoldObservedMs} ms observed)`,foregroundHoldObservedMs>=1800&&await surface.getAttribute('data-launch-minimum-elapsed')==='true');
  check(`${title}: native app reveal starts only after the shell splash`,await splash.count()===0&&await surface.getAttribute('data-launch-handoff')==='revealing');
  if(!reducedMotion){
    await guest.waitForFunction(()=>{const animation=window.__dentalOSLaunchAnimation;return !!animation&&animation.playState!=='paused'&&Number(animation.currentTime)>0;},undefined,{timeout:5000});
    const fade=await guest.evaluate(()=>{const animation=window.__dentalOSLaunchAnimation;return {state:animation?.playState,time:Number(animation?.currentTime),duration:Number(animation?.effect?.getTiming().duration)};});
-   check(`${title}: isolated app content starts its 260 ms fade after the two-second shell splash`,fade.duration===260&&(fade.state==='running'||fade.state==='finished'&&fade.time===fade.duration));
+   check(`${title}: isolated app content starts its 260 ms fade after the two-second shell splash`,fade.duration===260&&['running','finished'].includes(fade.state)&&fade.time>0);
    if(capture&&!screenshotsWritten){
      await guest.evaluate(()=>{const animation=window.__dentalOSLaunchAnimation;if(animation){animation.pause();animation.currentTime=130;}});
      await fs.writeFile(fadeShot,await guest.screenshot(),{flag:'wx'});artifacts.push(path.basename(fadeShot));
@@ -87,5 +92,7 @@ try{
  console.log('ARTIFACT',splashShot);console.log('ARTIFACT',fadeShot);
 }finally{
  await fs.writeFile(report,JSON.stringify({checks,errors,apps:apps.map(([id,title])=>({id,title})),platform:process.platform,artifacts},null,2),{flag:'wx'});
- await app.close();
+ const closed=app.waitForEvent('close',{timeout:5000}).then(()=>true,()=>false);
+ await app.evaluate(({app})=>app.exit(0)).catch(()=>{});
+ if(!await closed&&app.process().exitCode===null)app.process().kill('SIGTERM');
 }

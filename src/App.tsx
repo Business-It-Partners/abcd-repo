@@ -1,5 +1,5 @@
 import { createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode, type RefObject } from 'react';
-import { Check, ChevronRight, Layers, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
+import { Check, ChevronRight, Layers, LayoutGrid, Plus, RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import { DOCK, Spring, clamp, dockHeightForWidth, dockLayout, dockScaleForWidth, type DockSpec } from './motion';
 import { FollowupsApp } from './FollowupsApp';
 import { FinanceApp, FINANCE_MODULES } from './FinanceApp';
@@ -18,6 +18,7 @@ import { StandardWindow1 } from './StandardWindow1';
 import { ManagedWindowFrame } from './ManagedWindow';
 import type { WindowController } from './ManagedWindow';
 import { useAppWindows } from './useAppWindows';
+import { beginAppLaunch } from './appLaunchLock';
 import { statusBarHeightForWidth, WINDOW_IDS, windowSpec, type StaticWindowId, type WindowId } from './windowGeometry';
 import { dockArtwork } from './dockArtwork';
 import { StoreArtwork } from './StoreArtwork';
@@ -25,6 +26,7 @@ import { activeWindow, useWindowManager, WindowManagerProvider } from './windowM
 import type { OpenAppLimitPrompt } from './windowManager';
 import { DesktopChrome } from './DesktopChrome';
 import { WindowContentBoundary } from './WindowContentBoundary';
+import { AppExplorer } from './AppExplorer';
 import { OpenAppLimitDialog } from './OpenAppLimitDialog';
 import type { SessionView } from '../electron/identity/contracts';
 import type { DevelopmentAppView } from '../electron/developmentApps';
@@ -33,11 +35,9 @@ const wallpaperUrl = new URL('./assets/fewa-turquoise-shore.jpg', import.meta.ur
 const runtimeFixtures = new URLSearchParams(location.search).get('runtimeFixtures') === '1';
 const resourceFixtures = runtimeFixtures && new URLSearchParams(location.search).get('resourceFixtures') === '1';
 const fixtures = new URLSearchParams(location.search).get('prototypeFixtures') === '1';
-const makeIcons = (ids: string[], titles: Record<string,string>) => ids.map(id => ({ id, label: titles[id] ?? windowSpec(id).title, color: id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
+const makeIcons = (ids: string[], titles: Record<string,string>) => ids.map(id => ({ id, label: id === 'explore' ? 'Explore' : titles[id] ?? windowSpec(id).title, color: id === 'explore' ? 'explorer' : id === 'studio' ? 'coral' : id === 'records' ? 'blue' : id === 'followups' ? 'teal' : '' }));
 const previewId = (id: WindowId) => id === 'studio' ? 'preview' : `${id}-preview`;
 const isPrototype = (id: WindowId) => id === 'studio' || id === 'records' || id === 'followups';
-type DockCaptionSource = 'pointer' | 'focus';
-type DockCaptionActivity = { button: HTMLButtonElement; label: string; pointer: boolean; focus: boolean };
 function useDock(size: { width: number; height: number }, frozen: boolean, specs: DockSpec[], scale: number) {
   const [field, setField] = useState({ x: null as number | null, intensity: 0 });
   const motion = useRef({ cursor: new Spring(1200), intensity: new Spring(700), inside: false, raf: 0, previous: 0 });
@@ -77,45 +77,10 @@ function useDock(size: { width: number; height: number }, frozen: boolean, specs
   };
 }
 
-export function App({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/></WindowManagerProvider>; }
-function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; onRequestClose(): void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) {
+export function App({ session, sessionControls, roleControls, onRequestClose, onRequestLock, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; roleControls?: ReactNode; onRequestClose(): void; onRequestLock?: () => void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) { return <WindowManagerProvider><Desktop session={session} sessionControls={sessionControls} roleControls={roleControls} onRequestClose={onRequestClose} onRequestLock={onRequestLock} onRequestSignOut={onRequestSignOut} leaveConfirmationOpen={leaveConfirmationOpen}/></WindowManagerProvider>; }
+function Desktop({ session, sessionControls, roleControls, onRequestClose, onRequestLock, onRequestSignOut, leaveConfirmationOpen }: { session?: SessionView; sessionControls?: ReactNode; roleControls?: ReactNode; onRequestClose(): void; onRequestLock?: () => void; onRequestSignOut?: () => void; leaveConfirmationOpen: boolean }) {
   const { state, dispatch, getState } = useWindowManager(), size = state.size;
   const dockScale = dockScaleForWidth(size.width), dockHeight = dockHeightForWidth(size.width);
-  const dockCaptionActivity = useRef<DockCaptionActivity | undefined>(undefined);
-  const refreshDockCaption = useCallback(() => {
-    if (!window.desktop?.dockCaption) return;
-    const active = dockCaptionActivity.current;
-    const caption = active?.button.querySelector<HTMLElement>('.dock-caption');
-    if (!active || !caption || !active.button.isConnected) return;
-    const rect = caption.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return;
-    window.desktop.dockCaption.show({ label: active.label, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } });
-  }, []);
-  useLayoutEffect(() => {
-    if (dockCaptionActivity.current && !dockCaptionActivity.current.button.isConnected) {
-      dockCaptionActivity.current = undefined;
-      window.desktop?.dockCaption.hide();
-      return;
-    }
-    refreshDockCaption();
-  });
-  const showDockCaption = useCallback((button: HTMLButtonElement, label: string, source: DockCaptionSource) => {
-    const active = dockCaptionActivity.current?.button === button
-      ? dockCaptionActivity.current
-      : { button, label, pointer: false, focus: false };
-    active.label = label;
-    active[source] = true;
-    dockCaptionActivity.current = active;
-    refreshDockCaption();
-  }, [refreshDockCaption]);
-  const hideDockCaption = useCallback((button: HTMLButtonElement, source: DockCaptionSource) => {
-    const active = dockCaptionActivity.current;
-    if (!active || active.button !== button) return;
-    active[source] = false;
-    if (active.pointer || active.focus) { refreshDockCaption(); return; }
-    dockCaptionActivity.current = undefined;
-    window.desktop?.dockCaption.hide();
-  }, [refreshDockCaption]);
   const { targets, controllers } = useAppWindows();
   const staticControllers=controllers as Record<string,WindowController>;
   const { studio, records, followups } = controllers;
@@ -163,18 +128,19 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const [developmentApps, setDevelopmentApps] = useState<DevelopmentAppView>({ enabled: false, apps: [] });
   const [developmentMessage, setDevelopmentMessage] = useState('');
   const [developmentLaunches, setDevelopmentLaunches] = useState<Record<string, { preferredContentWidth: number; hasModuleSidebar: boolean }>>({});
+  const [appExplorerOpen, setAppExplorerOpen] = useState(false);
+  const [appExplorerReturnFocus, setAppExplorerReturnFocus] = useState<HTMLElement | null>(null);
   const queue = useRef<StaticWindowId[]>([]);
   const [reservation,setReservation]=useState(1);
   const [readyId,setReadyId]=useState<WindowId|null>(null);
   const [updatedId,setUpdatedId]=useState<WindowId|null>(null);
   const [financeModule,setFinanceModule]=useState(FINANCE_MODULES[0]);
   const [launchNotice,setLaunchNotice]=useState('');
-  const launchingPackage=useRef(false);
+  const launchingPackages=useRef(new Set<string>());
   const launchingDevelopmentApps=useRef(new Set<string>());
   const finishArrival=useRef<(()=>void)|undefined>(undefined);
   const [arrivalId, setArrivalId] = useState<WindowId|null>(null);
   const delivery = useDeliveryStore(!fixtures || resourceFixtures, id=>{const windowId=runtimeIdForPackage(id),existing=getState().windows[windowId];if(existing&&existing.phase!=='closed'){setReadyId(windowId);return;}setReservation(0);setReadyId(null);setArrivalId(windowId);});
-  useEffect(() => () => { dockCaptionActivity.current = undefined; window.desktop?.dockCaption.hide(); }, []);
   function finishCapacityReplacement(closingId:WindowId){
     const pending=pendingCapacityReplacement.current;
     if(!pending||pending.closingId!==closingId)return;
@@ -214,7 +180,8 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   const installedApps=delivery.view.apps.filter(app=>!!app.installedVersion);
   const titleByWindow=Object.fromEntries(installedApps.map(app=>[runtimeIdForPackage(app.id),app.title]));
   const deliveredIds = delivery.installedOrder.map(runtimeIdForPackage);
-  const icons = makeIcons(fixtures && !resourceFixtures ? WINDOW_IDS : [...new Set(['standard-window-1', 'store', ...deliveredIds])], titleByWindow);
+  const icons = makeIcons(fixtures && !resourceFixtures ? [...new Set(['explore', ...WINDOW_IDS])] : [...new Set(['explore', 'standard-window-1', 'store', ...deliveredIds])], titleByWindow);
+  const explorerApps = delivery.view.apps.filter(app => !!app.installedVersion).map(app => ({ id: app.id, title: app.title, iconSha256: app.iconSha256 }));
   const pendingArrivalId=delivery.installingId?runtimeIdForPackage(delivery.installingId):undefined;
   function startStoreJob(id:StaticWindowId, update = false) { if(job || arrivalId) return; setStoreMessage(''); setJob({id, update, progress:0}); }
   useEffect(() => {
@@ -276,8 +243,8 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
   },[developmentLaunches,dynamicControllerRefs,state.windows]);
   async function openInstalledApp(id:WindowId){
     if(!id.startsWith('company.')){openStoreApp(id);return;}
-    if(launchingPackage.current)return;
-    launchingPackage.current=true;
+    const releaseLaunch=beginAppLaunch(launchingPackages.current,id);
+    if(!releaseLaunch)return;
     try{
       const result=await window.desktop?.runtime.discoverApp(id);
       if(!result?.ok){setLaunchNotice(result?.error?.message??'This app is not available for your current clinic role.');return;}
@@ -290,7 +257,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       openStoreApp(id);
     }catch{
       setLaunchNotice('The installed app could not be verified. Try again or update it from Apps.');
-    }finally{launchingPackage.current=false;}
+    }finally{releaseLaunch();}
   }
 
   // Reserve a thumbnail destination synchronously when capture starts, before
@@ -331,7 +298,18 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     setDockRevealed(previous => centered && py >= size.height - (previous ? 180 : 6) * dockScale);
   }
   const arrivalViewport=useRef({...size});
-  const dock = useDock(size, anyMotion || hostTransitioning || state.overview || !!arrivalId, specs, dockScale);
+  const dock = useDock(size, anyMotion || hostTransitioning || state.overview || !!arrivalId || appExplorerOpen, specs, dockScale);
+  function showAppExplorer(target?: HTMLElement) {
+    const active = document.activeElement;
+    setAppExplorerReturnFocus(target ?? (active instanceof HTMLElement ? active : null));
+    dock.reset();
+    setAppExplorerOpen(true);
+  }
+  function selectExplorerApp(id: string) {
+    setAppExplorerOpen(false);
+    if (id === 'store') openStoreApp('store');
+    else void openInstalledApp(runtimeIdForPackage(id));
+  }
   useLayoutEffect(() => {
     const resized=arrivalViewport.current.width!==size.width || arrivalViewport.current.height!==size.height;
     arrivalViewport.current={...size};
@@ -399,14 +377,14 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     }
   }
   return <>
-    <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
+    <main className={`desktop ${immersive ? 'is-immersive' : ''}`} data-phase={phase} data-motion={anyMotion} data-overview={state.overview} inert={leaveConfirmationOpen || !!state.openAppLimit || appExplorerOpen} aria-hidden={leaveConfirmationOpen || !!state.openAppLimit || appExplorerOpen} style={hostTransitioning ? { width: size.width, height: size.height } : undefined} onPointerMove={trackChrome} onPointerLeave={() => { setDockRevealed(false); setStatusbarRevealed(false); dock.leave(); }}>
     <img className="wallpaper" src={wallpaperUrl} alt="" aria-hidden="true"/>
-    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} storeView={delivery.view} developmentApps={developmentApps} developmentMessage={developmentMessage} developmentTargets={Object.fromEntries(developmentApps.apps.map(app=>[app.id,dynamicTargets.current[developmentRuntimeIdForPackage(app.id)]]))} onOpenDevelopmentApp={openDevelopmentApp} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestSignOut={onRequestSignOut}
+    {!state.overview && <DesktopChrome session={session} sessionControls={sessionControls} roleControls={roleControls} storeView={delivery.view} developmentApps={developmentApps} developmentMessage={developmentMessage} developmentTargets={Object.fromEntries(developmentApps.apps.map(app=>[app.id,dynamicTargets.current[developmentRuntimeIdForPackage(app.id)]]))} onOpenDevelopmentApp={openDevelopmentApp} storeControlsLocked={anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')} onRequestUpdate={id=>void delivery.action('install',id)} onCancelUpdate={()=>void delivery.action('cancel')} onRefreshApps={()=>void delivery.action('refresh')} statusbarVisible={showStatusbar} onRequestClose={onRequestClose} onRequestLock={onRequestLock} onRequestSignOut={onRequestSignOut}
       onOpenApps={() => openStoreApp('store')}
       onShowWindows={() => { dispatch({ type: 'overview', open: true }); }}
       onSupport={() => { void window.desktop?.support(); }} />}
     <div className="window-stage" style={{ bottom: immersive ? 0 : DOCK.bottom + dockHeight }}>
-    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onCapacityCloseCommitted={finishCapacityReplacement} onCapacityCloseCancelled={cancelCapacityReplacement} hostTransitioning={hostTransitioning} resourcePressureActive={resourcePressureActive} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
+    {(runtimeFixtures || !fixtures) && <RuntimeFixtures controllers={{studio,records,...dynamicControllers}} apps={delivery.view.apps} developmentApps={developmentApps.apps} targets={runtimeTargets} onControllerRef={onControllerRef} onSelectModule={selectRuntimeModule} onCapacityCloseCommitted={finishCapacityReplacement} onCapacityCloseCancelled={cancelCapacityReplacement} hostTransitioning={hostTransitioning} resourcePressureActive={resourcePressureActive} blocked={leaveConfirmationOpen || !!state.openAppLimit || state.overview || appExplorerOpen || anyMotion || hostTransitioning || Object.values(state.windows).some(w=>w.interaction!=='idle')}/> }
     {fixtures && !runtimeFixtures && <ManagedWindowFrame controller={studio}>
       <div className="studio-body">
         <aside className="studio-sidebar"><span className="sidebar-heading">WORKSPACE</span><div className="sidebar-active"><Sparkles size={15}/>Canvas<ChevronRight size={13}/></div><div className="sidebar-item"><Layers size={15}/>Collections</div><div className="sidebar-item"><RotateCcw size={15}/>History</div><div className="sidebar-bottom"><span className="avatar">Y</span><div>Your workspace<small>Everything stays here</small></div></div></aside>
@@ -444,13 +422,13 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
           const controller = allControllers[previewApp];
           const dockLabel = icons.find(icon => icon.id === previewApp)?.label ?? titleByWindow[previewApp] ?? previewApp;
           const title = state.windows[previewApp]?.title ?? dockLabel;
-          return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onPointerEnter={event=>showDockCaption(event.currentTarget,dockLabel,'pointer')} onPointerLeave={event=>hideDockCaption(event.currentTarget,'pointer')} onFocus={event=>showDockCaption(event.currentTarget,dockLabel,'focus')} onBlur={event=>hideDockCaption(event.currentTarget,'focus')} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
-            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}<span className="dock-caption">{dockLabel}</span>
+          return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
+            {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
-      return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.label} disabled={anyMotion || hostTransitioning} onPointerEnter={event=>showDockCaption(event.currentTarget,icon.label,'pointer')} onPointerLeave={event=>hideDockCaption(event.currentTarget,'pointer')} onFocus={event=>showDockCaption(event.currentTarget,icon.label,'focus')} onBlur={event=>hideDockCaption(event.currentTarget,'focus')} onClick={()=>icon.id.startsWith('company.')?void openInstalledApp(icon.id):openStoreApp(icon.id)}>
-          {icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}<span className="dock-caption">{icon.label}</span>
+      return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' || icon.id === 'explore' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.id === 'explore' ? 'Explore apps' : icon.label} aria-haspopup={icon.id === 'explore' ? 'dialog' : undefined} aria-expanded={icon.id === 'explore' ? appExplorerOpen : undefined} disabled={anyMotion || hostTransitioning} onClick={event=>icon.id === 'explore' ? showAppExplorer(event.currentTarget) : icon.id.startsWith('company.') ? void openInstalledApp(icon.id) : openStoreApp(icon.id)}>
+          {icon.id === 'explore' ? <LayoutGrid size={22} strokeWidth={2.3}/> : icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}
           {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;
       })}
@@ -464,6 +442,7 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
     </>}
     {state.overview && <WindowOverview controllers={allControllers} onClose={() => dispatch({ type: 'overview', open: false })}/>}
   </main>
+  {appExplorerOpen && !leaveConfirmationOpen && !state.openAppLimit && <AppExplorer apps={explorerApps} loading={delivery.view.phase === 'idle' || delivery.view.phase === 'refreshing'} returnFocusTarget={appExplorerReturnFocus} onClose={() => setAppExplorerOpen(false)} onSelect={selectExplorerApp}/>}
   <OpenAppLimitDialog onCloseApp={closeAppForCapacity}/>
   </>;
 }

@@ -1,6 +1,6 @@
 {
   "name": "company.dental.work-entry.m17",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "description": "M17 Work Entry app package for Dental OS.",
   "type": "module",

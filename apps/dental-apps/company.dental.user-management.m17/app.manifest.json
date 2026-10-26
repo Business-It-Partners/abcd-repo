@@ -1,0 +1,13 @@
+{
+  "appId": "company.dental.user-management.m17",
+  "publisher": "company",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "sdkMajor": 1,
+  "apiMajor": 1,
+  "capabilities": [
+    "clinic.app.user-management",
+    "clinic.api.request",
+    "session.context"
+  ]
+}

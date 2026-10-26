@@ -1,6 +1,6 @@
 {
   "name": "company.dental.finance.m17",
-  "version": "1.7.11",
+  "version": "1.7.16",
   "private": true,
   "description": "M17 Finance package with Transaction Record, Patient payments, General expenses, Salary payments, Product list, Purchases, Supplier list, and Supplier payments.",
   "type": "module",

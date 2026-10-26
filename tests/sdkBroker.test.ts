@@ -3,7 +3,7 @@ import { ApiBroker, type Identity, type Transport, type Caller } from '../electr
 import { SDK, operations, parseRequest, type Connection, type Result } from '../electron/sdk/contracts';
 import { staging, bindEnvironment } from '../electron/sdk/environment';
 import { sampleAppointment } from '../electron/sdk/fixtures';
-const limits = { timeoutMs: 150, responseBytes: 4096, perApp: 2, total: 3, operationKeys: 4 };
+const limits = { timeoutMs: 150, credentialTimeoutMs: 150, reportTimeoutMs: 250, responseBytes: 4096, perApp: 2, total: 3, operationKeys: 4 };
 function harness(transport: Transport = async () => Response.json({ appointments: [sampleAppointment] }), options = limits,activity:(appId:string)=>void=()=>{}) {
  let generation=1, active=true, credentialCalls=0;
  const identity: Identity = { snapshot:()=>({generation,active,userLabel:'Synthetic user',clinicLabel:'Synthetic clinic'}), credential:async()=>{credentialCalls++;return 'fixture-secret';} };
@@ -84,6 +84,13 @@ describe('SDK transport, cancellation and operation identity',()=>{
  it('bounds hung transport and classifies read network failure',async()=>{
   const h=harness(()=>new Promise(()=>{}),{...limits,timeoutMs:25});expect(code(await h.broker.request(h.caller,h.request()))).toBe('TIMEOUT');h.broker.dispose();
   const off=harness(async()=>{throw new Error('private network detail');});const result=await off.broker.request(off.caller,off.request());expect(code(result)).toBe('OFFLINE');expect(JSON.stringify(result)).not.toContain('private network');off.broker.dispose();
+ });
+ it('starts the API deadline after credentials resolve while retaining a separate credential cap',async()=>{
+  const h=harness(async()=>{await new Promise(resolve=>setTimeout(resolve,20));return Response.json({appointments:[]});},{...limits,timeoutMs:25,credentialTimeoutMs:40});
+  h.identity.credential=async()=>{await new Promise(resolve=>setTimeout(resolve,20));return 'fixture-secret';};
+  expect((await h.broker.request(h.caller,h.request())).ok).toBe(true);h.broker.dispose();
+  const stalled=harness(async()=>Response.json({appointments:[]}),{...limits,timeoutMs:100,credentialTimeoutMs:25});stalled.identity.credential=()=>new Promise(()=>{});
+  expect(code(await stalled.broker.request(stalled.caller,stalled.request()))).toBe('TIMEOUT');stalled.broker.dispose();
  });
  it('preserves idempotency/revision, refuses changed-key reuse and never automatically retries writes',async()=>{
   const sent:{url:string;init:RequestInit}[]=[];let calls=0;

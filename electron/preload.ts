@@ -8,10 +8,6 @@ function publishHostTransition(transitioning: boolean) {
 }
 ipcRenderer.on('window:host-transition', (_event, value: boolean) => publishHostTransition(value));
 contextBridge.exposeInMainWorld('desktop', {
-  dockCaption: {
-    show: (input: { label: string; rect: { x: number; y: number; width: number; height: number } }) => ipcRenderer.send('dock-caption:show', input),
-    hide: () => ipcRenderer.send('dock-caption:hide'),
-  },
   support:()=>ipcRenderer.invoke('support:action','preview'),
   shell: { reload: () => ipcRenderer.invoke('shell:reload') as Promise<boolean> },
   store: {
@@ -25,7 +21,7 @@ contextBridge.exposeInMainWorld('desktop', {
   identity: {
     view: () => ipcRenderer.invoke('identity:view'),
     clinicLogo: () => ipcRenderer.invoke('identity:clinic-logo') as Promise<string | undefined>,
-    action: (kind: 'login' | 'lock' | 'logout' | 'restore', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
+    action: (kind: 'login' | 'lock' | 'logout' | 'restore' | 'workspace-role', input?: unknown) => ipcRenderer.invoke('identity:action', kind, input),
     devCredentialsAvailable: () => ipcRenderer.invoke('identity:dev-credentials-available'),
     devCredentials: () => ipcRenderer.invoke('identity:dev-credentials'),
     subscribe: (callback: (value: unknown) => void) => { const listener = (_event: unknown, value: unknown) => callback(value); ipcRenderer.on('identity:state', listener); return () => ipcRenderer.removeListener('identity:state', listener); },

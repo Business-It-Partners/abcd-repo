@@ -8,7 +8,7 @@ function fixture() {
   const calls: Request[] = [];
   const lost = vi.fn();
   const bridge: AppSdk = {
-    connect: vi.fn<AppSdk['connect']>(async () => ({ ok: true as const, value: { connection: '00000000-0000-4000-8000-000000000001', generation, appId: 'company.dental.followups', appVersion: '1.1.0', sdk: { major: 1, minor: 6 }, capabilities: ['clinic.api.request', 'session.context', 'clinic.app.followups'] } })),
+    connect: vi.fn<AppSdk['connect']>(async () => ({ ok: true as const, value: { connection: '00000000-0000-4000-8000-000000000001', generation, appId: 'company.dental.followups', appVersion: '1.1.0', sdk: { major: 1, minor: 7 }, capabilities: ['clinic.api.request', 'session.context', 'clinic.app.followups'] } })),
     request: vi.fn<AppSdk['request']>(async request => {
       calls.push(structuredClone(request));
       if (request.generation !== generation) return { ok: false, error: { code: 'STALE_SESSION', message: 'Session changed', outcome: 'not_sent' } };

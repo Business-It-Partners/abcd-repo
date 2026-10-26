@@ -34,6 +34,7 @@ Accepted means the agreed product direction, not that implementation exists. Con
 | ADR-031 | Automatically persist a signed-in desktop session using protected refresh-token storage | User-directed; local Linux build passes; persistent-session acceptance remains pending | [M15 auth decision](../dental-os_v1_working_info/milestone-15-platform-closeout-and-integration/ADR_M15_AUTH_PERSISTENCE.md); 12 |
 | ADR-032 | Remember the sign-in email separately from session persistence | User-directed; local implementation/build verification tracked in M15; M15/G15 remain open | [M15 auth decision](../dental-os_v1_working_info/milestone-15-platform-closeout-and-integration/ADR_M15_AUTH_PERSISTENCE.md); 12 |
 | ADR-035 | Source-only local build and launch lane for first-party M17 apps | User-directed M15 candidate; no packaged/released OS or app changes | [M15 development-app follow-up](../dental-os_v1_working_info/milestone-15-platform-closeout-and-integration/STATUS.md#local-development-app-collection--2026-10-25) |
+| ADR-037 | Admin User Management as a normal signed App Store app | User-directed 2026-10-25; M17.12; staging release does not close authenticated install/workflow acceptance | [M17.12 plan](../dental-os_v1_working_info/milestone-17-dental-app-delivery/M17.12_USER_MANAGEMENT_PLAN.md); 11/12 |
 
 New ADRs identify problem, options, decision, tradeoffs, affected invariants/contracts, migration/recovery, evidence and milestone. Record supersession explicitly. Do not silently turn a candidate into an accepted/proven implementation.
 
@@ -200,3 +201,13 @@ On a new launch, the OS resolves the app's current active development snapshot. 
 **Release gate:** source changes and local development snapshots remain unbundled unless the user explicitly requests a release bundle. A release still requires the normal signed, versioned Cloudflare App Store workflow. Browser or OS preview is not release evidence or production acceptance.
 
 **Owner and proof:** M15 source-run developer workflow. Code and evidence status are recorded in the [M15 status](../dental-os_v1_working_info/milestone-15-platform-closeout-and-integration/STATUS.md#two-preview-lanes-and-cross-worktree-publishing--2026-10-25). The implementation does not close M15/G15 or publish any release.
+
+## ADR-037 — Admin User Management as a normal signed App Store app
+
+**Problem:** clinic administrators need the SaaS account-management workflow in Dental OS while doctors and reception users must not see or invoke it. User accounts, roles and login credentials already belong to Dental SaaS.
+
+**Decision (2026-10-25):** ship User Management as a regular first-party signed App Store package, not an OS core/binary feature. The package uses one new host-supported `clinic.app.user-management` family. The OS exposes the app only to a current admin session with `clinic_users.manage`, and the route catalogue allows only `GET/POST /v1/clinic/users`, `PATCH /v1/clinic/users/{id}`, and `POST /v1/clinic/users/{id}/password`. The package calls these existing Dental SaaS routes through `ClinicClient`; it never receives tokens or stores account data/passwords on disk. The Worker remains authoritative for authorization, tenant scope, account writes, Firebase identity changes, and audit/idempotency records.
+
+**Alternatives:** bundle it as a core OS screen (rejected because it follows the same independently updated app lifecycle as the other clinic features); add a second account backend or local user database (rejected because SaaS already owns these records); rely on hidden UI alone (rejected because host and Worker gates must both enforce access).
+
+**Migration and owner:** M15 adds the compatible SDK family/route checks; M17 ships the app under a unique company ID at version 1.0.0. The existing staging signer and first-party Store pipeline are reused. SaaS schema/routes and production distribution do not change. Authenticated Store installation and live account workflow acceptance remain separate M17 gates.

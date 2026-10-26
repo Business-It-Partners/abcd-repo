@@ -21,7 +21,6 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Hand,
 } from "lucide-react";
 import {
   PatientDetail,
@@ -459,16 +458,25 @@ export default function CaseEntryView({
     hideStepTabs,
     patientStepOnly,
   });
-  const [step, setStep] = useState(initialStep);
-  const wizardSteps = NEW_PATIENT_STEPS.map((wizardStep) => {
-    if (existingCaseWorkflow && wizardStep.n === 3) return { ...wizardStep, label: "Imaging & Rx" };
-    if (wizardStep.n === 4 && !paymentCollectionEnabled) return { ...wizardStep, label: "Today's work" };
-    return wizardStep;
-  });
+  const resolvedInitialStep = existingCaseWorkflow && initialStep === 4 ? 2 : initialStep;
+  const [step, setStep] = useState(resolvedInitialStep);
+  const wizardSteps = existingCaseWorkflow
+    ? NEW_PATIENT_STEPS.filter((wizardStep) => wizardStep.n !== 4).map((wizardStep, index) => ({
+      ...wizardStep,
+      displayN: index + 1,
+      label: wizardStep.n === 1
+        ? "Patient & Case"
+        : wizardStep.n === 2
+          ? "Today's Work"
+          : wizardStep.n === 3
+            ? "Imaging, Rx & Lab"
+            : wizardStep.label,
+    }))
+    : NEW_PATIENT_STEPS.map((wizardStep) => ({ ...wizardStep, displayN: wizardStep.n }));
 
   useEffect(() => {
-    setStep(initialStep);
-  }, [initialStep]);
+    setStep(resolvedInitialStep);
+  }, [resolvedInitialStep]);
 
   // TEMP: step-3 layout preview switcher — three full-bleed arrangements of the same
   // charting/plan building blocks so the clinic can pick one live. Remove once chosen.
@@ -622,22 +630,6 @@ export default function CaseEntryView({
       }),
     })));
   }, [initialCompletedStages]);
-
-  const reorderGroupStage = (gid: number, fromIdx: number, toIdx: number) => {
-    setPlanWasEdited(true);
-    setGroups((prev) =>
-      prev.map((g) => {
-        if (g.gid !== gid) return g;
-        const updated = [...g.stages];
-        if (fromIdx < 0 || toIdx < 0 || fromIdx >= updated.length || toIdx >= updated.length) return g;
-        // Direct swap / exchange positions between the two target stages only
-        const temp = updated[fromIdx];
-        updated[fromIdx] = updated[toIdx];
-        updated[toIdx] = temp;
-        return { ...g, stages: updated };
-      })
-    );
-  };
 
   // ONE finding per tooth. A screening pass records what the dentist saw on that tooth, and
   // tapping a second condition replaces the first. Layered findings belong in the record.
@@ -1534,7 +1526,7 @@ export default function CaseEntryView({
                         fontWeight: "var(--fw-bold)",
                       }}
                     >
-                      {isCompleted ? embedded ? <Check size={14} aria-hidden="true" /> : "✓" : s.n}
+                      {isCompleted ? embedded ? <Check size={14} aria-hidden="true" /> : "✓" : s.displayN}
                     </span>
                     {embedded ? <span className={styles.stepLabel}>{s.label}</span> : s.label}
                   </button>
@@ -1564,25 +1556,19 @@ export default function CaseEntryView({
                   {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(2)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
                   </button>}
-                  <button type="button" onClick={() => goToStep(4)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
+                  <button type="button" onClick={() => goToStep(existingCaseWorkflow ? 5 : 4)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                     Next <ArrowRight size={14} />
                   </button>
                 </div>
               )}
-              {step === 4 && (
+              {step === 4 && !existingCaseWorkflow && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(3)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  <button type="button" onClick={() => goToStep(3)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>}
-                  {existingCaseWorkflow ? (
-                    <button type="button" onClick={() => goToStep(5)} disabled={createStatus === "saving"} className="btn btn-primary" style={{ borderRadius: "0px" }}>
-                      Next <ArrowRight size={14} />
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => goToStep(5)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
-                      Next <ArrowRight size={14} />
-                    </button>
-                  )}
+                  </button>
+                  <button type="button" onClick={() => goToStep(5)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
+                    Next <ArrowRight size={14} />
+                  </button>
                 </div>
               )}
               {step === 5 && createStatus !== "done" && (
@@ -1976,10 +1962,10 @@ export default function CaseEntryView({
                       addGroupStage={addGroupStage}
                       removeGroupStage={removeGroupStage}
                       setGroupGrade={setGroupGrade}
-                      reorderGroupStage={reorderGroupStage}
                       canalDataMap={canalDataMap}
                       openCanalDrawer={openCanalDrawer}
                       wideCards={existingCaseWorkflow}
+                      showCompletionCheckboxes={existingCaseWorkflow}
                     />
                   </>
                 )}
@@ -2207,7 +2193,7 @@ export default function CaseEntryView({
           })()}
 
           {/* ============ STEP 4 — TODAY & PAYMENT / WORK ENTRY TODAY ============ */}
-          {step === 4 && (
+          {step === 4 && !existingCaseWorkflow && (
             <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={{ display: "flex", flexDirection: "column", gap: "14px" }} onKeyDown={advanceOnEnter}>
               <h3 style={sectionTitle}>
                 <StepDot n={4} /> {existingCaseWorkflow ? <ListChecks size={15} /> : <Wallet size={15} />} {paymentCollectionEnabled ? "Today & payment" : "Today's work"}
@@ -2342,14 +2328,14 @@ export default function CaseEntryView({
 
           {/* ============ STEP 5 — SHARED RECALL ============ */}
           {step === 5 && (
-            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={existingCaseWorkflow ? undefined : card}><h3 style={sectionTitle}><StepDot n={5} /> <BellRing size={15} /> Follow-up</h3><DoctorRecallWorkspace idPrefix="start-case-recall" date={fuDate} time={fuTime} reason={fuReason} reasonOptions={remainingStages.filter((stage) => !stage.alreadyCompleted).map((stage) => `${stage.label}${stage.tooth ? ` · tooth ${stage.tooth}` : ""}`)} noFollowUpNeeded={noFollowUpNeeded} onDateChange={setFuDate} onTimeChange={setFuTime} onReasonChange={setFuReason} onNoFollowUpChange={(checked) => { setNoFollowUpNeeded(checked); if (checked) { setFuDate(""); setFuTime(""); setFuReason(""); } }} closeCase={closeCase} onCloseCaseChange={setCloseCase} upcoming={upcomingFollowUps} /></section>
+            <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={existingCaseWorkflow ? undefined : card}><h3 style={sectionTitle}><StepDot n={existingCaseWorkflow ? 4 : 5} /> <BellRing size={15} /> Follow-up</h3><DoctorRecallWorkspace idPrefix="start-case-recall" date={fuDate} time={fuTime} reason={fuReason} reasonOptions={remainingStages.filter((stage) => !stage.alreadyCompleted).map((stage) => `${stage.label}${stage.tooth ? ` · tooth ${stage.tooth}` : ""}`)} noFollowUpNeeded={noFollowUpNeeded} onDateChange={setFuDate} onTimeChange={setFuTime} onReasonChange={setFuReason} onNoFollowUpChange={(checked) => { setNoFollowUpNeeded(checked); if (checked) { setFuDate(""); setFuTime(""); setFuReason(""); } }} closeCase={closeCase} onCloseCaseChange={setCloseCase} upcoming={upcomingFollowUps} /></section>
           )}
 
           {/* ============ REVIEW ============ */}
           {step === 6 && (
             <section className={existingCaseWorkflow ? styles.workflowPage : undefined} data-work-entry-workflow-page={existingCaseWorkflow ? "" : undefined} style={existingCaseWorkflow ? undefined : card}>
               <h3 style={sectionTitle}>
-                <StepDot n={6} /> <ListChecks size={15} /> {existingCaseWorkflow ? "Review & commit" : "Review & create"}
+                <StepDot n={existingCaseWorkflow ? 5 : 6} /> <ListChecks size={15} /> {existingCaseWorkflow ? "Review & commit" : "Review & create"}
               </h3>
 
               {(() => {
@@ -2839,10 +2825,10 @@ function PlanGroupBlock({
   addGroupStage,
   removeGroupStage,
   setGroupGrade,
-  reorderGroupStage,
   compact,
   canalDataMap,
   openCanalDrawer,
+  showCompletionCheckboxes = false,
 }: {
   group: PlanGroup;
   removeGroup: (gid: number) => void;
@@ -2850,14 +2836,11 @@ function PlanGroupBlock({
   addGroupStage: (gid: number) => void;
   removeGroupStage: (gid: number, key: number) => void;
   setGroupGrade: (gid: number, gradeId: string) => void;
-  reorderGroupStage?: (gid: number, fromIdx: number, toIdx: number) => void;
   compact?: boolean;
   canalDataMap?: Record<string, CanalChartData>;
   openCanalDrawer?: (tooth: string) => void;
+  showCompletionCheckboxes?: boolean;
 }) {
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-
   const subtotal = group.stages.reduce((s, st) => s + rupeeAmount(st.cost), 0);
   const recordsCanals = Boolean(group.isCanal);
   const toothNum = group.toothScope === "tooth" ? group.tooth : "";
@@ -2939,75 +2922,31 @@ function PlanGroupBlock({
 
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         {group.stages.map((stage, i) => {
-          const isDragging = draggedIdx === i;
-          const isOver = dragOverIdx === i && draggedIdx !== i;
-
           return (
             <div
               key={stage.key}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("text/plain", `${i}`);
-                setDraggedIdx(i);
-              }}
-              onDragEnd={() => {
-                setDraggedIdx(null);
-                setDragOverIdx(null);
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOverIdx(i);
-              }}
-              onDragLeave={(e) => {
-                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                if (dragOverIdx === i) setDragOverIdx(null);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const fromIdx = Number(e.dataTransfer.getData("text/plain"));
-                if (!isNaN(fromIdx) && fromIdx !== i && reorderGroupStage) {
-                  reorderGroupStage(group.gid, fromIdx, i);
-                }
-                setDraggedIdx(null);
-                setDragOverIdx(null);
-              }}
               style={{
                 display: "grid",
-                gridTemplateColumns: "18px 1fr 80px 20px",
+                gridTemplateColumns: showCompletionCheckboxes ? "24px minmax(0, 1fr) 80px 20px" : "minmax(0, 1fr) 80px 20px",
                 gap: "8px",
                 alignItems: "center",
-                background: isDragging ? "#faf5ff" : isOver ? "#f3e8ff" : "#f8fafc",
+                background: "#f8fafc",
                 padding: "6px 8px",
                 borderRadius: "6px",
-                borderTop: isOver ? "3px solid #7c3aed" : isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
-                borderLeft: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
-                borderRight: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
-                borderBottom: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
-                opacity: isDragging ? 0.4 : 1,
-                transition: "background-color 0.12s ease, border-color 0.12s ease",
+                border: "1px solid #e2e8f0",
               }}
             >
-              <div
-                data-drag-handle="true"
-                onClick={(e) => e.stopPropagation()}
-                title="Click & drag to reorder step"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "4px",
-                  background: isDragging || isOver ? "#7c3aed" : "#f1f5f9",
-                  color: isDragging || isOver ? "#ffffff" : "#64748b",
-                  border: "1px solid #cbd5e1",
-                  cursor: isDragging ? "grabbing" : "grab",
-                  flexShrink: 0,
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <Hand size={16} />
-              </div>
+              {showCompletionCheckboxes && (
+                <input
+                  type="checkbox"
+                  aria-label={`Mark ${stage.label} complete today`}
+                  title={stage.alreadyCompleted ? "This stage is already recorded" : "Mark this stage complete today"}
+                  checked={stage.doneToday}
+                  disabled={stage.alreadyCompleted}
+                  onChange={(event) => setGroupStage(group.gid, stage.key, { doneToday: event.currentTarget.checked })}
+                  style={{ width: "16px", height: "16px", margin: "0 auto", accentColor: "#7c3aed", cursor: stage.alreadyCompleted ? "not-allowed" : "pointer" }}
+                />
+              )}
 
               <div style={{ minWidth: 0 }}>
                 {stage.custom ? (
@@ -3098,10 +3037,10 @@ function PlanGroups({
   addGroupStage,
   removeGroupStage,
   setGroupGrade,
-  reorderGroupStage,
   canalDataMap,
   openCanalDrawer,
   wideCards = false,
+  showCompletionCheckboxes = false,
 }: {
   groups: PlanGroup[];
   feeName: (code: string) => string;
@@ -3110,12 +3049,12 @@ function PlanGroups({
   addGroupStage: (gid: number) => void;
   removeGroupStage: (gid: number, key: number) => void;
   setGroupGrade: (gid: number, gradeId: string) => void;
-  reorderGroupStage?: (gid: number, fromIdx: number, toIdx: number) => void;
   canalDataMap?: Record<string, CanalChartData>;
   openCanalDrawer?: (tooth: string) => void;
   wideCards?: boolean;
+  showCompletionCheckboxes?: boolean;
 }) {
-  const blockProps = { feeName, removeGroup, setGroupStage, addGroupStage, removeGroupStage, setGroupGrade, reorderGroupStage, canalDataMap, openCanalDrawer };
+  const blockProps = { feeName, removeGroup, setGroupStage, addGroupStage, removeGroupStage, setGroupGrade, canalDataMap, openCanalDrawer, showCompletionCheckboxes };
   return (
     <div className={wideCards ? styles.treatmentProtocolGrid : undefined} data-work-entry-treatment-grid={wideCards ? "" : undefined} style={wideCards ? undefined : { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))", gap: "16px", alignItems: "start" }}>
       {groups.map((group) => (

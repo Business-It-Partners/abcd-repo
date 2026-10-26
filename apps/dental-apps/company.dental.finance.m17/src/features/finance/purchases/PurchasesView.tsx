@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Eye, Pencil, Plus, Receipt, Search, Trash2 } from "lucide-react";
 import { ClinicClient, ClinicError, type ClinicCommand } from "@/sdk/client";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
@@ -128,11 +128,12 @@ export default function PurchasesView({
   const columns: Column<ClinicPurchase>[] = [
     { key: "sn", header: "S.N.", align: "center", width: 52, render: (_purchase, index) => <span style={{ color: "var(--ink-3)" }}>{index + 1}</span> },
     { key: "date", header: "Date", sortable: true, nowrap: true, width: 102, value: (purchase) => purchase.purchaseDate, render: (purchase) => formatDateShort(purchase.purchaseDate) },
-    { key: "invoice", header: "Invoice #", sortable: true, nowrap: true, width: 118, value: (purchase) => purchase.invoiceNumber ?? "", render: (purchase) => <span title={purchase.invoiceNumber || "—"} className="purchase-invoice-summary">{purchase.invoiceNumber || "—"}</span> },
-    { key: "supplier", header: "Supplier", sortable: true, width: 150, value: (purchase) => purchase.supplierName, render: (purchase) => <span title={purchase.supplierName} className="purchase-supplier-summary">{purchase.supplierName}</span> },
-    { key: "items", header: "Items", width: 225, value: (purchase) => purchase.lines.map((line) => line.itemName).join(" | "), render: (purchase) => {
-      const summary = purchase.lines.map((line) => line.itemName).join(" | ");
-      return <span title={summary} className="purchase-items-summary">{summary}</span>;
+    { key: "invoice", header: "Invoice #", sortable: true, width: 100, value: (purchase) => purchase.invoiceNumber ?? "", render: (purchase) => <span title={purchase.invoiceNumber || "—"} className="purchase-invoice-summary">{purchase.invoiceNumber || "—"}</span> },
+    { key: "supplier", header: "Supplier", sortable: true, width: 170, value: (purchase) => purchase.supplierName, render: (purchase) => <span title={purchase.supplierName} className="purchase-supplier-summary">{purchase.supplierName}</span> },
+    { key: "items", header: "Items", width: 185, value: (purchase) => purchase.lines.map((line) => line.itemName).join("  |  "), render: (purchase) => {
+      const itemNames = purchase.lines.map((line) => line.itemName);
+      const summary = itemNames.join("  |  ");
+      return <span title={summary} className="purchase-items-summary">{itemNames.map((itemName, index) => <Fragment key={`${index}-${itemName}`}>{index > 0 ? <span aria-hidden="true" className="purchase-item-separator">|</span> : null}{itemName}</Fragment>)}</span>;
     } },
     { key: "total", header: "Total", align: "right", sortable: true, nowrap: true, width: 125, total: true, value: (purchase) => purchase.totalAmount, totalFormat: (sum) => <strong className="purchase-total-single-line">{formatNpr(sum)}</strong>, render: (purchase) => <span className="purchase-total-single-line">{formatNpr(purchase.totalAmount)}</span> },
     { key: "actions", header: "Action", align: "center", width: 190, nowrap: true, render: (purchase) => (
@@ -231,7 +232,7 @@ export default function PurchasesView({
         rowKey={(purchase) => purchase.purchaseId}
         noun="purchases"
         standardPage
-        minWidth={970}
+        minWidth={925}
         totalsLabel="Total purchased"
         filters={<div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <MonthPicker value={month} onChange={setMonth} max={todayISO().slice(0, 7)} />

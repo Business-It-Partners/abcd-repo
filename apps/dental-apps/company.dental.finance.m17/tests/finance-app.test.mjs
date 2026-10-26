@@ -19,13 +19,13 @@ const modules = [
   "supplier-payments",
 ];
 
-test("Finance M17 has one 1.7.11 package with all eight ordered Finance modules", async () => {
+test("Finance M17 has one 1.7.16 package with all eight ordered Finance modules", async () => {
   const packageJson = await readJson("package.json");
   const manifest = await readJson("app.manifest.json");
   const app = await readJson("app.json");
 
   assert.equal(packageJson.name, "company.dental.finance.m17");
-  assert.equal(packageJson.version, "1.7.11");
+  assert.equal(packageJson.version, "1.7.16");
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, ["clinic.app.finance", "clinic.api.request", "session.context"]);
@@ -33,6 +33,9 @@ test("Finance M17 has one 1.7.11 package with all eight ordered Finance modules"
   assert.equal(app.title, "Finance");
   assert.deepEqual(app.modules.map((module) => module.id), modules);
   assert.deepEqual(app.anyCapabilities, ["finance.manage", "patient_payments.outstanding.read"]);
+  assert.deepEqual(app.excludedRoles, []);
+  assert.deepEqual(app.allowedRoles, []);
+  assert.equal(app.modules.find((module) => module.id === "patient-payments").capability, "patient_payments.outstanding.read");
 });
 
 test("purchase invoice lines omit pagination and support row-based keyboard entry", async () => {
@@ -112,11 +115,20 @@ test("purchase list removes its subtitle and category while constraining scan co
   const purchases = await readText("src/features/finance/purchases/PurchasesView.tsx");
   const styles = await readText("src/styles.css");
   assert.doesNotMatch(purchases, /purchase-notice|header: "Category"/);
-  assert.match(purchases, /join\(" \| "\)/);
+  assert.match(purchases, /join\("  \|  "\)/);
+  assert.match(purchases, /purchase-item-separator/);
   assert.match(purchases, /purchase-invoice-summary/);
   assert.match(purchases, /purchase-supplier-summary/);
+  assert.match(purchases, /key: "invoice"[^\n]*width: 100/);
+  assert.doesNotMatch(purchases, /key: "invoice"[^\n]*nowrap: true/);
+  assert.match(purchases, /key: "supplier"[^\n]*width: 170/);
+  assert.match(purchases, /key: "items"[^\n]*width: 185/);
+  assert.match(purchases, /minWidth=\{925\}/);
   assert.match(purchases, /purchase-total-single-line/);
-  assert.match(styles, /-webkit-line-clamp: 2/);
+  assert.match(styles, /\.purchase-invoice-summary,[\s\S]*-webkit-line-clamp: 2/);
+  assert.match(styles, /\.purchase-supplier-summary \{ max-width: 165px; \}/);
+  assert.match(styles, /\.purchase-items-summary \{ max-width: 100%; \}/);
+  assert.match(styles, /\.purchase-item-separator \{ display: inline-block; margin-inline: \.5em; \}/);
   assert.match(styles, /\.purchase-total-single-line\s*\{[^}]*white-space: nowrap/);
 });
 

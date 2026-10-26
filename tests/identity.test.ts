@@ -8,6 +8,7 @@ import { SessionManager } from '../electron/identity/session';
 import { AuthFailure,FirebaseClient,type AuthClient,type Clinic,type Tokens } from '../electron/identity/client';
 import { staging } from '../electron/sdk/environment';
 import { ApiBroker } from '../electron/sdk/broker';
+import { workspaceRoleInput } from '../electron/identity/contracts';
 const clinic:Clinic={userLabel:'Synthetic doctor',clinicLabel:'Fixture clinic',role:'doctor',tenantId:'tenant-fixture',clinicUserId:'user-fixture',capabilities:['appointments.access']};
 const token=(uid='fixture-user',n=1):Tokens=>({uid,idToken:`fixture-id-${uid}-${n}`,refreshToken:`fixture-refresh-${uid}-${n}`,expiresAt:Date.now()+3600_000});
 function encryptedProvider(available=true):SecretProvider{
@@ -132,6 +133,37 @@ describe('single platform session',()=>{
  it('prevents a late sign-in from resurrecting a logged-out session',async()=>{
   let finish!:(v:Tokens)=>void;const h=await harness({signIn:()=>new Promise(r=>finish=r)});try{const login=h.session.login(input);await new Promise(r=>setTimeout(r,5));await h.session.logout();finish(token(input.email));expect((await login).ok).toBe(false);expect(h.session.view().phase).toBe('signed-out');expect(await h.store.load()).toBeNull();}finally{await h.close();}
  });
+ it('switches Admin workspaces without PIN setup and requires the fixed PIN to return',async()=>{
+  let active:Clinic={...clinic,role:'admin',accountRole:'admin',workspaceRoles:['admin','doctor','reception'],capabilities:['patient_record.access']};
+  const h=await harness({
+   resolve:async()=>active,
+   switchWorkspaceRole:async(_token,role,pin)=>{if(role==='admin'&&pin!=='9876')throw new AuthFailure('denied');active={...active,role,capabilities:role==='admin'?['patient_record.access']:['appointments.access']};},
+  });
+  try{
+   expect(await h.session.login(input)).toEqual({ok:true});
+   const before=h.session.view().generation;
+   expect(await h.session.switchWorkspaceRole({role:'reception'})).toEqual({ok:true});
+   expect(h.session.view()).toMatchObject({phase:'ready',role:'reception',accountRole:'admin'});
+   expect(h.session.view().generation).toBeGreaterThan(before);
+   expect(h.invalidated()).toBeGreaterThanOrEqual(2);
+   const receptionGeneration=h.session.view().generation;
+   expect(await h.session.switchWorkspaceRole({role:'admin',pin:'4826'})).toEqual({ok:false,code:'DENIED'});
+   expect(h.session.view()).toMatchObject({phase:'ready',role:'reception'});
+   expect(await h.session.switchWorkspaceRole({role:'admin',pin:'9876'})).toEqual({ok:true});
+   expect(h.session.view()).toMatchObject({phase:'ready',role:'admin',accountRole:'admin'});
+   expect(h.session.view().generation).toBeGreaterThan(receptionGeneration);
+  }finally{await h.close();}
+ });
+ it('keeps the current session when the server rejects a wrong workspace PIN',async()=>{
+  const admin:Clinic={...clinic,role:'doctor',accountRole:'admin',workspaceRoles:['admin','doctor','reception']};
+  const h=await harness({resolve:async()=>admin,switchWorkspaceRole:async()=>{throw new AuthFailure('denied');}});
+  try{await h.session.login(input);const generation=h.session.view().generation;expect(await h.session.switchWorkspaceRole({role:'admin',pin:'0000'})).toEqual({ok:false,code:'DENIED'});expect(h.session.view()).toMatchObject({phase:'ready',role:'doctor'});expect(h.session.view().generation).toBe(generation);}
+  finally{await h.close();}
+ });
+ it('accepts only exact four-digit PIN and role payloads',()=>{
+  expect(workspaceRoleInput({role:'admin',pin:'1234'})).toBe(true);expect(workspaceRoleInput({role:'reception'})).toBe(true);
+  expect(workspaceRoleInput({role:'admin',pin:'1111',accountRole:'admin'})).toBe(false);expect(workspaceRoleInput({role:'owner'})).toBe(false);expect(workspaceRoleInput({role:'admin',pin:'12'})).toBe(false);
+ });
  it('binds Worker capabilities and revokes old response/write authority during account switch',async()=>{
   const h=await harness();const sender={},frame={},caller={sender,frame,url:'dental-fixture://alpha/index.html'};let release!:(r:Response)=>void;
   const broker=new ApiBroker(staging,h.session,()=>new Promise(r=>release=r),{timeoutMs:150,responseBytes:4096,perApp:2,total:2,operationKeys:4});
@@ -210,6 +242,20 @@ describe('Firebase/Worker fixed-endpoint contract',()=>{
  it('keeps email/password and refresh token in host transport and checks /v1/me shape',async()=>{
   const sent:{url:string;init:RequestInit}[]=[];const client=new FirebaseClient(async(url,init)=>{sent.push({url:String(url),init:init!});return Response.json(String(url).includes('/v1/me')?{session:{clinicUser:{clinicUserId:'user',displayName:'Doctor',role:'doctor',capabilities:['appointments.access']},clinic:{tenantId:'tenant',displayName:'Clinic'}}}:String(url).includes('securetoken.googleapis.com')?{id_token:jwt(),refresh_token:'refresh-rotated',user_id:'fixture-user',expires_in:'3600'}:{idToken:jwt(),refreshToken:'refresh-original',localId:'fixture-user',expiresIn:'3600'});});
   const signal=new AbortController().signal,t=await client.signIn(input.email,input.password,signal);await client.resolve(t.idToken,signal);const renewed=await client.refresh(t.refreshToken,signal);expect(renewed.refreshToken).toBe('refresh-rotated');expect(sent[0].url).toContain('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword');expect(JSON.parse(sent[0].init.body as string)).toMatchObject({email:input.email,password:input.password});expect(sent[1].url).toBe(staging.apiBase+'/v1/me');expect(sent[2].init.body).toBe('grant_type=refresh_token&refresh_token=refresh-original');expect(sent.every(v=>v.init.redirect==='manual'&&v.init.cache==='no-store')).toBe(true);
+ });
+ it('reads active/account roles from /v1/me and sends the fixed Admin PIN only to the Worker role endpoint',async()=>{
+  const sent:{url:string;init:RequestInit}[]=[];
+  const client=new FirebaseClient(async(url,init)=>{sent.push({url:String(url),init:init!});const path=new URL(String(url)).pathname;
+   if(path==='/v1/me')return Response.json({session:{clinicUser:{clinicUserId:'user',displayName:'Admin',role:'doctor',accountRole:'admin',workspaceRoles:['admin','doctor','reception'],capabilities:['appointments.access']},clinic:{tenantId:'tenant',displayName:'Clinic'}}});
+   if(path==='/v1/clinic/workspace-role')return Response.json({workspace:{role:'admin'}});
+   throw new Error('Unexpected endpoint');
+  });
+  const signal=new AbortController().signal,clinic=await client.resolve('host-token',signal);
+  expect(clinic).toMatchObject({role:'doctor',accountRole:'admin',workspaceRoles:['admin','doctor','reception']});
+  await client.switchWorkspaceRole('host-token','admin','9876',signal);
+  expect(sent.map(v=>new URL(v.url).pathname)).toEqual(['/v1/me','/v1/clinic/workspace-role']);
+  expect(sent[1].init.method==='PUT'&&sent[1].init.redirect==='manual'&&sent[1].init.cache==='no-store'&&new Headers(sent[1].init.headers).get('authorization')==='Bearer host-token').toBe(true);
+  expect(JSON.parse(sent[1].init.body as string)).toEqual({role:'admin',pin:'9876'});
  });
  it('rejects production tokens, redirects, malformed/oversized responses and wrong authority shape',async()=>{
   const responses=[Response.json({idToken:jwt('production' as typeof staging.firebaseProject),refreshToken:'r',localId:'fixture-user',expiresIn:'3600'}),new Response(null,{status:302,headers:{location:'https://evil.invalid'}}),Response.json({token:'bad'}),new Response('x'.repeat(66000),{headers:{'content-type':'application/json'}})];

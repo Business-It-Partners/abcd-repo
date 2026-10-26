@@ -23,9 +23,10 @@ describe('first-party clinic app API policy', () => {
     expect(allowedClinicApiPath('clinic.app.followups', '/v1/dental-os/catalogue', 'GET')).toBe(false);
   });
 
-  it('keeps finance and reception payment access separate', () => {
+  it('allows Finance for users with finance or patient-payment capability', () => {
     expect(appAllowed('clinic.app.finance', 'admin', ['finance.manage'])).toBe(true);
-    expect(appAllowed('clinic.app.finance', 'reception', ['finance.manage'])).toBe(false);
+    expect(appAllowed('clinic.app.finance', 'reception', ['patient_payments.outstanding.read'])).toBe(true);
+    expect(appAllowed('clinic.app.finance', 'reception', [])).toBe(false);
     expect(appAllowed('clinic.app.patient-payments', 'reception', ['patient_payments.outstanding.read'])).toBe(true);
     expect(appAllowed('clinic.app.patient-payments', 'doctor', ['patient_payments.outstanding.read'])).toBe(false);
   });

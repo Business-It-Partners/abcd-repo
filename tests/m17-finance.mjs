@@ -51,8 +51,22 @@ try {
   await purchaseTable.locator('tbody tr').nth(2).waitFor();
   const purchaseHeaders = await purchaseTable.locator('thead th').allTextContents();
   check('purchase list removes the Category column and keeps the simplified scan layout', !purchaseHeaders.some(value => value.trim() === 'Category') && purchaseHeaders.some(value => value.includes('Items')));
-  check('supplier and item labels wrap to two lines, invoice stays single-line, and totals stay single-line', await page.locator('.purchase-supplier-summary').first().evaluate(element => getComputedStyle(element).webkitLineClamp) === '2' && await page.locator('.purchase-items-summary').nth(1).evaluate(element => getComputedStyle(element).webkitLineClamp) === '2' && await page.locator('.purchase-invoice-summary').last().evaluate(element => getComputedStyle(element).whiteSpace) === 'nowrap' && await page.locator('.purchase-total-single-line').nth(1).evaluate(element => getComputedStyle(element).whiteSpace) === 'nowrap');
-  check('long invoice references clip to one line with ellipsis', await page.locator('.purchase-invoice-summary').last().evaluate(element => element.scrollWidth > element.clientWidth && getComputedStyle(element).textOverflow === 'ellipsis'));
+  const purchaseColumnWidths = await purchaseTable.locator('thead th').evaluateAll(headers => Object.fromEntries(headers.map(header => [header.textContent.trim().split(/[⇅▲▼]/)[0].trim(), header.style.width])));
+  const purchaseMinWidth = await purchaseTable.evaluate(table => getComputedStyle(table).minWidth);
+  check('purchase table moves Total right by giving Items 50px from the available gap', purchaseColumnWidths['Invoice #'] === '100px' && purchaseColumnWidths.Supplier === '170px' && purchaseColumnWidths.Items === '185px' && purchaseColumnWidths.Total === '125px' && purchaseColumnWidths.Action === '190px' && purchaseMinWidth === '925px');
+  const viewportCheck = await page.context().newCDPSession(page);
+  await viewportCheck.send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+  await page.waitForTimeout(80);
+  const tableOverflow = await purchaseTable.evaluate(table => ({ available: table.parentElement.clientWidth, used: table.parentElement.scrollWidth }));
+  check('purchase list has no horizontal scroll in a 1366px window', tableOverflow.used <= tableOverflow.available);
+  await viewportCheck.send('Emulation.clearDeviceMetricsOverride');
+  const itemSummaryWidth = await page.locator('.purchase-items-summary').nth(1).evaluate(element => ({
+    summary: element.getBoundingClientRect().width,
+    available: element.parentElement.getBoundingClientRect().width,
+  }));
+  check('item text uses the full available width inside the Items cell', itemSummaryWidth.summary >= itemSummaryWidth.available - 1 && itemSummaryWidth.summary > 165);
+  check('invoice, supplier, and item labels use two-line truncation with spaced separators while totals stay single-line', await page.locator('.purchase-invoice-summary').last().evaluate(element => getComputedStyle(element).webkitLineClamp) === '2' && await page.locator('.purchase-supplier-summary').first().evaluate(element => getComputedStyle(element).webkitLineClamp) === '2' && await page.locator('.purchase-items-summary').nth(1).evaluate(element => getComputedStyle(element).webkitLineClamp) === '2' && await page.locator('.purchase-items-summary .purchase-item-separator').first().evaluate(element => getComputedStyle(element).marginLeft === '7px' && getComputedStyle(element).marginRight === '7px') && await page.locator('.purchase-invoice-summary').last().evaluate(element => getComputedStyle(element).whiteSpace !== 'nowrap' && getComputedStyle(element).overflow === 'hidden') && await page.locator('.purchase-total-single-line').nth(1).evaluate(element => getComputedStyle(element).whiteSpace === 'nowrap'));
+  check('long invoice reference remains available in full while its cell clamps to two lines', await page.locator('.purchase-invoice-summary').last().evaluate(element => element.title.length > 30 && element.title === element.textContent && getComputedStyle(element).webkitLineClamp === '2' && getComputedStyle(element).overflow === 'hidden'));
   check('purchase list no longer shows the success note as a page subtitle', await page.locator('.purchase-notice').count() === 0 && !(await page.locator('body').innerText()).includes('Purchase recorded successfully.'));
   await page.locator('[aria-label="Opening purchases…"]').waitFor({ state: 'detached' });
   const purchaseListScreenshotPath = path.join(root, 'artifacts', 'm17-finance-purchases-list.png');

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, CloudCheck, LockKeyhole, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
 import type { StoreView } from '../electron/distribution/contracts';
@@ -13,6 +13,7 @@ const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.
 type Props = {
   session?: SessionView;
   sessionControls?: ReactNode;
+  roleControls?: ReactNode;
   storeView: StoreView;
   developmentApps?: DevelopmentAppView;
   developmentMessage?: string;
@@ -26,6 +27,7 @@ type Props = {
   onOpenDevelopmentApp?(id: string): void;
   onShowWindows?: () => void;
   onSupport?: () => void;
+  onRequestLock?: () => void;
   onRequestSignOut?: () => void;
   onRequestClose(): void;
 };
@@ -35,9 +37,10 @@ const initialsFor = (value: string) => value.trim().split(/\s+/).filter(Boolean)
 const roleLabel = (value: string) => value ? value[0].toLocaleUpperCase() + value.slice(1) : '';
 const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export function DesktopChrome({ session, sessionControls, storeView, developmentApps, developmentMessage, developmentTargets, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onOpenDevelopmentApp, onShowWindows, onSupport, onRequestSignOut, onRequestClose }: Props) {
+export function DesktopChrome({ session, sessionControls, roleControls, storeView, developmentApps, developmentMessage, developmentTargets, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onOpenDevelopmentApp, onShowWindows, onSupport, onRequestLock, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
+  const roleMenuRef = useRef<HTMLDetailsElement>(null);
   const [clinicLogo, setClinicLogo] = useState<{ generation: number; dataUrl: string }>();
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
     const today = currentNepaliDate(new Date());
@@ -55,6 +58,25 @@ export function DesktopChrome({ session, sessionControls, storeView, development
       window.clearInterval(timer);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const menu = roleMenuRef.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      const menu = roleMenuRef.current;
+      if (event.key !== 'Escape' || !menu?.open) return;
+      menu.open = false;
+      menu.querySelector('summary')?.focus({ preventScroll: true });
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
     };
   }, []);
 
@@ -96,11 +118,9 @@ export function DesktopChrome({ session, sessionControls, storeView, development
         ? storeView.message || 'App Store unavailable. Refresh to try again.'
         : storeView.message
           || (!storeView.canInstall && availableUpdateCount > 0
-            ? 'A clinic administrator is required to update apps.'
+            ? 'App updates are unavailable for this session.'
             : updateApps.length === 0
-              ? storeView.apps.some(app => !!app.activeVersion)
-                ? 'All installed apps are up to date.'
-                : 'Updates for installed apps will appear here.'
+              ? 'No app updates available.'
               : storeView.job
                 ? 'The active app stays in place while this update is prepared.'
                 : hasPendingUpdate
@@ -113,14 +133,22 @@ export function DesktopChrome({ session, sessionControls, storeView, development
         <img src={sajiloDentalMark} alt="" />
         <span className="statusbar-brand-sajilo">Sajilo</span><span className="statusbar-brand-dental">Dental</span>
       </div>
-      <nav className="statusbar-menu" aria-label="Desktop menus">
-        <button type="button" onClick={onOpenApps} aria-label="Open apps catalog">Apps</button>
-        <button type="button" onClick={onShowWindows} aria-label="Show open windows">Windows</button>
-        <button type="button" onClick={onSupport} aria-label="Open support diagnostics">Help</button>
-        {session?.phase === 'ready' && sessionControls && <details className="statusbar-account-menu">
-          <summary aria-label="Account options">Account</summary>
-          {sessionControls}
-        </details>}
+      <nav className="statusbar-menu" aria-label="Desktop menus" onClick={event=>{if(event.target instanceof HTMLElement&&event.target.closest('button'))event.currentTarget.querySelectorAll('details[open]').forEach(menu=>menu.removeAttribute('open'));}}>
+        {roleControls ? <details ref={roleMenuRef} className="statusbar-role-menu">
+          <summary aria-label="Switch role">Switch role</summary>
+          <div className="statusbar-role-panel">
+            {roleControls}
+            {sessionControls}
+          </div>
+        </details> : <>
+          <button type="button" onClick={onOpenApps} aria-label="Open apps catalog">Apps</button>
+          <button type="button" onClick={onShowWindows} aria-label="Show open windows">Windows</button>
+          <button type="button" onClick={onSupport} aria-label="Open support diagnostics">Help</button>
+          {session?.phase === 'ready' && sessionControls && <details className="statusbar-account-menu">
+            <summary aria-label="Account options">Account</summary>
+            {sessionControls}
+          </details>}
+        </>}
       </nav>
       <div className="statusbar-right">
         <span className={`statusbar-network ${online ? 'is-online' : 'is-offline'}`} aria-label={`Network ${online ? 'online' : 'offline'}`} title={online ? 'The system reports a network connection; this does not confirm clinic services are reachable.' : 'The system reports no network connection.'}>
@@ -145,6 +173,7 @@ export function DesktopChrome({ session, sessionControls, storeView, development
         <span>{session.userLabel || 'Signed-in user'}</span>
         {session.role && <small>{roleLabel(session.role)}</small>}
       </div>
+      {onRequestLock && <button className="clinic-widget-lock" type="button" aria-label="Lock workspace" title="Lock workspace" onClick={onRequestLock}><LockKeyhole size={15} aria-hidden="true"/></button>}
       {onRequestSignOut && <button className="clinic-widget-signout" type="button" aria-label="Sign out" title="Sign out" onClick={onRequestSignOut}><LogOut size={15} aria-hidden="true"/><span>Sign out</span></button>}
     </section>}
 
@@ -186,10 +215,7 @@ export function DesktopChrome({ session, sessionControls, storeView, development
 
       <section className="desktop-widget app-updates-widget" aria-label="App updates">
         <div className="updates-widget-heading">
-          <div>
-            <div className="widget-kicker">APP UPDATES</div>
-            <span className="updates-widget-subtitle">{availableUpdateCount > 0 ? 'Ready to install' : 'Keep your apps current'}</span>
-          </div>
+          <div className="updates-widget-title">Available app updates</div>
           <span className="updates-widget-tools">
             <span className="updates-count">{availableUpdateCount} available</span>
             <button className="updates-refresh-button" type="button" aria-label="Check for app updates" title="Check for app updates" disabled={storeControlsLocked || storeView.phase === 'refreshing' || !!storeView.job} onClick={onRefreshApps}><RefreshCw size={13} aria-hidden="true"/></button>
@@ -222,8 +248,11 @@ export function DesktopChrome({ session, sessionControls, storeView, development
                   : <button className="update-app-button" type="button" aria-label={`Update ${app.title}`} disabled={!canRequestUpdate || !app.available} onClick={() => onRequestUpdate(app.id)}>Update</button>}
             </div>;
           })}
-        </div> : <div className="updates-empty" role={storeView.phase === 'unavailable' ? 'alert' : 'status'}>{widgetMessage}</div>}
-        {updateApps.length > 0 && <div className="updates-widget-footnote" aria-live="polite">{widgetMessage}</div>}
+        </div> : <div className="updates-empty" role={storeView.phase === 'unavailable' ? 'alert' : 'status'}>
+          {storeView.phase === 'ready' && availableUpdateCount === 0
+            ? <><span className="updates-empty-icon" aria-hidden="true"><CloudCheck size={19} strokeWidth={1.8}/></span><span>No app updates available</span></>
+            : widgetMessage}
+        </div>}
       </section>
 
     </section>

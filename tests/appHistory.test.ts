@@ -19,7 +19,7 @@ function bridge() {
   } };
 }
 
-describe('SDK 1.6 app page history', () => {
+describe('SDK 1.7 app page history', () => {
   it('mirrors opaque IDs and follows window back/forward requests without exposing route data', () => {
     const host = bridge();
     const history = new AppHistory<{ page: string; patientId?: string }>(host.value, { page: 'directory' });

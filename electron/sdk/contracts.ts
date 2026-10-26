@@ -1,7 +1,7 @@
 import { validMediaUpload } from './mediaUploadContract';
 import { validPickInput } from '../host/filePickerContract';
 /** Renderer-safe wire contract. No Electron, credential, filesystem or transport imports. */
-export const SDK = { major: 1, minor: 6 } as const;
+export const SDK = { major: 1, minor: 7 } as const;
 export const MAX_REQUEST_BYTES = 16_384;
 export const MAX_NAVIGATION_ENTRIES = 64;
 export const operations = [
@@ -9,6 +9,7 @@ export const operations = [
   'clinic.app.followups', 'clinic.app.appointments', 'clinic.app.work-entry', 'clinic.app.patient-record',
   'clinic.app.treatment-progress', 'clinic.app.lab-tracker', 'clinic.app.finance', 'clinic.app.patient-payments',
   'clinic.app.staff', 'clinic.app.treatment-protocols', 'clinic.app.calendar',
+  'clinic.app.user-management',
   'session.context', 'platform.status', 'preferences.read', 'preferences.update', 'lifecycle.report', 'notifications.show', 'native.intent', 'local.files.pick',
 ] as const;
 export type Operation = typeof operations[number];

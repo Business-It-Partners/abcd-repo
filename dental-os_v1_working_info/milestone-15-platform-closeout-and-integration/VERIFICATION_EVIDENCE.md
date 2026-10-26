@@ -1,5 +1,13 @@
 # M15 Verification Evidence — Platform Closeout and Integration
 
+## V1 fixed Admin workspace PIN — 2026-10-26
+
+Dental OS M15 commit `5faca65ccfe2d47db4537ecf1957b8bd84e75207` removes PIN setup and the configured-state field. Admin may switch to Doctor or Reception without setup; returning to Admin submits the four-digit PIN to the Worker. The OS does not persist the PIN. Its role/session authority remains server-derived, and the Worker enforces the V1 fixed value `9876`, account-role eligibility and the existing five-attempt/fifteen-minute lockout. Custom PIN creation is deferred to V2.
+
+Backend commit `e802b6ac4d651f1708f4331eb2a67729afa3c8b1` was pushed to `cloudfare-staging` and deployed successfully by [workflow 40268063042](https://github.com/Business-It-Partners/dental-saas/actions/runs/40268063042). The staging `/health` request returned HTTP 200 and `environment: cloudfare-staging`; unauthenticated `/v1/me` returned the expected HTTP 401. No database migration was added. No clinic credentials were available, so authenticated live role-switching remains unverified. Production was not changed.
+
+Verification: Dental OS root build passed; serial root unit suite 524/524; focused identity suite 26/26; private identity UI suite 62/62. Dental SaaS typecheck, lint and local web build passed; 56 clinic-web tests and 449 Worker tests passed. No signed app bundle was created, and the running Dental OS was left untouched; the updated build loads on its next full launch.
+
 ## User-directed V1 readiness plan recorded — 2026-10-25
 
 **Result:** Documentation-only planning checkpoint. The user directed a sequential M15.7–M15.12 readiness track in the dental-os-audit worktree, followed by the user's manual review and integration into the main project. The plan covers shell crash/hang recovery, resource-pressure reclamation, saved-session behavior during temporary outages, exact-source verification, outstanding M15 evidence, and post-review integration.
@@ -356,6 +364,26 @@ Validation on the current M15 source: `npm run build` passed. The private headle
 `App.tsx` no longer includes dock icon hover in the `blocked` flag passed to `RuntimeFixtures`. That flag hides native `WebContentsView` children, so coupling it to hover switched the app body to its captured mirror and back even though the shell window did not move. The fullscreen `peek` path remains responsible for exposing the dock over fullscreen apps.
 
 `npm run build` passed. The private headless `npm run test:runtime-resize` passed a new regression check that hovers the Motion Studio dock icon and verifies the native view stays visible and the managed window bounds remain unchanged; right, bottom, corner and fullscreen checks also passed. `npm test -- --maxWorkers=1 --no-file-parallelism` completed with 509/512 passing. The two failures in `tests/developmentApps.test.ts` read an empty registry because the tests do not publish a build first; the failure in `tests/m17ReleaseIdentity.test.ts` expects Work Entry 1.0.6 while existing local package metadata is 1.0.7. The running Dental OS process was not reloaded; verify visually after its next full launch.
+
+## Workspace-role switching — M15 client verification — 2026-10-26
+
+The Worker contract was deployed to Cloudflare staging on `dental-saas` commit `485c32dae2bfcaec9a2ee314110d3f6013083dd0`; staging workflow [40262959186](https://github.com/Business-It-Partners/dental-saas/actions/runs/40262959186) succeeded. Staging health and unauthenticated authorization checks passed. Authenticated staging role switching was not exercised because no clinic test credentials were available.
+
+OS commit `6f6c7efd` consumes the fixed `/v1/clinic/workspace-role` and `/v1/clinic/workspace-pin` endpoints. The latest `/v1/me` response supplies active/account roles, allowed workspaces, and PIN setup state. The host resets the session generation and app runtimes after accepted role changes and re-resolves the profile; no role/PIN is written as local authority. Admin custom PIN setup-before-leaving, wrong-PIN denial and PIN-gated return are checked in the synthetic identity fixture.
+
+Validation: `npm run build` PASS; full serial `npm test -- --maxWorkers=1 --no-file-parallelism` PASS (524/524, 36 files); focused `tests/identity.test.ts` PASS (26/26); `npm run test:identity` PASS (62/62 private checks; report: [identity verification](../../artifacts/identity-verification.json)); `python3 tools/check-dental-docs.py` PASS; `git diff --check` PASS. One earlier UI diagnostic stopped at sign-out because a running app surface covered the profile-card button. Moving session actions into the always-visible Switch role menu resolved it; the 62-check rerun passed. The live OS was not restarted; a full launch is required. M15/G15 remain open.
+
+### Desktop identity control follow-up — local candidate — 2026-10-26
+
+Candidate branch `codex/role-switch-menu-ux` adds the bordered Switch role control, limits its popup to workspace choices, moves Lock and Sign out into the clinic info widget, and dismisses the menu/role confirmation on outside click. Confirming a role change now shows a **Switching workspace** overlay over the desktop until the authenticated target role is ready, then displays a checkmark toast naming the active workspace. Role/session authorization behavior is unchanged.
+
+Verification on this candidate: `npm run build` PASS; `npm run test:identity` PASS (67 private checks, including workspace-only menu, Lock/Sign out in the clinic info widget, outside dismissal, Doctor↔Reception transitions, loading and success feedback, Admin PIN behavior); `npm test -- --maxWorkers=1` PASS (524/524 across 36 files); `python3 tools/check-dental-docs.py` PASS; `git diff --check` PASS. The private identity report is regenerated at [identity verification](../../artifacts/identity-verification.json). This local candidate has no backend deployment or package publication. The visible preview was relaunched from the latest build using its separate profile; the original live OS session remains untouched. M15/G15 remain open.
+
+### Dashboard App Updates widget information state — local candidate — 2026-10-26
+
+The home widget now labels itself **Available app updates**. Its ready/empty state shows a cloud-check icon with **No app updates available**. When a signed release exists for an installed app, the existing app name, installed/target versions, state and Update button remain visible without extra instructional copy. Update distribution and staging behavior are unchanged.
+
+Verification: `npm run build` PASS; private `node tools/run-ui-test.mjs tests/home-app-updates.mjs` PASS (5 checks covering empty and available states); serial `npm test -- --maxWorkers=1` PASS (524/524 across 36 files); `git diff --check` PASS. The available-state desktop screenshot is retained at [app-updates-widget-connected.png](../../artifacts/app-updates-widget-connected.png). The already-running candidate preview was not reloaded and needs a later full launch to display this follow-up; the original OS session remains untouched. No M15/G15 gate changed.
 
 ## M15.8 Linux shell and app failure containment
 

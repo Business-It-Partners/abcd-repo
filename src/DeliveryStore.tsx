@@ -241,6 +241,6 @@ export function DeliveryStore({ view, action, open, locked, controller, settling
     {!filteredApps.length && <section className="store-empty delivery-store-empty" role={unavailable ? 'alert' : 'status'} aria-busy={view.phase === 'refreshing'}><h2>{emptyTitle}</h2><p>{emptyDescription}</p></section>}
    </>}
   </div>
-  <footer className="staff-footer delivery-store-footer"><span>{view.canInstall ? 'Clinic administrator · App management allowed' : 'App management requires clinic administrator permission'}</span></footer>
+  <footer className="staff-footer delivery-store-footer"><span>{view.canInstall ? 'App management is available for this session.' : 'App management is unavailable for this session.'}</span></footer>
  </div>;
 }

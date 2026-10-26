@@ -78,12 +78,23 @@ describe('closed clinic JSON route contract', () => {
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access'], '/v1/follow-ups', 'GET')).toBe(false);
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access', 'followups.access'], '/v1/follow-ups', 'GET')).toBe(true);
     expect(clinicRequestAllowed(app('work-entry'), 'doctor', ['work_entry.access'], `/v1/patient-media/${id}/withdraw`, 'POST')).toBe(true);
-    expect(clinicRequestAllowed(app('finance'), 'reception', ['finance.manage', 'staff.manage'], '/v1/clinic/staff', 'GET')).toBe(false);
+    expect(clinicRequestAllowed(app('finance'), 'reception', ['patient_payments.outstanding.read'], '/v1/patient-payments', 'GET')).toBe(true);
+    expect(clinicRequestAllowed(app('finance'), 'reception', ['patient_payments.outstanding.read'], '/v1/clinic/transaction-record?month=2026-10', 'GET')).toBe(false);
+    expect(clinicRequestAllowed(app('finance'), 'reception', ['patient_payments.outstanding.read'], '/v1/clinic/staff', 'GET')).toBe(false);
     expect(clinicRequestAllowed(app('patient-payments'), 'doctor', ['patient_payments.outstanding.read'], '/v1/patient-payments', 'GET')).toBe(false);
+  });
+
+  it('assigns longer deadlines only to host-classified report and ledger reads', () => {
+    expect(resolveClinicJsonRoute(app('finance'), '/v1/clinic/operating-expenses', 'GET')?.timeoutClass).toBe('report');
+    expect(resolveClinicJsonRoute(app('finance'), '/v1/clinic/transaction-record?from=2026-10-01&to=2026-10-25', 'GET')?.timeoutClass).toBe('report');
+    expect(resolveClinicJsonRoute(app('staff'), '/v1/clinic/salary-payouts', 'GET')?.timeoutClass).toBe('report');
+    expect(resolveClinicJsonRoute(app('finance'), '/v1/clinic/operating-expenses', 'POST')?.timeoutClass).toBe('standard');
+    expect(resolveClinicJsonRoute(app('finance'), '/v1/clinic/staff', 'GET')?.timeoutClass).toBe('standard');
   });
 });
 
-function client(granted = true, authorize?: (operation: ApiOperationId) => boolean, transport?: Transport) {
+function client(granted = true, authorize?: (operation: ApiOperationId) => boolean, transport?: Transport,
+  limits?: { timeoutMs: number; credentialTimeoutMs?: number; reportTimeoutMs?: number; responseBytes: number; perApp: number; total: number; operationKeys: number }) {
   let credentials = 0, transports = 0, active = true;
   let capabilities = ['finance.manage', 'staff.manage'];
   const sender = {}, frame = {}, caller = { sender, frame, url: 'dental-fixture://finance/index.html' };
@@ -97,7 +108,7 @@ function client(granted = true, authorize?: (operation: ApiOperationId) => boole
   const broker = new ApiBroker(staging, identity, async (url, init) => {
     transports++; sent.push(init); expect(new URL(url).origin).toBe(staging.apiBase);
     return transport ? transport(url, init) : Response.json({ staff: [] });
-  });
+  }, limits);
   const packageCapabilities: Operation[] = ['clinic.api.request', 'clinic.app.finance'];
   broker.register({ sender, frame, origin: caller.url, appId: dynamicAppId, appVersion: '1.0.0', capabilities: packageCapabilities,
     authorizeApiOperation: operation => granted && operation === 'clinic.api.request' && (authorize?.(operation) ?? true), report: () => {} });
@@ -111,6 +122,16 @@ function client(granted = true, authorize?: (operation: ApiOperationId) => boole
   };
 }
 describe('signed clinic JSON entry point dispatch', () => {
+  it('gives report reads the longer deadline and keeps ordinary routes at the standard deadline', async () => {
+    const limits = { timeoutMs: 25, credentialTimeoutMs: 25, reportTimeoutMs: 70, responseBytes: 4096, perApp: 2, total: 2, operationKeys: 8 };
+    const slowReport = client(true, undefined, async () => { await new Promise(resolve => setTimeout(resolve, 45)); return Response.json({ rows: [] }); }, limits);
+    try { expect((await slowReport.request('/v1/clinic/operating-expenses')).ok).toBe(true); }
+    finally { slowReport.broker.dispose(); }
+    const slowStandard = client(true, undefined, async () => { await new Promise(resolve => setTimeout(resolve, 45)); return Response.json({ rows: [] }); }, limits);
+    try { expect(await slowStandard.request('/v1/clinic/staff')).toMatchObject({ ok: false, error: { code: 'TIMEOUT' } }); }
+    finally { slowStandard.broker.dispose(); }
+  });
+
   it('uses the exact signed policy identity and denies another validly signed package digest', async () => {
     const pair = generateKeyPairSync('ed25519'), keyId = 'company', now = Date.now();
     const caps: Operation[] = ['clinic.api.request', 'clinic.app.finance'];

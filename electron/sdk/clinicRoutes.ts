@@ -3,8 +3,9 @@ import type { ClinicAppFamily } from './appPolicy';
 /** Host-owned clinic JSON contract v1. Paths never authorize credentials by themselves. */
 export const clinicJsonContractVersion = 1;
 type Query = Readonly<Record<string, (value: string) => boolean>>;
+export type ClinicRequestTimeoutClass = 'standard' | 'report';
 type Rule = { apps: readonly string[]; method: string; path: string; query: Query; requiredQuery: readonly string[];
-  capabilities: readonly string[]; check?: (url: URL) => boolean; pattern: RegExp };
+  capabilities: readonly string[]; check?: (url: URL) => boolean; timeoutClass: ClinicRequestTimeoutClass; pattern: RegExp };
 const uuidPart = '[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}';
 const short = (max: number) => (value: string) => value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
 const date = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))
@@ -15,12 +16,12 @@ const patientQuery: Query = { q: short(120), cursor: short(512), limit: value =>
 const period: Query = { from: date, to: date };
 const ledgerQuery: Query = { month: value => /^\d{4}-(?:0[1-9]|1[0-2])$/.test(value), cursor: short(512) };
 const rules: Rule[] = [];
-function route(apps: string[], methods: string[], path: string, query: Query = {}, capabilities: string[] = [], requiredQuery: string[] = [], check?: Rule['check']) {
+function route(apps: string[], methods: string[], path: string, query: Query = {}, capabilities: string[] = [], requiredQuery: string[] = [], check?: Rule['check'], timeoutClass: ClinicRequestTimeoutClass = 'standard') {
   const pattern = new RegExp('^' + path.split('/').map(segment => segment.startsWith(':') ? uuidPart
     : segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('/') + '$');
-  for (const method of methods) rules.push({ apps, method, path, query, capabilities, requiredQuery, check, pattern });
+  for (const method of methods) rules.push({ apps, method, path, query, capabilities, requiredQuery, check, timeoutClass, pattern });
 }
-const patient = ['patient-record'], work = ['work-entry'], finance = ['finance'], staff = ['staff'];
+const patient = ['patient-record'], work = ['work-entry'], finance = ['finance'], staff = ['staff'], userManagement = ['user-management'];
 const care = ['patient-record', 'work-entry'];
 route(['followups', 'work-entry'], ['GET'], '/v1/follow-ups', { date }, ['followups.access']);
 route(['followups', ...patient], ['POST'], '/v1/follow-ups');
@@ -46,9 +47,9 @@ route(patient, ['POST'], '/v1/patient-notes');
 route(patient, ['POST'], '/v1/patient-notes/:id/withdraw');
 route(patient, ['POST'], '/v1/prescriptions');
 for (const action of ['correct', 'withdraw']) route(patient, ['POST'], '/v1/prescriptions/:id/' + action);
-route(['patient-record', 'work-entry', 'finance', 'patient-payments'], ['GET'], '/v1/patients/:id/ledger', ledgerQuery, ['patient_billing_ledger.read']);
+route(['patient-record', 'work-entry', 'finance', 'patient-payments'], ['GET'], '/v1/patients/:id/ledger', ledgerQuery, ['patient_billing_ledger.read'], [], undefined, 'report');
 route(['patient-record', 'finance', 'patient-payments'], ['POST'], '/v1/patients/:id/payments', {}, ['patient_payments.collect']);
-route(['finance', 'patient-payments'], ['GET'], '/v1/patient-payments', period, ['patient_payments.outstanding.read']);
+route(['finance', 'patient-payments'], ['GET'], '/v1/patient-payments', period, ['patient_payments.outstanding.read'], [], undefined, 'report');
 for (const action of ['correct', 'reverse']) route(['patient-record', 'finance'], ['POST'], '/v1/patient-ledger/:id/' + action, {}, ['finance.manage']);
 for (const chart of ['odontogram', 'periodontal-chart']) route(care, ['GET', 'PUT'], '/v1/patients/:id/' + chart, {}, ['work_entry.access']);
 route(care, ['GET', 'POST'], '/v1/patients/:id/canal-measurements', {}, ['work_entry.access']);
@@ -65,8 +66,8 @@ route(['patient-record', 'lab-tracker'], ['PATCH'], '/v1/lab-orders/:id', {}, ['
 route(['patient-record', 'work-entry', 'lab-tracker'], ['GET'], '/v1/clinic/suppliers', { scope: value => value === 'lab' }, ['lab_tracker.access'], ['scope']);
 route(finance, ['GET'], '/v1/clinic/suppliers', {}, ['finance.manage']);
 route(patient, ['GET'], '/v1/clinic/suppliers', {}, ['finance.manage']);
-route(['lab-tracker'], ['GET'], '/v1/clinic/suppliers/:id/statement', { scope: value => value === 'lab' }, ['lab_tracker.access'], ['scope']);
-route(finance, ['GET'], '/v1/clinic/suppliers/:id/statement', {}, ['finance.manage']);
+route(['lab-tracker'], ['GET'], '/v1/clinic/suppliers/:id/statement', { scope: value => value === 'lab' }, ['lab_tracker.access'], ['scope'], undefined, 'report');
+route(finance, ['GET'], '/v1/clinic/suppliers/:id/statement', {}, ['finance.manage'], [], undefined, 'report');
 route(['lab-tracker', 'finance'], ['POST'], '/v1/clinic/suppliers');
 route(['lab-tracker', 'finance'], ['PATCH'], '/v1/clinic/suppliers/:id');
 route(work, ['GET'], '/v1/work-entry/cases');
@@ -82,26 +83,30 @@ route(['patient-record', 'work-entry', 'treatment-progress', 'treatment-protocol
 route(['treatment-protocols'], ['POST'], '/v1/treatment-protocols');
 route(['treatment-protocols'], ['PUT'], '/v1/treatment-protocols/:id');
 for (const collection of ['operating-expenses', 'purchases', 'salary-payouts', 'supplier-payments']) {
-  route(finance, ['GET', 'POST'], '/v1/clinic/' + collection, {}, ['finance.manage']);
+  route(finance, ['GET'], '/v1/clinic/' + collection, {}, ['finance.manage'], [], undefined, 'report');
+  route(finance, ['POST'], '/v1/clinic/' + collection, {}, ['finance.manage']);
   for (const action of ['void', 'correct']) route(finance, ['POST'], '/v1/clinic/' + collection + '/:id/' + action, {}, ['finance.manage']);
 }
 route(finance, ['GET', 'POST'], '/v1/clinic/products', {}, ['finance.manage']);
 route(finance, ['PATCH'], '/v1/clinic/products/:id', {}, ['finance.manage']);
-route(finance, ['GET'], '/v1/clinic/transaction-record', period, ['finance.manage']);
+route(finance, ['GET'], '/v1/clinic/transaction-record', period, ['finance.manage'], [], undefined, 'report');
 route(['staff', 'finance'], ['GET'], '/v1/clinic/staff', {}, ['staff.manage']);
-route(staff, ['GET'], '/v1/clinic/salary-payouts', {}, ['finance.manage']);
+route(staff, ['GET'], '/v1/clinic/salary-payouts', {}, ['finance.manage'], [], undefined, 'report');
 route(staff, ['POST'], '/v1/clinic/staff');
 route(staff, ['GET', 'PATCH'], '/v1/clinic/staff/:id');
 route(staff, ['GET'], '/v1/clinic/staff/:id/clinical-work', { startDate: date, endDate: date });
 route(staff, ['GET'], '/v1/clinic/staff/:id/documents');
 route(staff, ['POST'], '/v1/clinic/staff/:id/documents/:id/withdraw');
+route(userManagement, ['GET', 'POST'], '/v1/clinic/users', {}, ['clinic_users.manage']);
+route(userManagement, ['PATCH'], '/v1/clinic/users/:id', {}, ['clinic_users.manage']);
+route(userManagement, ['POST'], '/v1/clinic/users/:id/password', {}, ['clinic_users.manage']);
 route(['calendar'], ['GET'], '/v1/calendar-tasks', period, [], ['from', 'to'],
   url => (Date.parse(url.searchParams.get('to')!) - Date.parse(url.searchParams.get('from')!)) / 86_400_000 <= 45);
 route(['calendar'], ['POST'], '/v1/calendar-tasks');
 route(['calendar'], ['PATCH'], '/v1/calendar-tasks/:id');
 route(['calendar'], ['POST'], '/v1/calendar-tasks/:id/archive');
 
-export function resolveClinicJsonRoute(family: ClinicAppFamily | undefined, path: string, method: string): Readonly<Pick<Rule, 'path' | 'method' | 'capabilities'>> | undefined {
+export function resolveClinicJsonRoute(family: ClinicAppFamily | undefined, path: string, method: string): Readonly<Pick<Rule, 'path' | 'method' | 'capabilities' | 'timeoutClass'>> | undefined {
   if (!family) return;
   if (!path.startsWith('/v1/') || path.length > 1024 || /[\\#\u0000-\u001f\u007f]/.test(path)) return;
   const rawPath = path.split('?', 1)[0];

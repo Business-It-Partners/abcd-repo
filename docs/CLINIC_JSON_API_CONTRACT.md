@@ -1,4 +1,4 @@
-# Clinic JSON contract 1 — SDK 1.2
+# Clinic JSON contract 1 — SDK 1.7
 
 The first-party `clinic.api.request` entry point is usable only when the exact installed package identity receives that operation in signed update-policy format 2. Package declaration, app ID and app-family access remain ceilings. They cannot substitute for the signed grant. A newly approved company app ID can select one already-supported clinic app family through its signed package capabilities; the host does not keep a separate route-policy entry for each ID. An unknown app family has no generic JSON contract.
 
@@ -21,7 +21,8 @@ The review inputs are M14 dependency register at `a8caea6e` and existing Dental 
 | Staff | Directory/profile, clinical-work report and document metadata/withdrawal; salary-history read | `staff.manage` app access; salary-history read additionally requires `finance.manage` |
 | Treatment Protocols | Protocol list/create/versioned edit | Existing app and reference capabilities |
 | Calendar | Date-range list, create/edit/archive and appointment/staff references | Valid ordered date queries; appointment/reference capabilities remain independent |
+| User Management | List, create, edit/disable and change passwords for clinic login accounts | Admin-only `clinic.app.user-management`; all four routes require `clinic_users.manage` in the current session |
 
 JSON body, request envelope and response bounds remain 12,000 characters and 12,000 UTF-8 bytes as enforced by the existing body validator, 16 KiB and 256 KiB respectively. Deadlines, concurrency, cancellation, stable write keys, unknown outcomes and session fencing remain enforced by the broker. Credential/upload-handle inspection fails closed beyond its maximum nesting depth. This contract does not allow binary content, upload intents/finalisation, private download URLs or app-to-app navigation. Those need separate host contracts.
 
-SDK major 1 clients may detect the newly granted operation through connection capabilities; SDK minor 2 identifies the host contract addition. Older hosts cannot consume its signed grant and must be updated before policy migration. The sequence-22 P08 renewal kept the existing format-1 feed and authority unchanged: it did not enable these API grants remotely. A grant migration is a separately reviewed policy publication, with exact package/retained-release identities and compatibility checks.
+SDK major 1 clients detect granted operations through connection capabilities. SDK minor 7 adds the User Management app family and its four fixed route entries; older hosts cannot consume its signed grant and must be updated before installing that app. The sequence-22 P08 renewal kept the existing format-1 feed and authority unchanged: it did not enable API grants remotely. A grant migration is a separately reviewed policy publication, with exact package/retained-release identities and compatibility checks.

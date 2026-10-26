@@ -4,7 +4,6 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import {writeFileSync} from 'node:fs';
 import {DiagnosticStore} from './diagnostics/store';
-import { DockCaptionOverlay } from './host/dockCaptionOverlay';
 import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
@@ -37,7 +36,6 @@ let shellRecoveryActive=false;
 let shellRuntimeStateReplayPending=false;
 let retryShellRenderer:((manual:boolean)=>boolean)|undefined;
 const shellRecoveryBudget=new RestartBudget();
-let dockCaptionOverlay: DockCaptionOverlay | undefined;
 let packages: PackageRegistry;
 let distribution: DistributionService;
 let developmentApps: DevelopmentAppService | undefined;
@@ -46,6 +44,7 @@ const m18FinanceApiTraceEnabled = privateRuntimeDisplay && app.commandLine.hasSw
 const m18FinanceApiTrace: ApiTraceRecord[] = [];
 if (m18FinanceApiTraceEnabled) Object.defineProperty(globalThis, '__m18FinanceApiTrace', { value: m18FinanceApiTrace, enumerable: false });
 const runtimeFixtures = app.commandLine.hasSwitch('runtime-fixtures') && (privateRuntimeDisplay || (process.platform === 'win32' && process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Windows'));
+const slowAppDiscoveryFixtures = privateRuntimeDisplay && runtimeFixtures && app.commandLine.hasSwitch('slow-app-discovery-fixtures');
 const stagingMediaFixtures = privateRuntimeDisplay && runtimeFixtures && app.commandLine.hasSwitch('identity-staging') && app.commandLine.hasSwitch('media-upload-staging-fixtures');
 const identityStageDiagnostics = (() => {
   if (!privateRuntimeDisplay || !app.commandLine.hasSwitch('identity-staging') || !app.commandLine.hasSwitch('identity-stage-diagnostics')) return undefined;
@@ -105,8 +104,6 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
   });
   hostWindow = win;
-  const captionOverlay = new DockCaptionOverlay(win, path.join(__dirname, 'dockCaptionOverlayPreload.js'), path.join(__dirname, '../dist/dock-caption.html'));
-  dockCaptionOverlay = captionOverlay;
   if(localFiles)filePicker=new FilePickerCoordinator(win,localFiles,()=>identityView().generation,()=>canUseWorkspace());
   if (runtimeFixtures || storeFixtures || !trustedTest || app.commandLine.hasSwitch('identity-staging')) runtime = new FixtureRuntime(win, packages, path.join(__dirname, 'runtime/appPreload.js'), identity,()=>distribution?.changed(),{transport:stagingMediaFixtures?'staging':runtimeFixtures||storeFixtures||identityFixture?'fixture':'staging',dropFirstWriteResponse:trustedTest&&app.commandLine.hasSwitch('api-loss-once'),modulePreviewFixture:modulePreviewFixtures,launchFeedbackFixture,developmentApps,diagnostic:(code,target)=>{diagnostics?.record(code,target);},apiTrace:m18FinanceApiTraceEnabled?record=>{if(m18FinanceApiTrace.length<1000)m18FinanceApiTrace.push(record);}:undefined});
   if(filePicker)runtime?.setFilePicker(filePicker);
@@ -330,7 +327,6 @@ function createWindow() {
     stopShellHeartbeat();
     shellReloadQueued = false;
     retryShellRenderer = undefined;
-    captionOverlay.dispose(); if(dockCaptionOverlay===captionOverlay)dockCaptionOverlay=undefined;
     if (hostWindow === win) hostWindow = undefined;
   });
   activateExisting = () => {
@@ -403,14 +399,6 @@ ipcMain.handle('window:control', (event, action: unknown) => {
     win.minimize();
   }
   else throw new Error('Unknown control');
-});
-ipcMain.on('dock-caption:show', (event, input: unknown) => {
-  if (!isShell(event)) return;
-  dockCaptionOverlay?.show(input);
-});
-ipcMain.on('dock-caption:hide', event => {
-  if (!isShell(event)) return;
-  dockCaptionOverlay?.hide();
 });
 // Capture only this application's main frame, in device-independent pixels.
 ipcMain.handle('window:capture', async (event, rect: unknown, generation: unknown) => {
@@ -532,8 +520,9 @@ ipcMain.handle('runtime:restart', (event, id: unknown, generation: unknown) => {
 ipcMain.handle('runtime:resume', (event, id: unknown, generation: unknown) => { if (!isShell(event) || !runtime || !canUseWorkspace() || !identityBypass && generation !== identity?.view().generation) throw new Error('Unavailable'); if(resourcePressureGate.currentLevel!=='normal')throw new Error('Wait for system memory to recover before reopening this app.'); runtime.resume(id); });
 ipcMain.handle('runtime:app-info', event => runtime?.appInfo(event) ?? {ok:false,code:'UNAVAILABLE'});
 ipcMain.handle('runtime:open-explorer', event => runtime?.openExplorer(event) ?? {ok:false,code:'UNAVAILABLE'});
-ipcMain.handle('runtime:discover-app', (event,id:unknown) => {
+ipcMain.handle('runtime:discover-app', async (event,id:unknown) => {
   if(!isShell(event)||!runtime||!canUseWorkspace())return{ok:false,error:{code:'ACCESS_DENIED',message:'App discovery is unavailable for this workspace.',outcome:'not_sent'}};
+  if(slowAppDiscoveryFixtures)await new Promise(resolve=>setTimeout(resolve,750));
   return runtime.discoverApp(id);
 });
 ipcMain.handle('runtime:select-module', (event,id:unknown,moduleId:unknown) => { if(!isShell(event)||!runtime||!canUseWorkspace())return{ok:false,code:'DENIED'};return runtime.selectModule(id,moduleId); });
@@ -554,6 +543,10 @@ ipcMain.handle('identity:dev-credentials', event => isShell(event) ? development
 ipcMain.handle('identity:action', (event, kind: unknown, input: unknown) => {
   if (!isShell(event) || !identity) return { ok: false, code: 'UNAVAILABLE' };
   if (kind === 'login') return identity.login(input);
+  if (kind === 'workspace-role') {
+    if (runtime?.hasUnsafeWrites()) return { ok: false, code: 'BUSY' };
+    return identity.switchWorkspaceRole(input);
+  }
   if (input !== undefined) return { ok: false, code: 'INVALID_INPUT' };
   if (kind === 'restore') return identity.restore();
   if (kind === 'lock') { identity.lock(); return { ok: true }; }

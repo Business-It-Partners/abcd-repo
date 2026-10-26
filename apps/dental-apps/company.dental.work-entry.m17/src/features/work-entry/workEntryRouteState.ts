@@ -5,17 +5,18 @@ export type InProgressVisibleStep = 1 | 2 | 4 | 5 | 6 | 7 | 8;
 const startStepByTab: Record<string, StartCaseStep> = {
   patient: 1,
   plan: 2,
+  // `plan` remains a compatibility alias for existing deep links. Both names
+  // now open the combined Today’s Work chart, plan, and completion screen.
+  work: 2,
   imaging: 3,
-  work: 4,
   recall: 5,
   review: 6,
 };
 
 const startTabByStep: Partial<Record<StartCaseStep, string>> = {
   1: "patient",
-  2: "plan",
+  2: "work",
   3: "imaging",
-  4: "work",
   5: "recall",
   6: "review",
 };

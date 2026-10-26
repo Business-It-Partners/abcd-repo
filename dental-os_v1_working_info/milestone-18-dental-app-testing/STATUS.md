@@ -1,7 +1,7 @@
 # M18 Status — First-party Dental App Staging Testing
 
-**Status:** IMPLEMENTING — direct, lead-only staging testing in M15. Finance core workflows for the six selected modules passed; Work Entry 1.0.5 on signed staging sequence 93 passed the primary case/plan commit and saved-state readback. Work Entry 1.0.6 is published at sequence 98 with radiograph read/upload grants; a private staging-profile Store install, Start Work and case/context read passed read-only (27 checks, 11 GET-only events, zero writes), while radiograph and full workflows remain open. Work Entry edge cases and the rest of the app roster remain open.
-**Updated:** 2026-10-24.
+**Status:** IMPLEMENTING — direct, lead-only staging testing in M15. Finance core workflows for the six selected modules passed; Work Entry 1.0.5 on signed staging sequence 93 passed the primary case/plan commit and saved-state readback. Work Entry 1.0.6 at sequence 98 passed a private staging-profile read-only install/Start Work/context check (27 checks, 11 GET-only events, zero writes). Work Entry 1.0.7 was later published at sequence 101, but M18 has not tested or installed that version. Radiograph and full workflows, Work Entry edge cases, and the rest of the app roster remain open.
+**Updated:** 2026-10-25.
 **Coordination root:** /home/master-x/.codex/worktrees/platform-closeout/fewa_business_os, branch codex/milestone-15.
 **Environment:** Dental OS connected to Cloudflare/Dental SaaS staging only. Production is excluded unless the user explicitly asks for production testing.
 **Roster basis:** signed M17 staging feed sequence 86; ten current top-level app/package identities confirmed by the Patient Record 1.0.10 public readback. The feed must be rechecked before execution.

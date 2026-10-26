@@ -37,7 +37,7 @@ export class DistributionService {
   });
   const apps = releases.map(r => {
    const pendingVersion=this.pendingVersions.get(r.id)??null;
-   return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, ...(r.icon ? { iconSha256: r.icon.sha256 } : {}), available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'This update failed its launch check. Your previous version was retained; wait for a corrected release.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
+   return { id: r.id, title: r.title, description: r.description, version: r.version, notes: r.notes, capabilities: [...r.capabilities], installedVersion: this.installed.get(r.id) ?? null, activeVersion: this.installed.get(r.id) ?? null, pendingVersion, pendingReady: !!pendingVersion&&this.pendingReady.has(r.id), trialVersion: this.trialVersions.get(r.id)??null, knownGoodVersion: this.knownGoodVersions.get(r.id)??null, ...(r.icon ? { iconSha256: r.icon.sha256 } : {}), available: this.compatible(r), reason: this.quarantined.has(r.id+':'+r.payloadDigest) ? 'Update recovery: this candidate could not be activated safely. Your previous version was kept.' : this.compatible(r) ? '' : r.status === 'withdrawn' ? 'Release withdrawn.' : 'Not compatible with this desktop.' };
   });
   for (const [id, version] of this.installed) {
    if (apps.some(a => a.id === id)) continue;
@@ -174,7 +174,17 @@ export class DistributionService {
  }
  uninstall(id: unknown): Promise<StoreResult> {
   if (!isCompanyAppId(id)) return Promise.resolve({ ok: false, code: 'INVALID' });
-  return this.run(async (signal, generation) => { if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied'); this.fence(signal, generation); this.registry.uninstall(id); this.reloadInstalled(); this.message = 'App uninstalled. Clinic records remain on the server.'; });
+  return this.run(async (signal, generation) => {
+   if (!await this.authorize(signal, generation)) throw new Error('Uninstall denied');
+   this.fence(signal, generation);
+   const installed = this.registry.inspectPackage(id);
+   const family = clinicAppFamily(installed.capabilities);
+   if (family && this.identity.allowed?.(family) === false) throw new Error('Uninstall denied for this clinic role');
+   this.fence(signal, generation);
+   this.registry.uninstall(id);
+   this.reloadInstalled();
+   this.message = 'App uninstalled. Clinic records remain on the server.';
+  });
  }
  cancel() { this.action?.abort(); return { ok: true } as const; }
  async artwork(id:unknown, expectedSha256:unknown, generation:unknown):Promise<string|null>{

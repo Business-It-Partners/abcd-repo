@@ -11,6 +11,7 @@ const { sha256, verifyPackage } = require('../dist-electron/packages/format.js')
 const { verifyCatalogue, noWatermark } = require('../dist-electron/distribution/catalogue.js');
 const { verifyUpdatePolicy, allowUpdatedPackage, apiReleaseGrantForPackage, apiOperationsForPackage, apiReleaseGrantMatchesCatalogue } = require('../dist-electron/distribution/updatePolicy.js');
 const { stagingDistribution, m17StagingKeyId } = require('../dist-electron/distribution/staging.js');
+const { clinicAppFamily, clinicRequestAllowed } = require('../dist-electron/sdk/appPolicy.js');
 
 const currentM17Ids = [
   'company.dental.followups.m17',
@@ -23,8 +24,9 @@ const currentM17Ids = [
   'company.dental.finance.m17',
   'company.dental.lab-tracker.m17',
   'company.dental.staff.m17',
+  'company.dental.user-management.m17',
 ];
-const expectedFinance = { version: '1.7.11', sha256: 'c8696fdeec3b83a4d29ceeb53d368d152b49a390114475a110a65316546180dc' };
+const expectedFinance = { version: '1.7.16', sha256: '44970c51703224377e88cdbd86fb25ff6b637e22e1a7fa34e4fac70f0efb3e37' };
 const origin = stagingDistribution.publicBase;
 if (origin !== 'https://pub-5a82684f6abc4896b7bd2a4b59828182.r2.dev') throw Error('Pinned staging distribution fence');
 const now = Date.now();
@@ -72,19 +74,39 @@ try {
   check('public catalogue and update policy signatures and freshness verify',
     catalogue.sequence >= 28 && policy.sequence === catalogue.sequence && catalogueEnvelope.keyId === m17StagingKeyId
     && policyEnvelope.keyId === m17StagingKeyId && catalogue.issuedAt === policy.issuedAt && catalogue.expiresAt === policy.expiresAt);
-  check('ten current M17 app identities are present once with matching update grants',
+  check('eleven current M17 app identities are present once with matching update grants',
     catalogue.releases.filter(row => currentM17Ids.includes(row.id)).length === currentM17Ids.length
     && policy.apps.filter(row => currentM17Ids.includes(row.id)).length === currentM17Ids.length
     && currentM17Ids.every(id => catalogue.releases.filter(row => row.id === id).length === 1
       && policy.apps.filter(row => row.id === id).length === 1
       && policy.apps.find(row => row.id === id)?.releases.some(grant => grant.version === catalogue.releases.find(row => row.id === id)?.version)));
+  const userManagementRelease = catalogue.releases.find(row => row.id === 'company.dental.user-management.m17');
+  const userManagementPolicy = policy.apps.find(row => row.id === 'company.dental.user-management.m17');
+  check('User Management 1.0.0 carries only the clinic JSON API grant',
+    userManagementRelease?.version === '1.0.0'
+      && JSON.stringify(userManagementRelease.capabilities) === JSON.stringify(['clinic.app.user-management', 'clinic.api.request', 'session.context'])
+      && JSON.stringify(userManagementPolicy?.capabilities) === JSON.stringify(['clinic.app.user-management', 'clinic.api.request', 'session.context'])
+      && JSON.stringify(userManagementPolicy?.releases.find(row => row.version === '1.0.0')?.apiOperations) === JSON.stringify(['clinic.api.request']));
+  const userManagementFamily = clinicAppFamily(userManagementRelease?.capabilities ?? []);
+  const accountRoutes = [
+    ['GET', '/v1/clinic/users'], ['POST', '/v1/clinic/users'],
+    ['PATCH', '/v1/clinic/users/123e4567-e89b-12d3-a456-426614174000'],
+    ['POST', '/v1/clinic/users/123e4567-e89b-12d3-a456-426614174000/password'],
+  ];
+  check('User Management host policy permits the four account routes only for Admin capability',
+    userManagementFamily === 'clinic.app.user-management'
+      && accountRoutes.every(([method, route]) => clinicRequestAllowed(userManagementFamily, 'admin', ['clinic_users.manage'], route, method))
+      && accountRoutes.every(([method, route]) => !clinicRequestAllowed(userManagementFamily, 'doctor', ['clinic_users.manage'], route, method)
+        && !clinicRequestAllowed(userManagementFamily, 'reception', ['clinic_users.manage'], route, method)
+        && !clinicRequestAllowed(userManagementFamily, 'admin', [], route, method))
+      && !clinicRequestAllowed(userManagementFamily, 'admin', ['clinic_users.manage'], '/v1/clinic/profile', 'GET'));
   const financePolicy = policy.apps.find(row => row.id === 'company.dental.finance.m17');
   const financeRelease = catalogue.releases.find(row => row.id === 'company.dental.finance.m17');
-  check('Finance 1.7.11 package and seven-release grant window verify',
+  check('Finance 1.7.16 package and seven-release grant window verify',
     financeRelease?.version === expectedFinance.version && financeRelease.packageSha256 === expectedFinance.sha256
-      && financeRelease.minimumVersion === '1.7.5' && financePolicy?.minimumVersion === '1.7.5'
-      && JSON.stringify(financePolicy?.releases.map(row => row.version)) === JSON.stringify(['1.7.5', '1.7.6', '1.7.7', '1.7.8', '1.7.9', '1.7.10', '1.7.11'])
-      && financePolicy?.releases.find(row => row.version === '1.7.11')?.packageSha256 === expectedFinance.sha256);
+      && financeRelease.minimumVersion === '1.7.10' && financePolicy?.minimumVersion === '1.7.10'
+      && JSON.stringify(financePolicy?.releases.map(row => row.version)) === JSON.stringify(['1.7.10', '1.7.11', '1.7.12', '1.7.13', '1.7.14', '1.7.15', '1.7.16'])
+      && financePolicy?.releases.find(row => row.version === '1.7.16')?.packageSha256 === expectedFinance.sha256);
 
 
   phase = 'isolated-local-install';
@@ -102,6 +124,15 @@ try {
     if (!row) throw Error('Published app row missing');
     const bytes = await getBytes(new URL(row.objectKey, origin), 16 * 1024 * 1024);
     const packageValue = verifyPackage(bytes, stagingDistribution.policy);
+    if (appId === 'company.dental.user-management.m17') {
+      const appMetadata = JSON.parse(packageValue.files.get('app.json')?.toString('utf8') ?? 'null');
+      check('User Management package metadata is one Admin-only module',
+        appMetadata?.appId === appId && appMetadata.title === 'User Management'
+          && JSON.stringify(appMetadata.anyCapabilities) === JSON.stringify(['clinic_users.manage'])
+          && JSON.stringify(appMetadata.excludedRoles) === JSON.stringify(['doctor', 'reception'])
+          && appMetadata.modules?.length === 1 && appMetadata.modules[0]?.id === 'user-management'
+          && appMetadata.modules[0]?.capability === 'clinic_users.manage');
+    }
     const appPolicy = policy.apps.find(value => value.id === appId);
     const grant = appPolicy?.releases.find(value => value.version === row.version);
     const packageHash = sha256(bytes);

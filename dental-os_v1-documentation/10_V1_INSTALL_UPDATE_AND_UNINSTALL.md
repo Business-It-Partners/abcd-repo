@@ -64,6 +64,7 @@ Persist trial identity before launch and health acknowledgement after success so
 | Interrupted download, invalid signature/hash, extraction or capacity failure | Reject/clean incomplete candidate safely; retain installed version. |
 | Exit during preparation/registry mutation | Reconcile journal on startup to the last valid committed state. |
 | Candidate modified after staging | Reject during launch revalidation; preserve/recover the allowed previous version. |
+| Revoked staged candidate while active version remains allowed | Quarantine and clear the pending candidate; launch the active version. If active is also disallowed, preserve registry state and fail closed. |
 | Crash, hang or missing bridge during trial | Quarantine candidate; choose eligible known-good fallback or explicit recovery. |
 | Interrupted trial without health receipt | Reconcile conservatively on next launch; do not infer success. |
 | Temporary API/session failure | Report service/authentication condition; no package rollback solely for that condition. |

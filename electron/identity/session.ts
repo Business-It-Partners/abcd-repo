@@ -2,7 +2,7 @@ import { mediaKindForFamily, type MediaKind } from '../sdk/mediaRead';
 import type { Operation } from '../sdk/contracts';
 import type { Identity } from '../sdk/broker';
 import { AuthFailure, type AuthClient, type Clinic, type Tokens } from './client';
-import { loginInput, type ActionResult, type Phase, type SessionView } from './contracts';
+import { loginInput, workspaceRoleInput, type ActionResult, type Phase, type SessionView } from './contracts';
 import type { CredentialStore } from './storage';
 import { appAllowed, clinicRequestAllowed, clinicAppPolicies, type ClinicAppFamily } from '../sdk/appPolicy';
 import { uploadKindForFamily } from '../sdk/mediaUpload';
@@ -15,7 +15,7 @@ export class SessionManager implements Identity {
   private clinicLogoGeneration?: number; private clinicLogoValue?: string; private clinicLogoRequest?: { generation: number; promise: Promise<string | undefined> }; private clinicLogoAbort?: AbortController;
   private storageChain:Promise<unknown>=Promise.resolve();
   constructor(private client:AuthClient,private store:CredentialStore,private invalidate:()=>void,private mode:'staging'|'fixture'='staging',private now=Date.now,private timeoutMs=8000,private loginDiagnostic?:(value:LoginDiagnostic)=>void){}
-  view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',rememberAvailable:this.store.available(),remembered:this.remembered,restoreAvailable:this.restoreAvailable,message:this.message,mode:this.mode};}
+  view():SessionView{return{phase:this.phase,generation:this.generation,userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',role:this.phase==='ready'?this.clinic?.role??'':'',...(this.phase==='ready'&&this.clinic?{accountRole:this.clinic.accountRole??this.clinic.role,workspaceRoles:this.clinic.workspaceRoles??[this.clinic.role]}:{}),rememberAvailable:this.store.available(),remembered:this.remembered,restoreAvailable:this.restoreAvailable,message:this.message,mode:this.mode};}
   snapshot(){return{generation:this.generation,active:this.phase==='ready',userLabel:this.phase==='ready'?this.clinic?.userLabel??'':'',clinicLabel:this.phase==='ready'?this.clinic?.clinicLabel??'':'',...(this.phase==='ready'&&this.clinic?.clinicSession?{clinicSession:this.clinic.clinicSession}:{})};}
   subscribe(listener:(v:SessionView)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
   private emit(){const v=this.view();for(const fn of this.listeners)fn(v);}
@@ -40,7 +40,7 @@ export class SessionManager implements Identity {
       catch{warning='Protected storage could not save this sign-in. The current session is session-only.';}
     }else warning='Protected storage unavailable. This login is session-only.';
     if(epoch!==this.generation)throw new Error('Stale');
-    this.remembered=remembered;if(remembered)this.restoreAvailable=true;if(warning)this.message=warning;this.tokens=tokens;this.clinic=clinic;this.phase='ready';this.schedule();this.emit();
+    this.remembered=remembered;if(remembered)this.restoreAvailable=true;this.message=warning;this.tokens=tokens;this.clinic=clinic;this.phase='ready';this.schedule();this.emit();
   }
   async restore():Promise<ActionResult>{
     if(this.busy)return{ok:false,code:'BUSY'};
@@ -77,6 +77,44 @@ export class SessionManager implements Identity {
       await this.install(tokens,clinic,epoch);report('complete');return{ok:true};
     }catch(error){if(epoch!==this.generation)return{ok:false,code:'STALE'};const denied=error instanceof AuthFailure&&error.kind==='denied';report(error instanceof AuthFailure?error.kind:'other');this.reset(denied?'signed-out':'unavailable',denied?'Sign-in or clinic access denied.':'Staging sign-in is unavailable. Retry when connected.');return{ok:false,code:denied?'DENIED':'UNAVAILABLE'};}
     finally{this.busy=false;}
+  }
+  private sameClinicAccount(left:Clinic,right:Clinic){return left.clinicUserId===right.clinicUserId&&left.tenantId===right.tenantId&&(left.accountRole??left.role)===(right.accountRole??right.role);}
+  private async workspaceActionToken(epoch:number):Promise<{idToken:string;tokens:Tokens;clinic:Clinic}>{
+    const idToken=await this.credential(epoch,new AbortController().signal);
+    if(epoch!==this.generation||this.phase!=='ready'||!this.tokens||!this.clinic)throw new AuthFailure('denied');
+    return{idToken,tokens:this.tokens,clinic:this.clinic};
+  }
+  async switchWorkspaceRole(input:unknown):Promise<ActionResult>{
+    if(!workspaceRoleInput(input))return{ok:false,code:'INVALID_INPUT'};
+    if(this.busy)return{ok:false,code:'BUSY'};
+    if(!this.client.switchWorkspaceRole||this.phase!=='ready'||!this.tokens||!this.clinic)return{ok:false,code:'UNAVAILABLE'};
+    const epoch=this.generation,prior=this.clinic;
+    const roles=prior.workspaceRoles??[prior.role];
+    if(!roles.includes(input.role))return{ok:false,code:'DENIED'};
+    if(input.role===prior.role)return{ok:true};
+    this.busy=true;clearTimeout(this.timer);
+    let transitionStarted=false;
+    try{
+      const {idToken,tokens}=await this.workspaceActionToken(epoch);
+      await this.bounded(signal=>this.client.switchWorkspaceRole!(idToken,input.role,input.pin,signal));
+      if(epoch!==this.generation)return{ok:false,code:'STALE'};
+      // The Worker has changed the active role. Clear old app runtimes and local
+      // capabilities before resolving the new role, so old screens cannot remain
+      // usable if the following verification request fails.
+      this.reset('signing-in','Refreshing workspace access…');
+      transitionStarted=true;
+      const transitionEpoch=this.generation;
+      const clinic=await this.bounded(signal=>this.client.resolve(tokens.idToken,signal));
+      if(transitionEpoch!==this.generation)return{ok:false,code:'STALE'};
+      if(!this.sameClinicAccount(prior,clinic)||clinic.role!==input.role||!clinic.workspaceRoles?.includes(input.role))throw new AuthFailure('denied');
+      await this.install(tokens,clinic,transitionEpoch);
+      return{ok:true};
+    }catch(error){
+      if(transitionStarted&&this.view().phase==='signing-in')this.reset(error instanceof AuthFailure&&error.kind==='denied'?'expired':'unavailable','Workspace changed but its access could not be verified. Sign in again.');
+      else if(!transitionStarted&&epoch===this.generation&&error instanceof AuthFailure&&error.kind==='unavailable')this.reset('unavailable','Workspace role could not be verified. Sign in again.');
+      if(epoch!==this.generation&&!transitionStarted)return{ok:false,code:'STALE'};
+      return{ok:false,code:error instanceof AuthFailure&&error.kind==='denied'?'DENIED':'UNAVAILABLE'};
+    }finally{this.busy=false;}
   }
   credential(generation:number,_signal:AbortSignal):Promise<string>{
     if(generation!==this.generation||this.phase!=='ready'||!this.tokens)return Promise.reject(new AuthFailure('denied'));

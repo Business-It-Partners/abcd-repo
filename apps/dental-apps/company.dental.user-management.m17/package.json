@@ -1,0 +1,11 @@
+{
+  "name": "company.dental.user-management.m17",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Admin-only User Management app package for Dental OS.",
+  "scripts": {
+    "build": "node ../../../tools/app-packages/build-m17-user-management.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -14,8 +14,8 @@ shell.setDefaultTimeout(15000);
 shell.on('pageerror', error => errors.push(error.message));
 const check = (name, value = true) => { assert.ok(value, name); checks.push(name); console.log('PASS', name); };
 const id = 'company.dental.finance';
-const dockApp = shell.locator(`[data-dock-app="${id}"]`);
-const explorer = shell.locator('.app-explorer');
+const dockApp = shell.getByRole('button', { name: 'Explore apps', exact: true });
+const explorer = shell.getByRole('dialog', { name: 'Explore apps', exact: true });
 const phase = value => shell.waitForFunction(({ id, value }) => document.querySelector(`[data-window-id="${id}"]`)?.dataset.phase === value, { id, value });
 
 async function openExplorer() {
@@ -25,42 +25,42 @@ async function openExplorer() {
 }
 
 try {
-  await shell.waitForFunction(id => !!document.querySelector(`[data-dock-app="${id}"]`), id);
+  await shell.waitForFunction(() => !!document.querySelector('[data-dock-app="explore"]'));
 
   await openExplorer();
-  const close = explorer.getByRole('button', { name: 'Close Finance app explorer', exact: true });
+  const close = explorer.getByRole('button', { name: 'Close app explorer', exact: true });
   await shell.waitForFunction(() => document.querySelector('.app-explorer')?.contains(document.activeElement));
-  check('signed package explorer moves keyboard focus inside its modal surface');
+  check('app explorer moves keyboard focus inside its modal surface');
   const buttons = explorer.locator('button:not(:disabled)');
   await buttons.first().focus();
   await shell.keyboard.press('Shift+Tab');
   check('explorer traps reverse tab from its first control', await buttons.last().evaluate(element => element === document.activeElement));
   await shell.keyboard.press('Tab');
-  check('explorer traps forward tab from its last module', await buttons.first().evaluate(element => element === document.activeElement));
+  check('explorer traps forward tab from its last control', await buttons.first().evaluate(element => element === document.activeElement));
   await shell.keyboard.press('Escape');
   await explorer.waitFor({ state: 'detached' });
-  await shell.waitForFunction(id => document.activeElement === document.querySelector(`[data-dock-app="${id}"]`), id);
+  await shell.waitForFunction(() => document.activeElement === document.querySelector('[aria-label="Explore apps"]'));
   check('Escape returns focus to the app that opened the explorer');
 
   await openExplorer();
   await shell.locator('.app-explorer-backdrop').click({ position: { x: 2, y: 2 } });
   await explorer.waitFor({ state: 'detached' });
-  await shell.waitForFunction(id => document.activeElement === document.querySelector(`[data-dock-app="${id}"]`), id);
+  await shell.waitForFunction(() => document.activeElement === document.querySelector('[aria-label="Explore apps"]'));
   check('backdrop dismissal returns focus to the app that opened the explorer');
 
   await openExplorer();
   await close.click();
   await explorer.waitFor({ state: 'detached' });
-  await shell.waitForFunction(id => document.activeElement === document.querySelector(`[data-dock-app="${id}"]`), id);
-  check('the explorer close control returns focus to its launching app');
+  await shell.waitForFunction(() => document.activeElement === document.querySelector('[aria-label="Explore apps"]'));
+  check('explorer close control returns focus to its launching app');
 
   await openExplorer();
-  await explorer.getByRole('button', { name: 'Transaction Record', exact: true }).click();
+  await explorer.getByRole('button', { name: 'Finance', exact: true }).click();
   await shell.waitForFunction(id => document.querySelector(`[data-runtime="${id}"]`)?.dataset.runtimePhase === 'ready', id, { timeout: 15000 });
   await shell.waitForFunction(id => document.querySelector(`[data-runtime="${id}"]`)?.dataset.launchHandoff === 'done', id, { timeout: 15000 });
   const guest = app.context().pages().find(page => page.url().startsWith(`dental-fixture://${id}/`));
-  assert.ok(guest, 'selected module should have a retained isolated app page');
-  await guest.getByRole('heading', { name: 'Transaction Record', exact: true }).waitFor();
+  assert.ok(guest, 'selected company app should have a retained isolated app page');
+  check('launched Finance package displays its first module', await guest.getByRole('heading', { name: 'Transaction Record', exact: true }).count() === 1);
   await guest.evaluate(() => { document.documentElement.dataset.usabilityProbe = 'preserved'; });
 
   await shell.emulateMedia({ reducedMotion: 'reduce' });
@@ -69,12 +69,14 @@ try {
   check('reduced motion minimizes the shared app window without a Genie overlay', await shell.locator('.genie-overlay').evaluateAll(elements => elements.every(element => getComputedStyle(element).visibility === 'hidden')));
   await shell.getByRole('button', { name: 'Restore Finance', exact: true }).click();
   await phase('visible');
-  check('reduced-motion restore keeps the selected module and isolated page state', await guest.getByRole('heading', { name: 'Transaction Record', exact: true }).isVisible() && await guest.evaluate(() => document.documentElement.dataset.usabilityProbe === 'preserved'));
+  check('reduced-motion restore keeps the selected app page state', await guest.getByRole('heading', { name: 'Transaction Record', exact: true }).count() === 1 && await guest.evaluate(() => document.documentElement.dataset.usabilityProbe === 'preserved'));
   check('reduced motion removes dock movement and window-control hover transitions', await shell.locator('.dock-region, .window-control').evaluateAll(elements => elements.length > 3 && elements.every(element => getComputedStyle(element).transitionDuration.split(',').every(value => Number.parseFloat(value) <= 0.001))));
   check('no shell renderer errors across explorer and reduced-motion journeys', errors.length === 0);
 
   await fs.mkdir(path.join(root, 'artifacts'), { recursive: true });
-  await fs.writeFile(path.join(root, 'artifacts', 'm12-usability-verification.json'), JSON.stringify({ checks, errors, platform: process.platform }, null, 2) + '\n');
+  await fs.writeFile(path.join(root, 'artifacts', 'm19-usability-verification.json'), JSON.stringify({ checks, errors, platform: process.platform }, null, 2) + '\n');
 } finally {
-  await app.close();
+  const closed = app.waitForEvent('close', { timeout: 5000 }).then(() => true, () => false);
+  await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
+  if (!await closed && app.process().exitCode === null) app.process().kill('SIGTERM');
 }

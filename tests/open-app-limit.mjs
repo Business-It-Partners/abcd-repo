@@ -1,6 +1,7 @@
 import { fixtureArgs as profileArgs } from './profile.mjs';
 import { _electron as electron } from 'playwright';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -8,6 +9,7 @@ const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 
 const app = await electron.launch({ args: [root, ...profileArgs, '--runtime-fixtures'], env, timeout: 30000 });
+const checks=[];let passed=false;
 try {
   const page = await app.firstWindow();
   page.setDefaultTimeout(45000);
@@ -30,6 +32,7 @@ try {
   assert.equal(await page.getByTestId('standard-window-1-window').getAttribute('data-phase'), 'closed');
   assert.equal(await dialog.getByRole('button', { name: 'Close Motion Studio', exact: true }).count(), 1);
   assert.equal(await dialog.getByRole('button', { name: 'Close Records', exact: true }).count(), 1);
+  checks.push('third app request opens the OS capacity dialog with one close action per app');
   console.log('PASS third app request opens the OS capacity dialog with one close action per app');
 
   await page.keyboard.press('Escape');
@@ -37,6 +40,7 @@ try {
   assert.equal(await page.getByTestId('studio-window').getAttribute('data-phase'), 'visible');
   assert.equal(await page.getByTestId('records-window').getAttribute('data-phase'), 'visible');
   assert.equal(await page.getByTestId('standard-window-1-window').getAttribute('data-phase'), 'closed');
+  checks.push('Cancel leaves both open apps intact and the requested app closed');
   console.log('PASS Cancel leaves both open apps intact and the requested app closed');
 
   await page.getByRole('button', { name: 'Standard Window 1', exact: true }).click();
@@ -45,8 +49,12 @@ try {
   await phase('studio', 'closed');
   await phase('standard-window-1', 'visible');
   assert.equal(await page.getByTestId('records-window').getAttribute('data-phase'), 'visible');
+  checks.push('choosing an app closes it and then opens the requested app');
   console.log('PASS choosing an app closes it and then opens the requested app');
+  passed=true;
 } finally {
+  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
+  await fs.writeFile(path.join(root,'artifacts/m19-open-app-limit-verification.json'),JSON.stringify({passed,checks,platform:process.platform},null,2));
   const closed = app.waitForEvent('close', { timeout: 5000 }).then(() => true, () => false);
   await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
   if (!await closed && app.process().exitCode === null) app.process().kill('SIGTERM');

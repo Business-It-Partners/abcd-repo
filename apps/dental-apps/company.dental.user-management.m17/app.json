@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "appId": "company.dental.user-management.m17",
+  "title": "User Management",
+  "description": "Create and manage clinic login accounts.",
+  "icon": "assets/user-management.png",
+  "anyCapabilities": [
+    "clinic_users.manage"
+  ],
+  "excludedRoles": [
+    "doctor",
+    "reception"
+  ],
+  "allowedRoles": [],
+  "modules": [
+    {
+      "id": "user-management",
+      "label": "User Management",
+      "tab": "user-management",
+      "capability": "clinic_users.manage"
+    }
+  ]
+}

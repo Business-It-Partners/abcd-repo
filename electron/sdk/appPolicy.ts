@@ -13,11 +13,12 @@ export const clinicAppPolicies: Readonly<Record<ClinicAppFamily, ClinicAppPolicy
   'clinic.app.patient-record': { anyCapabilities: ['patient_record.access'] },
   'clinic.app.treatment-progress': { anyCapabilities: ['treatment_progress.access'] },
   'clinic.app.lab-tracker': { anyCapabilities: ['lab_tracker.access'] },
-  'clinic.app.finance': { anyCapabilities: ['finance.manage', 'patient_payments.outstanding.read'], excludedRoles: ['reception'] },
+  'clinic.app.finance': { anyCapabilities: ['finance.manage', 'patient_payments.outstanding.read'] },
   'clinic.app.patient-payments': { anyCapabilities: ['patient_payments.outstanding.read'], excludedRoles: ['admin', 'doctor'] },
   'clinic.app.staff': { anyCapabilities: ['staff.manage'] },
   'clinic.app.treatment-protocols': { anyCapabilities: ['treatment_protocols.manage'] },
   'clinic.app.calendar': { anyCapabilities: ['calendar.access'] },
+  'clinic.app.user-management': { anyCapabilities: ['clinic_users.manage'], excludedRoles: ['doctor', 'reception'] },
 });
 
 /** Resolve exactly one host-supported app family from verified package capabilities. */

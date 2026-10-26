@@ -12,6 +12,8 @@ import { verifyPackage } from '../electron/packages/format';
 import { readFileSync } from 'node:fs';
 import { CatalogueStore } from '../electron/distribution/storage';
 import { verifyUpdatePolicy } from '../electron/distribution/updatePolicy';
+import type { Identity } from '../electron/sdk/broker';
+import type { Operation } from '../electron/sdk/contracts';
 const pair = generateKeyPairSync('ed25519'), now = 1800000000000, api = 'https://api.fixture.invalid', origin = 'https://releases.fixture.invalid/';
 const policy: TrustPolicy = { keys: { test: { publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' }).toString(), publisher: 'company' } }, apps: { 'company.sample.alpha': { publisher: 'company', capabilities: [] } } };
 const pkg = buildPackage({ appId: 'company.sample.alpha', publisher: 'company', version: '1.0.0', entry: 'index.html', sdkMajor: 1, apiMajor: 1, capabilities: [] }, new Map([['index.html', Buffer.from('<h1>Company sample</h1>')]]), 'test', pair.privateKey);
@@ -30,6 +32,37 @@ function harness(extra?: (url: string, init: RequestInit, fallback: () => Respon
  };
  const service = new DistributionService({ apiBase: api, publicBase: origin, policy }, registry, identity, freshness, transport, () => now, 'linux', 100);
  return { root, registry, freshness, service, requests, deny: () => { allowed = false; }, switch: () => { generation++; service.invalidate(); }, close: () => { service.dispose(); rmSync(root, { recursive: true, force: true }); } };
+}
+function roleFamilyHarness() {
+ const appId = 'company.sample.finance', capabilities: Operation[] = ['clinic.app.finance'];
+ const trust: TrustPolicy = { ...policy, apps: { [appId]: { publisher: 'company', capabilities } } };
+ const bytes = buildPackage({ appId, publisher: 'company', version: '1.0.0', entry: 'index.html', sdkMajor: 1, apiMajor: 1, capabilities },
+  new Map([['index.html', Buffer.from('<h1>Finance fixture</h1>')]]), 'test', pair.privateKey);
+ const digest = JSON.parse(bytes.toString()).release.digest;
+ const release = { ...base.releases[0], id: appId, title: 'Finance', capabilities, objectKey: `releases/${appId}/1.0.0/${sha256(bytes)}.dentalpkg`, packageSha256: sha256(bytes), packageBytes: bytes.length, payloadDigest: digest };
+ const catalogue = { ...base, releases: [release] };
+ const root = mkdtempSync(path.join(tmpdir(), 'dental-distribution-role-unit-'));
+ const registry = new PackageRegistry(path.join(root, 'packages'), trust); registry.initialize();
+ const freshness = new CatalogueStore(path.join(root, 'distribution'));
+ let familyAllowed = false;
+ const identity: Identity = {
+  snapshot: () => ({ active: true, generation: 1, userLabel: '', clinicLabel: '' }),
+  allowed: operation => operation !== 'clinic.app.finance' || familyAllowed,
+  credential: async () => 'fixture-credential',
+ };
+ const transport: typeof fetch = async input => {
+  const url = String(input);
+  if (url === api + '/v1/dental-os/catalogue') return new Response(new Uint8Array(signed(catalogue)), { headers: { 'x-dental-os-time': String(now) } });
+  if (url === api + '/v1/dental-os/install-policy') return Response.json({ environment: 'cloudfare-staging', canInstall: true });
+  if (url === origin + release.objectKey) return new Response(new Uint8Array(bytes));
+  return new Response(null, { status: 404 });
+ };
+ const service = new DistributionService({ apiBase: api, publicBase: origin, policy: trust }, registry, identity, freshness, transport, () => now, 'linux', 100);
+ return {
+  appId, registry, service,
+  allowFamily: (value: boolean) => { familyAllowed = value; service.changed(); },
+  close: () => { service.dispose(); rmSync(root, { recursive: true, force: true }); },
+ };
 }
 describe('signed catalogue authenticity/freshness and exact destination binding', () => {
  it('normal staging trust excludes private fixture keys and limits beta to read-only business access', () => {
@@ -80,17 +113,38 @@ describe('trusted bounded Store lifecycle', () => {
   const h=harness();try{expect(await h.service.refresh()).toEqual({ok:true});expect(h.service.view().canInstall).toBe(true);expect(await h.service.install('company.sample.alpha')).toEqual({ok:true});expect(h.service.view().apps[0].installedVersion).toBe('1.0.0');expect(h.registry.launch('company.sample.alpha').manifest.version).toBe('1.0.0');expect(h.requests.filter(r=>r.url.startsWith(origin)).every(r=>!r.authenticated)).toBe(true);expect(h.requests.filter(r=>r.url.startsWith(api)).every(r=>r.authenticated)).toBe(true);expect(JSON.stringify(h.service.view())).not.toMatch(/fixture-credential|https:|dentalpkg/);expect(h.freshness.load().sequence).toBe(1);}finally{h.close();}
  });
  it.each(['missing','invalid','skew'])('refuses %s authenticated server clock header',async kind=>{const h=harness((url,_init,fallback)=>url.endsWith('catalogue')?new Response(new Uint8Array(signed()),{headers:kind==='missing'?{}:{'x-dental-os-time':kind==='invalid'?'bad':String(now+300001)}}):fallback());try{expect((await h.service.refresh()).ok).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
- it('refuses non-admin installation before downloading', async () => {const h=harness();try{h.deny();await h.service.refresh();expect(h.service.view().canInstall).toBe(false);expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.requests.some(r=>r.url.startsWith(origin))).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
+ it('refuses installation when the Store policy denies this session', async () => {const h=harness();try{h.deny();await h.service.refresh();expect(h.service.view().canInstall).toBe(false);expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.requests.some(r=>r.url.startsWith(origin))).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
  it.each(['redirect','oversize-header','oversize-body','truncated','altered'])('refuses %s package transport',async kind=>{
   const h=harness((url,_init,fallback)=>{if(!url.startsWith(origin))return fallback();if(kind==='redirect')return new Response(null,{status:302,headers:{location:'https://outside.invalid'}});if(kind==='oversize-header')return new Response('x',{headers:{'content-length':String(pkg.length+1)}});if(kind==='oversize-body')return new Response(new Uint8Array(Buffer.alloc(pkg.length+1)));if(kind==='truncated')return new Response('short');return new Response(new Uint8Array(Buffer.alloc(pkg.length)));});try{expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}
  });
- it('rechecks admin policy immediately before activation',async()=>{let calls=0;const h=harness((url,_init,fallback)=>url.endsWith('install-policy')?Response.json({environment:'cloudfare-staging',canInstall:++calls===1}):fallback());try{expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(calls).toBe(2);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
+ it('rechecks Store policy immediately before activation',async()=>{let calls=0;const h=harness((url,_init,fallback)=>url.endsWith('install-policy')?Response.json({environment:'cloudfare-staging',canInstall:++calls===1}):fallback());try{expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(calls).toBe(2);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
  it('refuses withdrawal discovered after download',async()=>{let calls=0;const h=harness((url,_init,fallback)=>{if(!url.endsWith('catalogue'))return fallback();const c=structuredClone(base);c.sequence=++calls;if(calls>1)c.releases[0].status='withdrawn';return new Response(new Uint8Array(signed(c)),{headers:{'x-dental-os-time':String(now)}});});try{expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
  it.each(['version','payloadDigest'])('refuses %s mismatch in fresh metadata even with identical wire hash',async kind=>{let calls=0;const h=harness((url,_init,fallback)=>{if(!url.endsWith('catalogue'))return fallback();const c=structuredClone(base);c.sequence=++calls;if(calls>1){if(kind==='version'){c.releases[0].version='2.0.0';c.releases[0].objectKey=c.releases[0].objectKey.replace('/1.0.0/','/2.0.0/');}else c.releases[0].payloadDigest='0'.repeat(64);}return new Response(new Uint8Array(signed(c)),{headers:{'x-dental-os-time':String(now)}});});try{expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
  it('bounds hanging operations and cancellation; no install queue or overlapping job',async()=>{vi.useFakeTimers();const h=harness((url,_init,fallback)=>url.startsWith(origin)?new Promise(()=>{}):fallback());try{const pending=h.service.install('company.sample.alpha');await vi.advanceTimersByTimeAsync(10);expect(await h.service.install('company.sample.alpha')).toEqual({ok:false,code:'BUSY'});h.service.cancel();expect(await pending).toEqual({ok:false,code:'CANCELLED'});expect(h.registry.inspect().apps).toEqual({});}finally{h.close();vi.useRealTimers();}});
  it('expires a hanging install at its bounded deadline without real-clock sleeps',async()=>{vi.useFakeTimers();const h=harness((url,_init,fallback)=>url.startsWith(origin)?new Promise(()=>{}):fallback());try{const pending=h.service.install('company.sample.alpha');await vi.advanceTimersByTimeAsync(101);expect(await pending).toEqual({ok:false,code:'CANCELLED'});expect(h.registry.inspect().apps).toEqual({});}finally{h.close();vi.useRealTimers();}});
  it('session switch fences late responses and clears old Store view',async()=>{let release!:(v:Response)=>void;const h=harness((url,_init,fallback)=>url.startsWith(origin)?new Promise(r=>{release=r;}):fallback());try{const pending=h.service.install('company.sample.alpha');await new Promise(r=>setTimeout(r,10));h.switch();release(new Response(new Uint8Array(pkg)));await pending;await new Promise(r=>setTimeout(r,0));expect(h.registry.inspect().apps).toEqual({});expect(h.service.view()).toMatchObject({canInstall:false,phase:'idle',job:null});}finally{h.close();}});
  it('catalogue outage leaves installed bytes coherent; uninstall is independently authorized',async()=>{let outage=false;const h=harness((url,_init,fallback)=>outage&&url.endsWith('catalogue')?new Response(null,{status:503}):fallback());try{await h.service.install('company.sample.alpha');outage=true;expect((await h.service.refresh()).ok).toBe(false);expect(h.service.view().apps[0].installedVersion).toBe('1.0.0');h.deny();expect((await h.service.uninstall('company.sample.alpha')).ok).toBe(false);expect(h.registry.inspect().apps['company.sample.alpha']).toBeTruthy();}finally{h.close();}});
+ it('filters installed apps and authorizes uninstall by the current app-family role', async () => {
+  const h = roleFamilyHarness();
+  try {
+   await h.service.refresh();
+   expect(h.service.view().apps.some(app => app.id === h.appId)).toBe(false);
+   expect((await h.service.install(h.appId)).ok).toBe(false);
+   expect(h.registry.inspect().apps[h.appId]).toBeUndefined();
+   h.allowFamily(true);
+   expect(h.service.view().apps.some(app => app.id === h.appId && app.available)).toBe(true);
+   expect(await h.service.install(h.appId)).toEqual({ ok: true });
+   expect(h.service.view().apps.some(app => app.id === h.appId && app.installedVersion === '1.0.0')).toBe(true);
+   h.allowFamily(false);
+   expect(h.service.view().apps.some(app => app.id === h.appId)).toBe(false);
+   expect((await h.service.uninstall(h.appId)).ok).toBe(false);
+   expect(h.registry.inspect().apps[h.appId]).toBeTruthy();
+   h.allowFamily(true);
+   expect(h.service.view().apps.some(app => app.id === h.appId && app.installedVersion === '1.0.0')).toBe(true);
+   expect(await h.service.uninstall(h.appId)).toEqual({ ok: true });
+   expect(h.registry.inspect().apps[h.appId]).toBeUndefined();
+  } finally { h.close(); }
+ });
  it('refuses arbitrary install IDs and update replacement until M08',async()=>{const h=harness();try{expect(await h.service.install('../../file')).toEqual({ok:false,code:'INVALID'});await h.service.install('company.sample.alpha');expect((await h.service.install('company.sample.alpha')).ok).toBe(false);}finally{h.close();}});
  it('watermark survives restart and corrupt/linked state fails closed',()=>{const h=harness();try{const w=verifyCatalogue(signed(),policy,noWatermark,now).watermark;h.freshness.save(w);expect(new CatalogueStore(path.join(h.root,'distribution')).load()).toEqual(w);writeFileSync(path.join(h.root,'distribution/freshness.json'),'{');expect(()=>h.freshness.load()).toThrow();}finally{h.close();}});
  it('rejects a linked freshness directory',()=>{const h=harness();try{const linked=path.join(h.root,'linked');symlinkSync(path.join(h.root,'distribution'),linked,process.platform==='win32'?'junction':'dir');expect(()=>new CatalogueStore(linked)).toThrow('Unsafe');}finally{h.close();}});

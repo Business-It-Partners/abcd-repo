@@ -400,13 +400,14 @@ body {
 
 .purchase-row-actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .purchase-list-table table { table-layout: fixed; }
-.purchase-invoice-summary,
 .purchase-total-single-line { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.purchase-invoice-summary { max-width: 94px; }
+.purchase-invoice-summary,
 .purchase-supplier-summary,
-.purchase-items-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.35; word-break: break-word; }
-.purchase-supplier-summary { max-width: 145px; }
-.purchase-items-summary { max-width: 220px; }
+.purchase-items-summary { display: -webkit-box; width: 100%; min-width: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.35; word-break: break-word; }
+.purchase-invoice-summary { max-width: 96px; }
+.purchase-supplier-summary { max-width: 165px; }
+.purchase-items-summary { max-width: 100%; }
+.purchase-item-separator { display: inline-block; margin-inline: .5em; }
 .purchase-form-page { display: flex; flex-direction: column; gap: var(--sp-3); padding-bottom: 104px; }
 .purchase-form-card,
 .purchase-lines-card,

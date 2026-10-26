@@ -37,7 +37,7 @@ afterEach(() => {
 
 describe('native device file picker', () => {
   it('validates the closed SDK request without paths or shell-browser response fields', () => {
-    expect(SDK.minor).toBe(6);
+    expect(SDK.minor).toBe(7);
     expect(validPickInput(opts)).toBe(true);
     const envelope = { version: 1, connection: '11111111-1111-4111-8111-111111111111', generation: 1,
       requestId: 'request_1234', operation: 'local.files.pick', input: opts };

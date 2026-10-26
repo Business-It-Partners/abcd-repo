@@ -532,6 +532,7 @@ export class FixtureRuntime {
     if(!isRuntimeId(runtimeIdForPackage(appId)))throw Error('Unknown update app');
     throw Error('App updates activate only on the next full app launch');
   }
+  hasUnsafeWrites(){return [...this.entries.values()].some(e=>this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''));}
   blockUnsafeExit(){const e=[...this.entries.values()].find(e=>this.broker.hasUnsafeWrites(this.runtimePackage(e)?.manifest.appId??''));if(!e)return false;this.diagnostic('exit-blocked','host');this.win.webContents.send('runtime:close-blocked',{id:e.state.id});return true;}
   clearSession() {
     this.fileActivation.clear();this.filePicker?.cancelAll();

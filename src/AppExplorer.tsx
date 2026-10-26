@@ -1,16 +1,33 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { X } from 'lucide-react';
-import { FINANCE_MODULES } from './FinanceApp';
+import { StoreArtwork } from './StoreArtwork';
 import { dockArtwork } from './dockArtwork';
 
-export type ExplorerModule = Readonly<{ id: string; label: string }>;
-export function AppExplorer({ bottom, onClose, onSelect, title = 'Finance', icon = dockArtwork('finance'), modules = FINANCE_MODULES.map(label => ({ id: label, label })), error, returnFocusTarget }: { bottom: number; onClose(): void; onSelect(module: string): void; title?: string; icon?: string; modules?: readonly ExplorerModule[]; error?: string; returnFocusTarget?: HTMLElement | null }) {
+export type ExplorerApp = Readonly<{
+  id: string;
+  title: string;
+  iconSha256?: string;
+}>;
+
+const brandMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
+const systemApps = [
+  { id: 'store', title: 'App Store' },
+  { id: 'standard-window-1', title: 'Standard Window 1' },
+] as const;
+
+export function AppExplorer({ apps, loading = false, onClose, onSelect, returnFocusTarget }: {
+  apps: readonly ExplorerApp[];
+  loading?: boolean;
+  onClose(): void;
+  onSelect(id: string): void;
+  returnFocusTarget?: HTMLElement | null;
+}) {
   const panel = useRef<HTMLElement>(null);
-  // Capture the caller before the parent marks the dock/window stage inert.
   const returnFocus = useRef<HTMLElement | null>(returnFocusTarget ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
 
   useEffect(() => {
-    panel.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true });
+    (panel.current?.querySelector<HTMLButtonElement>('.app-explorer-item:not(:disabled)')
+      ?? panel.current?.querySelector<HTMLButtonElement>('button:not(:disabled)'))?.focus({ preventScroll: true });
   }, []);
 
   function closeExplorer() {
@@ -21,12 +38,15 @@ export function AppExplorer({ bottom, onClose, onSelect, title = 'Finance', icon
         && !element.closest('[inert],[hidden],[aria-hidden="true"]')
         && getComputedStyle(element).visibility !== 'hidden'
         && element.getClientRects().length > 0;
-      const dockApp = [...document.querySelectorAll<HTMLButtonElement>('[data-dock-app]')]
-        .find(button => button.getAttribute('aria-label') === title) ?? null;
-      const target = [returnFocus.current, dockApp, document.querySelector<HTMLElement>('[aria-label="Open apps catalog"]')]
+      const target = [returnFocus.current, document.querySelector<HTMLElement>('[aria-label="Explore apps"]')]
         .find(canFocus);
       target?.focus({ preventScroll: true });
     });
+  }
+
+  function selectApp(id: string) {
+    closeExplorer();
+    onSelect(id);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -51,18 +71,34 @@ export function AppExplorer({ bottom, onClose, onSelect, title = 'Finance', icon
 
   return <>
     <div className="app-explorer-backdrop" aria-hidden="true" onClick={closeExplorer}/>
-    <section ref={panel} className="app-explorer" role="dialog" aria-modal="true" aria-labelledby="finance-explorer-title" data-testid={title === 'Finance' ? 'finance-explorer' : 'app-explorer'} style={{ bottom }} onKeyDown={handleKeyDown}>
+    <section ref={panel} className="app-explorer" role="dialog" aria-modal="true" aria-labelledby="app-explorer-title" data-testid="app-explorer" onKeyDown={handleKeyDown}>
       <header className="app-explorer-heading">
-        <div><img src={icon} alt=""/><h2 id="finance-explorer-title">{title}</h2></div>
-        <button className="app-explorer-close" aria-label={`Close ${title} app explorer`} onClick={closeExplorer}><X aria-hidden="true" size={18}/></button>
+        <div className="app-explorer-title-block">
+          <img src={brandMark} alt=""/>
+          <div><span>SAJILO DENTAL</span><h2 id="app-explorer-title">Explore apps</h2></div>
+        </div>
+        <button className="app-explorer-close" aria-label="Close app explorer" onClick={closeExplorer}><X aria-hidden="true" size={18}/></button>
       </header>
-      <nav className="app-explorer-grid" aria-label={`${title} apps`}>
-        {modules.map(module => <button key={module.id} className="app-explorer-item" aria-label={module.label} title={`Open ${module.label}`} data-app-module={module.id} {...(title === 'Finance' ? { 'data-finance-module': module.label } : {})} onClick={() => onSelect(module.id)}>
-          <img src={icon} alt="" draggable={false}/>
-          <span>{module.label}</span>
-        </button>)}
-      </nav>
-      {error && <p className="app-explorer-error" role="alert">{error}</p>}
+      <div className="app-explorer-content">
+        <section className="app-explorer-section" aria-labelledby="app-explorer-system-title">
+          <h3 id="app-explorer-system-title">System apps</h3>
+          <div className="app-explorer-grid" aria-label="System apps">
+            {systemApps.map(app => <button key={app.id} className="app-explorer-item" aria-label={app.title} title={`Open ${app.title}`} data-explorer-app={app.id} onClick={() => selectApp(app.id)}>
+              <span className="app-explorer-icon"><img src={dockArtwork(app.id)} alt="" draggable={false}/></span>
+              <span>{app.title}</span>
+            </button>)}
+          </div>
+        </section>
+        <section className="app-explorer-section" aria-labelledby="app-explorer-installed-title">
+          <h3 id="app-explorer-installed-title">Installed apps</h3>
+          {apps.length ? <div className="app-explorer-grid" aria-label="Installed apps">
+            {apps.map(app => <button key={app.id} className="app-explorer-item" aria-label={app.title} title={`Open ${app.title}`} data-explorer-app={app.id} onClick={() => selectApp(app.id)}>
+              <span className="app-explorer-icon"><StoreArtwork appId={app.id} artworkSha256={app.iconSha256} className="app-explorer-artwork"/></span>
+              <span>{app.title}</span>
+            </button>)}
+          </div> : <p className="app-explorer-empty" role="status">{loading ? 'Checking installed apps…' : 'Installed clinic apps will appear here. Browse the App Store to get started.'}</p>}
+        </section>
+      </div>
     </section>
   </>;
 }

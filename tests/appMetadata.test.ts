@@ -9,7 +9,7 @@ const finance = {
   description: 'Clinic financial records.',
   icon: 'assets/finance.png',
   anyCapabilities: ['finance.manage', 'patient_payments.outstanding.read'],
-  excludedRoles: ['reception'],
+  excludedRoles: [],
   allowedRoles: [],
   modules: [
     { id: 'transaction-record', label: 'Transaction Record', tab: 'finance/transactions', capability: 'finance.manage' },
@@ -28,12 +28,13 @@ function packageFor(metadata: typeof finance, includeIcon = true): VerifiedPacka
 }
 
 describe('signed app module metadata', () => {
-  it('filters modules by the verified clinic capabilities and excludes Reception from Finance', () => {
+  it('filters Finance modules by the verified clinic capabilities for Reception', () => {
     const pkg = packageFor(finance);
     const metadata = parseDentalAppMetadata(pkg);
     expect(metadata).toBeDefined();
     expect(appInfo(pkg, metadata, 'admin', ['finance.manage'])?.modules.map(module => module.id)).toEqual(['transaction-record']);
-    expect(appInfo(pkg, metadata, 'reception', ['finance.manage', 'patient_payments.outstanding.read'])).toBeUndefined();
+    expect(appInfo(pkg, metadata, 'reception', ['patient_payments.outstanding.read'])?.modules.map(module => module.id)).toEqual(['patient-payments']);
+    expect(appInfo(pkg, metadata, 'reception', [])).toBeUndefined();
   });
 
   it('rejects metadata whose icon is not part of the signed package', () => {
