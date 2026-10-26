@@ -7,6 +7,7 @@ import {DiagnosticStore} from './diagnostics/store';
 import { OsStateStore } from './storage/osState';
 import { LocalFileService } from './host/localFiles';
 import { FilePickerCoordinator } from './host/filePicker';
+import { readBatteryStatus } from './host/battery';
 import { FixtureRuntime } from './runtime/manager';
 import { RestartBudget } from './runtime/restartBudget';
 import type { ApiTraceRecord } from './sdk/broker';
@@ -426,6 +427,10 @@ ipcMain.handle('os:preferences', (event, input: unknown) => {
 ipcMain.handle('os:status', event => {
   if (!isShell(event)) throw new Error('Invalid caller');
   return { phase: bootPhase };
+});
+ipcMain.handle('os:battery', async event => {
+  if (!isShell(event)) throw new Error('Invalid caller');
+  return readBatteryStatus();
 });
 function resourceMemorySample() {
   const system=process.getSystemMemoryInfo();

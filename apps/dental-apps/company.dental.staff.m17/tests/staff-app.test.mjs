@@ -9,13 +9,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readText = async (relative) => (await readFile(path.join(root, relative))).toString("utf8");
 const readJson = async (relative) => JSON.parse(await readText(relative));
 
-test("Staff M17 has its own 1.0.3 update package and exact first-party capability set", async () => {
+test("Staff M17 has its own 1.0.4 update package and exact first-party capability set", async () => {
   const packageJson = await readJson("package.json");
   const manifest = await readJson("app.manifest.json");
   const app = await readJson("app.json");
 
   assert.equal(packageJson.name, "company.dental.staff.m17");
-  assert.equal(packageJson.version, "1.0.3");
+  assert.equal(packageJson.version, "1.0.4");
   assert.equal(manifest.appId, packageJson.name);
   assert.equal(manifest.version, packageJson.version);
   assert.deepEqual(manifest.capabilities, [
