@@ -367,7 +367,16 @@ function Desktop({ session, sessionControls, onRequestClose, onRequestSignOut, l
       if (toggle && !overviewShortcutEnabled.current) return;
       if (!toggle && !(event.key === 'Escape' && current.overview)) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      if (event.repeat || hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
+      if (event.repeat) return;
+      // Closing an already visible, read-only overview is safe even while
+      // native minimize/restore is settling. Blocking Escape here can trap the
+      // user in the overlay on Windows until an asynchronous host transition
+      // clears. Keep the busy/transition guard for opening an overview.
+      if (current.overview && event.key === 'Escape') {
+        dispatch({ type: 'overview', open: false });
+        return;
+      }
+      if (hostTransitioning || Object.values(current.windows).some(win => win.busy || win.interaction !== 'idle')) return;
       if (!current.overview) { dock.reset(); setDockRevealed(false); }
       dispatch({ type: 'overview', open: !current.overview });
     };
