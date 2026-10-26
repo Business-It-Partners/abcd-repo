@@ -38,6 +38,18 @@ export async function verifyIdentity(profileArgs,reportName){
   // The dock-caption overlay is a separate BrowserWindow; locate the native
   // shell by its loaded URL and parentless ownership, never by list order.
   const nativeShellUrl=await shell.url();
+  // Capture native events without altering their behavior, so an uncompleted
+  // Windows restore can be distinguished from a fullscreen-settle delay.
+  await app.evaluate(({BrowserWindow},url)=>{
+    const win=BrowserWindow.getAllWindows().find(w=>!w.getParentWindow()&&w.webContents.getURL()===url);
+    if(!win)throw Error('Sajilo native shell not found for restore trace');
+    globalThis.__identityNativeRestoreEvents=[];
+    for(const name of ['minimize','restore','show','focus','enter-full-screen','leave-full-screen'])win.on(name,()=>{
+      globalThis.__identityNativeRestoreEvents.push({
+        name,minimized:win.isMinimized(),fullscreen:win.isFullScreen(),visible:win.isVisible()
+      });
+    });
+  },nativeShellUrl);
   await shell.evaluate(()=>{
     window.__identityHostTransitionEvents=[];
     window.desktop?.onHostTransition(value=>window.__identityHostTransitionEvents.push(value));
@@ -65,8 +77,14 @@ export async function verifyIdentity(profileArgs,reportName){
       return suspended>=0&&events.slice(suspended+1).includes(false);
     },null,{timeout:12000});
   } catch(error) {
+    const native=await app.evaluate(({BrowserWindow},url)=>{
+      const win=BrowserWindow.getAllWindows().find(w=>!w.getParentWindow()&&w.webContents.getURL()===url);
+      return {exists:!!win,minimized:win?.isMinimized(),fullscreen:win?.isFullScreen(),visible:win?.isVisible(),focused:win?.isFocused(),
+        bounds:win?.getBounds(),nativeEvents:(globalThis.__identityNativeRestoreEvents??[]).slice(-15)};
+    },nativeShellUrl).catch(()=>({unavailable:true}));
     console.error('Native host restore failed to resume shell layout',JSON.stringify({
-      events:await shell.evaluate(()=>window.__identityHostTransitionEvents).catch(()=>[])
+      rendererTransitions:await shell.evaluate(()=>window.__identityHostTransitionEvents).catch(()=>[]),
+      native
     }));
     throw error;
   }
