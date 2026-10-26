@@ -21,16 +21,16 @@ const p = JSON.parse(pkg.toString()), hash = sha256(pkg);
 const base: Catalogue = { format: 1, environment: 'cloudfare-staging', channel: 'staging', sequence: 1, issuedAt: now, expiresAt: now + 3600000, releases: [{ id: 'company.sample.alpha', title: 'Motion Studio', description: 'Signed sample', version: '1.0.0', notes: 'Synthetic package fixture', capabilities: [], platforms: ['linux','win32'], sdkMajor: 1, apiMajor: 1, objectKey: `releases/company.sample.alpha/1.0.0/${hash}.dentalpkg`, packageSha256: hash, packageBytes: pkg.length, payloadDigest: p.release.digest, status: 'approved', minimumVersion: '1.0.0' }] };
 function signed(c: any = base) { return Buffer.from(canonical({ catalogue: c, keyId: 'test', signature: sign(null, Buffer.from(canonical({ purpose: 'dental-os-catalogue', keyId: 'test', catalogue: c })), pair.privateKey).toString('base64') })); }
 function signedPolicy(value: any) { return Buffer.from(canonical({ policy: value, keyId: 'test', signature: sign(null, Buffer.from(canonical({ purpose: 'dental-os-update-policy', keyId: 'test', policy: value })), pair.privateKey).toString('base64') })); }
-function harness(extra?: (url: string, init: RequestInit, fallback: () => Response) => Promise<Response> | Response) {
+function harness(extra?: (url: string, init: RequestInit, fallback: () => Response) => Promise<Response> | Response, packageDelivery: 'public-r2' | 'authenticated-api' = 'public-r2') {
  const root = mkdtempSync(path.join(tmpdir(), 'dental-distribution-unit-')), registry = new PackageRegistry(path.join(root, 'packages'), policy); registry.initialize();
  const freshness = new CatalogueStore(path.join(root, 'distribution')); let generation = 1, allowed = true;
  const requests: { url: string; authenticated: boolean }[] = [], identity = { snapshot: () => ({ active: true, generation, userLabel: '', clinicLabel: '' }), credential: async () => 'fixture-credential' };
  const transport: typeof fetch = async (input, init = {}) => {
   const url = String(input); requests.push({ url, authenticated: new Headers(init.headers).has('authorization') });
-  const fallback = () => url === api + '/v1/dental-os/catalogue' ? new Response(new Uint8Array(signed()),{headers:{'x-dental-os-time':String(now)}}) : url === api + '/v1/dental-os/install-policy' ? Response.json({ environment: 'cloudfare-staging', canInstall: allowed }) : url === origin + base.releases[0].objectKey ? new Response(new Uint8Array(pkg)) : new Response(null, { status: 404 });
+  const fallback = () => url === api + '/v1/dental-os/catalogue' ? new Response(new Uint8Array(signed()),{headers:{'x-dental-os-time':String(now)}}) : url === api + '/v1/dental-os/install-policy' ? Response.json({ environment: 'cloudfare-staging', canInstall: allowed }) : url === origin + base.releases[0].objectKey || url === api + '/v1/dental-os/packages/' + base.releases[0].objectKey ? new Response(new Uint8Array(pkg)) : new Response(null, { status: 404 });
   return extra ? extra(url, init, fallback) : fallback();
  };
- const service = new DistributionService({ apiBase: api, publicBase: origin, policy }, registry, identity, freshness, transport, () => now, 'linux', 100);
+ const service = new DistributionService({ apiBase: api, publicBase: packageDelivery === 'authenticated-api' ? null : origin, packageDelivery, policy }, registry, identity, freshness, transport, () => now, 'linux', 100);
  return { root, registry, freshness, service, requests, deny: () => { allowed = false; }, switch: () => { generation++; service.invalidate(); }, close: () => { service.dispose(); rmSync(root, { recursive: true, force: true }); } };
 }
 function roleFamilyHarness() {
@@ -67,6 +67,8 @@ function roleFamilyHarness() {
 describe('signed catalogue authenticity/freshness and exact destination binding', () => {
  it('normal staging trust excludes private fixture keys and limits beta to read-only business access', () => {
   expect(() => verifyPackage(readFileSync('fixtures/packages/alpha.dentalpkg'), stagingDistribution.policy)).toThrow('Untrusted');
+  expect(stagingDistribution.packageDelivery).toBe('authenticated-api');
+  expect(stagingDistribution.publicBase).toBeNull();
   expect(stagingDistribution.policy.apps['company.sample.alpha'].capabilities).toContain('appointments.setStatus');expect(stagingDistribution.policy.apps['company.sample.beta'].capabilities).not.toContain('appointments.setStatus');
  });
  it('accepts current company metadata and same-byte sequence replay only within expiry', () => { const a = verifyCatalogue(signed(), policy, noWatermark, now); expect(a.catalogue.sequence).toBe(1); expect(verifyCatalogue(signed(), policy, a.watermark, now + 1000).catalogue.releases).toHaveLength(1); });
@@ -111,6 +113,17 @@ describe('signed catalogue authenticity/freshness and exact destination binding'
 describe('trusted bounded Store lifecycle', () => {
  it('downloads without credentials, verifies and activates before reporting Ready; persists installed truth', async () => {
   const h=harness();try{expect(await h.service.refresh()).toEqual({ok:true});expect(h.service.view().canInstall).toBe(true);expect(await h.service.install('company.sample.alpha')).toEqual({ok:true});expect(h.service.view().apps[0].installedVersion).toBe('1.0.0');expect(h.registry.launch('company.sample.alpha').manifest.version).toBe('1.0.0');expect(h.requests.filter(r=>r.url.startsWith(origin)).every(r=>!r.authenticated)).toBe(true);expect(h.requests.filter(r=>r.url.startsWith(api)).every(r=>r.authenticated)).toBe(true);expect(JSON.stringify(h.service.view())).not.toMatch(/fixture-credential|https:|dentalpkg/);expect(h.freshness.load().sequence).toBe(1);}finally{h.close();}
+ });
+ it('downloads private app packages only through the authenticated Worker and still verifies before activation', async () => {
+  const h=harness(undefined,'authenticated-api');
+  try {
+   expect(await h.service.refresh()).toEqual({ok:true});
+   expect(await h.service.install('company.sample.alpha')).toEqual({ok:true});
+   expect(h.registry.launch('company.sample.alpha').manifest.version).toBe('1.0.0');
+   const packageRequest=h.requests.find(r=>r.url===api+'/v1/dental-os/packages/'+base.releases[0].objectKey);
+   expect(packageRequest?.authenticated).toBe(true);
+   expect(h.requests.some(r=>r.url.startsWith(origin))).toBe(false);
+  } finally { h.close(); }
  });
  it.each(['missing','invalid','skew'])('refuses %s authenticated server clock header',async kind=>{const h=harness((url,_init,fallback)=>url.endsWith('catalogue')?new Response(new Uint8Array(signed()),{headers:kind==='missing'?{}:{'x-dental-os-time':kind==='invalid'?'bad':String(now+300001)}}):fallback());try{expect((await h.service.refresh()).ok).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});
  it('refuses installation when the Store policy denies this session', async () => {const h=harness();try{h.deny();await h.service.refresh();expect(h.service.view().canInstall).toBe(false);expect((await h.service.install('company.sample.alpha')).ok).toBe(false);expect(h.requests.some(r=>r.url.startsWith(origin))).toBe(false);expect(h.registry.inspect().apps).toEqual({});}finally{h.close();}});

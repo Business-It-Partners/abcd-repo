@@ -3,7 +3,7 @@ const hex = bytes => [...new Uint8Array(bytes)].map(value => value.toString(16).
 const digest = async bytes => hex(await crypto.subtle.digest('SHA-256', bytes));
 const decode = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
 
-export async function stagingPublisher(request, bucket, expected, nonce, state) {
+export async function stagingPublisher(request, releaseBucket, artworkBucket, expected, nonce, state) {
   const url = new URL(request.url);
   if (request.headers.get('authorization') !== `Bearer ${nonce}`) return new Response(null, { status: 404 });
   if (request.method === 'GET' && url.pathname === '/ready') return Response.json({ ready: true, environment: 'cloudfare-staging' });
@@ -26,7 +26,7 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
 
     const base = [];
     for (const [key, expectedSha256] of Object.entries(expected.baseline)) {
-      const object = await bucket.get(key);
+      const object = await releaseBucket.get(key);
       if (!object || !object.httpEtag) throw Error('Missing signed metadata baseline');
       const bytes = new Uint8Array(await object.arrayBuffer());
       if (await digest(bytes) !== expectedSha256) throw Error('Staging metadata advanced after preparation');
@@ -53,14 +53,14 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
     if (!icon || icon.objectKey !== expected.artworkObjectKey || icon.sha256 !== expected.artworkSha256
       || icon.bytes !== expected.artworkBytes || icon.mime !== 'image/png') throw Error('Prepared artwork contract');
 
-    const objectResult = await bucket.put(expected.objectKey, pkg, {
+    const objectResult = await releaseBucket.put(expected.objectKey, pkg, {
       onlyIf: new Headers({ 'If-None-Match': '*' }),
       httpMetadata: { contentType: 'application/vnd.dental-os.package', cacheControl: 'public, max-age=31536000, immutable' },
     });
     if (!objectResult) throw Error('Immutable package object already exists or raced');
     packageWritten = true;
 
-    const artworkResult = await bucket.put(expected.artworkObjectKey, artwork, {
+    const artworkResult = await artworkBucket.put(expected.artworkObjectKey, artwork, {
       onlyIf: new Headers({ 'If-None-Match': '*' }),
       httpMetadata: { contentType: 'image/png', cacheControl: 'public, max-age=31536000, immutable' },
     });
@@ -71,7 +71,7 @@ export async function stagingPublisher(request, bucket, expected, nonce, state) 
       ['catalogue/staging.json', catalogue, base[0].etag],
       ['update-policy/staging.json', policy, base[1].etag],
     ]) {
-      const result = await bucket.put(key, bytes, {
+      const result = await releaseBucket.put(key, bytes, {
         onlyIf: new Headers({ 'If-Match': etag }), httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
       });
       if (!result) return Response.json({ published: false, conflict: true, packageWritten, advanced }, { status: 409 });

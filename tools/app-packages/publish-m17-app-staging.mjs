@@ -28,7 +28,7 @@ if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink() || process.platform !==
   throw Error('Prepared release directory must be private and non-symlinked');
 }
 if (stagingDistribution.apiBase !== 'https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev'
-  || stagingDistribution.publicBase !== 'https://pub-5a82684f6abc4896b7bd2a4b59828182.r2.dev') throw Error('Pinned staging distribution fence');
+  || stagingDistribution.packageDelivery !== 'authenticated-api' || stagingDistribution.publicBase !== null) throw Error('Pinned private staging distribution fence');
 
 const definitions = {
   'company.dental.followups.m17': { title: 'Follow-ups' },
@@ -218,18 +218,9 @@ if (release.packageBytes !== packageBytes.length || canonical(release.exactApiOp
   throw Error('Unexpected package object key or release scope');
 }
 
-// Re-read public feed bytes immediately before publishing so we do not publish against a stale snapshot.
-for (const [key, expected] of [
-  ['catalogue/staging.json', release.priorCatalogueSha256], ['update-policy/staging.json', release.priorUpdatePolicySha256],
-]) {
-  const response = await fetch(new URL(key, stagingDistribution.publicBase), { redirect: 'error', cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw Error('Current public staging metadata unavailable');
-  const bytes = Buffer.from(await response.arrayBuffer());
-  if (sha256(bytes) !== expected) throw Error('Staging metadata advanced; prepare fresh higher-sequence outputs');
-}
-
+// The temporary publisher checks supplied hashes and current R2 ETags against the private app bucket before its single conditional publication.
 const publication = {
-  environment: 'cloudfare-staging', bucket: 'dentmitra-dental-os-releases-cloudfare-staging', appId,
+  environment: 'cloudfare-staging', bucket: 'dental-app-distribution', artworkBucket: 'dentmitra-dental-os-artwork-cloudfare-staging', appId,
   version: release.version, sequence: release.sequence, priorSequence: release.priorSequence, keyId: m17StagingKeyId,
   packageSha256: release.packageSha256, packageBytes: release.packageBytes, payloadDigest: release.payloadDigest,
   artworkObjectKey: release.artworkObjectKey, artworkSha256: release.artworkSha256, artworkBytes: release.artworkBytes,
@@ -242,7 +233,8 @@ console.log(JSON.stringify({ validated: true, ...publication }));
 if (guard === '--validate-staging-only') process.exit(0);
 
 const account = '03453ad990acaaa56336e5851e24f490';
-const bucket = 'dentmitra-dental-os-releases-cloudfare-staging';
+const bucket = 'dental-app-distribution';
+const artworkBucket = 'dentmitra-dental-os-artwork-cloudfare-staging';
 const wrangler = path.resolve(backendRoot, 'node_modules/wrangler/bin/wrangler.js');
 if (!fs.existsSync(wrangler)) throw Error('Existing Wrangler runtime unavailable');
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dental-os-m17-app-staging-'));
@@ -251,11 +243,11 @@ const workerName = 'dental-os-m17-app-' + randomBytes(6).toString('hex');
 const nonce = randomBytes(32).toString('hex');
 const configPath = path.join(temp, 'wrangler.json');
 const workerSource = fs.readFileSync(new URL('./m17-app-staging-worker.mjs', import.meta.url), 'utf8')
-  + `\nconst expected=${JSON.stringify(publication)};\nconst state={used:false};\nexport default {fetch(request,env){return stagingPublisher(request,env.RELEASES,expected,env.OPERATOR_NONCE,state)}};\n`;
+  + `\nconst expected=${JSON.stringify(publication)};\nconst state={used:false};\nexport default {fetch(request,env){return stagingPublisher(request,env.RELEASES,env.ARTWORK,expected,env.OPERATOR_NONCE,state)}};\n`;
 fs.writeFileSync(path.join(temp, 'worker.mjs'), workerSource, { flag: 'wx', mode: 0o600 });
 fs.writeFileSync(configPath, JSON.stringify({
   name: workerName, account_id: account, main: 'worker.mjs', compatibility_date: '2026-09-25', workers_dev: true,
-  r2_buckets: [{ binding: 'RELEASES', bucket_name: bucket }], vars: { OPERATOR_NONCE: nonce },
+  r2_buckets: [{ binding: 'RELEASES', bucket_name: bucket }, { binding: 'ARTWORK', bucket_name: artworkBucket }], vars: { OPERATOR_NONCE: nonce },
 }), { flag: 'wx', mode: 0o600 });
 const run = args => spawnSync(process.execPath, [wrangler, ...args], {
   cwd: temp, encoding: 'utf8', timeout: 120_000,

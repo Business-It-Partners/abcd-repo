@@ -7,7 +7,7 @@ import { clinicAppFamily } from '../sdk/appPolicy';
 import { apiOperations as apiOperationIds, type Operation } from '../sdk/contracts';
 import { parseDentalAppMetadata } from '../packages/appMetadata';
 import type { StoreResult, StoreView } from './contracts';
-export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean };
+export type DistributionConfig = { apiBase: string; publicBase: string | null; policy: TrustPolicy; updates?: boolean; packageDelivery?: 'public-r2' | 'authenticated-api' };
 export interface FreshnessStore { load(): Watermark; save(value: Watermark): void; loadUpdate?(): Watermark; saveUpdate?(value: Watermark): void; loadMetadata?(): {catalogue:string;policy:string} | undefined; saveMetadata?(value:{catalogue:string;policy:string}): void }
 export class DistributionService {
  private updatePolicy?:UpdatePolicy; private policyBytes?:Buffer; private catalogueBytes?:Buffer; private updateTimer?:ReturnType<typeof setInterval>; private checking=false;
@@ -28,6 +28,7 @@ export class DistributionService {
   });
   this.reloadInstalled();
   if (config.publicBase) { const u = new URL(config.publicBase); if (u.protocol !== 'https:' || u.username || u.password || u.port || u.search || u.hash || u.pathname !== '/') throw new Error('Invalid release origin'); }
+  if (config.packageDelivery !== undefined && !['public-r2', 'authenticated-api'].includes(config.packageDelivery)) throw new Error('Invalid package delivery mode');
  }
  subscribe(fn: (v: StoreView) => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
  view(): StoreView {
@@ -90,6 +91,12 @@ export class DistributionService {
  }
 
  private fence(signal: AbortSignal, generation: number) { const s = this.identity.snapshot(); if (signal.aborted || !s.active || s.generation !== generation) throw new Error('Session changed'); }
+ private packageConfigured() { return this.config.packageDelivery === 'authenticated-api' || !!this.config.publicBase; }
+ private packageTransport(objectKey: string) {
+  if (this.config.packageDelivery === 'authenticated-api') return { url: `${this.config.apiBase}/v1/dental-os/packages/${objectKey}`, authenticated: true };
+  if (!this.config.publicBase) throw new Error('Distribution not configured');
+  return { url: new URL(objectKey, this.config.publicBase).href, authenticated: false };
+ }
  private async response(url: string, signal: AbortSignal, generation: number, authenticated: boolean) {
   this.fence(signal, generation); const token = authenticated ? await this.identity.credential(generation, signal) : undefined; this.fence(signal, generation);
   const response = await this.transport(url, { signal, redirect: 'manual', credentials: 'omit', cache: 'no-store', headers: token ? { authorization: `Bearer ${token}` } : {} });
@@ -149,16 +156,17 @@ export class DistributionService {
    return { ok: false, code: controller.signal.aborted ? 'CANCELLED' : 'UNAVAILABLE' };
   } finally { clearTimeout(timer); if (aborted) controller.signal.removeEventListener('abort', aborted); if (this.action === controller) { this.action = undefined; this.job = null; this.emit(); } }
  }
- refresh() { return this.run(async (signal, generation) => { this.phase = 'refreshing'; this.emit(); if (!this.config.publicBase) throw new Error('Distribution not configured'); await this.loadCatalogue(signal, generation); await this.authorize(signal, generation); this.phase = 'ready'; this.emit(); }); }
+ refresh() { return this.run(async (signal, generation) => { this.phase = 'refreshing'; this.emit(); if (!this.packageConfigured()) throw new Error('Distribution not configured'); await this.loadCatalogue(signal, generation); await this.authorize(signal, generation); this.phase = 'ready'; this.emit(); }); }
  install(id: unknown): Promise<StoreResult> {
   if (!isCompanyAppId(id)) return Promise.resolve({ ok: false, code: 'INVALID' });
   return this.run(async (signal, generation) => {
-   if (!this.config.publicBase) throw new Error('Distribution not configured'); this.job = { appId: id, phase: 'authorizing', received: 0, total: 0 }; this.emit();
+   if (!this.packageConfigured()) throw new Error('Distribution not configured'); this.job = { appId: id, phase: 'authorizing', received: 0, total: 0 }; this.emit();
    await this.loadCatalogue(signal, generation); if (!await this.authorize(signal, generation)) throw new Error('Install denied');
    const release = this.catalogue!.releases.find(r => r.id === id); if (!release || !this.compatible(release)) throw new Error('Release unavailable');
    if (this.installed.has(id) && !this.config.updates) throw new Error('Update policy belongs to M08');
    this.job = { appId: id, phase: 'downloading', received: 0, total: release.packageBytes }; this.emit();
-   const response = await this.response(new URL(release.objectKey, this.config.publicBase).href, signal, generation, false), bytes = await this.bytes(response, signal, generation, release.packageBytes, true);
+   const delivery = this.packageTransport(release.objectKey);
+   const response = await this.response(delivery.url, signal, generation, delivery.authenticated), bytes = await this.bytes(response, signal, generation, release.packageBytes, true);
    if (bytes.length !== release.packageBytes || sha256(bytes) !== release.packageSha256) throw new Error('Package digest');
    this.job = { appId: id, phase: 'verifying', received: bytes.length, total: bytes.length }; this.emit();
    const verified = verifyPackage(bytes, this.config.policy);
