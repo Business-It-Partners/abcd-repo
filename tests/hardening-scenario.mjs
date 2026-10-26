@@ -41,7 +41,10 @@ export async function verifyHardening(profileArgs,report){
   let alpha=await guest('alpha'),beta=await guest('beta');
   await page.getByRole('button',{name:'Minimize Records',exact:true}).click();await page.waitForFunction(()=>document.querySelector('[data-window-id="records"]').dataset.phase==='minimized');
   await page.getByRole('button',{name:'Minimize Motion Studio',exact:true}).click();await page.waitForFunction(()=>document.querySelector('[data-window-id="studio"]').dataset.phase==='minimized');
-  phase='diagnostics';await openSessionControls(); // The V1 role-switch top bar omits a Help button; exercise the same trusted shell support action directly.const profile=await app.evaluate(({app})=>app.getPath('userData')),output=path.join(profile,'safe-support.json');
+  phase='diagnostics';await openSessionControls();
+  // The V1 role-switch top bar omits a Help button; exercise the same trusted shell support action directly.
+  const profile=await app.evaluate(({app})=>app.getPath('userData'));
+  const output=path.join(profile,'safe-support.json');
   // Native dialogs are selection adapters; assert actual reviewed payload and exact file bytes.
   await app.evaluate(({dialog},file)=>{globalThis.__supportReview='';dialog.showMessageBox=async(_w,options)=>{globalThis.__supportReview=options.detail;return{response:1,checkboxChecked:false};};dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},output);
   await page.evaluate(()=>window.desktop.support());await wait(()=>fs.access(output).then(()=>true,()=>false));const exported=JSON.parse(await fs.readFile(output,'utf8'));check('explicit native preview/save exports only safe fixed OS events',Array.isArray(exported.events)&&exported.events.every(e=>Object.keys(e).sort().join()==='code,target,time')&&!JSON.stringify(exported).includes('fixture-pass')&&!JSON.stringify(exported).includes('first@fixture.invalid')&&await app.evaluate(()=>globalThis.__supportReview.includes('Fixed OS event codes and timestamps only')));
