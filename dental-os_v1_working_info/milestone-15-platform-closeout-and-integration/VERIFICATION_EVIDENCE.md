@@ -447,3 +447,8 @@ Local evidence for the working tree: `npm run build` PASS; `node --check tools/v
 ### M20 transfer Windows CI checkpoint — 2026-10-26
 
 - [Windows M15 run 40266996634](https://github.com/Business-It-Partners/abcd-repo/actions/runs/40266996634) for `b0ccd695d237c8c2d621253b73bb7427b834637f` **FAILED in build/typecheck**: `tests/asarPaths.test.ts(2,36) TS7016`, missing `asar-paths.mjs` TypeScript declaration. Documentation, fixture build and Windows unit tests (including the new ASAR tests) passed. The Windows safeStorage and identity steps were not run because of the typecheck failure. The exact `tools/desktop-release/asar-paths.d.mts` declaration from M20 was added; the new CI run remains pending. No runtime test was relabeled as passing.
+
+### Windows native credential smoke runner preflight — 2026-10-26
+
+- [Windows run 40267185025](https://github.com/Business-It-Partners/abcd-repo/actions/runs/40267185025) on `b97d77d13d07aac6989994f318cc514eee3c0da2` **FAILED**: documentation, fixtures, unit checks and full build/typecheck **passed**; the new Windows safeStorage smoke step stopped before launching Electron with “The local Electron runtime or Windows smoke app is missing.” That is a **test preflight path failure**, not proof of a Windows encryption failure; subsequent runtime and identity steps did not run.
+- The smoke runner now resolves Electron through its installed npm package, uses its own directory for the smoke entrypoint, and emits bounded booleans for both prerequisites. Still synthetic, Windows-only, fail-closed and temporary-profile-contained. Requires new exact-source CI proof; M15.11 remains open.
