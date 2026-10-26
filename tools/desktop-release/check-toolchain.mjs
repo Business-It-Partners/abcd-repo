@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {npmVersionFromUserAgent,toolchainMismatch} from './toolchain.mjs';
 const root=fileURLToPath(new URL('../..',import.meta.url));
 const expected={node:readFileSync(new URL('../../.node-version',import.meta.url),'utf8').trim()};
-if(!/^\\d+\\.\\d+\\.\\d+$/.test(expected.node))throw Error('Invalid .node-version');
+if(!/^\d+\.\d+\.\d+$/.test(expected.node))throw Error('Invalid .node-version');
 let npm=npmVersionFromUserAgent(process.env.npm_config_user_agent??process.env.NPM_CONFIG_USER_AGENT);
 if(!npm){
  const command=process.platform==='win32'?'npm.cmd':'npm';
