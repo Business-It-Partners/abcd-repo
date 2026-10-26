@@ -424,11 +424,13 @@ function Desktop({ session, sessionControls, roleControls, onRequestClose, onReq
           const title = state.windows[previewApp]?.title ?? dockLabel;
           return <button ref={runtimeTargets[previewApp]} key={item.id} className="dock-preview" style={style} onClick={controller.open} disabled={anyMotion || hostTransitioning} aria-label={controller.win.phase === 'minimized' ? `Restore ${dockLabel}` : `Open ${dockLabel} preview`}>
             {controller.snapshot ? <img src={controller.snapshot} alt={`${title} snapshot`}/> : <div className="preview-empty">{previewApp === 'studio' ? <Layers size={21}/> : previewApp === 'records' ? <Table2 size={21}/> : previewApp.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(previewApp)} className="preview-artwork"/> : <img className="preview-artwork" src={dockArtwork(previewApp)} alt=""/>}</div>}
+            <span className="dock-caption">{dockLabel}</span>
           </button>;
         }
         const icon = icons.find(i => i.id === item.id)!;
       return <button data-dock-app={icon.id} ref={hasPreview(icon.id) ? undefined : runtimeTargets[icon.id]} key={item.id} className={`dock-icon ${icon.id === 'studio' || icon.id === 'records' || icon.id === 'explore' ? '' : 'image-icon'} ${icon.color} ${updatedId===icon.id?'store-update-pulse':''}`} style={{...style, visibility: arrivalId===icon.id||pendingArrivalId===icon.id ? 'hidden' : undefined}} aria-label={icon.id === 'explore' ? 'Explore apps' : icon.label} aria-haspopup={icon.id === 'explore' ? 'dialog' : undefined} aria-expanded={icon.id === 'explore' ? appExplorerOpen : undefined} disabled={anyMotion || hostTransitioning} onClick={event=>icon.id === 'explore' ? showAppExplorer(event.currentTarget) : icon.id.startsWith('company.') ? void openInstalledApp(icon.id) : openStoreApp(icon.id)}>
           {icon.id === 'explore' ? <LayoutGrid size={22} strokeWidth={2.3}/> : icon.id === 'studio' ? <Layers size={21}/> : icon.id === 'records' ? <Table2 size={21}/> : icon.id.startsWith('company.') ? <StoreArtwork appId={packageIdForRuntime(icon.id)} className="dock-artwork"/> : <img className="dock-artwork" src={dockArtwork(icon.id)} alt="" draggable={false}/>}
+          <span className="dock-caption">{icon.id === 'explore' ? 'Explore apps' : icon.label}</span>
           {state.windows[icon.id]?.phase !== 'closed' && <span className="running-dot"/>}
         </button>;
       })}

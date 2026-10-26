@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { BatteryStatus } from './host/battery';
 const hostListeners = new Set<(transitioning: boolean) => void>();
 let hostTransitioning = false;
 function publishHostTransition(transitioning: boolean) {
@@ -49,6 +50,7 @@ contextBridge.exposeInMainWorld('desktop', {
   },
   preferences: (value?: { overviewShortcutEnabled: boolean }) => ipcRenderer.invoke('os:preferences', value),
   status: () => ipcRenderer.invoke('os:status'),
+  battery: { view: () => ipcRenderer.invoke('os:battery') as Promise<BatteryStatus | undefined> },
   control: (action: 'close' | 'minimize') => {
     // Suspend layout synchronously before native fullscreen/minimize events.
     if (action !== 'minimize') return ipcRenderer.invoke('window:control', action);

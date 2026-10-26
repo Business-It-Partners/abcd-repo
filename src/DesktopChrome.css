@@ -31,6 +31,9 @@
 .statusbar-network span{color:#202c31}
 .statusbar-date,.statusbar-time{font-variant-numeric:tabular-nums}
 .statusbar-time{font-weight:700;color:#202c31}
+.statusbar-battery{display:flex;align-items:center;gap:4px;flex:0 0 auto;color:#43565d;font-variant-numeric:tabular-nums;font-weight:650}
+.statusbar-battery.is-charging{color:#315e4b}
+.statusbar-battery.is-low{color:#91483c}
 .statusbar-window-controls{display:flex;flex:0 0 auto;align-items:center;gap:6px;padding:0;border-radius:0;background:transparent;box-shadow:none;pointer-events:auto}
 .statusbar-window-controls button{width:28px;height:28px;display:grid;place-items:center;padding:0;border:1px solid #00000028;border-radius:50%;background:#f4c451;color:#62480d;box-shadow:0 2px 5px #14202a40;transition:filter .14s,transform .14s,box-shadow .14s;cursor:pointer}
 .statusbar-window-controls button:hover{filter:brightness(.94);transform:scale(1.06);box-shadow:0 3px 7px #14202a50}

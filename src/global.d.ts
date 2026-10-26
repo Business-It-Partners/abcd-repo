@@ -28,6 +28,7 @@ declare global {
       resourcePressure: { subscribe(callback: (value: unknown) => void): () => void; acknowledge(requestId: string): void };
       preferences(value?: { overviewShortcutEnabled: boolean }): Promise<{ overviewShortcutEnabled: boolean }>;
       status(): Promise<{ phase: string }>;
+      battery: { view(): Promise<import('../electron/host/battery').BatteryStatus | undefined> };
       onHostTransition(listener: (transitioning: boolean) => void): () => void;
       control(action: 'close' | 'minimize'): Promise<void>;
       capture(rect: { x: number; y: number; width: number; height: number }, generation?: number): Promise<string>;

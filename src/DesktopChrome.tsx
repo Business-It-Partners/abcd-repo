@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, CloudCheck, LockKeyhole, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
+import { ArrowRight, BatteryCharging, BatteryMedium, CalendarDays, ChevronLeft, ChevronRight, CloudCheck, LockKeyhole, LogOut, Minus, PackageCheck, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import { MAX_BS_YEAR, MIN_BS_YEAR, NEPALI_DAYS } from 'nepali-date-utils';
 import { currentNepaliDate, gregorianMonthGrid, nepaliMonthGrid, nepaliMonthName, shiftNepaliMonth, type CalendarMonth } from './calendar';
 import type { StoreView } from '../electron/distribution/contracts';
 import type { SessionView } from '../electron/identity/contracts';
 import { hasAvailableStoreUpdate } from './storeUpdateState';
 import type { DevelopmentAppView } from '../electron/developmentApps';
+import type { BatteryStatus } from '../electron/host/battery';
 import './DesktopChrome.css';
 
 const sajiloDentalMark = new URL('./assets/sajilo-dental-mark.svg', import.meta.url).href;
@@ -40,6 +41,7 @@ const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 export function DesktopChrome({ session, sessionControls, roleControls, storeView, developmentApps, developmentMessage, developmentTargets, storeControlsLocked, statusbarVisible, onOpenApps, onRequestUpdate, onCancelUpdate, onRefreshApps, onOpenDevelopmentApp, onShowWindows, onSupport, onRequestLock, onRequestSignOut, onRequestClose }: Props) {
   const [now, setNow] = useState(() => new Date());
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [battery, setBattery] = useState<BatteryStatus>();
   const roleMenuRef = useRef<HTMLDetailsElement>(null);
   const [clinicLogo, setClinicLogo] = useState<{ generation: number; dataUrl: string }>();
   const [shownBsMonth, setShownBsMonth] = useState<CalendarMonth>(() => {
@@ -58,6 +60,50 @@ export function DesktopChrome({ session, sessionControls, roleControls, storeVie
       window.clearInterval(timer);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    type BatteryManagerLike = {
+      charging: boolean;
+      level: number;
+      addEventListener(type: 'chargingchange' | 'levelchange', listener: () => void): void;
+      removeEventListener(type: 'chargingchange' | 'levelchange', listener: () => void): void;
+    };
+    const batteryNavigator = navigator as Navigator & { getBattery?: () => Promise<BatteryManagerLike> };
+    let active = true;
+    let manager: BatteryManagerLike | undefined;
+    const publishBrowserBattery = () => {
+      if (!manager) return;
+      setBattery({ percentage: Math.round(Math.max(0, Math.min(1, manager.level)) * 100), charging: manager.charging, state: manager.charging ? 'charging' : 'discharging' });
+    };
+    const onBrowserBatteryChange = () => { if (active) publishBrowserBattery(); };
+    const read = async () => {
+      let nativeStatus: BatteryStatus | undefined;
+      try { nativeStatus = await window.desktop?.battery.view(); } catch {}
+      if (!active) return;
+      if (nativeStatus) {
+        setBattery(nativeStatus);
+        return;
+      }
+      if (!manager && batteryNavigator.getBattery) {
+        try {
+          manager = await batteryNavigator.getBattery();
+          if (!active) return;
+          manager.addEventListener('chargingchange', onBrowserBatteryChange);
+          manager.addEventListener('levelchange', onBrowserBatteryChange);
+        } catch {}
+      }
+      if (active && manager) publishBrowserBattery();
+      else if (active) setBattery(undefined);
+    };
+    void read();
+    const timer = window.setInterval(() => { void read(); }, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      manager?.removeEventListener('chargingchange', onBrowserBatteryChange);
+      manager?.removeEventListener('levelchange', onBrowserBatteryChange);
     };
   }, []);
 
@@ -157,6 +203,10 @@ export function DesktopChrome({ session, sessionControls, roleControls, storeVie
         </span>
         <time className="statusbar-date" dateTime={now.toISOString()}>{formatDate}</time>
         <time className="statusbar-time" dateTime={now.toISOString()}>{formatTime}</time>
+        {battery && <span className={`statusbar-battery${battery.charging ? ' is-charging' : ''}${battery.percentage <= 20 && !battery.charging ? ' is-low' : ''}`} role="img" aria-label={`Battery ${battery.percentage}%, ${battery.state === 'full' ? 'fully charged' : battery.state === 'charging' ? 'charging' : battery.state === 'discharging' ? 'on battery' : battery.state === 'not-charging' ? 'not charging' : 'status unavailable'}`} title={`${battery.state === 'full' ? 'Fully charged' : battery.state === 'charging' ? 'Charging' : battery.state === 'discharging' ? 'On battery' : battery.state === 'not-charging' ? 'Not charging' : 'Battery'} · ${battery.percentage}%`}>
+          {battery.charging ? <BatteryCharging size={16} aria-hidden="true" /> : <BatteryMedium size={16} aria-hidden="true" />}
+          <span>{battery.percentage}%</span>
+        </span>}
         <div className="statusbar-window-controls" role="group" aria-label="Sajilo Dental window controls">
           <button type="button" aria-label="Minimize Sajilo Dental" title="Minimize Sajilo Dental" onClick={() => void window.desktop?.control('minimize')}><Minus size={16} strokeWidth={2} aria-hidden="true"/></button>
           <button className="statusbar-window-close" type="button" aria-label="Close Sajilo Dental" title="Close Sajilo Dental" onClick={onRequestClose}><X size={16} strokeWidth={2} aria-hidden="true"/></button>
