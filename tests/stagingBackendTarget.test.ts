@@ -6,10 +6,18 @@ const settings = { compatibility_date: source.compatibility_date, bindings: [
   { type: 'plain_text', name: 'APP_ENV', text: 'cloudfare-staging' }, { type: 'plain_text', name: 'FIREBASE_PROJECT_ID', text: target.project },
   { type: 'd1', name: 'CONTROL_DB', id: target.control }, { type: 'd1', name: registry[0].binding_name, id: registry[0].database_id },
   { type: 'r2_bucket', name: 'PRIVATE_BUCKET', bucket_name: 'dentmitra-private-cloudfare-staging' }, { type: 'r2_bucket', name: 'DENTAL_OS_RELEASES', bucket_name: 'dentmitra-dental-os-releases-cloudfare-staging' },
+  { type: 'r2_bucket', name: 'DENTAL_OS_APP_DISTRIBUTION', bucket_name: 'dental-app-distribution' }, { type: 'r2_bucket', name: 'DENTAL_OS_DISTRIBUTION', bucket_name: 'dental-os-distribution' },
+  { type: 'r2_bucket', name: 'DENTAL_OS_ARTWORK', bucket_name: 'dentmitra-dental-os-artwork-cloudfare-staging' },
   { type: 'secret_text', name: 'EXISTING_SECRET' },
 ] };
 describe('staging-only backend deployment target', () => {
-  it('preserves exact live D1/R2/vars without inventing secret values', () => { const result = configuration(source, settings, registry); expect(result.d1_databases).toHaveLength(2); expect(result.r2_buckets).toHaveLength(2); expect(JSON.stringify(result)).not.toContain('EXISTING_SECRET'); });
+  it('preserves exact live D1/R2/vars without inventing secret values', () => { const result = configuration(source, settings, registry); expect(result.d1_databases).toHaveLength(2); expect(result.r2_buckets).toEqual([
+    { binding: 'PRIVATE_BUCKET', bucket_name: 'dentmitra-private-cloudfare-staging' },
+    { binding: 'DENTAL_OS_RELEASES', bucket_name: 'dentmitra-dental-os-releases-cloudfare-staging' },
+    { binding: 'DENTAL_OS_APP_DISTRIBUTION', bucket_name: 'dental-app-distribution' },
+    { binding: 'DENTAL_OS_DISTRIBUTION', bucket_name: 'dental-os-distribution' },
+    { binding: 'DENTAL_OS_ARTWORK', bucket_name: 'dentmitra-dental-os-artwork-cloudfare-staging' },
+  ]); expect(JSON.stringify(result)).not.toContain('EXISTING_SECRET'); });
   it.each(['worker', 'project', 'control', 'clinic', 'bucket', 'duplicate', 'unknown', 'compatibility'])('rejects changed or unreviewed %s authority', kind => {
     const s = structuredClone(source), live: any = structuredClone(settings);
     if (kind === 'worker') s.name = 'production'; if (kind === 'project') live.bindings[1].text = 'production'; if (kind === 'control') live.bindings[2].id = 'production';
