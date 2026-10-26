@@ -37,7 +37,7 @@ All nine M19 private UI scenarios listed below were re-run on the integrated M15
 
 Private UI run: `node tools/run-ui-test.mjs tests/app-launch-concurrency.mjs` — passed four checks. It delays app discovery, confirms the second app click is retained, opens both apps once, activates an existing app on repeat click, and preserves the third-app capacity prompt. Focused unit test: `npm test -- --maxWorkers=1 tests/appLaunchLock.test.ts` — 2/2 passed.
 
-Report: [concurrent launch](../../artifacts/m19-app-launch-concurrency-verification.json).
+Report: [concurrent launch](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-app-launch-concurrency-verification.json).
 
 ## M19.2 Window controls and V1 flow
 
@@ -45,10 +45,10 @@ All checks ran through the private UI runner on Linux:
 
 | Command | Result | Report |
 | --- | --- | --- |
-| `node tools/run-ui-test.mjs tests/dockapps.mjs` | 18 checks passed: correct app windows, two-app cap, activate, maximize/restore, minimize/restore, close/reopen, dock fit, no renderer errors | [Dock](../../artifacts/m19-dockapps-verification.json) |
-| `node tools/run-ui-test.mjs tests/open-app-limit.mjs` | 3 checks passed: third-app dialog, cancel, choose an app to close | [App limit](../../artifacts/m19-open-app-limit-verification.json) |
-| `node tools/run-ui-test.mjs tests/overview.mjs` | 19 checks passed: two-window overview, switching, restored minimized app, geometry and narrow display | [Overview](../../artifacts/m19-overview-verification.json) |
-| `node tools/run-ui-test.mjs tests/finance.mjs` | 12 checks passed: Finance module selection, second-app switching, controls, overview, close/reopen | [Finance](../../artifacts/m19-finance-verification.json) |
+| `node tools/run-ui-test.mjs tests/dockapps.mjs` | 18 checks passed: correct app windows, two-app cap, activate, maximize/restore, minimize/restore, close/reopen, dock fit, no renderer errors | [Dock](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-dockapps-verification.json) |
+| `node tools/run-ui-test.mjs tests/open-app-limit.mjs` | 3 checks passed: third-app dialog, cancel, choose an app to close | [App limit](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-open-app-limit-verification.json) |
+| `node tools/run-ui-test.mjs tests/overview.mjs` | 19 checks passed: two-window overview, switching, restored minimized app, geometry and narrow display | [Overview](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-overview-verification.json) |
+| `node tools/run-ui-test.mjs tests/finance.mjs` | 12 checks passed: Finance module selection, second-app switching, controls, overview, close/reopen | [Finance](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-finance-verification.json) |
 
 ## M19.3 App failure and recovery
 
@@ -56,8 +56,8 @@ Private runtime/UI checks passed:
 
 | Command | Result | Report |
 | --- | --- | --- |
-| `node tools/run-ui-test.mjs tests/packages.mjs` | 13 checks passed: renderer crash isolation, other-app interaction, dirty-work close protection, restart/reopen, package-integrity failure and retry | [Package recovery](../../artifacts/m19-packages-recovery-verification.json) |
-| `node tools/run-ui-test.mjs tests/pending-write-restart.mjs` | 5 checks passed: unknown server outcome blocks restart while the shell and another app remain usable; original operation is reconciled | [Pending-write restart](../../artifacts/m19-pending-write-restart-verification.json) |
+| `node tools/run-ui-test.mjs tests/packages.mjs` | 13 checks passed: renderer crash isolation, other-app interaction, dirty-work close protection, restart/reopen, package-integrity failure and retry | [Package recovery](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-packages-recovery-verification.json) |
+| `node tools/run-ui-test.mjs tests/pending-write-restart.mjs` | 5 checks passed: unknown server outcome blocks restart while the shell and another app remain usable; original operation is reconciled | [Pending-write restart](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-pending-write-restart-verification.json) |
 
 ## M19.4 Test alignment and launch feedback
 
@@ -65,8 +65,8 @@ Private UI runs passed:
 
 | Command | Result | Report |
 | --- | --- | --- |
-| `node tools/run-ui-test.mjs tests/m12-usability.mjs` | 11 checks passed: current App Explorer flow, Finance package launch, reduced-motion minimize/restore and preserved app state | [Usability](../../artifacts/m19-usability-verification.json) |
-| `LAUNCH_FEEDBACK_APP=company.dental.appointments node tools/run-ui-test.mjs tests/app-launch-feedback.mjs` | 12 checks passed; foreground hold observed at 1935 ms, app content fade 260 ms, handoff completed | [Launch feedback](../../artifacts/m19-app-launch-feedback-verification.json) |
+| `node tools/run-ui-test.mjs tests/m12-usability.mjs` | 11 checks passed: current App Explorer flow, Finance package launch, reduced-motion minimize/restore and preserved app state | [Usability](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-usability-verification.json) |
+| `LAUNCH_FEEDBACK_APP=company.dental.appointments node tools/run-ui-test.mjs tests/app-launch-feedback.mjs` | 12 checks passed; foreground hold observed at 1935 ms, app content fade 260 ms, handoff completed | [Launch feedback](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-app-launch-feedback-verification.json) |
 
 ## Shared checks and limitations
 
@@ -76,4 +76,4 @@ Private UI runs passed:
 
 All retained JSON reports are M19-specific; older milestone reports were restored and are not overwritten. Genie remains presentation-only. No new gate is created, and M19 does not close G12, G15, G20, or G21.
 
-The [fingerprint manifest](../../artifacts/m19-source-fingerprint.sha256) retains the M19 source file list and per-file SHA-256 digests. All 15 entries matched on the integrated M15 source.
+The [fingerprint manifest](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/m19-source-fingerprint.sha256) retains the M19 source file list and per-file SHA-256 digests. All 15 entries matched on the integrated M15 source.

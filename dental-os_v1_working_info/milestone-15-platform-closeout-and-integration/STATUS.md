@@ -255,7 +255,7 @@ The app typecheck/build, `npm run build`, documentation check and signed readbac
 
 Added a permanent Dock entry that opens a glass-style app grid. System apps include App Store and Standard Window 1; installed signed apps come only from the current role-filtered Store view, while local development apps remain outside Explore. Launches continue through the shared Store/runtime path. The modal pauses Dock motion, makes the desktop inert, hides native app surfaces beneath it, and restores focus and app surfaces on close.
 
-The current-source build passed and private UI verification passed 13/13 checks; see [screenshot](../../artifacts/app-explorer-private.png) and [report](../../artifacts/app-explorer-private.json). The root unit run passed 512/513, with the single failure timing out in the 25-app registry test; its isolated rerun passed 1/1. The live OS was not restarted. This local follow-up does not close M15/G15 and was not committed, pushed, published or deployed.
+The current-source build passed and private UI verification passed 13/13 checks; see [screenshot](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/app-explorer-private.png) and [report](https://github.com/Business-It-Partners/dental-os/blob/f3727089d3db86d9e23416ce348fbbdeeb2bf162/artifacts/app-explorer-private.json). The root unit run passed 512/513, with the single failure timing out in the 25-app registry test; its isolated rerun passed 1/1. The live OS was not restarted. This local follow-up does not close M15/G15 and was not committed, pushed, published or deployed.
 
 ## Session-scoped clinic workspace switching — 2026-10-26
 
