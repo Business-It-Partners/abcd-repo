@@ -118,6 +118,7 @@ function createWindow() {
   let transitioning = false, restoring = false, wantsFocus = false;
   let restoreAttempts = 0;
   let restoreFullscreenRequested = false;
+  let observedNativeMinimize = false;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let shellUnresponsiveTimer: ReturnType<typeof setTimeout> | undefined;
   let shellLoadTimer: ReturnType<typeof setTimeout> | undefined;
@@ -240,6 +241,7 @@ function createWindow() {
       }
       if (!win.isFullScreen() && ++restoreAttempts < 100) { settleRestore(); return; }
       restoring = false;
+      observedNativeMinimize = false;
       publish(false);
       if (wantsFocus) { wantsFocus = false; win.focus(); }
     }, 80);
@@ -284,6 +286,7 @@ function createWindow() {
   });
   win.on('minimize', () => {
     if (settleTimer) clearTimeout(settleTimer);
+    observedNativeMinimize = true;
     restoring = false;
     restoreFullscreenRequested = false;
     // Hide child WebContents without a fresh screenshot; the host window is leaving the screen.
@@ -301,7 +304,24 @@ function createWindow() {
       settleRestore();
     });
   });
-  win.on('enter-full-screen', () => { if (restoring) settleRestore(); });
+  // On some Windows Electron hosts, a minimized fullscreen window returns
+  // through enter-full-screen/show/focus without emitting a native 'restore'.
+  // Only recover a *real observed minimize* and only after the native window
+  // is non-minimized and visible. Never unsuspend during a pending minimize.
+  const resumeNativeMinimizeWithoutRestore = () => {
+    if (!observedNativeMinimize || !transitioning || restoring ||
+        win.isDestroyed() || win.isMinimized() || !win.isVisible()) return;
+    restoring = true;
+    restoreAttempts = 0;
+    restoreFullscreenRequested = win.isFullScreen();
+    settleRestore();
+  };
+  win.on('enter-full-screen', () => {
+    if (restoring) settleRestore();
+    else resumeNativeMinimizeWithoutRestore();
+  });
+  win.on('show', resumeNativeMinimizeWithoutRestore);
+  win.on('focus', resumeNativeMinimizeWithoutRestore);
   win.on('resize', () => { if (restoring) settleRestore(); });
   win.on('closed', () => {
     if (settleTimer) clearTimeout(settleTimer);
