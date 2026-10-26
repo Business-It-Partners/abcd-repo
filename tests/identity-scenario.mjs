@@ -94,8 +94,26 @@ export async function verifyIdentity(profileArgs,reportName){
    await shell.getByRole('button',{name:'Show open windows'}).click();
    await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='true');
    check('menu-bar Windows opens the shared window overview');
-   await shell.keyboard.press('Escape');
-   await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='false');
+   // The native guest WebContentsView can retain OS keyboard focus even while
+   // the shell overlay is on screen. Focus an accessible overview control first,
+   // then send a genuine keyboard event to that control (not a reducer shortcut).
+   const overviewClose=shell.getByRole('button',{name:'Close window overview'});
+   await overviewClose.focus();
+   check('window overview takes keyboard focus before Escape',await overviewClose.evaluate(button=>document.activeElement===button));
+   await overviewClose.press('Escape');
+   try {
+     await shell.waitForFunction(()=>document.querySelector('main')?.dataset.overview==='false',null,{timeout:10000});
+   } catch(error) {
+     const diagnostic=await shell.evaluate(()=>({
+       overview:document.querySelector('main')?.dataset.overview,
+       focused:document.activeElement?.getAttribute('aria-label')??document.activeElement?.tagName,
+       openWindows:[...document.querySelectorAll('[data-window-id]')].filter(x=>x.dataset.phase!=='closed').map(x=>({id:x.dataset.windowId,phase:x.dataset.phase})).slice(0,10),
+       dialogPresent:!!document.querySelector('.window-overview'),
+     })).catch(()=>({unavailable:true}));
+     console.error('Windows overview Escape did not close; bounded diagnostic:',JSON.stringify(diagnostic));
+     throw error;
+   }
+   check('window overview closes with focused Escape keyboard input');
   const nepaliCalendar=shell.locator('.nepali-calendar-grid'),gregorianCalendar=shell.locator('.gregorian-calendar-grid');
   const widgetPlacement=await shell.evaluate(()=>{const box=(selector)=>document.querySelector(selector).getBoundingClientRect();const updates=box('.app-updates-widget');return{updatesTop:updates.top,calendarsBottom:Math.max(box('.nepali-calendar-widget').bottom,box('.time-widget').bottom,box('.gregorian-calendar-widget').bottom)}});
   check('calendar and time widgets remain, with the App Updates widget below them',await shell.locator('.desktop-widget-collection .desktop-widget').count()===4&&await shell.getByRole('region',{name:'Nepali calendar'}).isVisible()&&await shell.getByRole('region',{name:'Local time'}).isVisible()&&await shell.getByRole('region',{name:'English calendar'}).isVisible()&&await shell.getByRole('region',{name:'App updates'}).isVisible()&&widgetPlacement.updatesTop>=widgetPlacement.calendarsBottom&&await shell.locator('.calendar-today-line').count()===0);

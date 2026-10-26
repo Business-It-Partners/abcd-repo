@@ -46,6 +46,10 @@ jobs:
           exit $code
       - name: Windows protected credential storage (real Electron safeStorage)
         run: npm run test:windows-safe-storage
+      # Run fragile focused shell identity/keyboard checks early so failures
+      # do not consume resource-pressure and integration CI minutes.
+      - name: Windows saved identity and session recovery
+        run: node tests/identity-ci.mjs
       - name: Windows shell and app failure containment
         run: |
           node tests/runtime-ci.mjs
@@ -60,8 +64,6 @@ jobs:
           node tests/resources-limit-ci.mjs
       - name: Windows integrated shell and API contract
         run: node tests/integration-ci.mjs
-      - name: Windows saved identity and session recovery
-        run: node tests/identity-ci.mjs
       - name: Retain M15 evidence
         if: always()
         uses: actions/upload-artifact@v4
