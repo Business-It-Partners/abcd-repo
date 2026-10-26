@@ -1,0 +1,81 @@
+name: M15 Windows readiness validation
+on:
+  push:
+    branches: ['codex/m15-readiness']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-m15-readiness-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows-m15:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_OPTIONS: --max-old-space-size=2048
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate documentation
+        run: python tools/check-dental-docs.py
+      - name: Build test fixtures
+        run: npm run pretest
+      - name: Unit and filesystem state checks
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          node node_modules/vitest/vitest.mjs run --exclude 'apps/dental-apps/**' --maxWorkers=1 --reporter=default --reporter=json --outputFile=artifacts/windows-unit.json *> artifacts/windows-unit.log
+          $code = $LASTEXITCODE
+          Get-Content artifacts/windows-unit.log
+          exit $code
+      - name: Build and typecheck
+        shell: pwsh
+        run: |
+          npm run build *> artifacts/windows-build.log
+          $code = $LASTEXITCODE
+          Get-Content artifacts/windows-build.log
+          exit $code
+      - name: Windows shell and app failure containment
+        run: |
+          node tests/runtime-ci.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/hardening-ci.mjs
+      - name: Windows saved-state recovery
+        run: node tests/recovery-ci.mjs
+      - name: Windows resource-pressure recovery
+        run: |
+          node tests/resources-ci.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/resources-limit-ci.mjs
+      - name: Windows integrated shell and API contract
+        run: node tests/integration-ci.mjs
+      - name: Windows saved identity and session recovery
+        run: node tests/identity-ci.mjs
+      - name: Retain M15 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-m15-readiness-${{ github.sha }}
+          path: |
+            artifacts/windows-unit.log
+            artifacts/windows-unit.json
+            artifacts/windows-build.log
+            artifacts/windows-runtime.json
+            artifacts/windows-hardening.json
+            artifacts/windows-recovery.json
+            artifacts/windows-resources.json
+            artifacts/windows-resources-limit.json
+            artifacts/windows-integration.json
+            artifacts/windows-identity.json
+            artifacts/runtime-overlap.png
+            artifacts/runtime-crash.png
+            artifacts/identity-gate.png
+          if-no-files-found: warn
+          retention-days: 30

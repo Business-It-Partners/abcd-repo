@@ -416,3 +416,16 @@ This verifies recovery policy with synthetic identity responses and a private en
 The first M15.11 full-suite run was 525/527. Its failures were test setup drift, not runtime defects: no Appointments `dist/` fixture existed in the clean worktree, and four M17 expected versions lagged their checked-in package manifests. After adding the `pretest` fixture build and correcting those expected versions, the full suite passed 527/527. This is Linux evidence; it does not replace the current-source Windows run. The Windows validation workflow now includes `codex/m15-readiness` as a push trigger so it can verify the exact readiness commit.
 
 M15.11 remains open: current-source Windows CI, corrected live staging upload-failure verification, and independent technical review have not yet passed. The protected Clinic A credential, pinned signer and seed journal are not available in this environment; no staging request was made. The user's manual review and main-project integration remain under M15.12.
+
+## M15.11 continuation — 2026-10-26 (staging attempt and Windows workflow)
+
+**Source context:** The staging attempt ran from working-tree source based on `2c3f29ba0efe6ad28dd6ecc25c821aa3883e6778`; the verifier source SHA-256 was `57952a79c50b2c66d7cc3f03c63dfcedca0692147d67ff527ea7c3e6f9b17055`. This is a failed, partial staging attempt, not accepted M15 evidence.
+
+- Clinic A staging sign-in and local signed-profile capability checks passed.
+- A 68-byte synthetic patient-media payload with intentionally incorrect MIME was sent to the real staging Worker. The Worker returned HTTP 422 `invalid_patient_media`. No finalise request was dispatched, and the rejected asset was absent from the active media list.
+- The SaaS abort/cleanup call returned HTTP 404. Cleanup is **unconfirmed**; do not infer that the pending intent/transfer was removed. The verifier stopped before the wrong-checksum, Staff mismatch, or session-revocation cases. Inspect the exact staging intent/transfer state and confirm cleanup before attempting further writes.
+- No production requests or public app grants occurred. The protected input files, signer, journal, and raw report remain outside Git.
+
+The broad Windows run [40251095718](https://github.com/Business-It-Partners/dental-os/actions/runs/40251095718) on base `2c3f29ba` was canceled at its 20-minute limit during Windows safe-app-update proof; it is not a full Windows pass. The general workflow's push trigger was narrowed to `main` and `codex/milestone-*`; new `.github/workflows/windows-m15-readiness.yml` targets `codex/m15-readiness`, has a 25-minute timeout, and runs M15-focused Windows checks with artifacts. That focused workflow has not yet produced evidence for the updated commit.
+
+Local evidence for the working tree: `npm run build` PASS; `node --check tools/verify-staging-media-upload-failures.mjs` PASS; `git diff --check` PASS before these documentation edits. Exact-source Windows verification, confirmed staging cleanup and the remaining failure cases, and an independent technical review remain open. M15.12 manual review and integration remain separate.

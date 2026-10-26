@@ -18,13 +18,22 @@ const { ApiBroker } = require('../dist-electron/sdk/broker.js');
 const { SDK } = require('../dist-electron/sdk/contracts.js');
 const { staging } = require('../dist-electron/sdk/environment.js');
 const { stagingDistribution } = require('../dist-electron/distribution/staging.js');
-const { appAllowed, clinicApps, clinicRequestAllowed } = require('../dist-electron/sdk/appPolicy.js');
-const { mediaKindForApp } = require('../dist-electron/sdk/mediaRead.js');
-const { uploadKindForApp } = require('../dist-electron/sdk/mediaUpload.js');
+const { appAllowed, clinicAppFamily, clinicRequestAllowed } = require('../dist-electron/sdk/appPolicy.js');
+const { mediaKindForFamily } = require('../dist-electron/sdk/mediaRead.js');
+const { uploadKindForFamily } = require('../dist-electron/sdk/mediaUpload.js');
 const { buildPackage, verifyPackage, canonical, sha256 } = require('../dist-electron/packages/format.js');
 const { PackageRegistry } = require('../dist-electron/packages/registry.js');
 const { verifyUpdatePolicy, allowUpdatedPackage, apiOperationsForPackage, apiReleaseGrantForPackage, apiReleaseGrantMatchesCatalogue } = require('../dist-electron/distribution/updatePolicy.js');
 const { verifyCatalogue, noWatermark } = require('../dist-electron/distribution/catalogue.js');
+
+// These legacy staging app IDs resolve to host-owned app families. Authorization
+// checks use families, never app IDs; keep the mapping explicit and validated by
+// the same resolver used by the production broker.
+const appFamilyById = Object.freeze({
+  'company.dental.patient-record': 'clinic.app.patient-record',
+  'company.dental.staff': 'clinic.app.staff',
+});
+const familyForApp = appId => clinicAppFamily(appFamilyById[appId] ? [appFamilyById[appId]] : []);
 
 const expectedApi = 'https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev';
 if (staging.environment !== 'cloudfare-staging' || staging.apiBase !== expectedApi || staging.firebaseProject !== 'dental-managemetn-staging') throw Error('Staging configuration fence');
@@ -223,7 +232,9 @@ try {
   phase = 'public-control-read-before';
   feedBefore = await rawFeed();
   for (const appId of ['company.dental.patient-record', 'company.dental.staff']) {
-    const caps = [clinicApps[appId].operation, 'clinic.api.request', 'clinic.media.read', 'clinic.media.upload'];
+    const family = familyForApp(appId);
+    if (!family) throw Error('Staging app does not resolve to a supported host family');
+    const caps = [family, 'clinic.api.request', 'clinic.media.read', 'clinic.media.upload'];
     const bytes = buildPackage({ appId, publisher: 'company', version: '0.0.15', entry: 'index.html', sdkMajor: 1, apiMajor: 1, capabilities: caps }, new Map([['index.html', Buffer.from('<h1>Private M15 upload-failure probe</h1>')]]), keyId, signer);
     const verified = verifyPackage(bytes, stagingDistribution.policy);
     packageDefs.push({ appId, caps, bytes, verified });
@@ -243,10 +254,23 @@ try {
   });
   const identity = {
     snapshot: () => ({ generation: sessionGeneration, active: sessionActive, userLabel: sessionActive ? 'Clinic A staging acceptance' : '', clinicLabel: sessionActive ? 'Clinic A staging' : '' }),
-    allowed: operation => !operation.startsWith('clinic.app.') || !!clinic && Object.entries(clinicApps).some(([appId, value]) => value.operation === operation && appAllowed(appId, clinic.role, clinic.capabilities)),
-    allowedClinicRequest: (appId, requestPath, method) => !!clinic && clinicRequestAllowed(appId, clinic.role, clinic.capabilities, requestPath, method),
-    allowedMediaRead: (appId, kind) => !!clinic && mediaKindForApp(appId) === kind && appAllowed(appId, clinic.role, clinic.capabilities),
-    allowedMediaUpload: (appId, kind) => !!clinic && uploadKindForApp(appId) === kind && appAllowed(appId, clinic.role, clinic.capabilities),
+    allowed: operation => {
+      if (!operation.startsWith('clinic.app.')) return true;
+      const family = clinicAppFamily([operation]);
+      return !!family && !!clinic && appAllowed(family, clinic.role, clinic.capabilities);
+    },
+    allowedClinicRequest: (familyInput, requestPath, method) => {
+      const family = clinicAppFamily([familyInput]);
+      return !!family && !!clinic && clinicRequestAllowed(family, clinic.role, clinic.capabilities, requestPath, method);
+    },
+    allowedMediaRead: (familyInput, kind) => {
+      const family = clinicAppFamily([familyInput]);
+      return !!family && !!clinic && mediaKindForFamily(family) === kind && appAllowed(family, clinic.role, clinic.capabilities);
+    },
+    allowedMediaUpload: (familyInput, kind) => {
+      const family = clinicAppFamily([familyInput]);
+      return !!family && !!clinic && uploadKindForFamily(family) === kind && appAllowed(family, clinic.role, clinic.capabilities);
+    },
     credential: async () => { credentialsRequested++; if (!sessionActive || !tokens?.idToken) throw Error('No active Clinic A staging session'); return tokens.idToken; },
   };
   broker = new ApiBroker(staging, identity, transport);
