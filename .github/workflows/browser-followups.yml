@@ -49,3 +49,11 @@ jobs:
         run: npm run test:followups:assets
       - name: Smoke original Follow-ups UI in headless Chrome with synthetic clinic records
         run: npm run test:followups:ui
+      - name: Share synthetic Follow-ups UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: followups-ui-screenshots
+          path: artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 7
