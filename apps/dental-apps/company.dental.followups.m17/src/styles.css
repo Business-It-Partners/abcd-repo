@@ -11,3 +11,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .followUpsSummaryGrid { display: grid; width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3, 12px); }
 @media (max-width: 800px) { .followUpsSummaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .followUpsSummaryGrid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Browser first-app acceptance: edits remain disabled until write verification. */
+.browser-followups-readonly {
+  margin: 10px 16px;
+  padding: 11px 14px;
+  border: 1px solid #b9d7df;
+  border-radius: 8px;
+  color: #285c70;
+  background: #ebf6f9;
+  font-size: 12px;
+  line-height: 1.45;
+}
