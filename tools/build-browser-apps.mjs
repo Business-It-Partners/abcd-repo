@@ -18,9 +18,8 @@ const apps = {
   workentry: 'work-entry.m17',
 };
 const ids = process.argv.slice(2);
-const targets = ids.length ? ids : ['followups'];
-// Until Follow-ups passes full browser acceptance, no other M17 app is compiled.
-if (targets.some(id => id !== 'followups')) throw new Error('Only Follow-ups is in scope for this integration milestone.');
+const targets = ids.length ? ids : Object.keys(apps);
+// Original M17 sources only. Clinical writes remain blocked at the frame SDK boundary.
 if (!targets.length || targets.some(id => !Object.hasOwn(apps, id))) {
   console.error('Usage: npm run build:apps -- [appointments|patients|calendar|finance|followups|staff|lab|treatment|protocols|workentry] ...');
   process.exit(1);
