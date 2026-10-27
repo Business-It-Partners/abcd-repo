@@ -17,7 +17,7 @@ import '@/shared/clinic.css';
 import './styles.css';
 import '@/shared/standard-app-page.css';
 
-declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
+declare global { interface Window { dentalApp?: import('../../../../packages/browser-sdk/src/contracts').AppSdk } }
 
 type BucketChoice = 'day' | AppointmentBucket;
 type FormSeed = { appointment?: Appointment; date: string };

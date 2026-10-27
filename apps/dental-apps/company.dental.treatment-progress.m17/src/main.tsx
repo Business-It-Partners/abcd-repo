@@ -330,7 +330,7 @@ function TreatmentProgressWorkspace() {
 
 declare global {
   interface Window {
-    dentalApp?: import("../../../../electron/sdk/contracts").AppSdk;
+    dentalApp?: import("../../../../packages/browser-sdk/src/contracts").AppSdk;
   }
 }
 

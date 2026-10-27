@@ -9,7 +9,7 @@ import '@/shared/clinic.css';
 import './styles.css';
 import '@/shared/standard-app-page.css';
 
-declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
+declare global { interface Window { dentalApp?: import('../../../../packages/browser-sdk/src/contracts').AppSdk } }
 
 type PendingWrite = { command: ClinicCommand<CalendarTaskReceipt>; label: string; after: 'create' | 'refresh' };
 type Navigation = { year: number; month: number; day: number | null };

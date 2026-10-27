@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "../../../../packages/dental-ui/src/shared/standard-app-page.css";
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
 import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
-import type { ClinicSessionContext, AppSdk } from "../../../../electron/sdk/contracts";
+import type { ClinicSessionContext, AppSdk } from "../../../../packages/browser-sdk/src/contracts";
 import { APP_ID, PatientApi, PatientMediaSdk, readable, isUnknown } from "./api";
 import { SaaSPatientDirectory } from "./saasDirectory";
 import { SaaSPatientDetail } from "./saasPatientDetail";

@@ -11,7 +11,7 @@ import '@/shared/clinic.css';
 import './styles.css';
 import '@/shared/standard-app-page.css';
 
-declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
+declare global { interface Window { dentalApp?: import('../../../../packages/browser-sdk/src/contracts').AppSdk } }
 
 const appId = 'company.dental.m17.treatment-protocols';
 type ProtocolReceipt = { treatmentProtocol: TreatmentProtocol };

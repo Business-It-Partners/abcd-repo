@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
 import type { AppHistory } from "../../../../packages/app-sdk/src/appHistory";
-import type { AppSdk } from "../../../../electron/sdk/contracts";
+import type { AppSdk } from "../../../../packages/browser-sdk/src/contracts";
 import { ClinicLoadingProvider } from "@/shared/ui/ClinicLoadingOverlay";
 import { ClinicPageRefreshProvider } from "@/shared/ui/ClinicPageRefresh";
 import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
