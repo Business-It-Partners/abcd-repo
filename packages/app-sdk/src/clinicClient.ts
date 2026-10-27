@@ -1,4 +1,4 @@
-import { SDK, type AppSdk, type ClinicSessionContext, type Connection, type ErrorCode, type Outcome, type Result, type RuntimeAppInfo } from '../../../electron/sdk/contracts';
+import { SDK, type AppSdk, type ClinicSessionContext, type Connection, type ErrorCode, type Outcome, type Result, type RuntimeAppInfo } from '../../browser-sdk/src/contracts';
 import { AppHistory } from './appHistory';
 
 export class ClinicError extends Error {
