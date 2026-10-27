@@ -1,5 +1,5 @@
 import { build } from 'vite';
-import { existsSync, cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, cpSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,7 +18,9 @@ const apps = {
   workentry: 'work-entry.m17',
 };
 const ids = process.argv.slice(2);
-const targets = ids.length ? ids : Object.keys(apps);
+const targets = ids.length ? ids : ['followups'];
+// Until Follow-ups passes full browser acceptance, no other M17 app is compiled.
+if (targets.some(id => id !== 'followups')) throw new Error('Only Follow-ups is in scope for this integration milestone.');
 if (!targets.length || targets.some(id => !Object.hasOwn(apps, id))) {
   console.error('Usage: npm run build:apps -- [appointments|patients|calendar|finance|followups|staff|lab|treatment|protocols|workentry] ...');
   process.exit(1);
@@ -50,6 +52,7 @@ for (const id of targets) {
     }
     aliases.push({ find: '@/shared', replacement: dentalUi });
   }
+  aliases.push({ find: 'nepali-date-utils', replacement: path.join(root, 'vendor/nepali-date-utils/index.js') });
   aliases.push({ find: '@', replacement: appSrc });
   const outDir = path.join(outRoot, id);
   console.log('Building original M17 React UI for browser:', id);
@@ -68,7 +71,7 @@ for (const id of targets) {
         output: {
           entryFileNames: 'assets/app.js',
           chunkFileNames: 'assets/chunk-[hash].js',
-          assetFileNames: 'assets/[name]-[hash][extname]',
+          assetFileNames: (assetInfo) => assetInfo.name?.endsWith('.css') ? 'assets/app.css' : 'assets/[name]-[hash][extname]',
         },
       },
     },
