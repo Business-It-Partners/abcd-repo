@@ -6,6 +6,7 @@ import {
   NEPALI_DAYS,
   NEPALI_MONTHS,
 } from './vendor/nepali-date-utils/index.js';
+import { mountBrowserApp } from './apps/browser/host.js';
 
 const config = window.DENTAL_OS_BROWSER_CONFIG;
 const apps = [
@@ -399,6 +400,7 @@ function syncRouteToVisibleWindow() {
 function closeWindow(appId) {
   const entry = openWindows.get(appId);
   if (!entry) return;
+  entry.dispose?.();
   entry.element.remove();
   openWindows.delete(appId);
   if (activeWindowId === appId) syncRouteToVisibleWindow();
@@ -407,7 +409,7 @@ function closeWindow(appId) {
 }
 
 function closeAllWindows() {
-  for (const entry of openWindows.values()) entry.element.remove();
+  for (const entry of openWindows.values()) { entry.dispose?.(); entry.element.remove(); }
   openWindows.clear();
   activeWindowId = null;
   setRoute(null, true);
@@ -492,7 +494,19 @@ function createWindow(app, shift) {
   section.append(titlebar, content);
   enableWindowDrag(section, titlebar);
   windowStage.append(section);
-  return section;
+  section.classList.add('has-browser-module');
+  const dispose = mountBrowserApp({
+    content,
+    appId: app.id,
+    connected: connectedStaging,
+    apiBaseUrl: config.apiBaseUrl,
+    getAccess: () => ({
+      user: firebaseUser,
+      allowed: Boolean(clinicSession && allowedAppIds.has(app.id)),
+      capabilities: clinicSession?.clinicUser?.capabilities ?? [],
+    }),
+  });
+  return { element: section, dispose };
 }
 
 function enableWindowDrag(section, titlebar) {
@@ -531,8 +545,7 @@ function openApp(appId, fromRoute = false) {
   if (!app || !allowedAppIds.has(appId)) return;
   let entry = openWindows.get(appId);
   if (!entry) {
-    const element = createWindow(app, openWindows.size * 22);
-    entry = { element };
+    entry = createWindow(app, openWindows.size * 22);
     openWindows.set(appId, entry);
   }
   focusWindow(appId, true);
@@ -613,6 +626,7 @@ function acceptClinicSession(user, session) {
   );
   for (const [appId, entry] of openWindows) {
     if (nextAllowedAppIds.has(appId)) continue;
+    entry.dispose?.();
     entry.element.remove();
     openWindows.delete(appId);
   }
