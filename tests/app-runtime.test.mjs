@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { firstPartyApps } from '../apps/manifest.js';
-import { financeApiGrants, findAppApiGrant, isValidAppCatalog } from '../apps/catalog.js';
+import { calendarApiGrants, financeApiGrants, findAppApiGrant, isValidAppCatalog, treatmentProgressApiGrants } from '../apps/catalog.js';
 
 const baseOrigin = 'https://browser.example.test';
 const runtimeHtml = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url), 'utf8');
@@ -13,6 +13,14 @@ const protocolAppSource = readFileSync(new URL('../apps/treatment-protocols/src/
 const financeAppSource = readFileSync(new URL('../apps/finance/src/main.tsx', import.meta.url), 'utf8');
 const financeRuntimeSource = readFileSync(new URL('../apps/finance/src/runtimeBridge.ts', import.meta.url), 'utf8');
 const financeSourceImport = JSON.parse(readFileSync(new URL('../apps/finance/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
+const calendarAppSource = readFileSync(new URL('../apps/calendar/src/main.tsx', import.meta.url), 'utf8');
+const calendarRuntimeSource = readFileSync(new URL('../apps/calendar/src/runtimeBridge.ts', import.meta.url), 'utf8');
+const calendarTasksSource = readFileSync(new URL('../apps/calendar/src/calendarTasks.ts', import.meta.url), 'utf8');
+const calendarSourceImport = JSON.parse(readFileSync(new URL('../apps/calendar/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
+const calendarVerificationSource = readFileSync(new URL('../apps/calendar/SOURCE_VERIFICATION.md', import.meta.url), 'utf8');
+const treatmentProgressAppSource = readFileSync(new URL('../apps/treatment-progress/src/main.tsx', import.meta.url), 'utf8');
+const treatmentProgressRuntimeSource = readFileSync(new URL('../apps/treatment-progress/src/runtimeBridge.ts', import.meta.url), 'utf8');
+const treatmentProgressSourceImport = JSON.parse(readFileSync(new URL('../apps/treatment-progress/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
 const appLaunchSource = hostScript.match(/function openApp\(appId, fromRoute = false\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeFailureSource = hostScript.match(/function failAppRuntime\(app, entry, attempt, message\) \{[\s\S]*?^\}/m)?.[0];
@@ -26,7 +34,7 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
   assert.equal(firstPartyApps.length, 10);
   assert.equal(isValidAppCatalog(firstPartyApps, baseOrigin), true);
   assert.equal(new Set(firstPartyApps.map((app) => app.id)).size, firstPartyApps.length);
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance'].includes(app.id)).every((app) => app.apiGrants.length === 0));
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment'].includes(app.id)).every((app) => app.apiGrants.length === 0));
   const protocols = firstPartyApps.find((app) => app.id === 'protocols');
   assert.deepEqual(protocols.apiGrants, [
     { method: 'GET', path: '/v1/treatment-protocols' },
@@ -42,6 +50,12 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
     'patient_billing_ledger.read', 'patient_payments.collect', 'staff.manage',
   ]);
   assert.equal(finance.apiGrants.length, 28);
+  const calendar = firstPartyApps.find((app) => app.id === 'calendar');
+  assert.deepEqual(calendar.apiGrants, calendarApiGrants);
+  assert.deepEqual(calendar.capabilities, ['calendar.access']);
+  const treatmentProgress = firstPartyApps.find((app) => app.id === 'treatment');
+  assert.deepEqual(treatmentProgress.apiGrants, treatmentProgressApiGrants);
+  assert.deepEqual(treatmentProgress.capabilities, ['treatment_progress.access']);
   assert.equal(isValidAppCatalog([firstPartyApps[0], firstPartyApps[0]], baseOrigin), false);
 });
 
@@ -114,6 +128,57 @@ test('matches only Finance contract routes, scoped UUIDs, and documented query p
   assert.equal(findAppApiGrant(finance, 'POST', `/v1/patients/${patientId}/ledger`), null);
 });
 
+test('matches Calendar and Treatment Progress routes, UUIDs, and bounded date ranges', () => {
+  const calendar = firstPartyApps.find((candidate) => candidate.id === 'calendar');
+  const treatmentProgress = firstPartyApps.find((candidate) => candidate.id === 'treatment');
+  const taskId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
+
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&to=2026-02-15'), calendar.apiGrants[0]);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01'), null);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&to=2026-02-16'), null);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-02-01&to=2026-01-01'), null);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-02-30&to=2026-03-01'), null);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&from=2026-01-02&to=2026-01-20'), null);
+  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks'), null);
+  assert.equal(findAppApiGrant(calendar, 'POST', '/v1/calendar-tasks'), calendar.apiGrants[1]);
+  assert.equal(findAppApiGrant(calendar, 'POST', '/v1/calendar-tasks?from=2026-01-01&to=2026-01-20'), null);
+  assert.equal(findAppApiGrant(calendar, 'PATCH', `/v1/calendar-tasks/${taskId}`), calendar.apiGrants[2]);
+  assert.equal(findAppApiGrant(calendar, 'PATCH', `/v1/calendar-tasks/${taskId}?status=completed`), null);
+  assert.equal(findAppApiGrant(calendar, 'PATCH', '/v1/calendar-tasks/not-a-uuid'), null);
+  assert.equal(findAppApiGrant(calendar, 'POST', `/v1/calendar-tasks/${taskId}/archive`), calendar.apiGrants[3]);
+  assert.equal(findAppApiGrant(calendar, 'POST', `/v1/calendar-tasks/${taskId}/delete`), null);
+  assert.equal(findAppApiGrant(calendar, 'DELETE', `/v1/calendar-tasks/${taskId}`), null);
+
+  assert.equal(findAppApiGrant(treatmentProgress, 'GET', '/v1/treatment-progress'), treatmentProgress.apiGrants[0]);
+  assert.equal(findAppApiGrant(treatmentProgress, 'GET', '/v1/treatment-progress?branch=other'), null);
+  assert.equal(findAppApiGrant(treatmentProgress, 'POST', '/v1/treatment-progress'), null);
+});
+
+test('documents the copied Calendar and Treatment Progress source contracts', () => {
+  const calendarGrants = calendarApiGrants.map(({ method, path }) => `${method} ${path}`);
+  const treatmentRoute = treatmentProgressSourceImport.contractSources.find(({ source }) => source.endsWith('treatmentProgress.routes.ts'));
+  assert.equal(calendarSourceImport.sourceCommit, 'fd2cc5439694ce844362c9dec8a6267378d11381');
+  assert.deepEqual(calendarGrants, [
+    'GET /v1/calendar-tasks',
+    'POST /v1/calendar-tasks',
+    'PATCH /v1/calendar-tasks/{uuid}',
+    'POST /v1/calendar-tasks/{uuid}/archive',
+  ]);
+  assert.ok(calendarVerificationSource.includes('GET /v1/calendar-tasks?from=...&to=...'));
+  assert.ok(calendarVerificationSource.includes('POST /v1/calendar-tasks'));
+  assert.ok(calendarVerificationSource.includes('PATCH /v1/calendar-tasks/:id'));
+  assert.ok(calendarVerificationSource.includes('POST /v1/calendar-tasks/:id/archive'));
+  assert.match(calendarTasksSource, /\/v1\/calendar-tasks\?\$\{new URLSearchParams\(\{ from, to \}\)\}/);
+  assert.match(calendarTasksSource, /client\.command\('POST', '\/v1\/calendar-tasks'/);
+  assert.match(calendarTasksSource, /client\.command\('PATCH', `\/v1\/calendar-tasks\/\$\{task\.id\}`/);
+  assert.match(calendarTasksSource, /client\.command\('POST', `\/v1\/calendar-tasks\/\$\{task\.id\}\/archive`/);
+  assert.ok(treatmentRoute);
+  assert.equal(treatmentProgressApiGrants.length, 1);
+  assert.equal(treatmentProgressApiGrants[0].method, 'GET');
+  assert.equal(treatmentProgressApiGrants[0].path, '/v1/treatment-progress');
+  assert.match(treatmentProgressAppSource, /read<\{ patients: unknown \}>\("\/v1\/treatment-progress"/);
+});
+
 test('keeps the Finance host grants aligned with the pinned backend contract', () => {
   const contract = financeSourceImport.sdkContract;
   const sourceRoutes = [contract.route];
@@ -167,6 +232,26 @@ test('registers the Finance host handshake before React mounts and keeps credent
   assert.doesNotMatch(financeAppSource, /window\.dentalApp|electron\/|authorization|idToken|accessToken/);
 });
 
+test('registers Calendar and Treatment Progress host handshakes before React mounts', () => {
+  for (const [appName, appSource, bridgeSource] of [
+    ['Calendar', calendarAppSource, calendarRuntimeSource],
+    ['Treatment Progress', treatmentProgressAppSource, treatmentProgressRuntimeSource],
+  ]) {
+    const listenerRegistration = appSource.indexOf('const browserRuntime = connectBrowserRuntime(APP_ID);');
+    const reactMount = appSource.indexOf('createRoot(document.getElementById');
+    assert.ok(listenerRegistration >= 0 && reactMount > listenerRegistration, `${appName} listener must precede React`);
+    assert.match(appSource, /void browserRuntime\.then/);
+    assert.match(bridgeSource, /data\.appId === expectedAppId/);
+    assert.doesNotMatch(appSource, /window\.dentalApp|electron\/|authorization|Bearer|idToken|accessToken|firebase/i);
+    assert.doesNotMatch(bridgeSource, /\bfetch\s*\(|XMLHttpRequest|localStorage|sessionStorage|indexedDB|window\.desktop|dentalApp|authorization|Bearer|idToken|accessToken/i);
+  }
+  assert.match(calendarAppSource, /clinicToday\(bridge\.clinicTimeZone \?\? 'Asia\/Kathmandu'\)/);
+  assert.match(calendarRuntimeSource, /appId,bundleSha256,clinicTimeZone,nonce,title,type,version/);
+  assert.match(hostScript, /app\.id === 'calendar' \? \{ clinicTimeZone: trustedCalendarTimeZone\(\) \}/);
+  assert.match(hostScript, /clinicSession\?\.clinic\?\.timezone/);
+  assert.match(hostScript, /return 'Asia\/Kathmandu'/);
+});
+
 test('pins the exact app entry and JavaScript bytes in the trusted manifest and SRI attribute', () => {
   const entryBytes = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url));
   const scriptBytes = readFileSync(new URL('../apps/runtime.v1.js', import.meta.url));
@@ -175,7 +260,7 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.equal(bundle.scriptSha256, sha256(scriptBytes));
   const integrity = createHash('sha256').update(scriptBytes).digest('base64');
   assert.ok(runtimeHtml.includes(`integrity="sha256-${integrity}"`));
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance'].includes(app.id))
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment'].includes(app.id))
     .every((app) => app.bundle.entry === bundle.entry && app.bundle.scriptSha256 === bundle.scriptSha256));
   const protocolBundle = firstPartyApps.find((app) => app.id === 'protocols').bundle;
   const protocolEntry = readFileSync(new URL('../apps/treatment-protocols.v1.html', import.meta.url), 'utf8');
@@ -204,6 +289,28 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.ok(financeEntry.includes(`script-src 'sha256-${financeScriptIntegrity}'`));
   assert.ok(financeEntry.includes(`style-src 'sha256-${financeStyleIntegrity}'`));
   assert.ok(financeEntry.includes(`integrity="sha256-${financeScriptIntegrity}"`));
+
+  for (const [appId, bundleName] of [
+    ['calendar', 'calendar.v1'],
+    ['treatment', 'treatment-progress.v1'],
+  ]) {
+    const appBundle = firstPartyApps.find((app) => app.id === appId).bundle;
+    const appEntry = readFileSync(new URL(`../apps/${bundleName}.html`, import.meta.url), 'utf8');
+    const appScript = readFileSync(new URL(`../apps/${bundleName}.js`, import.meta.url));
+    const appStyle = readFileSync(new URL(`../apps/${bundleName}.css`, import.meta.url));
+    const appScriptIntegrity = createHash('sha256').update(appScript).digest('base64');
+    const appStyleIntegrity = createHash('sha256').update(appStyle).digest('base64');
+    assert.equal(appBundle.entry, `/apps/${bundleName}.html`);
+    assert.equal(appBundle.script, `/apps/${bundleName}.js`);
+    assert.equal(appBundle.style, `/apps/${bundleName}.css`);
+    assert.equal(appBundle.entrySha256, sha256(Buffer.from(appEntry)));
+    assert.equal(appBundle.scriptSha256, sha256(appScript));
+    assert.equal(appBundle.styleSha256, sha256(appStyle));
+    assert.ok(appEntry.includes(`script-src 'sha256-${appScriptIntegrity}'`));
+    assert.ok(appEntry.includes(`style-src 'sha256-${appStyleIntegrity}'`));
+    assert.ok(appEntry.includes(`integrity="sha256-${appScriptIntegrity}"`));
+    assert.doesNotMatch(appScript.toString('utf8'), /process\.env\.NODE_ENV/);
+  }
 });
 
 test('isolates app code in a scripts-only frame with a private host channel and no direct network API', () => {
@@ -231,4 +338,10 @@ test('isolates app code in a scripts-only frame with a private host channel and 
   assert.match(serverScript, /\['\/apps\/finance\/asset-manifest\.js', 'apps\/finance\/asset-manifest\.js'\]/);
   assert.match(serverScript, /\['\/apps\/finance\.v1\.js', 'apps\/finance\.v1\.js'\]/);
   assert.match(serverScript, /'\/apps\/finance\.v1\.js', '\/apps\/finance\.v1\.css'/);
+  for (const [bundleName, appName] of [['calendar.v1', 'calendar'], ['treatment-progress.v1', 'treatment-progress']]) {
+    assert.match(serverScript, new RegExp(`\\['/apps/${appName}/asset-manifest\\.js', 'apps/${appName}/asset-manifest\\.js'\\]`));
+    assert.match(serverScript, new RegExp(`\\['/apps/${bundleName}\\.html', 'apps/${bundleName}\\.html'\\]`));
+    assert.match(serverScript, new RegExp(`\\['/apps/${bundleName}\\.js', 'apps/${bundleName}\\.js'\\]`));
+    assert.match(serverScript, new RegExp(`'/apps/${bundleName}\\.js', '/apps/${bundleName}\\.css'`));
+  }
 });

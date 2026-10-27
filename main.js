@@ -115,6 +115,19 @@ function clinicSessionFromMeResponse(payload) {
   return session;
 }
 
+function trustedCalendarTimeZone() {
+  const candidate = clinicSession?.clinic?.timezone;
+  if (typeof candidate === 'string' && candidate.length <= 100) {
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: candidate });
+      return candidate;
+    } catch {
+      // The pinned Calendar app uses this timezone when clinic configuration is absent or invalid.
+    }
+  }
+  return 'Asia/Kathmandu';
+}
+
 const clinicWorkspaceRoles = new Set(['admin', 'doctor', 'reception']);
 
 function availableWorkspaceRoles(session) {
@@ -905,6 +918,7 @@ async function initializeAppRuntime(app, entry) {
           version: app.version,
           nonce: entry.nonce,
           bundleSha256: app.bundle.scriptSha256,
+          ...(app.id === 'calendar' ? { clinicTimeZone: trustedCalendarTimeZone() } : {}),
           ...(Array.isArray(app.sessionCapabilities) ? {
             capabilities: app.sessionCapabilities.filter((capability) => clinicSession?.clinicUser?.capabilities?.includes(capability)),
           } : {}),

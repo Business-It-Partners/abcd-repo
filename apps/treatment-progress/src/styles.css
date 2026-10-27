@@ -1,0 +1,117 @@
+.tprogressMessage {
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.tprogressMessage h1 {
+  color: var(--ink-1);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tprogressMessage p {
+  max-width: 520px;
+}
+
+.tprogressFilters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.tprogressFilters > :first-child {
+  flex: 1 1 320px;
+  max-width: 520px;
+}
+
+.tprogressDoctorFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-medium);
+}
+
+.tprogressDoctorFilter select {
+  min-width: 180px;
+  height: var(--control-h);
+  border: 1px solid var(--field-border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-1);
+  padding: 0 10px;
+}
+
+.tprogressDoctorFilter select:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.tprogressCount {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+}
+
+.tprogressMuted {
+  color: var(--ink-3);
+}
+
+.tprogressPatient {
+  color: var(--ink-1);
+  font-weight: var(--fw-medium);
+}
+
+.tprogressPlan {
+  display: -webkit-box;
+  max-width: 300px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tprogressCompletion {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tprogressBalance {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid #f4d69a;
+  border-radius: var(--r-xs);
+  background: #fffaf0;
+  color: #8a5a08;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tprogressCleared {
+  color: var(--ok);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .tprogressFilters > :first-child {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .tprogressCount {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}

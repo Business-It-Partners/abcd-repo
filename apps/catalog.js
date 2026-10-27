@@ -48,7 +48,20 @@ export const financeApiGrants = Object.freeze([
   { method: "POST", path: "/v1/clinic/supplier-payments/{uuid}/void" },
 ]);
 
+export const treatmentProgressApiGrants = Object.freeze([
+  { method: "GET", path: "/v1/treatment-progress" },
+]);
+
+export const calendarApiGrants = Object.freeze([
+  { method: "GET", path: "/v1/calendar-tasks" },
+  { method: "POST", path: "/v1/calendar-tasks" },
+  { method: "PATCH", path: "/v1/calendar-tasks/{uuid}" },
+  { method: "POST", path: "/v1/calendar-tasks/{uuid}/archive" },
+]);
+
 const financeGrantKeys = new Set(financeApiGrants.map(({ method, path }) => `${method} ${path}`));
+const treatmentProgressGrantKeys = new Set(treatmentProgressApiGrants.map(({ method, path }) => `${method} ${path}`));
+const calendarGrantKeys = new Set(calendarApiGrants.map(({ method, path }) => `${method} ${path}`));
 const protocolGrantKeys = new Set([
   "GET /v1/treatment-protocols",
   "POST /v1/treatment-protocols",
@@ -132,9 +145,24 @@ function validFinanceQuery(grant, parsed) {
   return false;
 }
 
+function validCalendarQuery(grant, parsed) {
+  if (!parsed.hasQuery) return grant.method !== "GET";
+  if (grant.method !== "GET" || grant.path !== "/v1/calendar-tasks") return false;
+  const entries = [...parsed.searchParams.entries()];
+  if (entries.length !== 2 || new Set(entries.map(([key]) => key)).size !== 2) return false;
+  const values = new Map(entries);
+  if (values.size !== 2 || !values.has("from") || !values.has("to")
+    || !validIsoDate(values.get("from")) || !validIsoDate(values.get("to"))) return false;
+  const start = Date.parse(`${values.get("from")}T00:00:00.000Z`);
+  const end = Date.parse(`${values.get("to")}T00:00:00.000Z`);
+  return start <= end && (end - start) / 86_400_000 <= 45;
+}
+
 function isAllowedGrantForApp(appId, method, path) {
   const key = `${method} ${path}`;
   if (appId === "finance") return financeGrantKeys.has(key);
+  if (appId === "treatment") return treatmentProgressGrantKeys.has(key);
+  if (appId === "calendar") return calendarGrantKeys.has(key);
   if (appId === "protocols") return protocolGrantKeys.has(key);
   return method === "GET" && !path.includes("{");
 }
@@ -209,6 +237,7 @@ export function findAppApiGrant(app, method, path) {
     && pathMatchesTemplate(candidate.path, parsed.pathname));
   if (!grant) return null;
   if (app.id === "finance" && !validFinanceQuery(grant, parsed)) return null;
-  if (app.id !== "finance" && parsed.hasQuery) return null;
+  if (app.id === "calendar" && !validCalendarQuery(grant, parsed)) return null;
+  if (!['finance', 'calendar'].includes(app.id) && parsed.hasQuery) return null;
   return grant;
 }

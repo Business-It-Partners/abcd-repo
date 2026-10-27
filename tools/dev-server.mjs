@@ -55,6 +55,14 @@ const routes = new Map([
   ['/apps/treatment-protocols.v1.js', 'apps/treatment-protocols.v1.js'],
   ['/apps/treatment-protocols.v1.css', 'apps/treatment-protocols.v1.css'],
   ['/apps/treatment-protocols/asset-manifest.js', 'apps/treatment-protocols/asset-manifest.js'],
+  ['/apps/calendar.v1.html', 'apps/calendar.v1.html'],
+  ['/apps/calendar.v1.js', 'apps/calendar.v1.js'],
+  ['/apps/calendar.v1.css', 'apps/calendar.v1.css'],
+  ['/apps/calendar/asset-manifest.js', 'apps/calendar/asset-manifest.js'],
+  ['/apps/treatment-progress.v1.html', 'apps/treatment-progress.v1.html'],
+  ['/apps/treatment-progress.v1.js', 'apps/treatment-progress.v1.js'],
+  ['/apps/treatment-progress.v1.css', 'apps/treatment-progress.v1.css'],
+  ['/apps/treatment-progress/asset-manifest.js', 'apps/treatment-progress/asset-manifest.js'],
   ['/apps/finance.v1.html', 'apps/finance.v1.html'],
   ['/apps/finance.v1.js', 'apps/finance.v1.js'],
   ['/apps/finance.v1.css', 'apps/finance.v1.css'],
@@ -107,18 +115,20 @@ const server = createServer(async (request, response) => {
       return;
     }
   }
-  if (pathname === '/apps/finance.v1.html') {
+  if (['/apps/finance.v1.html', '/apps/calendar.v1.html', '/apps/treatment-progress.v1.html'].includes(pathname)) {
     try {
-      const html = await readFile(resolve(root, 'apps/finance.v1.html'), 'utf8');
+      const relativePath = routes.get(pathname);
+      const html = await readFile(resolve(root, relativePath), 'utf8');
       const policy = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\s*\/>/i)?.[1];
-      if (!policy) throw new Error('Finance package CSP is missing.');
+      if (!policy) throw new Error('App package CSP is missing.');
       response.setHeader('Content-Security-Policy', policy);
     } catch {
-      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Finance package is not built.');
+      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('App package is not built.');
       return;
     }
   }
   if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
+    '/apps/calendar.v1.js', '/apps/calendar.v1.css', '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css',
     '/apps/finance.v1.js', '/apps/finance.v1.css'].includes(pathname)) {
     response.setHeader('Access-Control-Allow-Origin', '*');
   }

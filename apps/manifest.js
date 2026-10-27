@@ -1,6 +1,8 @@
 import { treatmentProtocolsBundle, treatmentProtocolsVersion } from './treatment-protocols/asset-manifest.js';
 import { financeBundle, financeVersion } from './finance/asset-manifest.js';
-import { financeApiGrants, financeSessionCapabilities } from './catalog.js';
+import { calendarBundle, calendarVersion } from './calendar/asset-manifest.js';
+import { treatmentProgressBundle, treatmentProgressVersion } from './treatment-progress/asset-manifest.js';
+import { calendarApiGrants, financeApiGrants, financeSessionCapabilities, treatmentProgressApiGrants } from './catalog.js';
 
 const bundle = Object.freeze({
   entry: '/apps/runtime.v1.html',
@@ -24,7 +26,12 @@ function app(id, title, icon, capabilities) {
 export const firstPartyApps = Object.freeze([
   app('appointments', 'Appointments', '/assets/dock/appointments.webp', ['appointments.access']),
   app('patients', 'Patients', '/assets/dock/patients.webp', ['patient_record.access']),
-  app('calendar', 'Calendar', '/assets/dock/calendar.webp', ['calendar.access']),
+  Object.freeze({
+    ...app('calendar', 'Calendar', '/assets/dock/calendar.webp', ['calendar.access']),
+    version: calendarVersion,
+    bundle: calendarBundle,
+    apiGrants: Object.freeze(calendarApiGrants.map(({ method, path }) => Object.freeze({ method, path }))),
+  }),
   Object.freeze({
     ...app('finance', 'Finance', '/assets/dock/finance.webp', ['finance.manage', 'patient_payments.outstanding.read']),
     version: financeVersion,
@@ -35,7 +42,12 @@ export const firstPartyApps = Object.freeze([
   app('followups', 'Follow-ups', '/assets/dock/followups.webp', ['followups.access']),
   app('staff', 'Staff', '/assets/dock/staff.webp', ['staff.reference.read', 'staff.manage']),
   app('lab', 'Lab Tracker', '/assets/dock/lab.webp', ['lab_tracker.access', 'lab_requests.create']),
-  app('treatment', 'Treatment Progress', '/assets/dock/treatment.webp', ['treatment_progress.access']),
+  Object.freeze({
+    ...app('treatment', 'Treatment Progress', '/assets/dock/treatment.webp', ['treatment_progress.access']),
+    version: treatmentProgressVersion,
+    bundle: treatmentProgressBundle,
+    apiGrants: Object.freeze(treatmentProgressApiGrants.map(({ method, path }) => Object.freeze({ method, path }))),
+  }),
   Object.freeze({
     ...app('protocols', 'Treatment Protocols', '/assets/dock/protocols.webp', ['treatment_protocols.manage']),
     version: treatmentProtocolsVersion,

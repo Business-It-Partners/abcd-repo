@@ -1,0 +1,124 @@
+/* Canonical clinic modal frame. Individual features provide only their form
+   fields and actions; they do not recreate overlay or header chrome. */
+.backdrop {
+  position: fixed;
+  z-index: 400;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6vh 1rem;
+  overflow-y: auto;
+  background: rgb(15 23 42 / 40%);
+}
+
+/* Form workflows open near the top; brief acknowledgements stay centered. */
+.centered { align-items: center; }
+
+.modal {
+  width: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 28%);
+}
+
+.small { max-width: 28rem; }
+.medium { max-width: 30rem; }
+.large { max-width: 42.5rem; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-bottom: 0;
+  background: #0284c7;
+}
+
+.header h3 {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  color: #fff;
+  font-size: .94rem;
+  font-weight: var(--fw-bold, 600);
+}
+
+.closeButton {
+  display: grid;
+  width: 1.625rem;
+  height: 1.625rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  color: #fff;
+  background: rgb(255 255 255 / 15%);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.closeButton:hover:not(:disabled) { color: #fff; background: rgb(255 255 255 / 30%); }
+.closeButton:disabled { cursor: wait; opacity: .55; }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1rem 1rem 1.1rem;
+  background: #fff;
+}
+
+.description { margin: 0; color: var(--ink-2, #334155); font-size: .875rem; line-height: 1.5; }
+
+/* The original primitive makes all modal workflows crisp and square. */
+.body :global(input),
+.body :global(select),
+.body :global(textarea),
+.body :global(.primaryAction),
+.body :global(.secondaryAction) { border-radius: 0; }
+
+/* Shared compact form treatment. Its two-column structure mirrors the
+   reference Add Staff modal, while retaining each feature's own fields. */
+.body :global(.staffForm) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: 0;
+}
+.body :global(.staffForm label) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .32rem;
+  color: var(--ink-2, #334155);
+  font-size: .8125rem;
+  font-weight: var(--fw-bold, 600);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.body :global(.staffForm label:first-child),
+.body :global(.staffForm .dialogActions) { grid-column: 1 / -1; }
+.body :global(.staffForm input),
+.body :global(.staffForm select) { min-height: 2.4rem; padding: .45rem .6rem; border-color: #c7d7e5; border-radius: 0; color: #10203b; font-size: .82rem; font-weight: 550; letter-spacing: normal; text-transform: none; }
+.body :global(.staffForm input:focus),
+.body :global(.staffForm select:focus) { border-color: #0ea5a4; box-shadow: 0 0 0 2px rgb(20 184 166 / 12%); outline: none; }
+.body :global(.staffForm .dialogActions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-top: .3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dbe5ec;
+}
+.body :global(.staffForm .dialogActions button) { min-height: 2.4rem; padding-inline: .9rem; border-radius: 0; font-size: .78rem; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .backdrop { padding: 1rem .625rem; }
+  .body { padding: .9rem; }
+  .body :global(.staffForm) { grid-template-columns: 1fr; }
+}
