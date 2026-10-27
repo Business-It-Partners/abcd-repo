@@ -1,6 +1,6 @@
 export type BrowserAppRole = 'admin' | 'doctor' | 'reception' | 'assistant';
 export type BrowserAppContext = {
-  appId: 'workentry' | 'patients';
+  appId: 'workentry' | 'patients' | 'appointments' | 'followups' | 'staff' | 'lab';
   title: string;
   version: string;
   nonce: string;
@@ -44,6 +44,10 @@ const capabilitiesByApp = Object.freeze({
     'patient_payments.collect', 'finance.manage', 'lab_tracker.access',
     'lab_requests.create', 'staff.reference.read', 'treatment_protocols.reference.read',
   ]),
+  appointments: new Set(['appointments.access', 'staff.reference.read']),
+  followups: new Set(['followups.access', 'staff.reference.read']),
+  staff: new Set(['staff.manage', 'finance.manage']),
+  lab: new Set(['lab_tracker.access', 'lab_requests.create', 'finance.manage']),
 });
 const pending = new Map<string, PendingRequest>();
 let context: BrowserAppContext | null = null;
@@ -148,7 +152,7 @@ function validInitialization(data: unknown, ports: readonly MessagePort[]): data
   const value = data as Record<string, unknown>;
   const keys = ['appId', 'bundleSha256', 'capabilities', 'clinicDisplayName', 'nonce', 'role', 'title', 'type', 'version'];
   if (Object.keys(value).sort().join(',') !== keys.sort().join(',') || value.type !== 'dental-os:init'
-    || !['workentry', 'patients'].includes(String(value.appId))
+    || !['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab'].includes(String(value.appId))
     || typeof value.title !== 'string' || value.title.length < 1 || value.title.length > 64
     || typeof value.version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value.version)
     || typeof value.nonce !== 'string' || !noncePattern.test(value.nonce)

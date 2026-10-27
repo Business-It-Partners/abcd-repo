@@ -38,10 +38,11 @@ function sha256(bytes) {
 
 test('ships a unique, validated catalog of first-party apps with Worker capability grants', () => {
   assert.equal(firstPartyApps.length, 10);
+  assert.deepEqual(firstPartyApps.map((app) => app.id), [
+    'appointments', 'patients', 'calendar', 'finance', 'followups', 'lab', 'treatment', 'protocols', 'staff', 'workentry',
+  ]);
   assert.equal(isValidAppCatalog(firstPartyApps, baseOrigin), true);
   assert.equal(new Set(firstPartyApps.map((app) => app.id)).size, firstPartyApps.length);
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment', 'workentry', 'patients'].includes(app.id))
-    .every((app) => app.apiGrants.length === 0));
   const protocols = firstPartyApps.find((app) => app.id === 'protocols');
   assert.deepEqual(protocols.apiGrants.map(({ method, path }) => ({ method, path })), [
     { method: 'GET', path: '/v1/treatment-protocols' },
@@ -294,20 +295,23 @@ test('allows bounded media chunks through while retaining the app concurrency li
 });
 
 test('pins the exact app entry and JavaScript bytes in the trusted manifest and SRI attribute', () => {
-  const entryBytes = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url));
-  const scriptBytes = readFileSync(new URL('../apps/runtime.v1.js', import.meta.url));
-  const bundle = firstPartyApps[0].bundle;
-  assert.equal(bundle.entrySha256, sha256(entryBytes));
-  assert.equal(bundle.scriptSha256, sha256(scriptBytes));
-  const integrity = createHash('sha256').update(scriptBytes).digest('base64');
-  assert.ok(runtimeHtml.includes(`integrity="sha256-${integrity}"`));
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment', 'workentry', 'patients'].includes(app.id))
-    .every((app) => app.bundle.entry === bundle.entry && app.bundle.scriptSha256 === bundle.scriptSha256));
+  for (const app of firstPartyApps) {
+    const { entry, entrySha256, script, scriptSha256, style, styleSha256 } = app.bundle;
+    const entryBytes = readFileSync(new URL(`..${entry}`, import.meta.url));
+    const scriptBytes = readFileSync(new URL(`..${script}`, import.meta.url));
+    assert.equal(entrySha256, sha256(entryBytes), `${app.id} entry hash`);
+    assert.equal(scriptSha256, sha256(scriptBytes), `${app.id} script hash`);
+    const integrity = createHash('sha256').update(scriptBytes).digest('base64');
+    assert.ok(entryBytes.toString('utf8').includes(`integrity="sha256-${integrity}"`), `${app.id} script SRI`);
+    if (style) {
+      const styleBytes = readFileSync(new URL(`..${style}`, import.meta.url));
+      assert.equal(styleSha256, sha256(styleBytes), `${app.id} style hash`);
+    }
+  }
   const protocolBundle = firstPartyApps.find((app) => app.id === 'protocols').bundle;
   const protocolEntry = readFileSync(new URL('../apps/treatment-protocols.v1.html', import.meta.url), 'utf8');
   const protocolScript = readFileSync(new URL('../apps/treatment-protocols.v1.js', import.meta.url));
   const protocolStyle = readFileSync(new URL('../apps/treatment-protocols.v1.css', import.meta.url));
-  assert.notEqual(protocolBundle.entry, bundle.entry);
   assert.match(protocolBundle.style, /^\/apps\/treatment-protocols\.v1\.css$/);
   assert.equal(protocolBundle.entrySha256, sha256(Buffer.from(protocolEntry)));
   assert.equal(protocolBundle.scriptSha256, sha256(protocolScript));

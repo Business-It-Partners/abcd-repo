@@ -41,11 +41,18 @@ const clinicWidgetMark = document.getElementById('clinic-widget-mark');
 const clinicNameLabel = document.getElementById('clinic-name');
 const clinicUserLabel = document.getElementById('clinic-user');
 const clinicRoleLabel = document.getElementById('clinic-role');
+const operatingRoleWidget = document.getElementById('operating-role-widget');
+const operatingRoleValue = document.getElementById('operating-role-value');
 const signOutButton = document.getElementById('signout-button');
 const announcement = document.getElementById('workspace-announcement');
 const desktop = document.querySelector('.desktop');
 const fullscreenToggle = document.getElementById('fullscreen-toggle');
 const fullscreenToggleLabel = fullscreenToggle.querySelector('.fullscreen-toggle-label');
+const appExplorerDialog = document.getElementById('app-explorer-dialog');
+const appExplorerGrid = document.getElementById('app-explorer-grid');
+const appExplorerEmpty = document.getElementById('app-explorer-empty');
+const appExplorerClose = document.getElementById('app-explorer-close');
+const dockTooltip = document.getElementById('dock-tooltip');
 const workspaceRolePicker = document.getElementById('workspace-role-picker');
 const switchRoleButton = document.getElementById('switch-role-button');
 const workspaceRoleMenu = document.getElementById('workspace-role-menu');
@@ -383,6 +390,8 @@ function updateClinicWidget(session, authUser) {
   clinicUserLabel.title = userName;
   clinicRoleLabel.textContent = role;
   clinicRoleLabel.hidden = !role;
+  operatingRoleValue.textContent = role;
+  operatingRoleWidget.hidden = !role;
   clearClinicWidgetLogo(clinicName);
   if (authUser) void loadClinicWidgetLogo(authUser, clinicName);
 }
@@ -516,15 +525,39 @@ function setHistoryButtonIcon(button) {
 
 function buildDock() {
   dock.replaceChildren();
+  const exploreButton = document.createElement('button');
+  exploreButton.className = 'dock-icon dock-explorer-icon';
+  exploreButton.type = 'button';
+  exploreButton.setAttribute('aria-label', 'Explore apps');
+  exploreButton.dataset.dockTooltip = 'Explore apps';
+
+  const exploreGlyph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  exploreGlyph.setAttribute('viewBox', '0 0 32 32');
+  exploreGlyph.setAttribute('aria-hidden', 'true');
+  for (const [x, y] of [[4, 4], [18, 4], [4, 18], [18, 18]]) {
+    const square = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    square.setAttribute('x', String(x));
+    square.setAttribute('y', String(y));
+    square.setAttribute('width', '10');
+    square.setAttribute('height', '10');
+    square.setAttribute('rx', '2.2');
+    square.setAttribute('fill', 'currentColor');
+    exploreGlyph.append(square);
+  }
+  exploreButton.append(exploreGlyph);
+  attachDockTooltip(exploreButton);
+  exploreButton.addEventListener('click', openAppExplorer);
+  dock.append(exploreButton);
+
   for (const app of apps) {
     if (!allowedAppIds.has(app.id)) continue;
     const button = document.createElement('button');
     button.className = 'dock-icon';
     button.type = 'button';
     button.dataset.appId = app.id;
+    button.dataset.dockTooltip = app.title;
     button.setAttribute('aria-label', 'Open ' + app.title);
     button.setAttribute('aria-pressed', 'false');
-    button.title = app.title;
 
     const image = document.createElement('img');
     image.className = 'dock-artwork';
@@ -534,18 +567,76 @@ function buildDock() {
     image.width = 256;
     image.height = 256;
 
-    const caption = document.createElement('span');
-    caption.className = 'dock-caption';
-    caption.textContent = app.title;
-
     const running = document.createElement('span');
     running.className = 'running-dot';
     running.setAttribute('aria-hidden', 'true');
 
-    button.append(image, caption, running);
+    button.append(image, running);
+    attachDockTooltip(button);
     button.addEventListener('click', () => openApp(app.id));
     dock.append(button);
   }
+}
+
+function attachDockTooltip(button) {
+  button.addEventListener('pointerenter', () => showDockTooltip(button));
+  button.addEventListener('pointerleave', hideDockTooltip);
+  button.addEventListener('focus', () => showDockTooltip(button));
+  button.addEventListener('blur', hideDockTooltip);
+}
+
+function showDockTooltip(button) {
+  const label = button.dataset.dockTooltip;
+  if (!label) return;
+  dockTooltip.textContent = label;
+  dockTooltip.hidden = false;
+  const buttonRect = button.getBoundingClientRect();
+  const tooltipRect = dockTooltip.getBoundingClientRect();
+  const halfWidth = tooltipRect.width / 2;
+  const centerX = buttonRect.left + buttonRect.width / 2;
+  const left = Math.max(halfWidth + 8, Math.min(window.innerWidth - halfWidth - 8, centerX));
+  const aboveTop = buttonRect.top - tooltipRect.height - 9;
+  const top = aboveTop >= 8 ? aboveTop : Math.min(window.innerHeight - tooltipRect.height - 8, buttonRect.bottom + 9);
+  dockTooltip.style.left = `${left}px`;
+  dockTooltip.style.top = `${top}px`;
+}
+
+function hideDockTooltip() {
+  dockTooltip.hidden = true;
+}
+
+function renderAppExplorer() {
+  appExplorerGrid.replaceChildren();
+  const visibleApps = apps.filter((app) => allowedAppIds.has(app.id));
+  appExplorerEmpty.hidden = visibleApps.length > 0;
+
+  for (const app of visibleApps) {
+    const button = document.createElement('button');
+    button.className = 'app-explorer-card';
+    button.type = 'button';
+    button.setAttribute('role', 'listitem');
+    button.setAttribute('aria-label', 'Open ' + app.title);
+
+    const image = document.createElement('img');
+    image.src = app.icon;
+    image.alt = '';
+    image.width = 256;
+    image.height = 256;
+
+    const label = document.createElement('span');
+    label.textContent = app.title;
+    button.append(image, label);
+    button.addEventListener('click', () => {
+      appExplorerDialog.close();
+      openApp(app.id);
+    });
+    appExplorerGrid.append(button);
+  }
+}
+
+function openAppExplorer() {
+  renderAppExplorer();
+  if (!appExplorerDialog.open) appExplorerDialog.showModal();
 }
 
 function updateDock() {
@@ -559,11 +650,7 @@ function updateDock() {
 }
 
 function updateHome() {
-  const hasVisibleWindow = [...openWindows.values()].some((entry) => !entry.element.hidden);
   homeView.hidden = !clinicSession && connectedStaging;
-  const homeButton = document.querySelector('[data-action="home"]');
-  if (hasVisibleWindow) homeButton.removeAttribute('aria-current');
-  else homeButton.setAttribute('aria-current', 'page');
 }
 
 function setRoute(appId, replace = false) {
@@ -980,7 +1067,7 @@ async function initializeAppRuntime(app, entry) {
       }
       loaded = true;
       try {
-        const clinicContext = ['workentry', 'patients'].includes(app.id) ? (() => {
+        const clinicContext = ['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab'].includes(app.id) ? (() => {
           const rawCapabilities = clinicSession?.clinicUser?.capabilities;
           const appContextCapabilities = appContextCapabilitiesForApp(app.id);
           const capabilities = Array.isArray(rawCapabilities)
@@ -1190,9 +1277,10 @@ function enableWindowDrag(section, titlebar) {
   titlebar.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || event.target.closest('button, .window-resize-handle') || section.classList.contains('is-maximized')) return;
     const rect = section.getBoundingClientRect();
-    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
-    section.style.left = rect.left + 'px';
-    section.style.top = rect.top + 'px';
+    const stageRect = windowStage.getBoundingClientRect();
+    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, stageRect };
+    section.style.left = ((rect.left - stageRect.left) / stageRect.width * 100) + '%';
+    section.style.top = ((rect.top - stageRect.top) / stageRect.height * 100) + '%';
     section.style.transform = 'none';
     titlebar.setPointerCapture(event.pointerId);
     section.classList.add('is-dragging');
@@ -1201,10 +1289,11 @@ function enableWindowDrag(section, titlebar) {
 
   titlebar.addEventListener('pointermove', (event) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const left = Math.min(window.innerWidth - 80, Math.max(0, drag.left + event.clientX - drag.x));
-    const top = Math.min(window.innerHeight - 48, Math.max(35, drag.top + event.clientY - drag.y));
-    section.style.left = left + 'px';
-    section.style.top = top + 'px';
+    const { stageRect } = drag;
+    const left = Math.min(stageRect.right - 80, Math.max(stageRect.left, drag.left + event.clientX - drag.x));
+    const top = Math.min(stageRect.bottom - 48, Math.max(stageRect.top + 35, drag.top + event.clientY - drag.y));
+    section.style.left = ((left - stageRect.left) / stageRect.width * 100) + '%';
+    section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
   });
 
   const endDrag = (event) => {
@@ -1223,12 +1312,13 @@ function enableWindowResize(section, handle) {
     event.stopPropagation();
     const edge = handle.dataset.edge;
     const initial = section.getBoundingClientRect();
-    const minWidth = Math.min(360, window.innerWidth - 24);
-    const minHeight = Math.min(260, window.innerHeight - 100);
-    section.style.left = initial.left + 'px';
-    section.style.top = initial.top + 'px';
-    section.style.width = initial.width + 'px';
-    section.style.height = initial.height + 'px';
+    const stageRect = windowStage.getBoundingClientRect();
+    const minWidth = Math.min(360, stageRect.width - 24);
+    const minHeight = Math.min(260, stageRect.height - 100);
+    section.style.left = ((initial.left - stageRect.left) / stageRect.width * 100) + '%';
+    section.style.top = ((initial.top - stageRect.top) / stageRect.height * 100) + '%';
+    section.style.width = (initial.width / stageRect.width * 100) + '%';
+    section.style.height = (initial.height / stageRect.height * 100) + '%';
     section.style.transform = 'none';
     section.classList.add('is-resizing');
     handle.setPointerCapture(event.pointerId);
@@ -1242,14 +1332,14 @@ function enableWindowResize(section, handle) {
       let top = initial.top;
       let right = initial.right;
       let bottom = initial.bottom;
-      if (edge.includes('w')) left = Math.min(initial.right - minWidth, Math.max(0, initial.left + dx));
-      if (edge.includes('e')) right = Math.max(initial.left + minWidth, Math.min(window.innerWidth, initial.right + dx));
-      if (edge.includes('n')) top = Math.min(initial.bottom - minHeight, Math.max(35, initial.top + dy));
-      if (edge.includes('s')) bottom = Math.max(initial.top + minHeight, Math.min(window.innerHeight, initial.bottom + dy));
-      section.style.left = left + 'px';
-      section.style.top = top + 'px';
-      section.style.width = right - left + 'px';
-      section.style.height = bottom - top + 'px';
+      if (edge.includes('w')) left = Math.min(initial.right - minWidth, Math.max(stageRect.left, initial.left + dx));
+      if (edge.includes('e')) right = Math.max(initial.left + minWidth, Math.min(stageRect.right, initial.right + dx));
+      if (edge.includes('n')) top = Math.min(initial.bottom - minHeight, Math.max(stageRect.top + 35, initial.top + dy));
+      if (edge.includes('s')) bottom = Math.max(initial.top + minHeight, Math.min(stageRect.bottom, initial.bottom + dy));
+      section.style.left = ((left - stageRect.left) / stageRect.width * 100) + '%';
+      section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
+      section.style.width = ((right - left) / stageRect.width * 100) + '%';
+      section.style.height = ((bottom - top) / stageRect.height * 100) + '%';
     };
     const finish = (finishEvent) => {
       if (finishEvent.pointerId !== event.pointerId) return;
@@ -1314,6 +1404,7 @@ function clearClinicAccess() {
   buildDock();
   dock.hidden = true;
   clinicWidget.hidden = true;
+  operatingRoleWidget.hidden = true;
   switchRoleButton.hidden = true;
   switchRoleButton.disabled = false;
   signOutButton.hidden = true;
@@ -1722,17 +1813,18 @@ async function toggleFullscreen() {
   }
 }
 
-document.querySelector('[data-action="home"]').addEventListener('click', () => showHome());
-document.querySelector('[data-action="apps"]').addEventListener('click', () => {
-  dock.scrollIntoView({ block: 'nearest', inline: 'center' });
-  dock.querySelector('[data-app-id]')?.focus({ preventScroll: true });
-});
 document.querySelector('.statusbar-brand').addEventListener('click', (event) => {
   event.preventDefault();
   showHome();
 });
+appExplorerClose.addEventListener('click', () => appExplorerDialog.close());
+appExplorerDialog.addEventListener('click', (event) => {
+  if (event.target === appExplorerDialog) appExplorerDialog.close();
+});
 fullscreenToggle.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenToggle);
+document.addEventListener('scroll', hideDockTooltip, true);
+window.addEventListener('resize', hideDockTooltip);
 
 function renderCalendarGrid(container, days, monthLabel, currentMonth, today, monthDayLabel) {
   container.replaceChildren();

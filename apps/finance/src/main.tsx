@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ClinicClient, ClinicError } from "./sdk/client";
 import { connectBrowserRuntime } from "./runtimeBridge";
+import { WindowModuleSidebar } from "../../../packages/dental-ui/src/shared/ui/WindowModuleSidebar";
 import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
 import type { AppHistory } from "./sdk/client";
 import { TransactionRecordWorkspace } from "./features/finance/transaction-record/TransactionRecordWorkspace";
@@ -61,6 +62,7 @@ function App() {
   const [moduleId, setModuleId] = useState<FinanceModuleId>("transaction-record");
   const [page, setPage] = useState<FinancePage | null>(null);
   const [capabilities, setCapabilities] = useState<string[]>([]);
+  const [moduleNavigationLocked, setModuleNavigationLocked] = useState(false);
   const capabilitiesRef = useRef<string[]>([]);
   const moduleIdRef = useRef<FinanceModuleId>("transaction-record");
   const financeModuleNavigationLocked = useRef(false);
@@ -120,6 +122,7 @@ function App() {
 
   const setFinanceNavigationLock = useCallback((locked: boolean) => {
     financeModuleNavigationLocked.current = locked;
+    setModuleNavigationLocked(locked);
   }, []);
 
   const selectModule = useCallback((selected: FinanceModuleId) => {
@@ -212,19 +215,15 @@ function App() {
       <ClinicLoadingProvider>
         <ClinicPageRefreshProvider>
         <main className="finance-app-shell" data-dental-os-app={APP_ID}>
-          <nav className="finance-module-nav" aria-label="Finance modules">
-            {Object.entries(FINANCE_MODULES).filter(([, module]) => capabilities.includes(module.capability)).map(([id, module]) => (
-              <button
-                key={id}
-                type="button"
-                className={moduleId === id ? "finance-module-tab finance-module-tab-active" : "finance-module-tab"}
-                aria-current={moduleId === id ? "page" : undefined}
-                onClick={() => selectModule(id as FinanceModuleId)}
-              >
-                {module.label}
-              </button>
-            ))}
-          </nav>
+          <WindowModuleSidebar
+            title="Finance"
+            modules={Object.entries(FINANCE_MODULES)
+              .filter(([, module]) => capabilities.includes(module.capability))
+              .map(([id, module]) => ({ id, label: module.label }))}
+            activeModuleId={moduleId}
+            disabled={moduleNavigationLocked}
+            onSelect={id => selectModule(id as FinanceModuleId)}
+          />
           <section className="finance-app-content">
             {moduleMessage && <p className="finance-module-message" role="alert">{moduleMessage}</p>}
             {moduleId === "transaction-record" ? (

@@ -1491,9 +1491,11 @@ export default function CaseEntryView({
                     className={embedded ? `${styles.stepButton}${active ? ` ${styles.stepButtonActive}` : isCompleted ? ` ${styles.stepButtonComplete}` : ""}` : undefined}
                     aria-current={active ? "step" : undefined}
                     data-work-entry-step={embedded ? s.n : undefined}
-                    onClick={() => goToStep(s.n)}
-                    disabled={blockedUntilSave}
+                    onClick={existingCaseWorkflow ? undefined : () => goToStep(s.n)}
+                    disabled={existingCaseWorkflow || blockedUntilSave}
                     title={blockedUntilSave ? "Save the Patient & case details before continuing." : undefined}
+                    aria-label={s.label}
+                    data-step-navigation-disabled={existingCaseWorkflow ? "true" : undefined}
                     style={embedded ? undefined : {
                       display: "inline-flex",
                       alignItems: "center",
@@ -1543,9 +1545,9 @@ export default function CaseEntryView({
               )}
               {step === 2 && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(1)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  <button type="button" onClick={() => goToStep(1)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>}
+                  </button>
                   <button type="button" onClick={() => goToStep(3)} disabled={groups.length === 0} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                     Next <ArrowRight size={14} />
                   </button>
@@ -1553,9 +1555,9 @@ export default function CaseEntryView({
               )}
               {step === 3 && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(2)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  <button type="button" onClick={() => goToStep(2)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
                     <ArrowLeft size={14} /> Back
-                  </button>}
+                  </button>
                   <button type="button" onClick={() => goToStep(existingCaseWorkflow ? 5 : 4)} className="btn btn-primary" style={{ borderRadius: "0px" }}>
                     Next <ArrowRight size={14} />
                   </button>
@@ -1573,9 +1575,14 @@ export default function CaseEntryView({
               )}
               {step === 5 && createStatus !== "done" && (
                 <div style={{ display: "flex", gap: "8px" }}>
-                  {!existingCaseWorkflow && <button type="button" onClick={() => goToStep(4)} className="btn btn-secondary" style={{ borderRadius: "0px" }}><ArrowLeft size={14} /> Back</button>}
+                  <button type="button" onClick={() => goToStep(existingCaseWorkflow ? 3 : 4)} className="btn btn-secondary" style={{ borderRadius: "0px" }}><ArrowLeft size={14} /> Back</button>
                   <button type="button" onClick={() => goToStep(6)} className="btn btn-primary" style={{ borderRadius: "0px" }}>Next <ArrowRight size={14} /></button>
                 </div>
+              )}
+              {step === 6 && existingCaseWorkflow && createStatus !== "done" && (
+                <button type="button" onClick={() => goToStep(5)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                  <ArrowLeft size={14} /> Back
+                </button>
               )}
             </div>
           </div>}

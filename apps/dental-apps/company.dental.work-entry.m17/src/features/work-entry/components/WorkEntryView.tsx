@@ -857,6 +857,8 @@ export default function WorkEntryView({
     lines.every((l) => l.procedure.trim().length > 0);
 
   const effStep = selectedId ? step : 1;
+  const fixedFlowStepIndex = workflowSteps.findIndex(({ n }) => n === effStep);
+  const previousFixedFlowStep = fixedFlowStepIndex > 0 ? workflowSteps[fixedFlowStepIndex - 1]?.n : null;
   const stepStripRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     stepStripRef.current
@@ -1365,14 +1367,14 @@ export default function WorkEntryView({
                         <button
                           key={s.n}
                           type="button"
-                          disabled={locked}
-                          onClick={() => goToStep(s.n as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8)}
+                          disabled={fixedPatientFlow || locked}
+                          onClick={fixedPatientFlow ? undefined : () => goToStep(s.n as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8)}
                           data-active-step={active ? "true" : undefined}
                           data-work-entry-step={s.n}
                           aria-current={active ? "step" : undefined}
                           aria-label={completed ? `${s.label}, visited` : undefined}
                           title={!onCommitWorkEntry && s.n > effStep && currentStepHasUnsavedChanges ? "Save this section before moving forward." : undefined}
-                          className={`${styles.stepButton}${active ? ` ${styles.stepButtonActive}` : completed ? ` ${styles.stepButtonComplete}` : ""}`}
+                          className={`${styles.stepButton}${active ? ` ${styles.stepButtonActive}` : completed ? ` ${styles.stepButtonComplete}` : ""}${fixedPatientFlow ? ` ${styles.stepButtonStatic}` : ""}`}
                         >
                           <span className={`${styles.stepNumber}${active ? ` ${styles.stepNumberActive}` : completed ? ` ${styles.stepNumberComplete}` : ""}`}>
                             {completed ? <Check size={15} strokeWidth={2.6} aria-hidden="true" /> : s.displayN}
@@ -1384,6 +1386,11 @@ export default function WorkEntryView({
                   </div>
                   {fixedPatientFlow && (
                     <div className={`clinicWizardHeaderActions ${styles.stepActions}`} data-work-entry-step-actions>
+                      {previousFixedFlowStep !== null && (
+                        <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => goToStep(previousFixedFlowStep as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8)}>
+                          <ArrowLeft size={14} /> Back
+                        </button>
+                      )}
                       {effStep === 1 && (renderPatientStep ? (
                         <button type="button" className="btn btn-primary" onClick={() => goToStep(2, true)}>
                           Next <ArrowRight size={14} />

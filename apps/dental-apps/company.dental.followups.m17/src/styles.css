@@ -1,0 +1,25 @@
+:root { --font-sans: ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; background: var(--surface); color: var(--ink-1); }
+.clinicWorkspaceCanvas { padding: 22px; min-height: 100vh; }
+button, input, select, textarea { font: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #8bbce8; outline-offset: 2px; }
+.app-message { padding: 32px; }
+.app-warning { margin: 0 0 14px; padding: 14px 16px; border: 1px solid #dfcaa0; border-radius: 10px; background: #fff9ed; }
+.app-warning p { margin: 0 0 10px; }
+.draft-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+@media (max-width: 720px) { .clinicWorkspaceCanvas { padding: 14px; } }
+.followUpsSummaryGrid { display: grid; width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3, 12px); }
+@media (max-width: 800px) { .followUpsSummaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .followUpsSummaryGrid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Browser first-app acceptance: edits remain disabled until write verification. */
+.browser-followups-readonly {
+  margin: 10px 16px;
+  padding: 11px 14px;
+  border: 1px solid #b9d7df;
+  border-radius: 8px;
+  color: #285c70;
+  background: #ebf6f9;
+  font-size: 12px;
+  line-height: 1.45;
+}

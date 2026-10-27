@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "appId": "company.dental.staff.m17",
+  "title": "Staff",
+  "description": "Manage the clinic staff directory, profiles, work history and salary history.",
+  "icon": "assets/staff.png",
+  "anyCapabilities": ["staff.manage"],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "preferredContentWidth": 1120,
+  "modules": [
+    {
+      "id": "staff",
+      "label": "Staff",
+      "tab": "staff",
+      "capability": "staff.manage"
+    }
+  ]
+}

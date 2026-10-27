@@ -11,6 +11,10 @@ const dentalUi = path.join(root, 'packages/dental-ui/src/shared');
 const buildDependencies = path.join(packageDir, 'node_modules');
 const workEntry = path.join(root, 'apps/dental-apps/company.dental.work-entry.m17');
 const patientRecord = path.join(root, 'apps/dental-apps/company.dental.patient-record.m17');
+const appointments = path.join(root, 'apps/dental-apps/company.dental.appointments.m17');
+const followups = path.join(root, 'apps/dental-apps/company.dental.followups.m17');
+const staff = path.join(root, 'apps/dental-apps/company.dental.staff.m17');
+const lab = path.join(root, 'apps/dental-apps/company.dental.lab-tracker.m17');
 
 const applications = [
   {
@@ -22,6 +26,7 @@ const applications = [
       { find: /^@\/shared\//, replacement: dentalUi + '/' },
       { find: /^@\//, replacement: path.join(workEntry, 'src') + '/' },
     ],
+    manifestName: 'workEntry',
   },
   {
     id: 'patients', title: 'Patients', version: '1.0.0', name: 'DentalOSPatientRecord',
@@ -34,6 +39,52 @@ const applications = [
       { find: /^@\/shell\//, replacement: path.join(patientRecord, 'vendor/dental-saas/apps/clinic-web/src/shell') + '/' },
       { find: /^@\//, replacement: path.join(patientRecord, 'src') + '/' },
     ],
+    manifestName: 'patientRecord',
+  },
+  {
+    id: 'appointments', title: 'Appointments', version: '1.0.8', name: 'DentalOSAppointments',
+    appDir: appointments, entry: path.join(appointments, 'src/main.tsx'),
+    aliases: [
+      { find: /^@\/shared\//, replacement: dentalUi + '/' },
+      { find: /^@\//, replacement: path.join(appointments, 'src') + '/' },
+    ],
+    manifestName: 'appointments',
+  },
+  {
+    id: 'followups', title: 'Follow-ups', version: '1.0.5', name: 'DentalOSFollowups',
+    appDir: followups, entry: path.join(followups, 'src/main.tsx'),
+    aliases: [
+      { find: /^@\/shared\//, replacement: dentalUi + '/' },
+      { find: /^@\/features\//, replacement: path.join(followups, 'src/features') + '/' },
+      { find: /^@\/shell\//, replacement: path.join(followups, 'src/shell') + '/' },
+      { find: /^@\//, replacement: path.join(followups, 'src') + '/' },
+    ],
+    manifestName: 'followups',
+  },
+  {
+    id: 'staff', title: 'Staff', version: '1.0.4', name: 'DentalOSStaff',
+    appDir: staff, entry: path.join(staff, 'src/main.tsx'),
+    aliases: [
+      { find: /^@\/shared\/dates\/MonthPicker$/, replacement: path.join(staff, 'src/shared/dates/MonthPicker.tsx') },
+      { find: /^@\/shared\//, replacement: dentalUi + '/' },
+      { find: /^@\/features\//, replacement: path.join(staff, 'src/features') + '/' },
+      { find: /^@\//, replacement: path.join(staff, 'src') + '/' },
+    ],
+    manifestName: 'staff',
+  },
+  {
+    id: 'lab', title: 'Lab Tracker', version: '1.0.3', name: 'DentalOSLabTracker',
+    appDir: lab, entry: path.join(lab, 'src/main.tsx'),
+    aliases: [
+      { find: /^@\/shared\/ui\/ConfirmDialog$/, replacement: path.join(lab, 'src/shared/ui/ConfirmDialog.tsx') },
+      { find: /^@\/shared\/dates\/MonthPicker$/, replacement: path.join(lab, 'src/shared/dates/MonthPicker.tsx') },
+      { find: /^@\/shared\//, replacement: dentalUi + '/' },
+      { find: /^@\/features\//, replacement: path.join(lab, 'src/features') + '/' },
+      { find: /^@\/shell\//, replacement: path.join(lab, 'src/shell') + '/' },
+      { find: /^@\/sdk\//, replacement: path.join(lab, 'src/sdk') + '/' },
+      { find: /^@\//, replacement: path.join(lab, 'src') + '/' },
+    ],
+    manifestName: 'lab',
   },
 ];
 
@@ -100,13 +151,16 @@ async function buildApplication(app) {
       script: `/apps/${app.id}.v1.js`, scriptSha256: sha256(script),
       style: `/apps/${app.id}.v1.css`, styleSha256: sha256(style),
     };
-    const manifestName = app.id === 'workentry' ? 'workEntry' : 'patientRecord';
     const appManifest = path.join(app.appDir, 'asset-manifest.js');
-    await writeFile(appManifest, `export const ${manifestName}Bundle = Object.freeze(${JSON.stringify(bundle, null, 2)});\nexport const ${manifestName}Version = ${JSON.stringify(app.version)};\n`);
+    await writeFile(appManifest, `export const ${app.manifestName}Bundle = Object.freeze(${JSON.stringify(bundle, null, 2)});\nexport const ${app.manifestName}Version = ${JSON.stringify(app.version)};\n`);
     console.log(`Built ${app.title} ${app.version}: ${script.byteLength} JS bytes, ${style.byteLength} CSS bytes.`);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
 }
 
-for (const app of applications) await buildApplication(app);
+const requested = process.argv.find(argument => argument.startsWith('--apps='))?.slice('--apps='.length)
+  .split(',').filter(Boolean);
+const selected = requested ? applications.filter(app => requested.includes(app.id)) : applications;
+if (requested && selected.length !== requested.length) throw new Error('Unknown browser app id in --apps.');
+for (const app of selected) await buildApplication(app);

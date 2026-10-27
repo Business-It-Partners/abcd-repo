@@ -28,19 +28,6 @@
           <span class="brand-dental">Dental</span>
         </a>
 
-        <div class="workspace-role-picker" id="workspace-role-picker">
-          <button class="statusbar-role-switch" id="switch-role-button" type="button" aria-controls="workspace-role-menu" aria-expanded="false" aria-haspopup="menu" title="Switch to another server-authorized clinic workspace" hidden>Switch role</button>
-          <div class="workspace-role-menu" id="workspace-role-menu" role="menu" aria-label="Available clinic workspaces" hidden>
-            <p id="current-workspace-label"></p>
-            <div id="workspace-role-options"></div>
-          </div>
-        </div>
-
-        <nav class="statusbar-menu" aria-label="Workspace navigation">
-          <button type="button" data-action="home" aria-current="page">Home</button>
-          <button type="button" data-action="apps">Apps</button>
-        </nav>
-
         <div class="statusbar-right">
           <span class="statusbar-network is-online" id="network-status" aria-label="Network online" title="The browser reports a network connection">
             <svg viewBox="0 0 24 24" aria-hidden="true"><g class="network-online-icon"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10.5 10.5 0 0 1 14 0m-10.5 3.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></g><g class="network-offline-icon"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10.5 10.5 0 0 1 14 0"/><path d="m4 4 16 16"/></g></svg>
@@ -52,17 +39,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6.5" width="17" height="11" rx="2"/><path d="M22 10v4"/><rect class="battery-level" x="5" y="9" width="12" height="6" rx="1"/></svg>
             <span id="battery-label"></span>
           </span>
-          <button
-            class="fullscreen-toggle"
-            id="fullscreen-toggle"
-            type="button"
-            aria-label="Enter full screen"
-            aria-pressed="false"
-            title="Enter full screen"
-          >
-            <span class="fullscreen-symbol" aria-hidden="true">⛶</span>
-            <span class="fullscreen-toggle-label">Full screen</span>
-          </button>
         </div>
       </header>
 
@@ -79,6 +55,30 @@
             <span>Sign out</span>
           </button>
         </section>
+        <section class="desktop-widget operating-role-widget" id="operating-role-widget" aria-label="Current clinic workspace role" hidden>
+          <div class="widget-kicker">OPERATING AS</div>
+          <strong class="operating-role-value" id="operating-role-value"></strong>
+        </section>
+        <div class="home-clinic-actions" aria-label="Workspace display and role controls">
+          <button
+            class="fullscreen-toggle home-fullscreen-toggle"
+            id="fullscreen-toggle"
+            type="button"
+            aria-label="Enter full screen"
+            aria-pressed="false"
+            title="Enter full screen"
+          >
+            <span class="fullscreen-symbol" aria-hidden="true">⛶</span>
+            <span class="fullscreen-toggle-label">Full screen</span>
+          </button>
+          <div class="workspace-role-picker home-workspace-role-picker" id="workspace-role-picker">
+            <button class="statusbar-role-switch" id="switch-role-button" type="button" aria-controls="workspace-role-menu" aria-expanded="false" aria-haspopup="menu" title="Switch to another server-authorized clinic workspace" hidden>Switch role</button>
+            <div class="workspace-role-menu" id="workspace-role-menu" role="menu" aria-label="Available clinic workspaces" hidden>
+              <p id="current-workspace-label"></p>
+              <div id="workspace-role-options"></div>
+            </div>
+          </div>
+        </div>
 
         <aside class="desktop-widget-collection" aria-label="Calendar and time widgets">
           <section class="desktop-widget nepali-calendar-widget" aria-label="Nepali calendar">
@@ -192,6 +192,26 @@
       <nav class="app-dock" id="app-dock" aria-label="Application dock" hidden></nav>
       <p class="sr-only" id="workspace-announcement" aria-live="polite"></p>
     </main>
+
+    <dialog class="app-explorer-dialog" id="app-explorer-dialog" aria-labelledby="app-explorer-title" aria-describedby="app-explorer-description">
+      <section class="app-explorer-panel">
+        <header class="app-explorer-header">
+          <div class="app-explorer-heading">
+            <img src="/assets/sajilo-dental-mark.svg" alt="" />
+            <div>
+              <p>SAJILO DENTAL</p>
+              <h2 id="app-explorer-title">Explore apps</h2>
+              <span id="app-explorer-description">Apps available in this clinic workspace.</span>
+            </div>
+          </div>
+          <button class="app-explorer-close" id="app-explorer-close" type="button" aria-label="Close Explore apps" title="Close">×</button>
+        </header>
+        <div class="app-explorer-grid" id="app-explorer-grid" role="list" aria-label="Available clinic apps"></div>
+        <p class="app-explorer-empty" id="app-explorer-empty" hidden>No apps are available for this clinic workspace.</p>
+      </section>
+    </dialog>
+
+    <div class="dock-tooltip" id="dock-tooltip" role="tooltip" hidden></div>
 
     <dialog class="workspace-switch-dialog" id="workspace-switch-dialog" aria-labelledby="workspace-switch-title" aria-describedby="workspace-switch-description">
       <form class="workspace-switch-form" id="workspace-switch-form">

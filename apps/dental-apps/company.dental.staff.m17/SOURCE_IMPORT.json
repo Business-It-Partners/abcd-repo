@@ -1,0 +1,99 @@
+{
+  "appId": "company.dental.staff.m17",
+  "version": "1.0.0",
+  "sourceRepository": "/home/master-x/Desktop/fewa_demo/dental-saas",
+  "sourceBranch": "codex/den-0003-dental-os-module-bundles",
+  "sourceCommit": "a3b116c64df826cbb5b66bc09305f81bf06cd463",
+  "repositoryModified": false,
+  "paths": [
+    {
+      "path": "apps/clinic-web/src/features/staff/index.ts",
+      "sha256": "7cbdf0617b1bc646c66ba23f07f6f8d3caebe4a5ae14bdb08c3cbdd731882846",
+      "use": "Staff feature export reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/types.ts",
+      "sha256": "fea99e431ee7b98f510d5704b141882ca3a8de12dbdf669da3f5739be6e5c784",
+      "use": "Staff and clinical-work data contract"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/api.ts",
+      "sha256": "8c3e09c4a6b5b55d3e354fab591d5b533c67536dc67c7bd6bc5e18e0e3b61463",
+      "use": "Staff route and input behavior reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/StaffDirectory.tsx",
+      "sha256": "564a633b6e85dd06540fdb797cc7eeb7990b8fbfd956866d3eb7b01c1adf337a",
+      "use": "Directory page behavior and composition"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/StaffDirectory.module.css",
+      "sha256": "a9737dda25169ec8b700a9e907944d05671417c482dc3e0610b4eaeca103daf2",
+      "use": "Directory presentation reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/StaffDetailPage.tsx",
+      "sha256": "aab8554f1457961eec0a80d03344a16fae9b74e22c050f61d7ea21805394b009",
+      "use": "Profile, work, salary, and source document behavior reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/StaffDetailPage.module.css",
+      "sha256": "742a6b13c56bc7feee8c4fcec5d87dddcea4856c5fadfbf77b05b18bcabd4be2",
+      "use": "Profile, work, salary, and document presentation reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/staff/AddStaffModal.tsx",
+      "sha256": "c9481090c5f8a36fd4630e8fe6932c174c4d1f53d5b01366b611eccd44c13118",
+      "use": "Staff creation fields and form behavior"
+    },
+    {
+      "path": "apps/clinic-web/src/features/finance/payroll/api.ts",
+      "sha256": "c08865b4b39e6d6d8e1e4685f42216a8b7a3c7ed45eed988207bb0d791ad0444",
+      "use": "Salary-history route behavior reference"
+    },
+    {
+      "path": "apps/clinic-web/src/features/finance/payroll/types.ts",
+      "sha256": "58e500d59e5d272c8785e7ed7047647e5daaa363b2424884c05c925b148136d3",
+      "use": "Salary-payout data contract"
+    },
+    {
+      "path": "apps/clinic-web/src/shared/dates/MonthPicker.tsx",
+      "sha256": "28d6be2265b6e35a4a42168dd865b447216cf57aa8e5a597e5f35aaeae883dc8",
+      "use": "Date-range/month behavior reference; adapted with the existing Dental OS MonthPicker"
+    },
+    {
+      "path": "apps/clinic-web/src/shared/dates/NepaliDatePicker.tsx",
+      "sha256": "a3617a597bef84f43bba78d904ae529b32cd89885ba61e1aaa5a21c21d1510db",
+      "use": "Date-picker behavior reference; app uses the Dental OS shared date picker"
+    },
+    {
+      "path": "apps/platform-worker/src/clinic/auth/clinicAccess.ts",
+      "sha256": "c1f37c75b7e350faae3421c9216247c5143ff49079cec25fc3c28e948853d0c8",
+      "use": "Role capability matrix inspected; no code copied"
+    },
+    {
+      "path": "apps/platform-worker/src/clinic/router.ts",
+      "sha256": "e29e3ca9068c5f7aaa2ae097d1fa6c5ef945eab9969cf65f035db827207ae895",
+      "use": "Staff and salary route registration inspected; no code copied"
+    },
+    {
+      "path": "apps/platform-worker/src/clinic/staff/staff.controller.ts",
+      "sha256": "f4b62ae4e0896503e214e07a1e6782d46f22ecb7451030f15e5f5d0d2fd5fe18",
+      "use": "Staff route authorization and command behavior inspected; no code copied"
+    },
+    {
+      "path": "apps/platform-worker/src/clinic/staff/staffDocuments.controller.ts",
+      "sha256": "be9c1c83a7e7b8d88a90c2f5a7df22b685a36472598367e72814a13576585f86",
+      "use": "Document route authorization and lifecycle inspected; no code copied"
+    },
+    {
+      "path": "apps/platform-worker/src/clinic/finance/salary-payouts/salaryPayouts.controller.ts",
+      "sha256": "dfbc5354a9a7a37a30c4597e43e68958df7672eaf19a584e748eed3109f3d35a",
+      "use": "Salary route authorization inspected; no code copied"
+    }
+  ],
+  "referenceNotes": [
+    "The SaaS Staff feature currently sets privateDocumentsVisible=false and hides that UI. M17.9 explicitly requires the M15 media SDK/host-transfer path; the Dental OS package implements it behind exact media-operation grants.",
+    "Dental OS app code uses the existing ClinicClient, host app family policy, API broker, and media SDK contracts. No SaaS server, transport, direct credential, signed URL, or cloud storage code was copied."
+  ]
+}

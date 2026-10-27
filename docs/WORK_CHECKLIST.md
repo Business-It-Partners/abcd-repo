@@ -82,7 +82,7 @@ Use this checklist with the [roadmap](ROADMAP.md) and [status record](STATUS.md)
 
 **Status: IMPLEMENTATION PRESENT; ACCEPTANCE OPEN**
 
-Finance, Calendar, and Treatment Progress were already present on `browser-version` in commits `44a77d8` and `32d5793`; Work Entry and Patient Record are now integrated from their migration worktree. Keep all B5 visual and authenticated workflow acceptance items open while B4 is active. Source revision attribution needs reconciliation: the Work Entry and Patient Record import manifests identify `production` revision `f44d3e30`, while the older status narrative identifies `abcd/main` revision `90f4a47`.
+Finance, Calendar, and Treatment Progress were already present on `browser-version` in commits `44a77d8` and `32d5793`; Work Entry and Patient Record were integrated from their migration worktree, and Appointments, Follow-ups, Staff, and Lab Tracker are now integrated from the app-bringing worktree. All ten app-specific implementations have catalog entries and generated bundles. Keep B5 visual and authenticated workflow acceptance open while B4 is active. Source revision attribution needs reconciliation: the Work Entry and Patient Record import manifests identify `production` revision `f44d3e30`, while the older status narrative identifies `abcd/main` revision `90f4a47`.
 
 - [x] Prioritize Work Entry and Patient Record for the requested migration; retain the B4 acceptance gate as open.
 - [x] Port both source app UIs/assets into the browser runtime and replace desktop session/API seams with the host bridge.
@@ -90,6 +90,11 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 - [x] Build both app bundles and generate entry, SRI/CSP, catalog, and nested asset-manifest hashes from the same output.
 - [x] Verify all generated app assets and nested manifests through the offline local dev server.
 - [x] Add focused route, handshake, bundle-integrity, media upload, and role-denial checks.
+- [x] Port Appointments, Follow-ups, Staff, and Lab Tracker into the isolated Browser runtime with host-owned API access and app-specific bundles.
+- [x] Add the Finance-style module sidebar to Finance and Lab Tracker, sourced from `abcd-repo` main's `WindowModuleSidebar` pattern.
+- [x] Keep Follow-ups read-only and Staff document media fail-closed pending relevant Browser acceptance and supported host transport.
+- [x] Make app-window sizing adapt to browser full-screen and normal viewport changes, including proportional drag/resize geometry.
+- [x] Restart the local staging dev server after bundle generation so it loads the updated app route map and window styles.
 - [ ] Compare both app screens at agreed Brave desktop sizes and verify visual/interaction parity.
 - [ ] Verify authenticated read/write, denial, retry, and saved-state behavior using the approved synthetic staging dataset after the cleanup plan is recorded.
 - [ ] Confirm dock and role behavior across supported roles in Brave; defer other browsers until V1 milestones finish.

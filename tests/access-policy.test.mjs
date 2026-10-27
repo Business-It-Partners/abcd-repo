@@ -41,10 +41,10 @@ function ids(capabilities) {
 test('shows only apps allowed by the staging Worker capabilities for each clinic role', () => {
   assert.deepEqual(ids(adminCapabilities), apps.map((app) => app.id));
   assert.deepEqual(ids(doctorCapabilities), [
-    'appointments', 'patients', 'calendar', 'followups', 'staff', 'lab', 'treatment', 'workentry',
+    'appointments', 'patients', 'calendar', 'followups', 'treatment', 'workentry',
   ]);
   assert.deepEqual(ids(receptionCapabilities), [
-    'appointments', 'patients', 'calendar', 'finance', 'followups', 'staff', 'lab', 'treatment',
+    'appointments', 'patients', 'calendar', 'finance', 'followups', 'lab', 'treatment',
   ]);
 });
 

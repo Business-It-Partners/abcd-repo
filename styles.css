@@ -102,29 +102,6 @@ button:focus-visible, a:focus-visible {
 .brand-sajilo { font-weight: 600; }
 .brand-dental { margin-left: 4px; font-weight: 350; }
 
-.statusbar-menu {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 3px;
-}
-
-.statusbar-menu button {
-  padding: 5px 9px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #202c31;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.statusbar-menu button:hover, .statusbar-menu button:focus-visible {
-  outline: none;
-  background: #173b4b12;
-  color: #17272c;
-}
-
 .workspace-role-picker { position: relative; flex: 0 0 auto; }
 .statusbar-role-switch { padding: 5px 9px; border: 1px solid #55788a55; border-radius: 6px; background: #ffffff70; color: #202c31; font-size: 12px; font-weight: 650; white-space: nowrap; }
 .statusbar-role-switch:hover:not(:disabled) { border-color: #55788a96; background: #ffffffc4; color: #17272c; }
@@ -213,22 +190,29 @@ button:focus-visible, a:focus-visible {
 
 .fullscreen-toggle {
   display: inline-flex;
-  min-height: 27px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border: 1px solid #55788a55;
-  border-radius: 7px;
-  background: #ffffff70;
-  color: #202c31;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 9px;
+  padding: 8px 15px;
+  border: 1px solid #0d6e8d;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #168db2, #0c6b8a);
+  box-shadow: 0 5px 14px #0b4b6240, inset 0 1px #ffffff55;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: auto;
 }
 
-.fullscreen-toggle:hover:not(:disabled) { background: #ffffffb8; }
+.fullscreen-toggle:hover:not(:disabled) { border-color: #075977; background: linear-gradient(135deg, #1b9ac1, #0d789a); box-shadow: 0 7px 18px #0b4b6255, inset 0 1px #ffffff66; }
+.fullscreen-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .fullscreen-toggle:disabled { cursor: not-allowed; opacity: .55; }
-.fullscreen-symbol { font-size: 18px; line-height: 1; }
+.fullscreen-symbol { font-size: 23px; line-height: 1; }
+.home-clinic-actions { position:absolute; z-index:6; top:140px; left:18px; display:flex; align-items:center; gap:10px; pointer-events:auto; }
+.home-fullscreen-toggle { position:static; }
+.home-workspace-role-picker .statusbar-role-switch { min-height:44px; padding:8px 14px; border-color:#55788a70; border-radius:10px; background:#f6fbfbd9; box-shadow:0 5px 14px #102f4526, inset 0 1px #ffffffd9; font-size:13px; cursor:pointer; }
+.home-workspace-role-picker .statusbar-role-switch:hover:not(:disabled) { border-color:#55788aa6; background:#fff; }
 
 .home-view {
   position: absolute;
@@ -244,6 +228,9 @@ button:focus-visible, a:focus-visible {
 .desktop-widget { position: absolute; z-index: 5; color: #202c31; border: 1px solid #ffffffb0; border-radius: 19px; background: linear-gradient(145deg, #f2f8f6de, #eaf1f2c9); box-shadow: 0 12px 32px #102f4530, inset 0 1px #ffffffc4; backdrop-filter: blur(28px) saturate(165%); -webkit-backdrop-filter: blur(28px) saturate(165%); pointer-events: none; }
 .desktop-clinic-widget { top: 24px; left: 18px; width: min(430px, calc(50vw - 30px)); min-height: 104px; display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
 .desktop-clinic-widget[hidden] { display: none; }
+.operating-role-widget { bottom:24px; left:18px; width:min(250px, calc(50vw - 30px)); min-height:88px; display:flex; flex-direction:column; justify-content:center; padding:12px 14px; }
+.operating-role-widget[hidden] { display:none; }
+.operating-role-value { margin-top:4px; overflow:hidden; color:#202c31; font-size:clamp(22px, 1.8vw, 29px); font-weight:650; letter-spacing:-.035em; line-height:1.1; text-overflow:ellipsis; white-space:nowrap; }
 .clinic-widget-mark { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; border: 1px solid #ffffffc9; border-radius: 15px; background: linear-gradient(145deg, #c7e8e2, #8cc3bc); box-shadow: 0 5px 13px #1c58602b; color: #164d50; font-size: 15px; font-weight: 750; letter-spacing: .04em; }
 .clinic-widget-mark.has-logo { width: 104px; height: 72px; flex-basis: 104px; overflow: hidden; padding: 2px; border-color: #ffffffd6; border-radius: 15px; background: #fff; }
 .clinic-widget-mark img { display: block; width: auto; height: auto; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 11px; }
@@ -257,6 +244,36 @@ button:focus-visible, a:focus-visible {
 .clinic-widget-signout:hover { border-color: #55788a70; background: #fff; color: #173e47; }
 .clinic-widget-signout:focus-visible { outline: 2px solid #317d9b; outline-offset: 2px; }
 .clinic-widget-signout:disabled { opacity: .55; cursor: wait; }
+
+.app-explorer-dialog {
+  width: min(700px, calc(100vw - 28px));
+  max-width: 700px;
+  max-height: min(82vh, 680px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #ffffffd4;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #f8fbf8f2, #e9f0f2ee);
+  color: #26363d;
+  box-shadow: 0 26px 80px #0c263655, inset 0 1px #ffffff;
+  backdrop-filter: blur(22px) saturate(155%);
+  -webkit-backdrop-filter: blur(22px) saturate(155%);
+}
+.app-explorer-dialog::backdrop { background: #10212a70; backdrop-filter: blur(3px); }
+.app-explorer-panel { padding: 22px; }
+.app-explorer-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:16px; border-bottom:1px solid #738a942b; }
+.app-explorer-heading { display:flex; min-width:0; align-items:center; gap:13px; }
+.app-explorer-heading img { width:48px; height:48px; flex:0 0 auto; padding:5px; border:1px solid #ffffff; border-radius:14px; background:#fff; box-shadow:0 4px 12px #183c4b20; }
+.app-explorer-heading p { margin:0 0 3px; color:#61727a; font-size:10px; font-weight:750; letter-spacing:.08em; }
+.app-explorer-heading h2 { margin:0; color:#26363d; font-size:23px; line-height:1.2; }
+.app-explorer-heading span { display:block; margin-top:4px; color:#61727a; font-size:12px; }
+.app-explorer-close { display:grid; width:36px; height:36px; flex:0 0 auto; place-items:center; border:1px solid #81949a40; border-radius:50%; background:#ffffffa8; color:#3b5059; font-size:25px; line-height:1; }
+.app-explorer-close:hover { background:#fff; }
+.app-explorer-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:12px; max-height:min(55vh, 440px); overflow:auto; padding:18px 2px 2px; }
+.app-explorer-card { display:flex; min-height:118px; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:12px 8px; border:1px solid #ffffffb8; border-radius:15px; background:#ffffff72; color:#35484f; box-shadow:0 2px 9px #23434c12; font-size:12px; font-weight:650; text-align:center; }
+.app-explorer-card:hover,.app-explorer-card:focus-visible { border-color:#3b9bb9; background:#ffffffd8; color:#125d7a; outline:none; box-shadow:0 5px 16px #153e4d20; }
+.app-explorer-card img { width:58px; height:58px; border-radius:15px; object-fit:cover; box-shadow:0 3px 10px #173c5033; }
+.app-explorer-empty { margin:18px 0 2px; padding:20px; border:1px dashed #9bafb5; border-radius:12px; color:#61727a; font-size:13px; text-align:center; }
 .desktop-widget-collection { position: absolute; top: 24px; right: 18px; width: min(520px, calc(58vw - 18px)); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(180px, .95fr); grid-template-rows: minmax(88px, auto) auto; gap: 11px; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.4; font-synthesis: none; pointer-events: none; }
 .desktop-widget-collection .desktop-widget { position: relative; inset: auto; min-width: 0; }
 .nepali-calendar-widget { grid-column: 1; grid-row: 1 / span 2; padding: 13px 14px 12px; }
@@ -515,9 +532,9 @@ button:focus-visible, a:focus-visible {
   top: calc(50% - 24px + var(--window-shift, 0px));
   left: calc(clamp(16px, 2.42vw, 33px) + var(--window-shift, 0px));
   display: flex;
-  width: min(1123px, 82.25vw, calc(100vw - 48px));
-  height: min(633px, 82.4vh, calc(100vh - 122px));
-  min-width: min(360px, calc(100vw - 24px));
+  width: min(1123px, 82.25%, calc(100% - 48px));
+  height: min(633px, 82.4%, calc(100% - 122px));
+  min-width: min(360px, calc(100% - 24px));
   min-height: 260px;
   flex-direction: column;
   overflow: hidden;
@@ -535,8 +552,8 @@ button:focus-visible, a:focus-visible {
 .app-window.is-maximized {
   top: 43px !important;
   left: 8px !important;
-  width: calc(100vw - 16px) !important;
-  height: calc(100vh - 122px) !important;
+  width: calc(100% - 16px) !important;
+  height: calc(100% - 122px) !important;
   transform: none !important;
 }
 
@@ -759,14 +776,16 @@ button:focus-visible, a:focus-visible {
   box-shadow: inset 0 1px 1px #ffffff70, inset 0 -2px 2px #0002, 0 3px 6px #0003;
   outline-offset: 4px;
 }
+.dock-explorer-icon { border-radius: 15px; background: linear-gradient(145deg, #1a9b9a, #14747f); box-shadow: inset 0 1px 2px #ffffff80, inset 0 -2px 3px #003f4555, 0 4px 8px #083e4b45; color:#fff; }
+.dock-explorer-icon:hover { filter:brightness(1.08); }
+.dock-explorer-icon svg { display:block; width:29px; height:29px; }
 
 .dock-artwork { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
-.dock-caption {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  padding: 7px 10px;
-  transform: translateX(-50%);
+.dock-tooltip {
+  position:fixed;
+  z-index:1000;
+  max-width:calc(100vw - 24px);
+  padding:7px 10px;
   border: 1px solid #6e81a526;
   border-radius: 7px;
   background: #fffffff2;
@@ -774,12 +793,10 @@ button:focus-visible, a:focus-visible {
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 600;
-  opacity: 0;
   pointer-events: none;
   white-space: nowrap;
 }
-
-.dock-icon:hover .dock-caption, .dock-icon:focus-visible .dock-caption { opacity: 1; }
+.dock-tooltip[hidden] { display:none; }
 .running-dot {
   position: absolute;
   right: 50%;
@@ -809,24 +826,22 @@ button:focus-visible, a:focus-visible {
 @media (max-width: 760px) {
   .desktop-statusbar { min-height: 53px; flex-wrap: wrap; gap: 0 8px; padding: 4px 10px; }
   .statusbar-brand { height: 27px; }
-  .statusbar-menu { order: 3; width: 100%; height: 22px; margin-top: 0; }
-  .statusbar-menu button { padding: 2px 8px; font-size: 11px; }
   .statusbar-right { gap: 8px; font-size: 11px; }
   .statusbar-network, .statusbar-battery { gap: 3px; font-size: 10px; }
   .statusbar-network svg { width: 14px; height: 14px; }
   .statusbar-battery svg { width: 15px; height: 15px; }
-  .fullscreen-toggle { min-height: 25px; padding: 2px 6px; }
-  .fullscreen-toggle-label { display: none; }
   .home-view { inset-block-start: 53px; }
   .desktop-clinic-widget { top: 24px; left: 10px; width: calc(100vw - 20px); min-height: 96px; gap: 12px; padding: 12px 14px; }
-  .desktop-widget-collection { top: 136px; right: 10px; left: 10px; width: auto; grid-template-columns: minmax(0, 1.16fr) minmax(145px, .84fr); gap: 9px; }
+  .operating-role-widget { left:10px; width:min(250px, calc(100vw - 20px)); }
+  .home-clinic-actions { top:132px; left:10px; }
+  .desktop-widget-collection { top: 190px; right: 10px; left: 10px; width: auto; grid-template-columns: minmax(0, 1.16fr) minmax(145px, .84fr); gap: 9px; }
   .nepali-calendar-widget { padding: 11px 12px; }
   .time-widget { padding: 10px 12px; }
   .gregorian-calendar-widget { padding: 9px 9px 10px; }
   .calendar-widget-grid > span { min-height: 20px; }
   .gregorian-calendar-grid > span { min-height: 18px; }
-  .app-window { top: calc(50% - 20px + var(--window-shift, 0px)); left: 50%; width: calc(100vw - 24px); height: calc(100vh - 164px); min-width: 0; min-height: 240px; transform: translate(-50%, -50%); }
-  .app-window.is-maximized { top: 60px !important; left: 6px !important; width: calc(100vw - 12px) !important; height: calc(100vh - 144px) !important; }
+  .app-window { top: calc(50% - 20px + var(--window-shift, 0px)); left: 50%; width: calc(100% - 24px); height: max(240px, calc(100% - 164px)); min-width: 0; min-height: 240px; transform: translate(-50%, -50%); }
+  .app-window.is-maximized { top: 60px !important; left: 6px !important; width: calc(100% - 12px) !important; height: calc(100% - 144px) !important; }
   .app-dock { gap: 7px; padding: 10px 12px; }
   .dock-icon { width: 46px; height: 46px; flex-basis: 46px; }
 }
@@ -845,12 +860,12 @@ button:focus-visible, a:focus-visible {
 @media (max-width: 430px) {
   .desktop-statusbar { min-height: 74px; }
   .statusbar-right { order: 3; width: 100%; justify-content: flex-end; }
-  .statusbar-menu { order: 4; }
   .home-view { inset-block-start: 74px; }
   .desktop-clinic-widget { min-height: 86px; gap: 10px; padding: 10px 11px; }
+  .home-clinic-actions { top:122px; }
   .clinic-widget-mark.has-logo { width: 74px; height: 56px; flex-basis: 74px; }
   .clinic-widget-signout { padding-inline: 6px; }
-  .desktop-widget-collection { top: 126px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 7px; }
+  .desktop-widget-collection { top: 180px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 7px; }
   .nepali-calendar-widget { grid-column: 1; grid-row: 1; padding: 9px 8px; }
   .time-widget { grid-column: 2; grid-row: 1; padding: 9px; }
   .gregorian-calendar-widget { grid-column: 1 / -1; grid-row: 2; padding: 8px 6px; }
@@ -869,6 +884,27 @@ button:focus-visible, a:focus-visible {
   .clinic-widget-signout span { display: none; }
   .clinic-widget-signout { width: 32px; padding: 0; }
   .window-content { padding: 20px; }
+}
+
+/* Entering the browser's Full screen control should use the larger viewport
+   for the open app window, then restore its normal size when Full screen exits. */
+.desktop:fullscreen .app-window:not([hidden]) {
+  top: 43px !important;
+  left: 8px !important;
+  width: calc(100% - 16px) !important;
+  height: calc(100% - 122px) !important;
+  min-width: 0;
+  min-height: 0;
+  transform: none !important;
+}
+
+@media (max-width: 760px) {
+  .desktop:fullscreen .app-window:not([hidden]) {
+    top: 60px !important;
+    left: 6px !important;
+    width: calc(100% - 12px) !important;
+    height: calc(100% - 144px) !important;
+  }
 }
 
 @media (prefers-reduced-transparency: reduce) {

@@ -8,6 +8,7 @@ import { build } from "vite";
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(appDir, "../..");
 const appsDir = path.join(projectRoot, "apps");
+const buildDependencies = path.join(appDir, "node_modules");
 const packageInfo = JSON.parse(await readFile(path.join(appDir, "package.json"), "utf8"));
 const bundleName = "finance.v1";
 const buildDir = await mkdtemp(path.join(tmpdir(), "dental-os-finance-"));
@@ -21,9 +22,16 @@ try {
     define: { "process.env.NODE_ENV": JSON.stringify("production") },
     resolve: {
       alias: [
+        { find: "react/jsx-runtime", replacement: path.join(buildDependencies, "react/jsx-runtime.js") },
+        { find: "react-dom/client", replacement: path.join(buildDependencies, "react-dom/client.js") },
+        { find: "react-dom", replacement: path.join(buildDependencies, "react-dom/index.js") },
+        { find: "react", replacement: path.join(buildDependencies, "react/index.js") },
+        { find: "lucide-react", replacement: path.join(buildDependencies, "lucide-react/dist/esm/lucide-react.mjs") },
+        { find: "@sbmdkl/nepali-date-converter", replacement: path.join(buildDependencies, "@sbmdkl/nepali-date-converter/dist/@sbmdkl/nepali-date-converter.es.js") },
         { find: "@/shared", replacement: path.join(appDir, "src/shared") },
         { find: "@", replacement: path.join(appDir, "src") },
       ],
+      dedupe: ["react", "react-dom"],
     },
     build: {
       outDir: buildDir,

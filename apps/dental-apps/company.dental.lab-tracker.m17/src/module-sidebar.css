@@ -1,0 +1,30 @@
+.lab-app-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--page-bg, #fff);
+}
+
+.lab-app-content {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--page-bg, #fff);
+}
+
+.lab-app-content > .clinicApp {
+  min-height: 100%;
+}
+
+.lab-module-message {
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+  border: 1px solid #f2b8b5;
+  border-radius: 6px;
+  background: #fff7f6;
+  color: #9b2c2c;
+}

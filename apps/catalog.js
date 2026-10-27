@@ -37,6 +37,10 @@ const knownAppContextCapabilities = Object.freeze({
     'patient_payments.collect', 'finance.manage', 'lab_tracker.access',
     'lab_requests.create', 'staff.reference.read', 'treatment_protocols.reference.read',
   ]),
+  appointments: Object.freeze(['appointments.access', 'staff.reference.read']),
+  followups: Object.freeze(['followups.access', 'staff.reference.read']),
+  staff: Object.freeze(['staff.manage', 'finance.manage']),
+  lab: Object.freeze(['lab_tracker.access', 'lab_requests.create', 'finance.manage']),
 });
 
 export function appContextCapabilitiesForApp(appId) {
@@ -51,7 +55,14 @@ function apiGrant(method, path, capabilities = [], queryPolicy = null) {
 // pinned source contract, recorded in its import manifest or migration docs.
 // Query policies preserve each contract's bounded parameter sets.
 const apiRoutePolicies = Object.freeze({
-  appointments: Object.freeze([]),
+  appointments: Object.freeze([
+    apiGrant('GET', '/v1/clinic/staff-references', ['appointments.access']),
+    apiGrant('GET', '/v1/appointments/summary', ['appointments.access'], 'appointment-summary'),
+    apiGrant('GET', '/v1/appointments', ['appointments.access'], 'appointment-range'),
+    apiGrant('POST', '/v1/appointments', ['appointments.access']),
+    apiGrant('PATCH', '/v1/appointments/{uuid}', ['appointments.access']),
+    apiGrant('POST', '/v1/appointments/{uuid}/status', ['appointments.access']),
+  ]),
   calendar: Object.freeze([
     apiGrant('GET', '/v1/calendar-tasks', [], 'calendar-task-range'),
     apiGrant('POST', '/v1/calendar-tasks'),
@@ -88,9 +99,32 @@ const apiRoutePolicies = Object.freeze({
     apiGrant('POST', '/v1/clinic/supplier-payments/{uuid}/correct', ['finance.manage']),
     apiGrant('POST', '/v1/clinic/supplier-payments/{uuid}/void', ['finance.manage']),
   ]),
-  followups: Object.freeze([]),
-  lab: Object.freeze([]),
-  staff: Object.freeze([]),
+  followups: Object.freeze([
+    apiGrant('GET', '/v1/follow-ups', ['followups.access']),
+    apiGrant('GET', '/v1/clinic/staff-references', ['followups.access']),
+    apiGrant('GET', '/v1/patients', ['followups.access'], 'work-entry-patient-lookup'),
+    apiGrant('POST', '/v1/follow-ups', ['followups.access']),
+    apiGrant('PATCH', '/v1/follow-ups/{uuid}/toggle', ['followups.access']),
+    apiGrant('PATCH', '/v1/follow-ups/{uuid}/schedule', ['followups.access']),
+  ]),
+  staff: Object.freeze([
+    apiGrant('GET', '/v1/clinic/staff', ['staff.manage']),
+    apiGrant('GET', '/v1/clinic/staff/{uuid}', ['staff.manage']),
+    apiGrant('POST', '/v1/clinic/staff', ['staff.manage']),
+    apiGrant('PATCH', '/v1/clinic/staff/{uuid}', ['staff.manage']),
+    apiGrant('GET', '/v1/clinic/staff/{uuid}/clinical-work', ['staff.manage'], 'staff-clinical-work'),
+    apiGrant('GET', '/v1/clinic/salary-payouts', ['finance.manage']),
+    apiGrant('GET', '/v1/clinic/staff/{uuid}/documents', ['staff.manage']),
+    apiGrant('POST', '/v1/clinic/staff/{uuid}/documents/{uuid}/withdraw', ['staff.manage']),
+  ]),
+  lab: Object.freeze([
+    apiGrant('GET', '/v1/lab-orders', ['lab_tracker.access']),
+    apiGrant('GET', '/v1/clinic/suppliers', ['lab_tracker.access'], 'lab-suppliers'),
+    apiGrant('POST', '/v1/lab-orders/{uuid}/assign', ['lab_tracker.access']),
+    apiGrant('PATCH', '/v1/lab-orders/{uuid}', ['lab_tracker.access']),
+    apiGrant('POST', '/v1/clinic/suppliers', ['lab_tracker.access']),
+    apiGrant('PATCH', '/v1/clinic/suppliers/{uuid}', ['lab_tracker.access']),
+  ]),
   treatment: Object.freeze([
     apiGrant('GET', '/v1/treatment-progress'),
   ]),
@@ -240,6 +274,34 @@ function validQuery(policy, entries) {
 
 const noQuery = Object.freeze({ allowed: Object.freeze([]), required: Object.freeze([]), validators: Object.freeze({}) });
 const queryPolicies = Object.freeze({
+  'appointment-summary': Object.freeze({
+    allowed: Object.freeze(['today']), required: Object.freeze(['today']),
+    validators: Object.freeze({ today: validDate }),
+  }),
+  'appointment-range': Object.freeze({
+    allowed: Object.freeze(['date', 'bucket', 'today', 'doctorName']), required: Object.freeze([]),
+    validators: Object.freeze({
+      date: validDate,
+      bucket: value => ['today', 'week', 'upcoming', 'cancelled'].includes(value),
+      today: validDate,
+      doctorName: value => value.length > 0 && value.length <= 160 && !/[\u0000-\u001f\u007f]/.test(value),
+    }),
+    combinations: entries => {
+      const keys = new Set(entries.map(([key]) => key));
+      const dayQuery = keys.has('date') && !keys.has('bucket') && !keys.has('today');
+      const bucketQuery = !keys.has('date') && keys.has('bucket') && keys.has('today');
+      return dayQuery || bucketQuery;
+    },
+  }),
+  'staff-clinical-work': Object.freeze({
+    allowed: Object.freeze(['startDate', 'endDate']), required: Object.freeze([]),
+    validators: Object.freeze({ startDate: validDate, endDate: validDate }),
+    ordered: Object.freeze([['startDate', 'endDate']]),
+    combinations: entries => {
+      const keys = new Set(entries.map(([key]) => key));
+      return keys.has('startDate') === keys.has('endDate');
+    },
+  }),
   'work-entry-patient-lookup': Object.freeze({
     allowed: Object.freeze(['q', 'limit']), required: Object.freeze(['q', 'limit']),
     validators: Object.freeze({ q: value => value.trim().length > 0 && value.length <= 120 && !/[\u0000-\u001f\u007f]/.test(value), limit: value => value === '8' }),
