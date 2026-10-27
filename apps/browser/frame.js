@@ -365,7 +365,7 @@ window.addEventListener('message', event => {
     stylesheet.href = '/apps/browser/dist/' + app.appId + '/assets/app.css';
     document.head.append(stylesheet);
     // Only a fixed, allowlisted app ID is used in the module path. No arbitrary sources.
-    import('/apps/browser/dist/' + app.appId + '/assets/app.js').catch((cause) => {
+    import(new URL('/apps/browser/dist/' + app.appId + '/assets/app.js', window.location.href).href).catch((cause) => {
       console.error('Original Follow-ups React bundle import failed:', cause);
       adapter.close();
       delete window.dentalApp;
