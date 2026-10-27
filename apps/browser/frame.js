@@ -340,10 +340,9 @@ window.addEventListener('message', event => {
     views: init.views.filter(v => typeof v.id === 'string' && typeof v.title === 'string' &&
       typeof v.route === 'string').slice(0, 12),
   });
-  if (!app.preview && init.session?.clinicUser && init.session?.clinic &&
+  if (app.appId === 'followups' && !app.preview && init.session?.clinicUser && init.session?.clinic &&
       typeof window.createBrowserAppBridge === 'function' &&
-      /^company\\.dental\\.[a-z0-9.-]+$/.test(init.source)) {
-    // The original React renderer expects #root and window.dentalApp. Here the SDK is a
+      init.source === 'company.dental.followups.m17') {    // The original React renderer expects #root and window.dentalApp. Here the SDK is a
     // browser-native, token-free MessageChannel facade, not Electron preload/IPC.
     const originalRoot = document.getElementById('app-root');
     originalRoot.id = 'root';
