@@ -6,26 +6,12 @@ import {
   NEPALI_DAYS,
   NEPALI_MONTHS,
 } from './vendor/nepali-date-utils/index.js';
+import { firstPartyApps } from './apps/manifest.js';
+import { findAppApiGrant, isValidAppCatalog, visibleAppsForCapabilities } from './apps/catalog.js';
 
 const config = window.DENTAL_OS_BROWSER_CONFIG;
-const apps = [
-  { id: 'appointments', title: 'Appointments', icon: '/assets/dock/appointments.webp', capabilities: ['appointments.access'] },
-  { id: 'patients', title: 'Patients', icon: '/assets/dock/patients.webp', capabilities: ['patient_record.access'] },
-  { id: 'calendar', title: 'Calendar', icon: '/assets/dock/calendar.webp', capabilities: ['calendar.access'] },
-  {
-    id: 'finance', title: 'Finance', icon: '/assets/dock/finance.webp',
-    capabilities: ['finance.manage', 'patient_billing_ledger.read', 'patient_payments.outstanding.read', 'patient_payments.received.read', 'patient_payments.collect'],
-  },
-  { id: 'followups', title: 'Follow-ups', icon: '/assets/dock/followups.webp', capabilities: ['followups.access'] },
-  { id: 'staff', title: 'Staff', icon: '/assets/dock/staff.webp', capabilities: ['staff.reference.read', 'staff.manage'] },
-  { id: 'lab', title: 'Lab Tracker', icon: '/assets/dock/lab.webp', capabilities: ['lab_tracker.access', 'lab_requests.create'] },
-  { id: 'treatment', title: 'Treatment Progress', icon: '/assets/dock/treatment.webp', capabilities: ['treatment_progress.access'] },
-  {
-    id: 'protocols', title: 'Treatment Protocols', icon: '/assets/dock/protocols.webp',
-    capabilities: ['treatment_protocols.reference.read', 'treatment_protocols.manage'],
-  },
-  { id: 'workentry', title: 'Work Entry', icon: '/assets/dock/workentry.webp', capabilities: ['work_entry.access'] },
-];
+const appCatalogTrusted = isValidAppCatalog(firstPartyApps, window.location.origin);
+const apps = appCatalogTrusted ? firstPartyApps : [];
 
 const appById = new Map(apps.map((app) => [app.id, app]));
 const dock = document.getElementById('app-dock');
@@ -50,16 +36,28 @@ const rememberEmailInput = document.getElementById('remember-email');
 const identityNote = document.getElementById('identity-note').querySelector('span');
 const passwordReveal = document.getElementById('password-reveal');
 const clinicWidget = document.getElementById('clinic-widget');
+const clinicWidgetMark = document.getElementById('clinic-widget-mark');
 const clinicNameLabel = document.getElementById('clinic-name');
 const clinicUserLabel = document.getElementById('clinic-user');
 const clinicRoleLabel = document.getElementById('clinic-role');
-const lockWorkspaceButton = document.getElementById('lock-workspace-button');
 const signOutButton = document.getElementById('signout-button');
 const announcement = document.getElementById('workspace-announcement');
 const desktop = document.querySelector('.desktop');
 const fullscreenToggle = document.getElementById('fullscreen-toggle');
 const fullscreenToggleLabel = fullscreenToggle.querySelector('.fullscreen-toggle-label');
+const workspaceRolePicker = document.getElementById('workspace-role-picker');
 const switchRoleButton = document.getElementById('switch-role-button');
+const workspaceRoleMenu = document.getElementById('workspace-role-menu');
+const currentWorkspaceLabel = document.getElementById('current-workspace-label');
+const workspaceRoleOptions = document.getElementById('workspace-role-options');
+const workspaceSwitchDialog = document.getElementById('workspace-switch-dialog');
+const workspaceSwitchForm = document.getElementById('workspace-switch-form');
+const workspaceSwitchDescription = document.getElementById('workspace-switch-description');
+const workspacePinField = document.getElementById('workspace-pin-field');
+const workspacePinInput = document.getElementById('workspace-pin-input');
+const workspaceSwitchError = document.getElementById('workspace-switch-error');
+const workspaceSwitchConfirm = document.getElementById('workspace-switch-confirm');
+const workspaceSwitchCancel = document.getElementById('workspace-switch-cancel');
 const networkStatus = document.getElementById('network-status');
 const networkLabel = document.getElementById('network-label');
 const batteryStatus = document.getElementById('status-battery');
@@ -78,6 +76,10 @@ let firebaseAuth = null;
 let firebaseAuthSdk = null;
 let firebaseUser = null;
 let clinicSession = null;
+let clinicLogoGeneration = 0;
+let clinicLogoController = null;
+let pendingWorkspaceRole = null;
+let workspaceSwitchBusy = false;
 let allowedAppIds = new Set();
 let authGeneration = 0;
 let signInNotice = null;
@@ -107,20 +109,87 @@ const startupStages = {
   unavailable: 'Opening session recovery…',
 };
 
-function visibleAppsForCapabilities(appCatalog, rawCapabilities) {
-  if (!Array.isArray(rawCapabilities)) return [];
-
-  const capabilities = new Set(rawCapabilities.filter((capability) => typeof capability === 'string'));
-  return appCatalog.filter((app) => (
-    Array.isArray(app.capabilities)
-    && app.capabilities.some((capability) => capabilities.has(capability))
-  ));
-}
-
 function clinicSessionFromMeResponse(payload) {
   const session = payload?.session;
   if (!session?.clinicUser || !Array.isArray(session.clinicUser.capabilities)) return null;
   return session;
+}
+
+const clinicWorkspaceRoles = new Set(['admin', 'doctor', 'reception']);
+
+function availableWorkspaceRoles(session) {
+  const currentRole = session?.clinicUser?.role;
+  const roles = session?.clinicUser?.workspaceRoles;
+  if (!clinicWorkspaceRoles.has(currentRole) || !Array.isArray(roles)) return [];
+  return [...new Set(roles.filter((role) => clinicWorkspaceRoles.has(role) && role !== currentRole))];
+}
+
+function workspaceRoleName(role) {
+  return clinicWorkspaceRoles.has(role) ? role[0].toLocaleUpperCase() + role.slice(1) : '';
+}
+
+function workspaceRoleError(status, payload) {
+  const code = payload?.error?.code;
+  if (code === 'invalid_workspace_pin') return 'The Admin PIN is incorrect. Check it and try again.';
+  if (code === 'workspace_pin_locked') return 'Admin PIN entry is temporarily locked. Try again in 15 minutes.';
+  if (code === 'clinic_access_denied') return 'That workspace is not available for this clinic account.';
+  if (code === 'workspace_role_conflict') return 'Your clinic account changed. Refresh the workspace and try again.';
+  if (status === 503) return 'The clinic service is unavailable right now. Try again in a moment.';
+  return payload?.error?.message || 'The workspace change could not be confirmed. Please try again.';
+}
+
+function closeWorkspaceRoleMenu(restoreFocus = false) {
+  workspaceRoleMenu.hidden = true;
+  switchRoleButton.setAttribute('aria-expanded', 'false');
+  if (restoreFocus && !switchRoleButton.hidden) switchRoleButton.focus();
+}
+
+function updateWorkspaceRolePicker(session) {
+  const roles = availableWorkspaceRoles(session);
+  currentWorkspaceLabel.textContent = `Current workspace: ${workspaceRoleName(session?.clinicUser?.role)}`;
+  workspaceRoleOptions.replaceChildren();
+  for (const role of roles) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.setAttribute('role', 'menuitem');
+    option.textContent = `Switch to ${workspaceRoleName(role)}`;
+    option.addEventListener('click', () => selectWorkspaceRole(role));
+    workspaceRoleOptions.append(option);
+  }
+  switchRoleButton.hidden = roles.length === 0;
+  closeWorkspaceRoleMenu();
+}
+
+function selectWorkspaceRole(role) {
+  if (!clinicSession || !availableWorkspaceRoles(clinicSession).includes(role) || workspaceSwitchBusy) return;
+  if (!ensureNoAppWork('switch workspaces')) return;
+  pendingWorkspaceRole = role;
+  closeWorkspaceRoleMenu();
+  workspaceSwitchDescription.textContent = 'Save unfinished work first. Switching workspace closes open apps and reloads your clinic access.';
+  workspacePinField.hidden = role !== 'admin';
+  workspacePinInput.value = '';
+  workspaceSwitchError.textContent = '';
+  workspaceSwitchError.hidden = true;
+  workspaceSwitchConfirm.disabled = false;
+  workspaceSwitchConfirm.textContent = `Switch to ${workspaceRoleName(role)}`;
+  workspaceSwitchDialog.showModal();
+  if (role === 'admin') workspacePinInput.focus();
+  else workspaceSwitchConfirm.focus();
+}
+
+function finishWorkspaceRoleSwitch(role) {
+  closeAllWindows({ force: true });
+  workspaceSwitchDialog.close();
+  pendingWorkspaceRole = null;
+  workspacePinInput.value = '';
+  announcement.textContent = `${workspaceRoleName(role)} workspace is active.`;
+  if (!switchRoleButton.hidden) switchRoleButton.focus();
+  else document.querySelector('.statusbar-brand').focus();
+}
+
+function setWorkspaceSwitchError(message) {
+  workspaceSwitchError.textContent = message;
+  workspaceSwitchError.hidden = !message;
 }
 
 function setStartupStage(stage) {
@@ -283,7 +352,7 @@ function updateStartupSoundToggle() {
 
 document.documentElement.dataset.environment = connectedStaging ? 'staging' : 'preview';
 
-function updateClinicWidget(session) {
+function updateClinicWidget(session, authUser) {
   const clinic = session.clinic || {};
   const user = session.clinicUser || {};
   const clinicName = clinic.displayName || clinic.name || clinic.clinicName || user.clinicName || 'Sajilo Dental';
@@ -295,6 +364,97 @@ function updateClinicWidget(session) {
   clinicUserLabel.title = userName;
   clinicRoleLabel.textContent = role;
   clinicRoleLabel.hidden = !role;
+  clearClinicWidgetLogo(clinicName);
+  if (authUser) void loadClinicWidgetLogo(authUser, clinicName);
+}
+
+function clinicInitials(name) {
+  const initials = String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase();
+  return initials || 'SD';
+}
+
+function clearClinicWidgetLogo(clinicName = '') {
+  clinicLogoGeneration += 1;
+  clinicLogoController?.abort();
+  clinicLogoController = null;
+  clinicWidgetMark.classList.remove('has-logo');
+  clinicWidgetMark.replaceChildren(document.createTextNode(clinicInitials(clinicName)));
+}
+
+async function loadClinicWidgetLogo(user, clinicName) {
+  const requestGeneration = clinicLogoGeneration;
+  const controller = new AbortController();
+  clinicLogoController = controller;
+  try {
+    const idToken = await user.getIdToken();
+    if (!idToken || requestGeneration !== clinicLogoGeneration) return;
+
+    const apiBase = new URL(config.apiBaseUrl);
+    const endpoint = new URL('/v1/clinic/branding/logo/view', apiBase);
+    if (endpoint.origin !== apiBase.origin) return;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${idToken}`, accept: 'image/png, image/jpeg, image/webp' },
+      signal: controller.signal,
+      redirect: 'error',
+      credentials: 'omit',
+      cache: 'no-store',
+    });
+    const mimeType = response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase();
+    const supportedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+    const contentLength = response.headers.get('content-length');
+    if (!response.ok || !supportedTypes.has(mimeType) || !response.body
+      || (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > 2_000_000))) {
+      void response.body?.cancel().catch(() => {});
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const chunks = [];
+    let length = 0;
+    try {
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        length += chunk.value.length;
+        if (length > 2_000_000) {
+          void reader.cancel().catch(() => {});
+          return;
+        }
+        chunks.push(chunk.value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    if (!length || requestGeneration !== clinicLogoGeneration) return;
+
+    const blob = new Blob(chunks, { type: mimeType });
+    const logoUrl = await new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.addEventListener('load', () => {
+        if (typeof fileReader.result === 'string') resolve(fileReader.result);
+        else reject(new Error('Clinic logo could not be decoded.'));
+      }, { once: true });
+      fileReader.addEventListener('error', () => reject(fileReader.error || new Error('Clinic logo could not be read.')), { once: true });
+      fileReader.readAsDataURL(blob);
+    });
+    if (requestGeneration !== clinicLogoGeneration) return;
+
+    const image = document.createElement('img');
+    image.alt = '';
+    image.addEventListener('error', () => {
+      if (requestGeneration !== clinicLogoGeneration) return;
+      clinicWidgetMark.classList.remove('has-logo');
+      clinicWidgetMark.replaceChildren(document.createTextNode(clinicInitials(clinicName)));
+    }, { once: true });
+    image.src = logoUrl;
+    clinicWidgetMark.replaceChildren(image);
+    clinicWidgetMark.classList.add('has-logo');
+  } catch {
+    // A missing or unavailable clinic logo falls back to the clinic initials.
+  } finally {
+    if (clinicLogoController === controller) clinicLogoController = null;
+  }
 }
 
 function makeButton(className, label, symbol, action) {
@@ -306,6 +466,33 @@ function makeButton(className, label, symbol, action) {
   button.textContent = symbol;
   button.addEventListener('click', action);
   return button;
+}
+
+function setWindowControlIcon(button, restore = false) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', restore
+    ? 'M4 14h6v6m10-10h-6V4m0 6 6-6M10 14l-6 6'
+    : 'M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3');
+  svg.append(path);
+  button.replaceChildren(svg);
+}
+
+function setHistoryButtonIcon(button) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M19 12H5m7 7-7-7 7-7');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.8');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  svg.append(path);
+  button.replaceChildren(svg);
 }
 
 function buildDock() {
@@ -354,7 +541,7 @@ function updateDock() {
 
 function updateHome() {
   const hasVisibleWindow = [...openWindows.values()].some((entry) => !entry.element.hidden);
-  homeView.hidden = (!clinicSession && connectedStaging) || hasVisibleWindow;
+  homeView.hidden = !clinicSession && connectedStaging;
   const homeButton = document.querySelector('[data-action="home"]');
   if (hasVisibleWindow) homeButton.removeAttribute('aria-current');
   else homeButton.setAttribute('aria-current', 'page');
@@ -381,6 +568,355 @@ function focusWindow(appId, shouldFocus = false) {
   if (shouldFocus) entry.element.focus({ preventScroll: true });
 }
 
+function isCurrentAppLaunch(app, entry, attempt) {
+  return openWindows.get(app.id) === entry && !entry.disposed
+    && entry.runtimeAttempt === attempt && allowedAppIds.has(app.id);
+}
+
+function setAppRuntimeState(entry, title, description, retry) {
+  entry.runtimeHost.dataset.state = retry ? 'error' : 'loading';
+  const message = document.createElement('div');
+  message.className = 'app-runtime-state';
+  message.setAttribute('role', retry ? 'alert' : 'status');
+  entry.element.dataset.appState = retry ? 'error' : 'loading';
+  const heading = document.createElement('strong');
+  heading.textContent = title;
+  const detail = document.createElement('span');
+  detail.textContent = description;
+  message.append(heading, detail);
+  if (retry) {
+    const button = makeButton('app-runtime-retry', 'Retry app launch', 'Retry', retry);
+    message.append(button);
+  }
+  entry.runtimeHost.replaceChildren(message);
+}
+
+function disposeAppRuntime(entry) {
+  if (!entry || entry.disposed) return;
+  entry.disposed = true;
+  entry.runtimeAttempt += 1;
+  if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
+  entry.readyTimer = null;
+  entry.port?.close();
+  entry.port = null;
+  entry.frame?.remove();
+  entry.frame = null;
+  entry.runtimeHost.replaceChildren();
+}
+
+async function readBoundedResponse(response, maxBytes, acceptedContentTypes, allowHttpErrors = false) {
+  if ((!response.ok && !allowHttpErrors) || response.redirected || !response.body) return null;
+  if (!acceptedContentTypes.includes(response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase())) return null;
+  const contentLength = response.headers.get('content-length');
+  if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > maxBytes)) return null;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let length = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      length += chunk.value.byteLength;
+      if (length > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(chunk.value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (!length) return null;
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+async function readTrustedAppAsset(path, expectedSha256, maxBytes, acceptedContentTypes) {
+  const url = new URL(path, window.location.origin);
+  if (url.origin !== window.location.origin || url.pathname !== path || url.search || url.hash) {
+    throw new Error('The app package path is not trusted.');
+  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { accept: acceptedContentTypes.join(', ') },
+    cache: 'no-store',
+    credentials: 'omit',
+    redirect: 'error',
+  });
+  if (response.url && new URL(response.url).origin !== window.location.origin) {
+    void response.body?.cancel().catch(() => {});
+    throw new Error('The app package left the browser origin.');
+  }
+  const bytes = await readBoundedResponse(response, maxBytes, acceptedContentTypes);
+  if (!bytes || typeof crypto === 'undefined' || !crypto.subtle) throw new Error('The app package could not be verified.');
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const actualSha256 = Array.from(digest, (value) => value.toString(16).padStart(2, '0')).join('');
+  if (actualSha256 !== expectedSha256) throw new Error('The app package checksum did not match.');
+  return bytes;
+}
+
+async function verifyTrustedAppBundle(app) {
+  if (!appCatalogTrusted) throw new Error('The first-party app catalog is not trusted.');
+  const assets = [
+    readTrustedAppAsset(app.bundle.entry, app.bundle.entrySha256, 1_048_576, ['text/html']),
+    readTrustedAppAsset(app.bundle.script, app.bundle.scriptSha256, 1_048_576, ['text/javascript', 'application/javascript']),
+  ];
+  if (app.bundle.style) assets.push(readTrustedAppAsset(app.bundle.style, app.bundle.styleSha256, 262_144, ['text/css']));
+  const [entryBytes, scriptBytes, styleBytes] = await Promise.all(assets);
+  const html = new TextDecoder('utf-8', { fatal: true }).decode(entryBytes);
+  const scriptDigest = new Uint8Array(await crypto.subtle.digest('SHA-256', scriptBytes));
+  const scriptIntegrity = `sha256-${btoa(String.fromCharCode(...scriptDigest))}`;
+  if (!html.includes(`integrity="${scriptIntegrity}"`)) {
+    throw new Error('The app entry does not pin its expected runtime bundle.');
+  }
+  if (app.bundle.style) {
+    const styleDigest = new Uint8Array(await crypto.subtle.digest('SHA-256', styleBytes));
+    const styleIntegrity = `sha256-${btoa(String.fromCharCode(...styleDigest))}`;
+    const styleText = new TextDecoder('utf-8', { fatal: true }).decode(styleBytes);
+    if (!html.includes(`style-src '${styleIntegrity}'`) || !html.includes(`<style>${styleText}</style>`)) {
+      throw new Error('The app entry does not pin its expected stylesheet.');
+    }
+  }
+}
+
+function createAppLaunchNonce() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(24)), (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+function appEnvelopeMatches(app, entry, message) {
+  return message.appId === app.id && message.version === app.version
+    && message.nonce === entry.nonce;
+}
+
+function sendAppPortMessage(entry, message) {
+  try {
+    entry.port?.postMessage({
+      appId: entry.app.id,
+      version: entry.app.version,
+      nonce: entry.nonce,
+      ...message,
+    });
+  } catch {
+    // A closed app channel is cleaned up by its window lifecycle.
+  }
+}
+
+async function requestGrantedAppApi(app, entry, attempt, request) {
+  const grant = findAppApiGrant(app, request.method, request.path);
+  if (!grant) return { ok: false, code: 'route_not_granted', message: 'This app does not have permission for that clinic route.' };
+  const write = request.method !== 'GET';
+  const route = new URL(request.path, config?.apiBaseUrl || window.location.origin);
+  if (route.pathname !== request.path || route.search || route.hash
+    || (write && (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.idempotencyKey)
+      || typeof request.body !== 'string' || new TextEncoder().encode(request.body).byteLength > 12_000))) {
+    return { ok: false, code: 'invalid_request', message: 'This clinic request is not valid.' };
+  }
+  if (!connectedStaging || !clinicSession || !firebaseUser || !config?.apiBaseUrl) {
+    return { ok: false, code: 'clinic_session_unavailable', message: 'A verified clinic session is required.' };
+  }
+  const base = new URL(config.apiBaseUrl);
+  const url = new URL(request.path, base);
+  if (base.protocol !== 'https:' || url.origin !== base.origin || url.pathname !== request.path || url.search || url.hash) {
+    return { ok: false, code: 'route_not_granted', message: 'This app route is not available.' };
+  }
+  const idToken = await firebaseUser.getIdToken();
+  if (!isCurrentAppLaunch(app, entry, attempt) || !allowedAppIds.has(app.id)) {
+    return { ok: false, code: 'clinic_session_unavailable', message: 'Clinic access changed. Reopen the app.' };
+  }
+  const response = await fetch(url, {
+    method: request.method,
+    headers: {
+      authorization: `Bearer ${idToken}`,
+      accept: 'application/json',
+      ...(write ? { 'content-type': 'application/json', 'idempotency-key': request.idempotencyKey } : {}),
+    },
+    ...(write ? { body: request.body } : {}),
+    cache: 'no-store',
+    credentials: 'omit',
+    redirect: 'error',
+    signal: AbortSignal.timeout(30_000),
+  });
+  const bytes = await readBoundedResponse(response, 524_288, ['application/json'], true);
+  if (!bytes) return { ok: false, code: 'clinic_service_unavailable', message: 'The clinic service response could not be read.' };
+  let data;
+  try {
+    data = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    return { ok: false, code: 'invalid_clinic_response', message: 'The clinic service returned an invalid response.' };
+  }
+  return { ok: true, data: { status: response.status, body: data } };
+}
+
+async function handleAppPortMessage(app, entry, attempt, message) {
+  if (!isCurrentAppLaunch(app, entry, attempt)) return;
+  if (!message || typeof message !== 'object' || Array.isArray(message)) {
+    failAppRuntime(app, entry, attempt, 'The app sent an invalid message.');
+    return;
+  }
+  if (!entry.runtimeReady) {
+    if (Object.keys(message).sort().join(',') !== 'appId,bundleSha256,nonce,type,version'
+      || message.type !== 'app:ready' || !appEnvelopeMatches(app, entry, message)) {
+      failAppRuntime(app, entry, attempt, 'The app session could not be verified.');
+      return;
+    }
+    if (message.bundleSha256 !== app.bundle.scriptSha256) {
+      failAppRuntime(app, entry, attempt, 'The app runtime version did not match the trusted manifest.');
+      return;
+    }
+    entry.runtimeReady = true;
+    if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
+    entry.readyTimer = null;
+    entry.runtimeHost.dataset.state = 'ready';
+    entry.element.dataset.appState = 'ready';
+    return;
+  }
+
+  if (!appEnvelopeMatches(app, entry, message)) {
+    failAppRuntime(app, entry, attempt, 'The app sent a request outside its approved interface.');
+    return;
+  }
+  if (message.type === 'app:lifecycle') {
+    const keys = ['appId', 'dirty', 'modal', 'nonce', 'pendingWrite', 'type', 'version'];
+    if (Object.keys(message).sort().join(',') !== keys.join(',')
+      || typeof message.dirty !== 'boolean' || typeof message.modal !== 'boolean'
+      || typeof message.pendingWrite !== 'boolean') {
+      failAppRuntime(app, entry, attempt, 'The app sent invalid work-state information.');
+      return;
+    }
+    entry.lifecycle = { dirty: message.dirty, modal: message.modal, pendingWrite: message.pendingWrite };
+    return;
+  }
+  if (message.type === 'app:navigation-state') {
+    const keys = ['appId', 'canGoBack', 'canNavigate', 'nonce', 'type', 'version'];
+    if (Object.keys(message).sort().join(',') !== keys.join(',')
+      || typeof message.canGoBack !== 'boolean' || typeof message.canNavigate !== 'boolean') {
+      failAppRuntime(app, entry, attempt, 'The app sent invalid navigation state.');
+      return;
+    }
+    entry.navigationState = { canGoBack: message.canGoBack, canNavigate: message.canNavigate };
+    updateAppHistoryControls(entry);
+    return;
+  }
+
+  const expectedKeys = ['appId', 'body', 'idempotencyKey', 'method', 'nonce', 'path', 'requestId', 'type', 'version'];
+  const basicRequestValid = message.type === 'app:api-request'
+    && Object.keys(message).sort().join(',') === expectedKeys.join(',')
+    && typeof message.requestId === 'string' && /^[a-f0-9]{32}$/.test(message.requestId)
+    && ['GET', 'POST', 'PUT'].includes(message.method)
+    && typeof message.path === 'string' && message.path.length > 0 && message.path.length <= 180;
+  const isWrite = message.method === 'POST' || message.method === 'PUT';
+  const requestBodyValid = isWrite
+    ? typeof message.body === 'string' && new TextEncoder().encode(message.body).byteLength <= 12_000
+      && typeof message.idempotencyKey === 'string'
+      && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(message.idempotencyKey)
+      && (() => { try { const body = JSON.parse(message.body); return body && typeof body === 'object' && !Array.isArray(body); } catch { return false; } })()
+    : message.body === null && message.idempotencyKey === null;
+  if (!basicRequestValid || !requestBodyValid) {
+    failAppRuntime(app, entry, attempt, 'The app sent a request outside its approved interface.');
+    return;
+  }
+  const now = Date.now();
+  if (now - entry.requestWindowStartedAt >= 60_000) {
+    entry.requestWindowStartedAt = now;
+    entry.requestCount = 0;
+  }
+  entry.requestCount += 1;
+  if (entry.requestCount > 30 || entry.pendingRequests >= 4) {
+    sendAppPortMessage(entry, { type: 'app:api-response', requestId: message.requestId, ok: false, code: 'request_limit', message: 'This app has reached its request limit.' });
+    return;
+  }
+  entry.pendingRequests += 1;
+  try {
+    const result = await requestGrantedAppApi(app, entry, attempt, message);
+    if (isCurrentAppLaunch(app, entry, attempt)) {
+      sendAppPortMessage(entry, { type: 'app:api-response', requestId: message.requestId, ...result });
+    }
+  } catch {
+    if (isCurrentAppLaunch(app, entry, attempt)) {
+      sendAppPortMessage(entry, { type: 'app:api-response', requestId: message.requestId, ok: false,
+        code: isWrite ? 'unknown_outcome' : 'clinic_service_unavailable',
+        message: isWrite ? 'The save result is not confirmed.' : 'The clinic service could not be reached.' });
+    }
+  } finally {
+    entry.pendingRequests = Math.max(0, entry.pendingRequests - 1);
+  }
+}
+
+function failAppRuntime(app, entry, attempt, message) {
+  if (!isCurrentAppLaunch(app, entry, attempt)) return;
+  if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
+  entry.readyTimer = null;
+  entry.port?.close();
+  entry.port = null;
+  entry.frame?.remove();
+  entry.frame = null;
+  entry.runtimeReady = false;
+  setAppRuntimeState(entry, 'App could not be started', message, () => void initializeAppRuntime(app, entry));
+}
+
+async function initializeAppRuntime(app, entry) {
+  const attempt = ++entry.runtimeAttempt;
+  entry.runtimeReady = false;
+  entry.requestCount = 0;
+  entry.pendingRequests = 0;
+  entry.requestWindowStartedAt = Date.now();
+  setAppRuntimeState(entry, 'Starting ' + app.title, 'Verifying the trusted first-party app package…');
+  try {
+    await verifyTrustedAppBundle(app);
+    if (!isCurrentAppLaunch(app, entry, attempt)) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'app-runtime-frame';
+    iframe.title = app.title + ' isolated app';
+    iframe.setAttribute('sandbox', 'allow-scripts');
+    iframe.referrerPolicy = 'no-referrer';
+    iframe.allow = '';
+    iframe.loading = 'eager';
+    entry.frame = iframe;
+    entry.nonce = createAppLaunchNonce();
+    entry.runtimeHost.dataset.state = 'connecting';
+    entry.runtimeHost.replaceChildren(iframe);
+
+    const channel = new MessageChannel();
+    entry.port = channel.port1;
+    entry.port.onmessage = (event) => void handleAppPortMessage(app, entry, attempt, event.data);
+    entry.port.onmessageerror = () => failAppRuntime(app, entry, attempt, 'The app communication channel failed.');
+    entry.port.start();
+    let loaded = false;
+    iframe.addEventListener('load', () => {
+      if (!isCurrentAppLaunch(app, entry, attempt)) return;
+      if (loaded) {
+        failAppRuntime(app, entry, attempt, 'The app tried to navigate outside its trusted package.');
+        return;
+      }
+      loaded = true;
+      try {
+        iframe.contentWindow.postMessage({
+          type: 'dental-os:init',
+          appId: app.id,
+          title: app.title,
+          version: app.version,
+          nonce: entry.nonce,
+          bundleSha256: app.bundle.scriptSha256,
+        }, '*', [channel.port2]);
+      } catch {
+        failAppRuntime(app, entry, attempt, 'The app could not establish its private channel.');
+      }
+    });
+    entry.readyTimer = window.setTimeout(() => {
+      failAppRuntime(app, entry, attempt, 'The app did not complete its secure startup handshake.');
+    }, 8_000);
+    iframe.src = app.bundle.entry;
+  } catch {
+    failAppRuntime(app, entry, attempt, 'The app package failed its integrity check or could not be loaded.');
+  }
+}
+
 function topVisibleWindowId() {
   return [...openWindows.entries()]
     .filter(([, entry]) => !entry.element.hidden)
@@ -399,20 +935,65 @@ function syncRouteToVisibleWindow() {
 function closeWindow(appId) {
   const entry = openWindows.get(appId);
   if (!entry) return;
+  if (hasUnresolvedAppWork(entry)) {
+    focusWindow(appId, true);
+    announcement.textContent = workGuardMessage(entry, 'close this app');
+    return;
+  }
+  disposeAppRuntime(entry);
   entry.element.remove();
   openWindows.delete(appId);
   if (activeWindowId === appId) syncRouteToVisibleWindow();
   else updateDock();
-  announcement.textContent = appById.get(appId).title + ' closed.';
+  announcement.textContent = (appById.get(appId)?.title || 'App') + ' closed.';
 }
 
-function closeAllWindows() {
-  for (const entry of openWindows.values()) entry.element.remove();
+function closeAllWindows({ force = false } = {}) {
+  if (!force) {
+    const blocked = [...openWindows.values()].find(hasUnresolvedAppWork);
+    if (blocked) {
+      focusWindow(blocked.app.id, true);
+      announcement.textContent = workGuardMessage(blocked, 'leave this workspace');
+      return false;
+    }
+  }
+  for (const entry of openWindows.values()) {
+    disposeAppRuntime(entry);
+    entry.element.remove();
+  }
   openWindows.clear();
   activeWindowId = null;
   setRoute(null, true);
   updateHome();
   updateDock();
+  return true;
+}
+
+function hasUnresolvedAppWork(entry) {
+  return !!(entry.lifecycle?.dirty || entry.lifecycle?.modal || entry.lifecycle?.pendingWrite);
+}
+
+function workGuardMessage(entry, action) {
+  if (entry.lifecycle?.pendingWrite) return `Check the original save in ${entry.app.title} before you ${action}.`;
+  return `Save or cancel the open work in ${entry.app.title} before you ${action}.`;
+}
+
+function ensureNoAppWork(action) {
+  const blocked = [...openWindows.values()].find(hasUnresolvedAppWork);
+  if (!blocked) return true;
+  focusWindow(blocked.app.id, true);
+  announcement.textContent = workGuardMessage(blocked, action);
+  return false;
+}
+
+function updateAppHistoryControls(entry) {
+  if (!entry.backButton) return;
+  entry.backButton.disabled = !(entry.runtimeReady && entry.navigationState?.canGoBack && entry.navigationState?.canNavigate);
+}
+
+function navigateAppBack(entry) {
+  if (!entry || !entry.runtimeReady || entry.backButton?.disabled || hasUnresolvedAppWork(entry)) return;
+  sendAppPortMessage(entry, { type: 'app:navigate-back' });
 }
 
 function minimizeWindow(appId) {
@@ -421,84 +1002,85 @@ function minimizeWindow(appId) {
   entry.element.hidden = true;
   if (activeWindowId === appId) syncRouteToVisibleWindow();
   else updateHome();
-  announcement.textContent = appById.get(appId).title + ' minimized.';
+  announcement.textContent = (appById.get(appId)?.title || 'App') + ' minimized.';
 }
 
 function createWindow(app, shift) {
   const section = document.createElement('section');
   section.className = 'app-window';
   section.dataset.appId = app.id;
+  section.dataset.appVersion = app.version;
   section.setAttribute('role', 'dialog');
   section.setAttribute('aria-modal', 'false');
-  section.setAttribute('aria-label', app.title + ' browser preview');
+  section.setAttribute('aria-label', app.title + ' window');
   section.tabIndex = -1;
   section.style.setProperty('--window-shift', shift + 'px');
 
   const titlebar = document.createElement('header');
   titlebar.className = 'window-titlebar';
 
-  const identity = document.createElement('div');
-  identity.className = 'window-identity';
-  const icon = document.createElement('img');
-  icon.src = app.icon;
-  icon.alt = '';
-  icon.width = 28;
-  icon.height = 28;
-  const title = document.createElement('strong');
-  title.textContent = app.title;
-  identity.append(icon, title);
-
+  const leading = document.createElement('div');
+  leading.className = 'window-titlebar-leading';
   const controls = document.createElement('div');
   controls.className = 'window-controls';
+
+  const maximizeButton = makeButton('window-control maximize-control', 'Maximize ' + app.title, '', () => {
+    const maximized = section.classList.toggle('is-maximized');
+    maximizeButton.setAttribute('aria-label', (maximized ? 'Restore ' : 'Maximize ') + app.title);
+    maximizeButton.title = maximized ? 'Restore window size' : 'Maximize window';
+    setWindowControlIcon(maximizeButton, maximized);
+  });
+  setWindowControlIcon(maximizeButton);
   controls.append(
+    maximizeButton,
     makeButton('window-control minimize-control', 'Minimize ' + app.title, '−', () => minimizeWindow(app.id)),
-    makeButton('window-control maximize-control', 'Maximize ' + app.title, '□', () => {
-      section.classList.toggle('is-maximized');
-      section.querySelector('.maximize-control').setAttribute(
-        'aria-label',
-        (section.classList.contains('is-maximized') ? 'Restore ' : 'Maximize ') + app.title,
-      );
-    }),
     makeButton('window-control close-control', 'Close ' + app.title, '×', () => closeWindow(app.id)),
   );
 
-  titlebar.append(identity, controls);
+  const historyControls = document.createElement('div');
+  historyControls.className = 'window-history-controls';
+  historyControls.setAttribute('role', 'group');
+  historyControls.setAttribute('aria-label', 'Page navigation');
+  const backButton = makeButton('window-history-button', 'Back', '', () => navigateAppBack(openWindows.get(app.id)));
+  setHistoryButtonIcon(backButton);
+  backButton.disabled = true;
+  historyControls.append(backButton);
+  leading.append(controls, historyControls);
+
+  const title = document.createElement('strong');
+  title.className = 'window-title';
+  title.textContent = app.title;
+  titlebar.append(leading, title);
 
   const content = document.createElement('div');
-  content.className = 'window-content';
-  const eyebrow = document.createElement('p');
-  eyebrow.className = 'window-eyebrow';
-  eyebrow.textContent = 'BROWSER APP SHELL';
-  const heading = document.createElement('h1');
-  heading.textContent = app.title;
-  const description = document.createElement('p');
-  description.className = 'window-description';
-  description.textContent = connectedStaging
-    ? 'Staging access is verified. This app workflow will connect in a later milestone.'
-    : 'The browser shell is ready. This app will connect to the staging clinic in a later milestone.';
-  const status = document.createElement('div');
-  status.className = 'window-preview-status';
-  const statusDot = document.createElement('span');
-  statusDot.setAttribute('aria-hidden', 'true');
-  const statusCopy = document.createElement('div');
-  const statusTitle = document.createElement('strong');
-  statusTitle.textContent = 'Preview only';
-  const statusDescription = document.createElement('small');
-  statusDescription.textContent = 'No clinic data is connected.';
-  statusCopy.append(statusTitle, statusDescription);
-  status.append(statusDot, statusCopy);
-  content.append(eyebrow, heading, description, status);
+  content.className = 'window-content app-runtime-content';
+  const runtimeHost = document.createElement('div');
+  runtimeHost.className = 'app-runtime-host';
+  runtimeHost.dataset.state = 'loading';
+  content.append(runtimeHost);
 
   section.append(titlebar, content);
+  for (const edge of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se']) {
+    const handle = document.createElement('div');
+    handle.className = 'window-resize-handle window-resize-' + edge;
+    handle.dataset.edge = edge;
+    handle.setAttribute('aria-hidden', 'true');
+    section.append(handle);
+    enableWindowResize(section, handle);
+  }
   enableWindowDrag(section, titlebar);
   windowStage.append(section);
-  return section;
+  return {
+    element: section, app, runtimeHost, backButton, frame: null, port: null, readyTimer: null,
+    runtimeReady: false, runtimeAttempt: 0, disposed: false,
+    lifecycle: { dirty: false, modal: false, pendingWrite: false }, navigationState: { canGoBack: false, canNavigate: true },
+  };
 }
 
 function enableWindowDrag(section, titlebar) {
   let drag = null;
   titlebar.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || event.target.closest('button') || section.classList.contains('is-maximized')) return;
+    if (event.button !== 0 || event.target.closest('button, .window-resize-handle') || section.classList.contains('is-maximized')) return;
     const rect = section.getBoundingClientRect();
     drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
     section.style.left = rect.left + 'px';
@@ -526,14 +1108,62 @@ function enableWindowDrag(section, titlebar) {
   titlebar.addEventListener('pointercancel', endDrag);
 }
 
+function enableWindowResize(section, handle) {
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || section.classList.contains('is-maximized')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const edge = handle.dataset.edge;
+    const initial = section.getBoundingClientRect();
+    const minWidth = Math.min(360, window.innerWidth - 24);
+    const minHeight = Math.min(260, window.innerHeight - 100);
+    section.style.left = initial.left + 'px';
+    section.style.top = initial.top + 'px';
+    section.style.width = initial.width + 'px';
+    section.style.height = initial.height + 'px';
+    section.style.transform = 'none';
+    section.classList.add('is-resizing');
+    handle.setPointerCapture(event.pointerId);
+    focusWindow(section.dataset.appId);
+
+    const resize = (moveEvent) => {
+      if (moveEvent.pointerId !== event.pointerId) return;
+      const dx = moveEvent.clientX - event.clientX;
+      const dy = moveEvent.clientY - event.clientY;
+      let left = initial.left;
+      let top = initial.top;
+      let right = initial.right;
+      let bottom = initial.bottom;
+      if (edge.includes('w')) left = Math.min(initial.right - minWidth, Math.max(0, initial.left + dx));
+      if (edge.includes('e')) right = Math.max(initial.left + minWidth, Math.min(window.innerWidth, initial.right + dx));
+      if (edge.includes('n')) top = Math.min(initial.bottom - minHeight, Math.max(35, initial.top + dy));
+      if (edge.includes('s')) bottom = Math.max(initial.top + minHeight, Math.min(window.innerHeight, initial.bottom + dy));
+      section.style.left = left + 'px';
+      section.style.top = top + 'px';
+      section.style.width = right - left + 'px';
+      section.style.height = bottom - top + 'px';
+    };
+    const finish = (finishEvent) => {
+      if (finishEvent.pointerId !== event.pointerId) return;
+      handle.removeEventListener('pointermove', resize);
+      handle.removeEventListener('pointerup', finish);
+      handle.removeEventListener('pointercancel', finish);
+      section.classList.remove('is-resizing');
+    };
+    handle.addEventListener('pointermove', resize);
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+  });
+}
+
 function openApp(appId, fromRoute = false) {
   const app = appById.get(appId);
   if (!app || !allowedAppIds.has(appId)) return;
   let entry = openWindows.get(appId);
   if (!entry) {
-    const element = createWindow(app, openWindows.size * 22);
-    entry = { element };
+    entry = createWindow(app, openWindows.size * 22);
     openWindows.set(appId, entry);
+    void initializeAppRuntime(app, entry);
   }
   focusWindow(appId, true);
   if (!fromRoute) setRoute(appId);
@@ -566,12 +1196,18 @@ function setAuthMessage(message, tone = 'normal') {
 
 function clearClinicAccess() {
   clinicSession = null;
+  clearClinicWidgetLogo();
   allowedAppIds = new Set();
-  closeAllWindows();
+  closeWorkspaceRoleMenu();
+  if (workspaceSwitchDialog.open) workspaceSwitchDialog.close();
+  pendingWorkspaceRole = null;
+  workspaceSwitchBusy = false;
+  closeAllWindows({ force: true });
   buildDock();
   dock.hidden = true;
   clinicWidget.hidden = true;
   switchRoleButton.hidden = true;
+  switchRoleButton.disabled = false;
   signOutButton.hidden = true;
   homeView.hidden = true;
 }
@@ -613,6 +1249,7 @@ function acceptClinicSession(user, session) {
   );
   for (const [appId, entry] of openWindows) {
     if (nextAllowedAppIds.has(appId)) continue;
+    disposeAppRuntime(entry);
     entry.element.remove();
     openWindows.delete(appId);
   }
@@ -620,10 +1257,10 @@ function acceptClinicSession(user, session) {
 
   clinicSession = session;
   allowedAppIds = nextAllowedAppIds;
-  updateClinicWidget(session);
+  updateClinicWidget(session, user);
+  updateWorkspaceRolePicker(session);
   buildDock();
   dock.hidden = allowedAppIds.size === 0;
-  switchRoleButton.hidden = false;
   signOutButton.hidden = false;
   clinicWidget.hidden = false;
   authForm.hidden = true;
@@ -663,12 +1300,12 @@ async function loadClinicSession(user, generation) {
       cache: 'no-store',
     });
     const payload = await response.json().catch(() => null);
-    if (generation !== authGeneration) return;
+    if (generation !== authGeneration) return null;
 
     if (response.status === 401) {
       signInNotice = 'Your staging session expired. Sign in again to continue.';
       await firebaseAuthSdk.signOut(firebaseAuth);
-      return;
+      return null;
     }
     if (response.status === 403) {
       showSessionProblem(
@@ -676,7 +1313,7 @@ async function loadClinicSession(user, generation) {
         'Clinic access is not available',
         'This account has no active clinic access. Contact your clinic administrator.',
       );
-      return;
+      return null;
     }
     if (!response.ok) {
       showSessionProblem(
@@ -686,7 +1323,7 @@ async function loadClinicSession(user, generation) {
           ? 'The staging clinic is not ready right now. Retry in a moment.'
           : 'The staging clinic could not verify this session. Retry in a moment.',
       );
-      return;
+      return null;
     }
     const session = clinicSessionFromMeResponse(payload);
     if (!session) {
@@ -695,16 +1332,18 @@ async function loadClinicSession(user, generation) {
         'Clinic access could not be checked',
         'The staging clinic returned an unexpected session response. Retry in a moment.',
       );
-      return;
+      return null;
     }
     acceptClinicSession(user, session);
+    return session;
   } catch {
-    if (generation !== authGeneration) return;
+    if (generation !== authGeneration) return null;
     showSessionProblem(
       user,
       'Staging clinic is unavailable',
       'Could not reach the staging clinic. Check your connection and retry.',
     );
+    return null;
   }
 }
 
@@ -773,7 +1412,9 @@ function initializeOfflinePreview() {
   buildDock();
   dock.hidden = false;
   authView.hidden = true;
-  homeNote.textContent = 'Browser shell preview · no clinic data connected';
+  homeNote.textContent = appCatalogTrusted
+    ? 'Browser shell preview · no clinic data connected'
+    : 'The approved app catalog could not be verified. No apps are available.';
   homeView.hidden = false;
   routeFromLocation();
 }
@@ -799,7 +1440,7 @@ authForm.addEventListener('submit', async (event) => {
 
 async function signOutCurrentAccount() {
   if (!firebaseAuth || !firebaseAuthSdk) return;
-  lockWorkspaceButton.disabled = true;
+  if (!ensureNoAppWork('sign out')) return;
   signOutButton.disabled = true;
   switchRoleButton.disabled = true;
   setAuthMessage('Signing out…', 'normal');
@@ -808,15 +1449,137 @@ async function signOutCurrentAccount() {
   } catch {
     setAuthMessage('Could not sign out right now. Try again.', 'error');
   } finally {
-    lockWorkspaceButton.disabled = false;
     signOutButton.disabled = false;
     switchRoleButton.disabled = false;
   }
 }
 
+async function confirmWorkspaceRoleSwitch() {
+  const targetRole = pendingWorkspaceRole;
+  const user = firebaseAuth?.currentUser;
+  if (!targetRole || !user || !clinicSession || workspaceSwitchBusy) return;
+  if (!availableWorkspaceRoles(clinicSession).includes(targetRole)) {
+    setWorkspaceSwitchError('That workspace is no longer available. Refresh your clinic session and try again.');
+    return;
+  }
+  if (!ensureNoAppWork('switch workspaces')) return;
+  const pin = targetRole === 'admin' ? workspacePinInput.value : '';
+  if (targetRole === 'admin' && !/^\d{4}$/.test(pin)) {
+    setWorkspaceSwitchError('Enter the four-digit Admin PIN.');
+    workspacePinInput.focus();
+    return;
+  }
+
+  workspaceSwitchBusy = true;
+  switchRoleButton.disabled = true;
+  workspaceSwitchConfirm.disabled = true;
+  workspaceSwitchCancel.disabled = true;
+  workspaceSwitchConfirm.textContent = 'Switching…';
+  setWorkspaceSwitchError('');
+
+  const refreshAndConfirm = async () => {
+    const refreshedSession = await loadClinicSession(user, ++authGeneration);
+    if (refreshedSession?.clinicUser?.role === targetRole) {
+      finishWorkspaceRoleSwitch(targetRole);
+      return true;
+    }
+    return false;
+  };
+
+  try {
+    const idToken = await user.getIdToken();
+    let response;
+    try {
+      response = await fetch(`${config.apiBaseUrl}/v1/clinic/workspace-role`, {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${idToken}`,
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        cache: 'no-store',
+        body: JSON.stringify({ role: targetRole, ...(pin ? { pin } : {}) }),
+      });
+    } catch {
+      if (await refreshAndConfirm()) return;
+      if (clinicSession) setWorkspaceSwitchError('The switch request may have reached the clinic service, but the result could not be confirmed. Check your workspace and try again.');
+      return;
+    }
+
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      signInNotice = 'Your staging session expired. Sign in again to continue.';
+      if (workspaceSwitchDialog.open) workspaceSwitchDialog.close();
+      await firebaseAuthSdk.signOut(firebaseAuth);
+      return;
+    }
+    if (!response.ok) {
+      if (response.status >= 500 && await refreshAndConfirm()) return;
+      if (clinicSession) setWorkspaceSwitchError(workspaceRoleError(response.status, payload));
+      return;
+    }
+
+    const refreshedSession = await loadClinicSession(user, ++authGeneration);
+    if (!refreshedSession) return;
+    if (refreshedSession.clinicUser.role !== targetRole) {
+      setWorkspaceSwitchError('The clinic service did not confirm the requested workspace. Refresh and try again.');
+      return;
+    }
+    finishWorkspaceRoleSwitch(targetRole);
+  } catch {
+    if (await refreshAndConfirm()) return;
+    if (clinicSession) setWorkspaceSwitchError('The workspace change could not be confirmed. Please try again.');
+  } finally {
+    workspaceSwitchBusy = false;
+    switchRoleButton.disabled = false;
+    workspaceSwitchCancel.disabled = false;
+    if (workspaceSwitchDialog.open) {
+      workspaceSwitchConfirm.disabled = false;
+      workspaceSwitchConfirm.textContent = pendingWorkspaceRole
+        ? `Switch to ${workspaceRoleName(pendingWorkspaceRole)}`
+        : 'Switch workspace';
+    }
+  }
+}
+
 signOutButton.addEventListener('click', () => void signOutCurrentAccount());
-lockWorkspaceButton.addEventListener('click', () => void signOutCurrentAccount());
-switchRoleButton.addEventListener('click', () => void signOutCurrentAccount());
+switchRoleButton.addEventListener('click', () => {
+  if (workspaceRoleMenu.hidden) {
+    workspaceRoleMenu.hidden = false;
+    switchRoleButton.setAttribute('aria-expanded', 'true');
+    workspaceRoleOptions.querySelector('button')?.focus();
+  } else {
+    closeWorkspaceRoleMenu(true);
+  }
+});
+workspaceRolePicker.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !workspaceRoleMenu.hidden) {
+    event.preventDefault();
+    closeWorkspaceRoleMenu(true);
+  }
+});
+document.addEventListener('click', (event) => {
+  if (!workspaceRolePicker.contains(event.target)) closeWorkspaceRoleMenu();
+});
+workspaceSwitchForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  void confirmWorkspaceRoleSwitch();
+});
+workspaceSwitchCancel.addEventListener('click', () => {
+  if (!workspaceSwitchBusy && workspaceSwitchDialog.open) workspaceSwitchDialog.close();
+});
+workspacePinInput.addEventListener('input', () => {
+  workspacePinInput.value = workspacePinInput.value.replace(/\D/g, '').slice(0, 4);
+});
+workspaceSwitchDialog.addEventListener('cancel', (event) => {
+  if (workspaceSwitchBusy) event.preventDefault();
+});
+workspaceSwitchDialog.addEventListener('close', () => {
+  if (workspaceSwitchBusy) return;
+  pendingWorkspaceRole = null;
+  workspacePinInput.value = '';
+  setWorkspaceSwitchError('');
+});
 authEmail.addEventListener('input', persistEmailPreference);
 rememberEmailInput.addEventListener('change', persistEmailPreference);
 passwordReveal.addEventListener('click', () => updatePasswordVisibility(authPassword.type === 'password'));

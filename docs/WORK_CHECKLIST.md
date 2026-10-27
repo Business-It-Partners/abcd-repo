@@ -32,40 +32,50 @@ Use this checklist with the [roadmap](ROADMAP.md) and [status record](STATUS.md)
 
 ## B2 — Staging identity and role access
 
-**Status: IN PROGRESS**
+**Status: COMPLETE**
 
 - [x] Add a connected local staging mode without changing the network-blocked 4280 preview.
 - [x] Load only the existing staging Firebase Web SDK client configuration; keep service-account and Worker credentials out of the browser.
 - [x] Implement Firebase sign-in, browser-local session persistence, ID-token change/refresh handling, and sign-out.
 - [x] Match the browser startup/sign-in flow: session-check splash, remembered email, show/hide password, busy/error states, and re-authentication through the sign-in form after a failed check.
 - [x] Keep the startup splash visible until both the initial session check and desktop-style five-second minimum have completed.
-- [x] Call only the existing staging Worker's read-only `/v1/me` route and use its capabilities to filter the dock; do not use a client-selected role as authority.
+- [x] Load access from the existing staging Worker's `/v1/me` response and use returned capabilities to filter the dock; do not use a client-selected role as authority or write clinic business records.
+- [x] Implement server-authorized workspace role switching from the roles returned by `/v1/me`; require the Admin PIN when returning to Admin, close open app windows, and refresh `/v1/me` before accepting the new access.
 - [x] Confirm the existing Worker CORS policy allows the connected local origin; no backend change was required.
 - [x] Add focused tests for admin/doctor/reception capability-to-dock mapping and fail-closed behavior.
 - [x] Verify valid staging sign-in and /v1/me access with an existing clinic account in an isolated browser.
 - [x] Verify saved-session restoration and capability-filtered dock in an isolated browser.
-- [ ] Verify ID-token refresh and sign-out in Brave with an existing clinic account.
-- [ ] Verify invalid credentials, Worker 401/403/503 responses, and network recovery in Brave.
-- [ ] Retain staging-only endpoints and no clinic writes; do not use production resources.
+- [x] Verify ID-token refresh, saved-session restoration, and sign-out in Brave with an existing clinic account.
+- [x] Verify invalid credentials, real Worker 401/403 responses, and simulated 503/network recovery in Brave.
+- [x] Verify alternate-role switching, Admin PIN enforcement, and post-switch capability filtering in Brave with an existing clinic account.
+- [x] Keep all calls staging-only and make no clinic business-record writes; do not use production resources.
 
 ## B3 — First-party app catalog and isolated runtime
 
-**Status: PLANNED**
+**Status: COMPLETE**
 
-- [ ] Define a trusted first-party browser app manifest and role visibility rules.
-- [ ] Implement the approved app launch and isolation boundary.
-- [ ] Enforce content/network policy and reject untrusted app origins or metadata.
-- [ ] Define app version, update, rollback, and failure behavior.
-- [ ] Verify that an app cannot access another app's data or bypass role checks.
+- [x] Define a strict first-party app manifest with app identity, semantic version, role capabilities, local runtime paths, hashes, and exact API grants.
+- [x] Implement the approved app launch boundary with a scripts-only sandbox, opaque origin, and nonce-bound private `MessageChannel`.
+- [x] Enforce runtime CSP network denial and reject remote paths, unknown metadata, unrecognized API methods, and non-exact route grants.
+- [x] Define package verification, host-release trust, version adoption, failure/retry, and host-release rollback behavior.
+- [x] Verify Brave app startup, frame isolation, blocked direct app networking, and token non-disclosure.
+- [x] Verify capability-gated launch, message schema/nonce checks, and exact grants through focused unit tests plus the B2 role evidence.
+- [x] Verify bad package/hash failure leaves the app closed and retryable without API access in Brave.
+- [x] Verify handshake timeouts use the same fail-closed cleanup and retry path in a focused source test.
+- [x] Verify that an app cannot access another app's data or bypass role checks.
 
 ## B4 — First end-to-end clinic app
 
-**Status: PLANNED**
+**Status: ACTIVE**
 
-- [ ] Select a representative first-party app and document its workflow and required API routes.
-- [ ] Port its browser UI while preserving the agreed Dental OS interaction and visual patterns.
-- [ ] Use the existing staging Worker and approved staging data only.
-- [ ] Verify authorized reads/writes, role denial, retry/error behavior, and saved state.
+- [x] Select Treatment Protocols and define its catalogue, create, and versioned-update route requirements.
+- [x] Port its app UI into the isolated browser runtime and replace Electron SDK/session dependencies with the browser host bridge.
+- [x] Grant only `treatment_protocols.manage` and the three exact protocol routes; keep Firebase credentials in the host and direct frame networking blocked.
+- [x] Add UUID idempotency keys for mutations and guard close, sign-out, and role switching while saves or drafts are pending.
+- [x] Build the app bundle and pass TypeScript typechecking; confirm the local staging origin can preflight the required headers.
+- [x] Verify an authenticated staging Admin session, the granted `GET /v1/treatment-protocols` route, and the 22-row list in the app UI without changing records.
+- [ ] Identify and record the synthetic staging clinic/protocol dataset, role, cleanup expectations, and acceptance plan before any business write.
+- [ ] Verify authorized reads/writes, role denial, retry/error behavior, saved-state readback, and cleanup against the approved synthetic target.
 - [ ] Record workflow evidence and limitations before accepting B4.
 
 ## B5 — App migration and experience parity

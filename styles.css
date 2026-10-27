@@ -125,11 +125,55 @@ button:focus-visible, a:focus-visible {
   color: #17272c;
 }
 
+.workspace-role-picker { position: relative; flex: 0 0 auto; }
 .statusbar-role-switch { padding: 5px 9px; border: 1px solid #55788a55; border-radius: 6px; background: #ffffff70; color: #202c31; font-size: 12px; font-weight: 650; white-space: nowrap; }
 .statusbar-role-switch:hover:not(:disabled) { border-color: #55788a96; background: #ffffffc4; color: #17272c; }
 .statusbar-role-switch:focus-visible { outline: 2px solid #c6d5ff70; outline-offset: 1px; }
 .statusbar-role-switch:disabled { opacity: .55; cursor: wait; }
 .statusbar-role-switch[hidden] { display: none; }
+
+.workspace-role-menu {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  min-width: 210px;
+  padding: 9px;
+  border: 1px solid #cbd8da;
+  border-radius: 10px;
+  background: #f8fbfb;
+  box-shadow: 0 12px 32px #102c3833;
+  color: #24343a;
+}
+.workspace-role-menu[hidden] { display: none; }
+.workspace-role-menu p { margin: 3px 7px 8px; color: #60727a; font-size: 11px; font-weight: 650; }
+#workspace-role-options { display: grid; gap: 3px; }
+#workspace-role-options button { width: 100%; padding: 8px 9px; border: 0; border-radius: 6px; background: transparent; color: #24343a; text-align: left; font-size: 12px; font-weight: 600; }
+#workspace-role-options button:hover, #workspace-role-options button:focus-visible { outline: none; background: #e5eff0; }
+
+.workspace-switch-dialog {
+  width: min(420px, calc(100vw - 28px));
+  padding: 0;
+  border: 1px solid #d0dcde;
+  border-radius: 14px;
+  background: #f9fbfb;
+  color: #29373c;
+  box-shadow: 0 24px 70px #0c263655;
+}
+.workspace-switch-dialog::backdrop { background: #10212a80; backdrop-filter: blur(3px); }
+.workspace-switch-form { display: grid; gap: 13px; padding: 23px; }
+.workspace-switch-form h2 { margin: 0; color: #20343a; font-size: 19px; }
+.workspace-switch-form > p { margin: 0; color: #5c6c71; font-size: 13px; line-height: 1.5; }
+.workspace-pin-field { display: grid; gap: 6px; color: #3e5259; font-size: 12px; font-weight: 650; }
+.workspace-pin-field[hidden] { display: none; }
+.workspace-pin-field input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid #b9c9cc; border-radius: 7px; background: #fff; color: #25383e; font: inherit; font-variant-numeric: tabular-nums; letter-spacing: .18em; }
+.workspace-switch-error { padding: 9px 10px; border-radius: 7px; background: #fae9e6; color: #913e35 !important; }
+.workspace-switch-error[hidden] { display: none; }
+.workspace-switch-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.workspace-switch-actions button { min-height: 36px; padding: 7px 12px; border: 1px solid #bdcdd0; border-radius: 7px; background: #fff; color: #2c444c; font-size: 12px; font-weight: 650; }
+.workspace-switch-actions .workspace-switch-confirm { border-color: #286579; background: #286579; color: #fff; }
+.workspace-switch-actions button:disabled { cursor: wait; opacity: .58; }
 
 .statusbar-right {
   display: flex;
@@ -200,19 +244,19 @@ button:focus-visible, a:focus-visible {
 .desktop-widget { position: absolute; z-index: 5; color: #202c31; border: 1px solid #ffffffb0; border-radius: 19px; background: linear-gradient(145deg, #f2f8f6de, #eaf1f2c9); box-shadow: 0 12px 32px #102f4530, inset 0 1px #ffffffc4; backdrop-filter: blur(28px) saturate(165%); -webkit-backdrop-filter: blur(28px) saturate(165%); pointer-events: none; }
 .desktop-clinic-widget { top: 24px; left: 18px; width: min(430px, calc(50vw - 30px)); min-height: 104px; display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
 .desktop-clinic-widget[hidden] { display: none; }
-.clinic-widget-mark { width: 104px; height: 72px; flex: 0 0 104px; display: grid; place-items: center; padding: 2px; border: 1px solid #ffffffd6; border-radius: 15px; background: #fff; box-shadow: 0 5px 13px #1c58602b; }
-.clinic-widget-mark img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 11px; }
+.clinic-widget-mark { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; border: 1px solid #ffffffc9; border-radius: 15px; background: linear-gradient(145deg, #c7e8e2, #8cc3bc); box-shadow: 0 5px 13px #1c58602b; color: #164d50; font-size: 15px; font-weight: 750; letter-spacing: .04em; }
+.clinic-widget-mark.has-logo { width: 104px; height: 72px; flex-basis: 104px; overflow: hidden; padding: 2px; border-color: #ffffffd6; border-radius: 15px; background: #fff; }
+.clinic-widget-mark img { display: block; width: auto; height: auto; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 11px; }
 .clinic-widget-copy { display: flex; flex: 1 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
 .clinic-widget-copy strong, .clinic-widget-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clinic-widget-copy strong { color: #29383e; font-size: 14px; font-weight: 700; }
 .clinic-widget-copy span { color: #29383e; font-size: 13px; font-weight: 600; }
 .clinic-widget-copy small { color: #3d494e; font-size: 11px; font-weight: 600; }
-.clinic-widget-lock, .clinic-widget-signout { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 32px; padding: 6px 8px; border: 1px solid #55788a36; border-radius: 8px; background: #ffffffa8; color: #29444b; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; }
-.clinic-widget-lock { width: 32px; margin-left: auto; padding: 0; }
-.clinic-widget-lock svg, .clinic-widget-signout svg { width: 15px; height: 15px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.clinic-widget-lock:hover, .clinic-widget-signout:hover { border-color: #55788a70; background: #fff; color: #173e47; }
-.clinic-widget-lock:focus-visible, .clinic-widget-signout:focus-visible { outline: 2px solid #317d9b; outline-offset: 2px; }
-.clinic-widget-lock:disabled, .clinic-widget-signout:disabled { opacity: .55; cursor: wait; }
+.clinic-widget-signout { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 32px; margin-left: auto; padding: 6px 8px; border: 1px solid #55788a36; border-radius: 8px; background: #ffffffa8; color: #29444b; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; }
+.clinic-widget-signout svg { width: 15px; height: 15px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.clinic-widget-signout:hover { border-color: #55788a70; background: #fff; color: #173e47; }
+.clinic-widget-signout:focus-visible { outline: 2px solid #317d9b; outline-offset: 2px; }
+.clinic-widget-signout:disabled { opacity: .55; cursor: wait; }
 .desktop-widget-collection { position: absolute; top: 24px; right: 18px; width: min(520px, calc(58vw - 18px)); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(180px, .95fr); grid-template-rows: minmax(88px, auto) auto; gap: 11px; font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.4; font-synthesis: none; pointer-events: none; }
 .desktop-widget-collection .desktop-widget { position: relative; inset: auto; min-width: 0; }
 .nepali-calendar-widget { grid-column: 1; grid-row: 1 / span 2; padding: 13px 14px 12px; }
@@ -468,23 +512,22 @@ button:focus-visible, a:focus-visible {
 
 .app-window {
   position: absolute;
-  top: calc(50% + var(--window-shift, 0px));
-  left: calc(50% + var(--window-shift, 0px));
+  top: calc(50% - 24px + var(--window-shift, 0px));
+  left: calc(clamp(16px, 2.42vw, 33px) + var(--window-shift, 0px));
   display: flex;
-  width: min(860px, calc(100vw - 48px));
-  height: min(570px, calc(100vh - 130px));
-  min-width: min(360px, calc(100vw - 20px));
+  width: min(1123px, 82.25vw, calc(100vw - 48px));
+  height: min(633px, 82.4vh, calc(100vh - 122px));
+  min-width: min(360px, calc(100vw - 24px));
   min-height: 260px;
   flex-direction: column;
   overflow: hidden;
-  transform: translate(-50%, -50%);
-  border: 1px solid #fff;
-  border-radius: 10px;
+  transform: translateY(-50%);
+  border: 1px solid #d3d5d9;
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 24px 64px #17202c55, 0 3px 8px #17202c33;
+  box-shadow: 0 10px 30px #17202c24, 0 2px 6px #17202c22;
   color: var(--text-primary);
   pointer-events: auto;
-  resize: both;
 }
 
 .app-window[hidden] { display: none; }
@@ -495,75 +538,139 @@ button:focus-visible, a:focus-visible {
   width: calc(100vw - 16px) !important;
   height: calc(100vh - 122px) !important;
   transform: none !important;
-  resize: none;
 }
 
 .app-window:focus { outline: none; }
-.app-window.is-dragging { user-select: none; }
+.app-window.is-dragging, .app-window.is-resizing { user-select: none; }
 
 .window-titlebar {
-  display: flex;
-  min-height: 45px;
+  position: relative;
+  display: block;
+  height: 43px;
+  min-height: 43px;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 5px 8px 5px 13px;
+  padding: 0;
   border-bottom: 1px solid #d7d8df;
-  background: linear-gradient(180deg, #f6f7f9, #eceef2);
+  background: linear-gradient(180deg, #f5f5f5, #eceef2);
   touch-action: none;
   cursor: grab;
 }
 
 .is-dragging .window-titlebar { cursor: grabbing; }
 
-.window-identity {
+.window-titlebar-leading {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 12px;
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 9px;
-  font-size: 14px;
-  font-weight: 600;
+  gap: 26px;
+  transform: translateY(-50%);
 }
 
-.window-identity img {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  object-fit: cover;
-}
-
-.window-identity strong {
+.window-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: min(42vw, 600px);
   overflow: hidden;
+  color: #292a30;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: center;
   text-overflow: ellipsis;
+  transform: translate(-50%, -50%);
   white-space: nowrap;
+  pointer-events: none;
 }
 
-.window-controls { display: flex; flex: 0 0 auto; gap: 6px; }
+.window-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 12px; }
 
 .window-control {
+  position: relative;
   display: grid;
-  width: 29px;
-  height: 29px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   place-items: center;
-  border: 1px solid #00000024;
+  padding: 0;
+  border: 1px solid #00000018;
   border-radius: 50%;
   background: #f4c451;
-  box-shadow: 0 2px 5px #14202a40;
+  box-shadow: 0 1px 3px #14202a32;
   color: #62480d;
-  font-size: 17px;
+  font-size: 13px;
   line-height: 1;
 }
 
-.window-control:hover { filter: brightness(.94); }
+.window-control svg { display: block; width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.window-control.maximize-control { border-color: #00000012; background: #59c77c; color: #174b29; }
+.window-control.minimize-control { border-color: #00000012; background: #f4c451; color: #62480d; }
+.window-control:hover:not(:disabled) { filter: brightness(.94); }
+.window-control:active:not(:disabled) { transform: scale(.94); }
+.window-control:focus-visible { outline: 2px solid #23404a; outline-offset: 2px; }
+.window-control:disabled { cursor: default; }
 .window-control.close-control { border-color: #b64a40; background: #f17368; color: #6c201b; }
+
+.window-history-controls {
+  display: flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid #c9cfd6;
+  border-radius: 8px;
+  background: #ffffffb8;
+}
+
+.window-history-button {
+  display: grid;
+  width: 43px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #586571;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.window-history-button svg { display: block; width: 19px; height: 19px; }
+.window-history-button:disabled { color: #aab4bd; cursor: default; }
+.window-history-button:focus-visible { outline: 2px solid #23404a; outline-offset: -3px; }
+
+.window-resize-handle { position: absolute; z-index: 5; touch-action: none; user-select: none; background: transparent; }
+.window-resize-n, .window-resize-s { right: 14px; left: 14px; height: 7px; }
+.window-resize-n { top: 0; cursor: n-resize; }
+.window-resize-s { bottom: 0; cursor: s-resize; }
+.window-resize-e, .window-resize-w { top: 14px; bottom: 14px; width: 7px; }
+.window-resize-e { right: 0; cursor: e-resize; }
+.window-resize-w { left: 0; cursor: w-resize; }
+.window-resize-nw, .window-resize-ne, .window-resize-sw, .window-resize-se { width: 14px; height: 14px; }
+.window-resize-nw { top: 0; left: 0; cursor: nwse-resize; }
+.window-resize-ne { top: 0; right: 0; cursor: nesw-resize; }
+.window-resize-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+.window-resize-se { right: 0; bottom: 0; cursor: nwse-resize; }
+.app-window.is-maximized .window-resize-handle { display: none; }
 
 .window-content {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: clamp(22px, 4vw, 42px);
   background: #fff;
 }
+
+.window-content.app-runtime-content { display: flex; overflow: hidden; padding: 0; }
+.app-runtime-host { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; background: #fff; }
+.app-runtime-frame { display: block; width: 100%; height: 100%; min-height: 100%; border: 0; background: #fff; }
+.app-runtime-state { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: clamp(22px, 4vw, 42px); }
+.app-runtime-state strong { color: #202a38; font-size: 17px; }
+.app-runtime-state span { max-width: 460px; color: #626b78; font-size: 13px; }
+.app-runtime-retry { margin-top: 8px; padding: 7px 12px; border: 1px solid #bdcdd0; border-radius: 7px; background: #f8fbfb; color: #2c444c; font-size: 12px; font-weight: 650; }
+.app-runtime-retry:hover { background: #e7eff0; }
 
 .window-eyebrow {
   margin: 0 0 12px;
@@ -718,7 +825,7 @@ button:focus-visible, a:focus-visible {
   .gregorian-calendar-widget { padding: 9px 9px 10px; }
   .calendar-widget-grid > span { min-height: 20px; }
   .gregorian-calendar-grid > span { min-height: 18px; }
-  .app-window { top: calc(50% + 20px); width: calc(100vw - 24px); height: calc(100vh - 164px); min-width: 0; min-height: 240px; }
+  .app-window { top: calc(50% - 20px + var(--window-shift, 0px)); left: 50%; width: calc(100vw - 24px); height: calc(100vh - 164px); min-width: 0; min-height: 240px; transform: translate(-50%, -50%); }
   .app-window.is-maximized { top: 60px !important; left: 6px !important; width: calc(100vw - 12px) !important; height: calc(100vh - 144px) !important; }
   .app-dock { gap: 7px; padding: 10px 12px; }
   .dock-icon { width: 46px; height: 46px; flex-basis: 46px; }
@@ -726,7 +833,7 @@ button:focus-visible, a:focus-visible {
 
 @media (max-width: 960px) and (min-width: 761px) {
   .desktop-clinic-widget { width: min(390px, calc(43vw - 16px)); gap: 12px; padding: 14px; }
-  .clinic-widget-mark { width: 88px; height: 64px; flex-basis: 88px; }
+  .clinic-widget-mark.has-logo { width: 88px; height: 64px; flex-basis: 88px; }
   .desktop-widget-collection { width: calc(54vw - 18px); grid-template-columns: minmax(0, 1.12fr) minmax(132px, .88fr); gap: 8px; }
   .nepali-calendar-widget { padding: 11px 10px; }
   .time-widget { padding: 10px; }
@@ -741,7 +848,7 @@ button:focus-visible, a:focus-visible {
   .statusbar-menu { order: 4; }
   .home-view { inset-block-start: 74px; }
   .desktop-clinic-widget { min-height: 86px; gap: 10px; padding: 10px 11px; }
-  .clinic-widget-mark { width: 74px; height: 56px; flex-basis: 74px; }
+  .clinic-widget-mark.has-logo { width: 74px; height: 56px; flex-basis: 74px; }
   .clinic-widget-signout { padding-inline: 6px; }
   .desktop-widget-collection { top: 126px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 7px; }
   .nepali-calendar-widget { grid-column: 1; grid-row: 1; padding: 9px 8px; }
@@ -756,7 +863,7 @@ button:focus-visible, a:focus-visible {
   #status-date { display: none; }
   .identity-gate { padding-right: 15px; padding-left: 15px; }
   .brand-dental { margin-left: 3px; }
-  .clinic-widget-mark { width: 62px; height: 52px; flex-basis: 62px; }
+  .clinic-widget-mark.has-logo { width: 62px; height: 52px; flex-basis: 62px; }
   .clinic-widget-copy strong { font-size: 12px; }
   .clinic-widget-copy span { font-size: 11px; }
   .clinic-widget-signout span { display: none; }

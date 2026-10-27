@@ -28,7 +28,13 @@
           <span class="brand-dental">Dental</span>
         </a>
 
-        <button class="statusbar-role-switch" id="switch-role-button" type="button" title="Sign out to choose an account with another server-assigned role" hidden>Switch role</button>
+        <div class="workspace-role-picker" id="workspace-role-picker">
+          <button class="statusbar-role-switch" id="switch-role-button" type="button" aria-controls="workspace-role-menu" aria-expanded="false" aria-haspopup="menu" title="Switch to another server-authorized clinic workspace" hidden>Switch role</button>
+          <div class="workspace-role-menu" id="workspace-role-menu" role="menu" aria-label="Available clinic workspaces" hidden>
+            <p id="current-workspace-label"></p>
+            <div id="workspace-role-options"></div>
+          </div>
+        </div>
 
         <nav class="statusbar-menu" aria-label="Workspace navigation">
           <button type="button" data-action="home" aria-current="page">Home</button>
@@ -62,15 +68,12 @@
 
       <section class="home-view" id="home-view" aria-label="Workspace home">
         <section class="desktop-widget desktop-clinic-widget" id="clinic-widget" aria-label="Clinic and signed-in user" hidden>
-          <div class="clinic-widget-mark" aria-hidden="true"><img src="/assets/sajilo-dental-mark.svg" alt="" /></div>
+          <div class="clinic-widget-mark" id="clinic-widget-mark" aria-hidden="true"></div>
           <div class="clinic-widget-copy">
             <strong id="clinic-name">Sajilo Dental</strong>
             <span id="clinic-user">Signed-in user</span>
             <small id="clinic-role"></small>
           </div>
-          <button class="clinic-widget-lock" id="lock-workspace-button" type="button" aria-label="Lock workspace" title="Lock workspace">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
-          </button>
           <button class="clinic-widget-signout" id="signout-button" type="button" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>
             <span>Sign out</span>
@@ -189,5 +192,21 @@
       <nav class="app-dock" id="app-dock" aria-label="Application dock" hidden></nav>
       <p class="sr-only" id="workspace-announcement" aria-live="polite"></p>
     </main>
+
+    <dialog class="workspace-switch-dialog" id="workspace-switch-dialog" aria-labelledby="workspace-switch-title" aria-describedby="workspace-switch-description">
+      <form class="workspace-switch-form" id="workspace-switch-form">
+        <h2 id="workspace-switch-title">Switch workspace</h2>
+        <p id="workspace-switch-description"></p>
+        <label class="workspace-pin-field" id="workspace-pin-field" for="workspace-pin-input" hidden>
+          <span>Four-digit Admin PIN</span>
+          <input id="workspace-pin-input" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" />
+        </label>
+        <p class="workspace-switch-error" id="workspace-switch-error" role="alert" hidden></p>
+        <div class="workspace-switch-actions">
+          <button class="workspace-switch-cancel" id="workspace-switch-cancel" type="button">Cancel</button>
+          <button class="workspace-switch-confirm" id="workspace-switch-confirm" type="submit">Switch workspace</button>
+        </div>
+      </form>
+    </dialog>
   </body>
 </html>

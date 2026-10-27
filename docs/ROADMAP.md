@@ -32,9 +32,9 @@ B0 records the browser support policy, dedicated staging-hosting plan, single Fi
 | --- | --- | --- | --- |
 | B0 | Browser product and architecture baseline | None | Browser-specific product scope, architecture baseline, staging boundary, and acceptance strategy are recorded. |
 | B1 | Browser foundation and shell | B0 | An independently runnable web shell has the agreed visual foundation, routes, static dock, and responsive behavior, with no Electron runtime dependency. |
-| B2 | Staging identity and role access | B1 | Firebase sign-in and session lifecycle work against staging; the Worker validates requests; clinic and role access are enforced; sign-out and denied access behave correctly. |
+| B2 | Staging identity and role access | B1 | Firebase sign-in and session lifecycle work against staging; the Worker validates requests; role-filtered app access and authorized workspace switching work; sign-out and denied access behave correctly. No clinic business records are written. |
 | B3 | First-party app catalog and isolated runtime | B2 | Trusted first-party apps are listed by role, launch in the approved browser isolation boundary, and follow the agreed update and failure behavior. |
-| B4 | First end-to-end clinic app | B3 | One selected app completes an agreed real staging workflow through existing APIs, with authorized staging data, role enforcement, and clear failure handling. |
+| B4 | First end-to-end clinic app | B3 | Treatment Protocols completes an agreed workflow through existing staging APIs, with a confirmed synthetic staging target, role enforcement, safe retries, and saved-state readback. |
 | B5 | App migration and experience parity | B4 | Prioritized apps work in the browser, and shell/app layouts match the agreed Dental OS experience within browser constraints and the listed exclusions. |
 | B6 | Browser staging readiness | B5 | Brave V1 checks, security and recovery checks, staging hosting, and the browser acceptance checklist pass; no production resources are changed. |
 | B7 | Production readiness and release decision | B6 | Production configuration, privacy/security review, operations, and release approval are completed under separate explicit authorization. |
