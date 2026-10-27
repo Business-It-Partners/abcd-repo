@@ -35,6 +35,7 @@ const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.jpg': 'image/jpeg',
+  '.png': 'image/png',
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
@@ -43,6 +44,11 @@ const routes = new Map([
   ['/', 'index.html'],
   ['/index.html', 'index.html'],
   ['/main.js', 'main.js'],
+  ['/apps/browser/host.js', 'apps/browser/host.js'],
+  ['/apps/browser/catalog.js', 'apps/browser/catalog.js'],
+  ['/apps/browser/frame.html', 'apps/browser/frame.html'],
+  ['/apps/browser/frame.js', 'apps/browser/frame.js'],
+  ['/apps/browser/frame.css', 'apps/browser/frame.css'],
   ['/styles.css', 'styles.css'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
   ['/assets/fewa-turquoise-shore.jpg', 'assets/fewa-turquoise-shore.jpg'],
@@ -67,11 +73,12 @@ const server = createServer(async (request, response) => {
     ? `'self' ${workerOrigin} https://identitytoolkit.googleapis.com https://securetoken.googleapis.com`
     : "'none'";
   const scriptSources = connected ? "'self' https://www.gstatic.com" : "'self'";
-  const frameSources = connected ? `https://${firebaseConfig.authDomain}` : "'none'";
-  response.setHeader(
-    'Content-Security-Policy',
-    `default-src 'self'; script-src ${scriptSources}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSources}; frame-src ${frameSources}; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
-  );
+  const isAppFrame = pathname === '/apps/browser/frame.html';
+  const frameSources = connected ? `'self' https://${firebaseConfig.authDomain}` : "'self'";
+  const policy = isAppFrame
+    ? "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts"
+    : `default-src 'self'; script-src ${scriptSources}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSources}; frame-src ${frameSources}; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
+  response.setHeader('Content-Security-Policy', policy);
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405, { Allow: 'GET, HEAD' }).end();
