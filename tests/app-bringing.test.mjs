@@ -89,13 +89,16 @@ test('frame is sandboxed without same-origin, direct Worker access or Electron g
   assert.match(server, /sandbox allow-scripts/);
   assert.match(shell, /mountBrowserApp\(/);
   assert.match(shell, /entry\.dispose\?\.\(\)/);
-  assert.doesNotMatch(frame, /window\.dentalApp|window\.electron|ipcRenderer|firebaseAuth|apiBaseUrl|\.fetch\(/);
+  assert.match(frame, /createBrowserAppBridge/);
+  assert.match(frame, /init\.source === 'company\.dental\.followups\.m17'/);
+  assert.doesNotMatch(frame, /window\.electron|ipcRenderer|firebaseAuth|apiBaseUrl|\.fetch\(/);
+  assert.match(source('../apps/browser/bridge.js'), /Clinical writes are disabled/);
   assert.doesNotMatch(host, /ipcRenderer|window\.dentalApp|preload/);
 });
 
 test('browser route paths exist and retain no Electron installer or Store support', () => {
   const server = source('../tools/dev-server.mjs');
-  for (const path of ['host.js', 'catalog.js', 'frame.html', 'frame.js', 'frame.css']) {
+  for (const path of ['host.js', 'catalog.js', 'frame.html', 'frame.js', 'bridge.js', 'frame.css']) {
     assert.ok(server.includes("'/apps/browser/" + path + "'"), path);
   }
   assert.doesNotMatch(source('../apps/browser/frame.js'), /packageRegistry|installApp\(|updateApp\(/);
