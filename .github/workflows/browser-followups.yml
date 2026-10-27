@@ -10,6 +10,7 @@ on:
       - 'tools/build-browser-apps.mjs'
       - 'tools/dev-server.mjs'
       - 'tools/verify-followups-assets.mjs'
+      - 'tools/smoke-followups-ui.mjs'
       - 'apps/browser/**'
       - 'apps/dental-apps/company.dental.followups.m17/**'
       - 'packages/app-sdk/**'
