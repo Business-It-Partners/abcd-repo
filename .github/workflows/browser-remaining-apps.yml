@@ -1,0 +1,65 @@
+name: Browser Remaining Nine M17 Apps
+on:
+  push:
+    branches: [app-bringing]
+    paths:
+      - '.github/workflows/browser-remaining-apps.yml'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'tools/build-browser-apps.mjs'
+      - 'tools/dev-server.mjs'
+      - 'apps/browser/**'
+      - 'apps/dental-apps/**'
+      - 'packages/**'
+      - 'vendor/nepali-date-utils/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-rest-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  original-react-builds:
+    name: Independently build nine real M17 React apps
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser build dependencies
+        run: npm install --no-audit --no-fund --prefer-offline
+      - name: Check browser protocol tests
+        run: npm test
+      - name: Build each remaining app and report each outcome
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          failed=0
+          echo 'App | Build' > artifacts/m17-build-status.txt
+          for id in appointments patients calendar finance staff lab treatment protocols workentry; do
+            echo "::group::Compiling original $id React app"
+            if node tools/build-browser-apps.mjs "$id" > "artifacts/build-$id.log" 2>&1; then
+              echo "$id | PASS" | tee -a artifacts/m17-build-status.txt
+            else
+              echo "$id | FAIL" | tee -a artifacts/m17-build-status.txt
+              tail -n 45 "artifacts/build-$id.log"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          cat artifacts/m17-build-status.txt
+          cat artifacts/m17-build-status.txt >> "$GITHUB_STEP_SUMMARY"
+          exit "$failed"
+      - name: Upload build results for all nine apps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m17-nine-browser-build-report
+          path: artifacts/build-*.log
+          retention-days: 7
+          if-no-files-found: warn
