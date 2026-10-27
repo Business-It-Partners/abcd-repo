@@ -23,7 +23,11 @@ try {
   });
   const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
   const pageErrors = [];
+  const browserDiagnostics = [];
   page.on('pageerror', err => pageErrors.push(err.message));
+  page.on('console', event => { if (event.type() === 'error' || event.type() === 'warning') browserDiagnostics.push(event.text()); });
+  page.on('requestfailed', request => browserDiagnostics.push(request.url() + ': ' + request.failure()?.errorText));
+  page.on('response', response => { if (response.status() >= 400) browserDiagnostics.push('HTTP ' + response.status() + ' ' + response.url()); });
   await page.goto(origin + '/');
   await page.evaluate(async () => {
     const frame = document.createElement('iframe');
@@ -78,7 +82,17 @@ try {
   });
 
   const frame = page.frameLocator('#synthetic-followups');
-  await frame.locator('[data-dental-os-app="company.dental.followups.m17"]').waitFor({ timeout: 20000 });
+  try {
+    await frame.locator('[data-dental-os-app="company.dental.followups.m17"]').waitFor({ timeout: 12000 });
+  } catch (cause) {
+    const text = await frame.locator('body').innerText().catch(() => '(iframe body unavailable)');
+    const src = await frame.locator('#app-root, #root').evaluate(el => ({ id: el.id, html: el.innerHTML.slice(0, 2000) })).catch(() => null);
+    const requested = await page.evaluate(() => window.__syntheticFollowupsPaths).catch(() => []);
+    console.error('Follow-ups iframe diagnostics:', JSON.stringify({
+      text: text.slice(0, 2000), src, requested, pageErrors, browserDiagnostics,
+    }, null, 2));
+    throw cause;
+  }
   await frame.getByText('Synthetic Test Patient').first().waitFor({ timeout: 15000 });
   assert.ok(await frame.getByText('Browser verification mode').count() > 0);
   const create = frame.getByRole('button', { name: /Create follow-up/i });
