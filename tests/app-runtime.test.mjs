@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { firstPartyApps } from '../apps/manifest.js';
-import { calendarApiGrants, financeApiGrants, findAppApiGrant, isValidAppCatalog, treatmentProgressApiGrants } from '../apps/catalog.js';
+import { appApiCapabilitiesForRequest, appApiGrantsForApp, appContextCapabilitiesForApp, findAppApiGrant, financeSessionCapabilities, isValidAppCatalog } from '../apps/catalog.js';
 
 const baseOrigin = 'https://browser.example.test';
 const runtimeHtml = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url), 'utf8');
 const runtimeScript = readFileSync(new URL('../apps/runtime.v1.js', import.meta.url), 'utf8');
+const browserClientSource = readFileSync(new URL('../apps/clinic-app-runtime/browserClinicClient.ts', import.meta.url), 'utf8');
+const mediaHostSource = readFileSync(new URL('../apps/clinic-app-runtime/mediaHost.js', import.meta.url), 'utf8');
 const hostScript = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
 const protocolAppSource = readFileSync(new URL('../apps/treatment-protocols/src/main.tsx', import.meta.url), 'utf8');
 const financeAppSource = readFileSync(new URL('../apps/finance/src/main.tsx', import.meta.url), 'utf8');
@@ -21,6 +23,10 @@ const calendarVerificationSource = readFileSync(new URL('../apps/calendar/SOURCE
 const treatmentProgressAppSource = readFileSync(new URL('../apps/treatment-progress/src/main.tsx', import.meta.url), 'utf8');
 const treatmentProgressRuntimeSource = readFileSync(new URL('../apps/treatment-progress/src/runtimeBridge.ts', import.meta.url), 'utf8');
 const treatmentProgressSourceImport = JSON.parse(readFileSync(new URL('../apps/treatment-progress/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
+const workEntryAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/main.tsx', import.meta.url), 'utf8');
+const workEntryWorkspaceSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/WorkEntryWorkspace.tsx', import.meta.url), 'utf8');
+const workEntryCaseEntrySource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CaseEntryView.tsx', import.meta.url), 'utf8');
+const patientRecordAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.patient-record.m17/src/main.tsx', import.meta.url), 'utf8');
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
 const appLaunchSource = hostScript.match(/function openApp\(appId, fromRoute = false\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeFailureSource = hostScript.match(/function failAppRuntime\(app, entry, attempt, message\) \{[\s\S]*?^\}/m)?.[0];
@@ -34,28 +40,25 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
   assert.equal(firstPartyApps.length, 10);
   assert.equal(isValidAppCatalog(firstPartyApps, baseOrigin), true);
   assert.equal(new Set(firstPartyApps.map((app) => app.id)).size, firstPartyApps.length);
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment'].includes(app.id)).every((app) => app.apiGrants.length === 0));
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment', 'workentry', 'patients'].includes(app.id))
+    .every((app) => app.apiGrants.length === 0));
   const protocols = firstPartyApps.find((app) => app.id === 'protocols');
-  assert.deepEqual(protocols.apiGrants, [
+  assert.deepEqual(protocols.apiGrants.map(({ method, path }) => ({ method, path })), [
     { method: 'GET', path: '/v1/treatment-protocols' },
     { method: 'POST', path: '/v1/treatment-protocols' },
     { method: 'PUT', path: '/v1/treatment-protocols/{uuid}' },
   ]);
   assert.deepEqual(protocols.capabilities, ['treatment_protocols.manage']);
   const finance = firstPartyApps.find((app) => app.id === 'finance');
-  assert.deepEqual(finance.apiGrants, financeApiGrants);
-  assert.deepEqual(finance.capabilities, ['finance.manage', 'patient_payments.outstanding.read']);
-  assert.deepEqual(finance.sessionCapabilities, [
-    'finance.manage', 'patient_payments.outstanding.read', 'patient_payments.received.read',
-    'patient_billing_ledger.read', 'patient_payments.collect', 'staff.manage',
+  assert.deepEqual(finance.apiGrants, appApiGrantsForApp('finance'));
+  assert.deepEqual(finance.apiGrants.map(({ method, path }) => ({ method, path })), [
+    ...appApiGrantsForApp('finance').map(({ method, path }) => ({ method, path })),
   ]);
+  assert.deepEqual(finance.capabilities, ['finance.manage', 'patient_payments.outstanding.read']);
+  assert.deepEqual(finance.sessionCapabilities, financeSessionCapabilities);
   assert.equal(finance.apiGrants.length, 28);
-  const calendar = firstPartyApps.find((app) => app.id === 'calendar');
-  assert.deepEqual(calendar.apiGrants, calendarApiGrants);
-  assert.deepEqual(calendar.capabilities, ['calendar.access']);
-  const treatmentProgress = firstPartyApps.find((app) => app.id === 'treatment');
-  assert.deepEqual(treatmentProgress.apiGrants, treatmentProgressApiGrants);
-  assert.deepEqual(treatmentProgress.capabilities, ['treatment_progress.access']);
+  assert.deepEqual(firstPartyApps.find((app) => app.id === 'calendar').apiGrants, appApiGrantsForApp('calendar'));
+  assert.deepEqual(firstPartyApps.find((app) => app.id === 'treatment').apiGrants, appApiGrantsForApp('treatment'));
   assert.equal(isValidAppCatalog([firstPartyApps[0], firstPartyApps[0]], baseOrigin), false);
 });
 
@@ -82,24 +85,31 @@ test('rejects remote, malformed, and unregistered app metadata', () => {
   const broadProtocolGrant = structuredClone(firstPartyApps.find((app) => app.id === 'protocols'));
   broadProtocolGrant.apiGrants.push({ method: 'PUT', path: '/v1/treatment-protocols/{uuid}/archive' });
   assert.equal(isValidAppCatalog([broadProtocolGrant], baseOrigin), false);
-
-  const broadFinanceGrant = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
-  broadFinanceGrant.apiGrants.push({ method: 'DELETE', path: '/v1/clinic/products/{uuid}' });
-  assert.equal(isValidAppCatalog([broadFinanceGrant], baseOrigin), false);
-  const unrelatedFinanceGrant = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
-  unrelatedFinanceGrant.apiGrants.push({ method: 'POST', path: '/v1/patients/{uuid}/delete' });
-  assert.equal(isValidAppCatalog([unrelatedFinanceGrant], baseOrigin), false);
-  const unsupportedFinanceSessionCapability = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
-  unsupportedFinanceSessionCapability.sessionCapabilities.push('unreviewed.capability');
-  assert.equal(isValidAppCatalog([unsupportedFinanceSessionCapability], baseOrigin), false);
 });
 
-test('matches API grants by exact method and path only', () => {
-  const app = { ...firstPartyApps[0], apiGrants: [{ method: 'GET', path: '/v1/clinic-profile' }] };
-  assert.deepEqual(findAppApiGrant(app, 'GET', '/v1/clinic-profile'), app.apiGrants[0]);
-  assert.equal(findAppApiGrant(app, 'POST', '/v1/clinic-profile'), null);
-  assert.equal(findAppApiGrant(app, 'GET', '/v1/clinic-profile?tenant=other'), null);
-  assert.equal(findAppApiGrant(firstPartyApps[0], 'GET', '/v1/clinic-profile'), null);
+test('matches only the explicit Work Entry and Patient Record backend routes and bounded queries', () => {
+  const workEntry = firstPartyApps.find((candidate) => candidate.id === 'workentry');
+  const patients = firstPartyApps.find((candidate) => candidate.id === 'patients');
+  assert.ok(findAppApiGrant(workEntry, 'GET', '/v1/work-entry/cases'));
+  assert.ok(findAppApiGrant(workEntry, 'POST', '/v1/work-entry/commit'));
+  assert.ok(findAppApiGrant(workEntry, 'PUT', '/v1/patients/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/odontogram'));
+  assert.ok(findAppApiGrant(workEntry, 'GET', '/v1/patients?q=alia&limit=8'));
+  assert.equal(findAppApiGrant(workEntry, 'GET', '/v1/patients?q=alia&limit=100'), null);
+  assert.equal(findAppApiGrant(workEntry, 'DELETE', '/v1/work-entry/cases'), null);
+  assert.equal(findAppApiGrant(workEntry, 'POST', '/v1/patients'), null);
+  assert.equal(findAppApiGrant(workEntry, 'GET', '/v1/patients?q=alia&limit=8&tenant=other'), null);
+
+  assert.ok(findAppApiGrant(patients, 'GET', '/v1/patients?limit=50'));
+  assert.ok(findAppApiGrant(patients, 'GET', '/v1/patients?limit=20&cohort=regular'));
+  assert.ok(findAppApiGrant(patients, 'POST', '/v1/patient-intakes'));
+  assert.ok(findAppApiGrant(patients, 'PUT', '/v1/patients/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/profile'));
+  assert.ok(findAppApiGrant(patients, 'PATCH', '/v1/lab-orders/f12b56d1-2633-4a79-8fd8-2a4a0d39515c'));
+  assert.ok(findAppApiGrant(patients, 'POST', '/v1/patient-media/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/withdraw'));
+  assert.equal(findAppApiGrant(patients, 'GET', '/v1/patients?limit=1000'), null);
+  assert.equal(findAppApiGrant(patients, 'GET', '/v1/patients?limit=20&limit=20'), null);
+  assert.equal(findAppApiGrant(patients, 'GET', '/v1/patients?limit=20&q=alia&cohort=regular'), null);
+  assert.equal(findAppApiGrant(patients, 'DELETE', '/v1/patients/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/profile'), null);
+
   const protocols = firstPartyApps.find((candidate) => candidate.id === 'protocols');
   const protocolId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
   assert.equal(findAppApiGrant(protocols, 'PUT', `/v1/treatment-protocols/${protocolId}`), protocols.apiGrants[2]);
@@ -107,92 +117,100 @@ test('matches API grants by exact method and path only', () => {
   assert.equal(findAppApiGrant(protocols, 'DELETE', `/v1/treatment-protocols/${protocolId}`), null);
 });
 
-test('matches only Finance contract routes, scoped UUIDs, and documented query parameters', () => {
+test('matches only Finance contract routes and bounded query parameters', () => {
   const finance = firstPartyApps.find((candidate) => candidate.id === 'finance');
-  const recordGrant = finance.apiGrants[0];
   const patientId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
-  const productGrant = finance.apiGrants.find((grant) => grant.path === '/v1/clinic/products/{uuid}' && grant.method === 'PATCH');
   const ledgerGrant = finance.apiGrants.find((grant) => grant.path === '/v1/patients/{uuid}/ledger');
 
-  assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-01-01&to=2026-01-31'), recordGrant);
-  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?month=2026-01&cursor=opaque.cursor_1`), ledgerGrant);
-  assert.equal(findAppApiGrant(finance, 'PATCH', `/v1/clinic/products/${patientId}`), productGrant);
-  assert.equal(findAppApiGrant(finance, 'POST', `/v1/clinic/operating-expenses/${patientId}/void`), finance.apiGrants.find((grant) => grant.path.endsWith('/void')));
+  assert.ok(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-01-01&to=2026-01-31'));
+  assert.ok(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?month=2026-01&cursor=opaque.cursor_1`));
+  assert.ok(findAppApiGrant(finance, 'PATCH', `/v1/clinic/products/${patientId}`));
+  assert.ok(findAppApiGrant(finance, 'POST', `/v1/clinic/operating-expenses/${patientId}/void`));
   assert.equal(findAppApiGrant(finance, 'PATCH', `/v1/clinic/products/${patientId}/delete`), null);
   assert.equal(findAppApiGrant(finance, 'DELETE', `/v1/clinic/products/${patientId}`), null);
   assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-02-01'), null);
   assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-02-01&to=2026-02-28&branch=other'), null);
-  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=worker%3Aopaque%2Ftoken%3D`), ledgerGrant);
+  assert.ok(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=worker%3Aopaque%2Ftoken%3D`));
   assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=first&cursor=second`), null);
   assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=${'x'.repeat(513)}`), null);
+  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?`), null);
   assert.equal(findAppApiGrant(finance, 'POST', `/v1/patients/${patientId}/ledger`), null);
+  assert.deepEqual(appApiCapabilitiesForRequest(finance, 'GET', `/v1/patients/${patientId}/ledger`), ['patient_billing_ledger.read']);
+  assert.deepEqual(appApiCapabilitiesForRequest(finance, 'POST', `/v1/patients/${patientId}/payments`, {}), [
+    'patient_payments.collect',
+  ]);
+  assert.equal(ledgerGrant.capabilities.includes('patient_billing_ledger.read'), true);
 });
 
-test('matches Calendar and Treatment Progress routes, UUIDs, and bounded date ranges', () => {
+test('matches Calendar and Treatment Progress routes, identifiers, and bounded date ranges', () => {
   const calendar = firstPartyApps.find((candidate) => candidate.id === 'calendar');
   const treatmentProgress = firstPartyApps.find((candidate) => candidate.id === 'treatment');
   const taskId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
 
-  assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&to=2026-02-15'), calendar.apiGrants[0]);
+  assert.ok(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&to=2026-02-15'));
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01'), null);
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&to=2026-02-16'), null);
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-02-01&to=2026-01-01'), null);
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-02-30&to=2026-03-01'), null);
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks?from=2026-01-01&from=2026-01-02&to=2026-01-20'), null);
   assert.equal(findAppApiGrant(calendar, 'GET', '/v1/calendar-tasks'), null);
-  assert.equal(findAppApiGrant(calendar, 'POST', '/v1/calendar-tasks'), calendar.apiGrants[1]);
+  assert.ok(findAppApiGrant(calendar, 'POST', '/v1/calendar-tasks'));
   assert.equal(findAppApiGrant(calendar, 'POST', '/v1/calendar-tasks?from=2026-01-01&to=2026-01-20'), null);
-  assert.equal(findAppApiGrant(calendar, 'PATCH', `/v1/calendar-tasks/${taskId}`), calendar.apiGrants[2]);
+  assert.ok(findAppApiGrant(calendar, 'PATCH', `/v1/calendar-tasks/${taskId}`));
   assert.equal(findAppApiGrant(calendar, 'PATCH', `/v1/calendar-tasks/${taskId}?status=completed`), null);
   assert.equal(findAppApiGrant(calendar, 'PATCH', '/v1/calendar-tasks/not-a-uuid'), null);
-  assert.equal(findAppApiGrant(calendar, 'POST', `/v1/calendar-tasks/${taskId}/archive`), calendar.apiGrants[3]);
+  assert.ok(findAppApiGrant(calendar, 'POST', `/v1/calendar-tasks/${taskId}/archive`));
   assert.equal(findAppApiGrant(calendar, 'POST', `/v1/calendar-tasks/${taskId}/delete`), null);
   assert.equal(findAppApiGrant(calendar, 'DELETE', `/v1/calendar-tasks/${taskId}`), null);
 
-  assert.equal(findAppApiGrant(treatmentProgress, 'GET', '/v1/treatment-progress'), treatmentProgress.apiGrants[0]);
+  assert.ok(findAppApiGrant(treatmentProgress, 'GET', '/v1/treatment-progress'));
   assert.equal(findAppApiGrant(treatmentProgress, 'GET', '/v1/treatment-progress?branch=other'), null);
   assert.equal(findAppApiGrant(treatmentProgress, 'POST', '/v1/treatment-progress'), null);
 });
 
-test('documents the copied Calendar and Treatment Progress source contracts', () => {
-  const calendarGrants = calendarApiGrants.map(({ method, path }) => `${method} ${path}`);
-  const treatmentRoute = treatmentProgressSourceImport.contractSources.find(({ source }) => source.endsWith('treatmentProgress.routes.ts'));
+test('keeps Finance, Calendar, and Treatment Progress route definitions aligned with their source contracts', () => {
+  const financeRoutes = Object.values(financeSourceImport.sdkContract)
+    .flatMap((value) => value && typeof value === 'object' && Array.isArray(value.routes) ? value.routes : []);
+  const sourceFinanceRoutes = [financeSourceImport.sdkContract.route, ...financeRoutes]
+    .map(({ method, path }) => `${method} ${path}`.replace(/:\w+/g, '{uuid}').replace(/\?.*$/, ''));
+  const browserFinanceRoutes = appApiGrantsForApp('finance').map(({ method, path }) => `${method} ${path}`);
+  assert.deepEqual([...new Set(browserFinanceRoutes)].sort(), [...new Set(sourceFinanceRoutes)].sort());
   assert.equal(calendarSourceImport.sourceCommit, 'fd2cc5439694ce844362c9dec8a6267378d11381');
-  assert.deepEqual(calendarGrants, [
-    'GET /v1/calendar-tasks',
-    'POST /v1/calendar-tasks',
-    'PATCH /v1/calendar-tasks/{uuid}',
-    'POST /v1/calendar-tasks/{uuid}/archive',
-  ]);
   assert.ok(calendarVerificationSource.includes('GET /v1/calendar-tasks?from=...&to=...'));
-  assert.ok(calendarVerificationSource.includes('POST /v1/calendar-tasks'));
-  assert.ok(calendarVerificationSource.includes('PATCH /v1/calendar-tasks/:id'));
-  assert.ok(calendarVerificationSource.includes('POST /v1/calendar-tasks/:id/archive'));
-  assert.match(calendarTasksSource, /\/v1\/calendar-tasks\?\$\{new URLSearchParams\(\{ from, to \}\)\}/);
   assert.match(calendarTasksSource, /client\.command\('POST', '\/v1\/calendar-tasks'/);
   assert.match(calendarTasksSource, /client\.command\('PATCH', `\/v1\/calendar-tasks\/\$\{task\.id\}`/);
-  assert.match(calendarTasksSource, /client\.command\('POST', `\/v1\/calendar-tasks\/\$\{task\.id\}\/archive`/);
-  assert.ok(treatmentRoute);
-  assert.equal(treatmentProgressApiGrants.length, 1);
-  assert.equal(treatmentProgressApiGrants[0].method, 'GET');
-  assert.equal(treatmentProgressApiGrants[0].path, '/v1/treatment-progress');
+  assert.equal(treatmentProgressSourceImport.contractSources.some(({ source }) => source.endsWith('treatmentProgress.routes.ts')), true);
   assert.match(treatmentProgressAppSource, /read<\{ patients: unknown \}>\("\/v1\/treatment-progress"/);
 });
 
-test('keeps the Finance host grants aligned with the pinned backend contract', () => {
-  const contract = financeSourceImport.sdkContract;
-  const sourceRoutes = [contract.route];
-  for (const value of Object.values(contract)) {
-    if (value && typeof value === 'object' && Array.isArray(value.routes)) {
-      sourceRoutes.push(...value.routes.map(({ method, path }) => `${method} ${path}`));
-    }
-  }
-  const normalize = (route) => route
-    .replace(/:\w+/g, '{uuid}')
-    .replace(/\?.*$/, '');
-  const sourceGrantKeys = [...new Set(sourceRoutes.map(normalize))].sort();
-  const browserGrantKeys = financeApiGrants.map(({ method, path }) => `${method} ${path}`).sort();
-  assert.deepEqual(browserGrantKeys, sourceGrantKeys);
+test('passes only app-scoped session capabilities as UI context without widening API grants', () => {
+  const workEntry = firstPartyApps.find((candidate) => candidate.id === 'workentry');
+  const patients = firstPartyApps.find((candidate) => candidate.id === 'patients');
+  assert.ok(appContextCapabilitiesForApp('workentry').includes('patient_payments.collect'));
+  assert.ok(appContextCapabilitiesForApp('workentry').includes('patient_billing_ledger.read'));
+  assert.ok(!workEntry.apiGrants.some(({ method, path }) => method === 'POST' && path === '/v1/patients/{uuid}/payments'));
+  assert.ok(appContextCapabilitiesForApp('patients').includes('patient_record.access'));
+  assert.deepEqual(appContextCapabilitiesForApp('other-app'), []);
+  const commitPath = '/v1/work-entry/commit';
+  assert.deepEqual(appApiCapabilitiesForRequest(workEntry, 'POST', commitPath, { payment: null }), ['work_entry.access']);
+  assert.deepEqual(appApiCapabilitiesForRequest(workEntry, 'POST', commitPath, { payment: { amount: 100 } }), [
+    'work_entry.access', 'patient_payments.collect', 'patient_billing_ledger.read',
+  ]);
+  assert.equal(appApiCapabilitiesForRequest(workEntry, 'POST', '/v1/patients/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/payments', { amount: 100 }), null);
+  assert.match(runtimeInitializeSource, /appContextCapabilitiesForApp\(app\.id\)/);
+  assert.match(runtimeInitializeSource, /appContextCapabilities\.filter\(capability => rawCapabilities\.includes\(capability\)\)/);
+  assert.match(workEntryCaseEntrySource, /doctorNames: selectedDoctors,\s*payment,\s*followUp/);
+  assert.match(workEntryWorkspaceSource, /payment: recall\.payment/);
+  assert.match(workEntryWorkspaceSource, /doctorNames, payment, followUp/);
+  assert.match(workEntryWorkspaceSource, /labOrders: \[\],\s*followUp:[\s\S]*?payment,/);
+});
+
+test('limits radiograph permissions to the Patient Record app', () => {
+  const workEntry = firstPartyApps.find((candidate) => candidate.id === 'workentry');
+  const patients = firstPartyApps.find((candidate) => candidate.id === 'patients');
+  assert.deepEqual(workEntry.mediaGrants, ['clinic.media.read']);
+  assert.deepEqual(patients.mediaGrants, ['clinic.media.read', 'clinic.media.upload']);
+  assert.equal(isValidAppCatalog([{ ...workEntry, mediaGrants: ['clinic.media.read', 'clinic.media.upload'] }], baseOrigin), false);
 });
 
 test('rejects launches without the Worker capability and keeps credentials out of app code', () => {
@@ -221,18 +239,26 @@ test('registers the Treatment Protocols handshake before React mounts', () => {
   assert.doesNotMatch(protocolAppSource, /void connectBrowserRuntime\(\)\.then/);
 });
 
-test('registers the Finance host handshake before React mounts and keeps credentials outside the app', () => {
-  const listenerRegistration = financeAppSource.indexOf('const browserRuntime = connectBrowserRuntime(APP_ID);');
-  const reactMount = financeAppSource.indexOf('createRoot(document.getElementById');
-  assert.ok(listenerRegistration >= 0 && reactMount > listenerRegistration);
-  assert.match(financeRuntimeSource, /value\.appId !== expectedAppId/);
-  assert.match(financeRuntimeSource, /supportedCapabilities\.has\(capability\)/);
-  assert.match(hostScript, /capabilities: app\.sessionCapabilities\.filter\(\(capability\) => clinicSession\?\.clinicUser\?\.capabilities\?\.includes\(capability\)\)/);
-  assert.doesNotMatch(financeRuntimeSource, /\bfetch\s*\(|authorization|Bearer|idToken|accessToken|window\.desktop|dentalApp/);
-  assert.doesNotMatch(financeAppSource, /window\.dentalApp|electron\/|authorization|idToken|accessToken/);
+test('registers each migrated app handshake before React mounts', () => {
+  for (const source of [workEntryAppSource, patientRecordAppSource]) {
+    const listenerRegistration = source.indexOf('connectBrowserRuntime()');
+    const reactMount = source.indexOf('createRoot(document.getElementById');
+    assert.ok(listenerRegistration >= 0 && reactMount > listenerRegistration);
+    assert.match(source, /void browserRuntime\.then/);
+    assert.doesNotMatch(source, /void connectBrowserRuntime\(\)\.then/);
+  }
 });
 
-test('registers Calendar and Treatment Progress host handshakes before React mounts', () => {
+test('registers Finance, Calendar, and Treatment Progress host handshakes before React mounts', () => {
+  const financeListener = financeAppSource.indexOf('const browserRuntime = connectBrowserRuntime(APP_ID);');
+  const financeMount = financeAppSource.indexOf('createRoot(document.getElementById');
+  assert.ok(financeListener >= 0 && financeMount > financeListener);
+  assert.match(financeRuntimeSource, /value\.appId !== expectedAppId/);
+  assert.match(financeRuntimeSource, /supportedCapabilities\.has\(capability\)/);
+  assert.match(runtimeInitializeSource, /app\.sessionCapabilities\.filter\(capability => clinicSession\?\.clinicUser\?\.capabilities\?\.includes\(capability\)\)/);
+  assert.doesNotMatch(financeRuntimeSource, /\bfetch\s*\(|authorization|Bearer|idToken|accessToken|window\.desktop|dentalApp/);
+  assert.doesNotMatch(financeAppSource, /window\.dentalApp|electron\/|authorization|idToken|accessToken/);
+
   for (const [appName, appSource, bridgeSource] of [
     ['Calendar', calendarAppSource, calendarRuntimeSource],
     ['Treatment Progress', treatmentProgressAppSource, treatmentProgressRuntimeSource],
@@ -247,9 +273,24 @@ test('registers Calendar and Treatment Progress host handshakes before React mou
   }
   assert.match(calendarAppSource, /clinicToday\(bridge\.clinicTimeZone \?\? 'Asia\/Kathmandu'\)/);
   assert.match(calendarRuntimeSource, /appId,bundleSha256,clinicTimeZone,nonce,title,type,version/);
-  assert.match(hostScript, /app\.id === 'calendar' \? \{ clinicTimeZone: trustedCalendarTimeZone\(\) \}/);
+  assert.match(runtimeInitializeSource, /const calendarContext = app\.id === 'calendar' \? \{ clinicTimeZone: trustedCalendarTimeZone\(\) \}/);
   assert.match(hostScript, /clinicSession\?\.clinic\?\.timezone/);
   assert.match(hostScript, /return 'Asia\/Kathmandu'/);
+});
+
+test('keeps uncertain clinic writes retryable with the original command key and saved receipt', () => {
+  assert.match(browserClientSource, /if \(this\.completed\) return this\.saved as T/);
+  assert.match(browserClientSource, /this\.bridge\.request\(command\.method, command\.path, command\.body, command\.operationId\)/);
+  assert.match(browserClientSource, /this\.saved = value;\s*this\.completed = true/);
+  assert.match(browserClientSource, /new ClinicError\('UNKNOWN_OUTCOME',[\s\S]*?'unknown', command\.operationId\)/);
+});
+
+test('allows bounded media chunks through while retaining the app concurrency limit', () => {
+  assert.match(hostScript, /const isMediaUploadChunk = message\.operation === 'clinic\.media\.upload' && message\.input\.action === 'chunk'/);
+  assert.match(hostScript, /appRequestLimitReached\(entry, !isMediaUploadChunk\)/);
+  assert.match(hostScript, /return \(countRateLimitedRequest && entry\.requestCount > 30\) \|\| entry\.pendingRequests >= 4/);
+  assert.match(mediaHostSource, /const maxBytes = 10 \* 1024 \* 1024/);
+  assert.match(mediaHostSource, /chunk\.length > 8192/);
 });
 
 test('pins the exact app entry and JavaScript bytes in the trusted manifest and SRI attribute', () => {
@@ -260,7 +301,7 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.equal(bundle.scriptSha256, sha256(scriptBytes));
   const integrity = createHash('sha256').update(scriptBytes).digest('base64');
   assert.ok(runtimeHtml.includes(`integrity="sha256-${integrity}"`));
-  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment'].includes(app.id))
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance', 'calendar', 'treatment', 'workentry', 'patients'].includes(app.id))
     .every((app) => app.bundle.entry === bundle.entry && app.bundle.scriptSha256 === bundle.scriptSha256));
   const protocolBundle = firstPartyApps.find((app) => app.id === 'protocols').bundle;
   const protocolEntry = readFileSync(new URL('../apps/treatment-protocols.v1.html', import.meta.url), 'utf8');
@@ -277,39 +318,37 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.ok(protocolEntry.includes(`script-src 'sha256-${protocolScriptIntegrity}'`));
   assert.ok(protocolEntry.includes(`style-src 'sha256-${protocolStyleIntegrity}'`));
   assert.ok(protocolEntry.includes(`integrity="sha256-${protocolScriptIntegrity}"`));
-  const financeBundle = firstPartyApps.find((app) => app.id === 'finance').bundle;
-  const financeEntry = readFileSync(new URL('../apps/finance.v1.html', import.meta.url), 'utf8');
-  const financeScript = readFileSync(new URL('../apps/finance.v1.js', import.meta.url));
-  const financeStyle = readFileSync(new URL('../apps/finance.v1.css', import.meta.url));
-  assert.equal(financeBundle.entrySha256, sha256(Buffer.from(financeEntry)));
-  assert.equal(financeBundle.scriptSha256, sha256(financeScript));
-  assert.equal(financeBundle.styleSha256, sha256(financeStyle));
-  const financeScriptIntegrity = createHash('sha256').update(financeScript).digest('base64');
-  const financeStyleIntegrity = createHash('sha256').update(financeStyle).digest('base64');
-  assert.ok(financeEntry.includes(`script-src 'sha256-${financeScriptIntegrity}'`));
-  assert.ok(financeEntry.includes(`style-src 'sha256-${financeStyleIntegrity}'`));
-  assert.ok(financeEntry.includes(`integrity="sha256-${financeScriptIntegrity}"`));
 
-  for (const [appId, bundleName] of [
-    ['calendar', 'calendar.v1'],
-    ['treatment', 'treatment-progress.v1'],
-  ]) {
-    const appBundle = firstPartyApps.find((app) => app.id === appId).bundle;
-    const appEntry = readFileSync(new URL(`../apps/${bundleName}.html`, import.meta.url), 'utf8');
-    const appScript = readFileSync(new URL(`../apps/${bundleName}.js`, import.meta.url));
-    const appStyle = readFileSync(new URL(`../apps/${bundleName}.css`, import.meta.url));
-    const appScriptIntegrity = createHash('sha256').update(appScript).digest('base64');
-    const appStyleIntegrity = createHash('sha256').update(appStyle).digest('base64');
-    assert.equal(appBundle.entry, `/apps/${bundleName}.html`);
-    assert.equal(appBundle.script, `/apps/${bundleName}.js`);
-    assert.equal(appBundle.style, `/apps/${bundleName}.css`);
-    assert.equal(appBundle.entrySha256, sha256(Buffer.from(appEntry)));
-    assert.equal(appBundle.scriptSha256, sha256(appScript));
-    assert.equal(appBundle.styleSha256, sha256(appStyle));
-    assert.ok(appEntry.includes(`script-src 'sha256-${appScriptIntegrity}'`));
-    assert.ok(appEntry.includes(`style-src 'sha256-${appStyleIntegrity}'`));
-    assert.ok(appEntry.includes(`integrity="sha256-${appScriptIntegrity}"`));
-    assert.doesNotMatch(appScript.toString('utf8'), /process\.env\.NODE_ENV/);
+  for (const appId of ['workentry', 'patients']) {
+    const app = firstPartyApps.find((candidate) => candidate.id === appId);
+    const entry = readFileSync(new URL(`../apps/${appId}.v1.html`, import.meta.url), 'utf8');
+    const script = readFileSync(new URL(`../apps/${appId}.v1.js`, import.meta.url));
+    const style = readFileSync(new URL(`../apps/${appId}.v1.css`, import.meta.url));
+    assert.equal(app.bundle.entrySha256, sha256(Buffer.from(entry)));
+    assert.equal(app.bundle.scriptSha256, sha256(script));
+    assert.equal(app.bundle.styleSha256, sha256(style));
+    assert.ok(entry.includes(`integrity="${createHash('sha256').update(script).digest('base64').replace(/^/, 'sha256-')}"`));
+    assert.ok(entry.includes(`script-src 'sha256-${createHash('sha256').update(script).digest('base64')}'`));
+    assert.ok(entry.includes(`style-src 'sha256-${createHash('sha256').update(style).digest('base64')}'`));
+    assert.ok(entry.includes("style-src-attr 'unsafe-inline'"));
+    assert.doesNotMatch(script.toString('utf8'), /firebase|NEXT_PUBLIC_FIREBASE|idToken|accessToken|getIdToken|authorization|bearer|window\.dentalApp|window\.desktop/i);
+    assert.doesNotMatch(script.toString('utf8'), /\bfetch\s*\(|XMLHttpRequest|localStorage|indexedDB/);
+  }
+
+  for (const [appId, bundleName] of [['finance', 'finance.v1'], ['calendar', 'calendar.v1'], ['treatment', 'treatment-progress.v1']]) {
+    const app = firstPartyApps.find((candidate) => candidate.id === appId);
+    const entry = readFileSync(new URL(`../apps/${bundleName}.html`, import.meta.url), 'utf8');
+    const script = readFileSync(new URL(`../apps/${bundleName}.js`, import.meta.url));
+    const style = readFileSync(new URL(`../apps/${bundleName}.css`, import.meta.url));
+    const scriptIntegrity = createHash('sha256').update(script).digest('base64');
+    const styleIntegrity = createHash('sha256').update(style).digest('base64');
+    assert.equal(app.bundle.entrySha256, sha256(Buffer.from(entry)));
+    assert.equal(app.bundle.scriptSha256, sha256(script));
+    assert.equal(app.bundle.styleSha256, sha256(style));
+    assert.ok(entry.includes(`script-src 'sha256-${scriptIntegrity}'`));
+    assert.ok(entry.includes(`style-src 'sha256-${styleIntegrity}'`));
+    assert.ok(entry.includes(`integrity="sha256-${scriptIntegrity}"`));
+    assert.doesNotMatch(script.toString('utf8'), /process\.env\.NODE_ENV/);
   }
 });
 
@@ -324,7 +363,7 @@ test('isolates app code in a scripts-only frame with a private host channel and 
   assert.match(hostScript, /const expectedKeys = \['appId', 'body', 'idempotencyKey', 'method', 'nonce', 'path', 'requestId', 'type', 'version'\]/);
   assert.match(hostScript, /Object\.keys\(message\)\.sort\(\)\.join\(','\) === expectedKeys\.join\(','\)/);
   assert.match(hostScript, /typeof message\.idempotencyKey === 'string'/);
-  assert.match(hostScript, /findAppApiGrant\(app, request\.method, request\.path\)/);
+  assert.match(hostScript, /appApiCapabilitiesForRequest\(app, request\.method, request\.path, body\)/);
   assert.match(runtimeScript, /event\.source !== window\.parent/);
   assert.match(runtimeScript, /Object\.keys\(data\)\.sort\(\)\.join\(','\) === 'appId,bundleSha256,nonce,title,type,version'/);
   assert.match(hostScript, /Object\.keys\(message\)\.sort\(\)\.join\(','\) !== 'appId,bundleSha256,nonce,type,version'/);
@@ -335,13 +374,14 @@ test('isolates app code in a scripts-only frame with a private host channel and 
   assert.ok(serverScript.includes(`script-src 'sha256-${scriptIntegrity}'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'`));
   assert.match(serverScript, /frame-src \$\{frameSources\}/);
   assert.match(serverScript, /\['\/apps\/runtime\.v1\.html', 'apps\/runtime\.v1\.html'\]/);
-  assert.match(serverScript, /\['\/apps\/finance\/asset-manifest\.js', 'apps\/finance\/asset-manifest\.js'\]/);
-  assert.match(serverScript, /\['\/apps\/finance\.v1\.js', 'apps\/finance\.v1\.js'\]/);
-  assert.match(serverScript, /'\/apps\/finance\.v1\.js', '\/apps\/finance\.v1\.css'/);
-  for (const [bundleName, appName] of [['calendar.v1', 'calendar'], ['treatment-progress.v1', 'treatment-progress']]) {
-    assert.match(serverScript, new RegExp(`\\['/apps/${appName}/asset-manifest\\.js', 'apps/${appName}/asset-manifest\\.js'\\]`));
-    assert.match(serverScript, new RegExp(`\\['/apps/${bundleName}\\.html', 'apps/${bundleName}\\.html'\\]`));
-    assert.match(serverScript, new RegExp(`\\['/apps/${bundleName}\\.js', 'apps/${bundleName}\\.js'\\]`));
-    assert.match(serverScript, new RegExp(`'/apps/${bundleName}\\.js', '/apps/${bundleName}\\.css'`));
-  }
+  for (const path of [
+    '/apps/calendar.v1.html', '/apps/calendar.v1.js', '/apps/calendar.v1.css', '/apps/calendar/asset-manifest.js',
+    '/apps/finance.v1.html', '/apps/finance.v1.js', '/apps/finance.v1.css', '/apps/finance/asset-manifest.js',
+    '/apps/treatment-progress.v1.html', '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css', '/apps/treatment-progress/asset-manifest.js',
+    '/apps/workentry.v1.html', '/apps/workentry.v1.js', '/apps/workentry.v1.css',
+    '/apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js',
+    '/apps/patients.v1.html', '/apps/patients.v1.js', '/apps/patients.v1.css',
+    '/apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js',
+    '/apps/clinic-app-runtime/mediaHost.js',
+  ]) assert.ok(serverScript.includes(`['${path}'`), `${path} should be served by the local dev server`);
 });

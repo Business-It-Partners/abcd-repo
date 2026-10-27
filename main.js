@@ -7,7 +7,8 @@ import {
   NEPALI_MONTHS,
 } from './vendor/nepali-date-utils/index.js';
 import { firstPartyApps } from './apps/manifest.js';
-import { findAppApiGrant, isValidAppCatalog, visibleAppsForCapabilities } from './apps/catalog.js';
+import { apiRequestPathIsValid, appApiCapabilitiesForRequest, appContextCapabilitiesForApp, isValidAppCatalog, visibleAppsForCapabilities } from './apps/catalog.js';
+import { BrowserClinicMediaHost } from './apps/clinic-app-runtime/mediaHost.js';
 
 const config = window.DENTAL_OS_BROWSER_CONFIG;
 const appCatalogTrusted = isValidAppCatalog(firstPartyApps, window.location.origin);
@@ -96,6 +97,11 @@ let shownBsMonth = (() => {
   return { year: today.year, month: today.month };
 })();
 let shownGregorianMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+const clinicMediaHost = new BrowserClinicMediaHost({
+  getContext: () => ({ connected: connectedStaging, session: clinicSession, user: firebaseUser, apiBaseUrl: config?.apiBaseUrl }),
+  isCurrent: (app, entry, attempt) => isCurrentAppLaunch(app, entry, attempt) && allowedAppIds.has(app.id),
+  onPendingChange: (entry, pending) => { entry.mediaPending = pending; },
+});
 
 const calendarWeekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -122,7 +128,7 @@ function trustedCalendarTimeZone() {
       new Intl.DateTimeFormat('en', { timeZone: candidate });
       return candidate;
     } catch {
-      // The pinned Calendar app uses this timezone when clinic configuration is absent or invalid.
+      // Fall back to the pinned Calendar app's default timezone.
     }
   }
   return 'Asia/Kathmandu';
@@ -610,6 +616,9 @@ function disposeAppRuntime(entry) {
   entry.runtimeAttempt += 1;
   if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
   entry.readyTimer = null;
+  for (const controller of entry.apiControllers?.values() ?? []) controller.abort();
+  entry.apiControllers?.clear();
+  clinicMediaHost.dispose(entry);
   entry.port?.close();
   entry.port = null;
   entry.frame?.remove();
@@ -719,13 +728,9 @@ function sendAppPortMessage(entry, message) {
   }
 }
 
-async function requestGrantedAppApi(app, entry, attempt, request) {
-  const grant = findAppApiGrant(app, request.method, request.path);
-  if (!grant) return { ok: false, code: 'route_not_granted', message: 'This app does not have permission for that clinic route.' };
+async function requestGrantedAppApi(app, entry, attempt, request, signal) {
   const write = request.method !== 'GET';
-  const route = new URL(request.path, config?.apiBaseUrl || window.location.origin);
-  const requestPath = request.path.split('?', 1)[0];
-  if (route.pathname !== requestPath || route.hash
+  if (!apiRequestPathIsValid(request.path)
     || (write && (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.idempotencyKey)
       || typeof request.body !== 'string' || new TextEncoder().encode(request.body).byteLength > 12_000))) {
     return { ok: false, code: 'invalid_request', message: 'This clinic request is not valid.' };
@@ -733,13 +738,24 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
   if (!connectedStaging || !clinicSession || !firebaseUser || !config?.apiBaseUrl) {
     return { ok: false, code: 'clinic_session_unavailable', message: 'A verified clinic session is required.' };
   }
+  let body = null;
+  if (write) {
+    try { body = JSON.parse(request.body); } catch { return { ok: false, code: 'invalid_request', message: 'This clinic request is not valid.' }; }
+  }
+  const requiredCapabilities = appApiCapabilitiesForRequest(app, request.method, request.path, body);
+  if (!requiredCapabilities) return { ok: false, code: 'route_not_granted', message: 'This app does not have permission for that clinic route.' };
+  const capabilities = clinicSession.clinicUser.capabilities;
+  if (!Array.isArray(capabilities) || requiredCapabilities.some(capability => !capabilities.includes(capability))) {
+    return { ok: false, code: 'clinic_access_denied', message: 'Your clinic role does not permit this action.' };
+  }
   const base = new URL(config.apiBaseUrl);
   const url = new URL(request.path, base);
+  const requestPath = request.path.split('?', 1)[0];
   if (base.protocol !== 'https:' || url.origin !== base.origin || url.pathname !== requestPath || url.hash) {
     return { ok: false, code: 'route_not_granted', message: 'This app route is not available.' };
   }
   const idToken = await firebaseUser.getIdToken();
-  if (!isCurrentAppLaunch(app, entry, attempt) || !allowedAppIds.has(app.id)) {
+  if (!isCurrentAppLaunch(app, entry, attempt) || !allowedAppIds.has(app.id) || signal?.aborted) {
     return { ok: false, code: 'clinic_session_unavailable', message: 'Clinic access changed. Reopen the app.' };
   }
   const response = await fetch(url, {
@@ -753,7 +769,7 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
     cache: 'no-store',
     credentials: 'omit',
     redirect: 'error',
-    signal: AbortSignal.timeout(30_000),
+    signal,
   });
   const responseLimit = app.id === 'finance' ? 262_144 : 524_288;
   const bytes = await readBoundedResponse(response, responseLimit, ['application/json'], true);
@@ -765,6 +781,22 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
     return { ok: false, code: 'invalid_clinic_response', message: 'The clinic service returned an invalid response.' };
   }
   return { ok: true, data: { status: response.status, body: data } };
+}
+
+function appRequestLimitReached(entry, countRateLimitedRequest = true) {
+  if (countRateLimitedRequest) {
+    const now = Date.now();
+    if (now - entry.requestWindowStartedAt >= 60_000) {
+      entry.requestWindowStartedAt = now;
+      entry.requestCount = 0;
+    }
+    entry.requestCount += 1;
+  }
+  return (countRateLimitedRequest && entry.requestCount > 30) || entry.pendingRequests >= 4;
+}
+
+function sendAppRequestError(entry, type, requestId, code, message) {
+  sendAppPortMessage(entry, { type, requestId, ok: false, code, message });
 }
 
 async function handleAppPortMessage(app, entry, attempt, message) {
@@ -818,12 +850,52 @@ async function handleAppPortMessage(app, entry, attempt, message) {
     return;
   }
 
+  if (message.type === 'app:api-cancel' || message.type === 'app:media-cancel') {
+    const keys = ['appId', 'nonce', 'requestId', 'type', 'version'];
+    if (Object.keys(message).sort().join(',') !== keys.join(',') || typeof message.requestId !== 'string'
+      || !/^[a-f0-9]{32}$/.test(message.requestId)) {
+      failAppRuntime(app, entry, attempt, 'The app sent an invalid cancellation request.');
+      return;
+    }
+    if (message.type === 'app:api-cancel') entry.apiControllers.get(message.requestId)?.abort();
+    else clinicMediaHost.cancel(entry, message.requestId);
+    return;
+  }
+
+  if (message.type === 'app:media-request') {
+    const expected = ['appId', 'input', 'nonce', 'operation', 'requestId', 'type', 'version'];
+    if (Object.keys(message).sort().join(',') !== expected.join(',') || typeof message.requestId !== 'string'
+      || !/^[a-f0-9]{32}$/.test(message.requestId) || !['clinic.media.read', 'clinic.media.upload'].includes(message.operation)
+      || !message.input || typeof message.input !== 'object' || Array.isArray(message.input)) {
+      failAppRuntime(app, entry, attempt, 'The app sent a media request outside its approved interface.');
+      return;
+    }
+    // Binary uploads use one bounded host message per 8 KiB chunk. The media
+    // host caps each transfer at 10 MiB and bounds concurrent transfers, so
+    // count other media operations against the normal app request window but
+    // do not reject a valid upload after its 30th chunk.
+    const isMediaUploadChunk = message.operation === 'clinic.media.upload' && message.input.action === 'chunk';
+    if (appRequestLimitReached(entry, !isMediaUploadChunk)) {
+      sendAppRequestError(entry, 'app:media-response', message.requestId, 'request_limit', 'This app has reached its request limit.');
+      return;
+    }
+    entry.pendingRequests += 1;
+    void clinicMediaHost.handle(app, entry, attempt, message).then(data => {
+      if (isCurrentAppLaunch(app, entry, attempt)) sendAppPortMessage(entry, { type: 'app:media-response', requestId: message.requestId, ok: true, data });
+    }).catch(cause => {
+      if (isCurrentAppLaunch(app, entry, attempt)) sendAppRequestError(entry, 'app:media-response', message.requestId,
+        typeof cause?.code === 'string' ? cause.code : 'UNKNOWN_OUTCOME',
+        typeof cause?.message === 'string' ? cause.message : 'The private media result is not confirmed.');
+    }).finally(() => { entry.pendingRequests = Math.max(0, entry.pendingRequests - 1); });
+    return;
+  }
+
   const expectedKeys = ['appId', 'body', 'idempotencyKey', 'method', 'nonce', 'path', 'requestId', 'type', 'version'];
   const basicRequestValid = message.type === 'app:api-request'
     && Object.keys(message).sort().join(',') === expectedKeys.join(',')
     && typeof message.requestId === 'string' && /^[a-f0-9]{32}$/.test(message.requestId)
     && ['GET', 'POST', 'PUT', 'PATCH'].includes(message.method)
-    && typeof message.path === 'string' && message.path.length > 0 && message.path.length <= 1_024;
+    && typeof message.path === 'string' && message.path.length > 0 && message.path.length <= 1024;
   const isWrite = message.method !== 'GET';
   const requestBodyValid = isWrite
     ? typeof message.body === 'string' && new TextEncoder().encode(message.body).byteLength <= 12_000
@@ -835,19 +907,15 @@ async function handleAppPortMessage(app, entry, attempt, message) {
     failAppRuntime(app, entry, attempt, 'The app sent a request outside its approved interface.');
     return;
   }
-  const now = Date.now();
-  if (now - entry.requestWindowStartedAt >= 60_000) {
-    entry.requestWindowStartedAt = now;
-    entry.requestCount = 0;
-  }
-  entry.requestCount += 1;
-  if (entry.requestCount > 30 || entry.pendingRequests >= 4) {
-    sendAppPortMessage(entry, { type: 'app:api-response', requestId: message.requestId, ok: false, code: 'request_limit', message: 'This app has reached its request limit.' });
+  if (appRequestLimitReached(entry)) {
+    sendAppRequestError(entry, 'app:api-response', message.requestId, 'request_limit', 'This app has reached its request limit.');
     return;
   }
   entry.pendingRequests += 1;
+  const controller = new AbortController();
+  entry.apiControllers.set(message.requestId, controller);
   try {
-    const result = await requestGrantedAppApi(app, entry, attempt, message);
+    const result = await requestGrantedAppApi(app, entry, attempt, message, controller.signal);
     if (isCurrentAppLaunch(app, entry, attempt)) {
       sendAppPortMessage(entry, { type: 'app:api-response', requestId: message.requestId, ...result });
     }
@@ -858,6 +926,7 @@ async function handleAppPortMessage(app, entry, attempt, message) {
         message: isWrite ? 'The save result is not confirmed.' : 'The clinic service could not be reached.' });
     }
   } finally {
+    entry.apiControllers.delete(message.requestId);
     entry.pendingRequests = Math.max(0, entry.pendingRequests - 1);
   }
 }
@@ -911,6 +980,26 @@ async function initializeAppRuntime(app, entry) {
       }
       loaded = true;
       try {
+        const clinicContext = ['workentry', 'patients'].includes(app.id) ? (() => {
+          const rawCapabilities = clinicSession?.clinicUser?.capabilities;
+          const appContextCapabilities = appContextCapabilitiesForApp(app.id);
+          const capabilities = Array.isArray(rawCapabilities)
+            ? appContextCapabilities.filter(capability => rawCapabilities.includes(capability))
+            : [];
+          const sourceRole = clinicSession?.clinicUser?.role;
+          const role = sourceRole === 'reception' ? 'assistant' : sourceRole;
+          const clinicDisplayName = clinicSession?.clinic?.displayName ?? clinicSession?.clinic?.name ?? 'Dental clinic';
+          if (!['admin', 'doctor', 'reception', 'assistant'].includes(role)
+            || typeof clinicDisplayName !== 'string' || clinicDisplayName.length > 160
+            || /[\u0000-\u001f\u007f]/.test(clinicDisplayName) || capabilities.length > 16) {
+            throw new Error('The verified clinic session context is incomplete.');
+          }
+          return { capabilities, role, clinicDisplayName };
+        })() : {};
+        const financeContext = Array.isArray(app.sessionCapabilities) ? {
+          capabilities: app.sessionCapabilities.filter(capability => clinicSession?.clinicUser?.capabilities?.includes(capability)),
+        } : {};
+        const calendarContext = app.id === 'calendar' ? { clinicTimeZone: trustedCalendarTimeZone() } : {};
         iframe.contentWindow.postMessage({
           type: 'dental-os:init',
           appId: app.id,
@@ -918,10 +1007,9 @@ async function initializeAppRuntime(app, entry) {
           version: app.version,
           nonce: entry.nonce,
           bundleSha256: app.bundle.scriptSha256,
-          ...(app.id === 'calendar' ? { clinicTimeZone: trustedCalendarTimeZone() } : {}),
-          ...(Array.isArray(app.sessionCapabilities) ? {
-            capabilities: app.sessionCapabilities.filter((capability) => clinicSession?.clinicUser?.capabilities?.includes(capability)),
-          } : {}),
+          ...clinicContext,
+          ...financeContext,
+          ...calendarContext,
         }, '*', [channel.port2]);
       } catch {
         failAppRuntime(app, entry, attempt, 'The app could not establish its private channel.');
@@ -989,11 +1077,11 @@ function closeAllWindows({ force = false } = {}) {
 }
 
 function hasUnresolvedAppWork(entry) {
-  return !!(entry.lifecycle?.dirty || entry.lifecycle?.modal || entry.lifecycle?.pendingWrite);
+  return !!(entry.lifecycle?.dirty || entry.lifecycle?.modal || entry.lifecycle?.pendingWrite || entry.mediaPending);
 }
 
 function workGuardMessage(entry, action) {
-  if (entry.lifecycle?.pendingWrite) return `Check the original save in ${entry.app.title} before you ${action}.`;
+  if (entry.lifecycle?.pendingWrite || entry.mediaPending) return `Check the original save in ${entry.app.title} before you ${action}.`;
   return `Save or cancel the open work in ${entry.app.title} before you ${action}.`;
 }
 
@@ -1093,6 +1181,7 @@ function createWindow(app, shift) {
     element: section, app, runtimeHost, backButton, frame: null, port: null, readyTimer: null,
     runtimeReady: false, runtimeAttempt: 0, disposed: false,
     lifecycle: { dirty: false, modal: false, pendingWrite: false }, navigationState: { canGoBack: false, canNavigate: true },
+    apiControllers: new Map(), mediaPending: false,
   };
 }
 

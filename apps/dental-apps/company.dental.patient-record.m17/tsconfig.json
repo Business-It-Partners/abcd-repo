@@ -1,0 +1,28 @@
+{
+  "extends": "../../browser-app-build/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/shared/ui/StandardPageScroll": [
+        "../../../packages/dental-ui/src/shared/ui/StandardPageScroll.tsx"
+      ],
+      "@/shared/*": [
+        "./vendor/dental-saas/apps/clinic-web/src/shared/*"
+      ],
+      "@/features/*": [
+        "./vendor/dental-saas/apps/clinic-web/src/features/*"
+      ],
+      "@/shell/*": [
+        "./vendor/dental-saas/apps/clinic-web/src/shell/*"
+      ],
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": []
+  },
+  "include": [
+    "src",
+    "../../../packages/dental-ui/src",
+    "vite.config.ts"
+  ]
+}

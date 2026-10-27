@@ -59,14 +59,23 @@ const routes = new Map([
   ['/apps/calendar.v1.js', 'apps/calendar.v1.js'],
   ['/apps/calendar.v1.css', 'apps/calendar.v1.css'],
   ['/apps/calendar/asset-manifest.js', 'apps/calendar/asset-manifest.js'],
-  ['/apps/treatment-progress.v1.html', 'apps/treatment-progress.v1.html'],
-  ['/apps/treatment-progress.v1.js', 'apps/treatment-progress.v1.js'],
-  ['/apps/treatment-progress.v1.css', 'apps/treatment-progress.v1.css'],
-  ['/apps/treatment-progress/asset-manifest.js', 'apps/treatment-progress/asset-manifest.js'],
   ['/apps/finance.v1.html', 'apps/finance.v1.html'],
   ['/apps/finance.v1.js', 'apps/finance.v1.js'],
   ['/apps/finance.v1.css', 'apps/finance.v1.css'],
   ['/apps/finance/asset-manifest.js', 'apps/finance/asset-manifest.js'],
+  ['/apps/treatment-progress.v1.html', 'apps/treatment-progress.v1.html'],
+  ['/apps/treatment-progress.v1.js', 'apps/treatment-progress.v1.js'],
+  ['/apps/treatment-progress.v1.css', 'apps/treatment-progress.v1.css'],
+  ['/apps/treatment-progress/asset-manifest.js', 'apps/treatment-progress/asset-manifest.js'],
+  ['/apps/workentry.v1.html', 'apps/workentry.v1.html'],
+  ['/apps/workentry.v1.js', 'apps/workentry.v1.js'],
+  ['/apps/workentry.v1.css', 'apps/workentry.v1.css'],
+  ['/apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js', 'apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js'],
+  ['/apps/patients.v1.html', 'apps/patients.v1.html'],
+  ['/apps/patients.v1.js', 'apps/patients.v1.js'],
+  ['/apps/patients.v1.css', 'apps/patients.v1.css'],
+  ['/apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js', 'apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js'],
+  ['/apps/clinic-app-runtime/mediaHost.js', 'apps/clinic-app-runtime/mediaHost.js'],
   ['/styles.css', 'styles.css'],
   ['/vendor/nepali-date-utils/index.js', 'vendor/nepali-date-utils/index.js'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
@@ -81,6 +90,20 @@ const routes = new Map([
   ['/assets/dock/staff.webp', 'assets/dock/staff.webp'],
   ['/assets/dock/treatment.webp', 'assets/dock/treatment.webp'],
   ['/assets/dock/workentry.webp', 'assets/dock/workentry.webp'],
+]);
+
+const isolatedAppPages = new Set([
+  '/apps/treatment-protocols.v1.html', '/apps/workentry.v1.html', '/apps/patients.v1.html',
+  '/apps/calendar.v1.html', '/apps/finance.v1.html', '/apps/treatment-progress.v1.html',
+]);
+const isolatedAppAssets = new Set([
+  '/apps/runtime.v1.js',
+  '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
+  '/apps/workentry.v1.js', '/apps/workentry.v1.css',
+  '/apps/patients.v1.js', '/apps/patients.v1.css',
+  '/apps/calendar.v1.js', '/apps/calendar.v1.css',
+  '/apps/finance.v1.js', '/apps/finance.v1.css',
+  '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css',
 ]);
 
 const server = createServer(async (request, response) => {
@@ -103,33 +126,19 @@ const server = createServer(async (request, response) => {
       "default-src 'none'; script-src 'sha256-QxKPypccfuyhMR46nwtOP1sxgoNKNWXp+27ulGg8W+g='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
     );
   }
-  if (pathname === '/apps/treatment-protocols.v1.html') {
-    try {
-      const appHtml = await readFile(resolve(root, 'apps/treatment-protocols.v1.html'), 'utf8');
-      const scriptHash = appHtml.match(/script-src '(sha256-[A-Za-z0-9+/=]+)'/)?.[1];
-      const styleHash = appHtml.match(/style-src '(sha256-[A-Za-z0-9+/=]+)'/)?.[1];
-      if (!scriptHash || !styleHash) throw new Error('app CSP hashes are missing');
-      response.setHeader('Content-Security-Policy', `default-src 'none'; script-src '${scriptHash}'; style-src '${styleHash}'; img-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'`);
-    } catch {
-      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Treatment Protocols bundle is not built');
-      return;
-    }
-  }
-  if (['/apps/finance.v1.html', '/apps/calendar.v1.html', '/apps/treatment-progress.v1.html'].includes(pathname)) {
+  if (isolatedAppPages.has(pathname)) {
     try {
       const relativePath = routes.get(pathname);
-      const html = await readFile(resolve(root, relativePath), 'utf8');
-      const policy = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\s*\/>/i)?.[1];
-      if (!policy) throw new Error('App package CSP is missing.');
+      const appHtml = await readFile(resolve(root, relativePath), 'utf8');
+      const policy = appHtml.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\s*\/>/i)?.[1];
+      if (!policy) throw new Error('app CSP metadata is missing');
       response.setHeader('Content-Security-Policy', policy);
     } catch {
-      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('App package is not built.');
+      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('App package is not built');
       return;
     }
   }
-  if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
-    '/apps/calendar.v1.js', '/apps/calendar.v1.css', '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css',
-    '/apps/finance.v1.js', '/apps/finance.v1.css'].includes(pathname)) {
+  if (isolatedAppAssets.has(pathname)) {
     response.setHeader('Access-Control-Allow-Origin', '*');
   }
 
