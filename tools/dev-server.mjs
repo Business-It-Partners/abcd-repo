@@ -36,6 +36,10 @@ const contentTypes = {
   '.html': 'text/html; charset=utf-8',
   '.jpg': 'image/jpeg',
   '.png': 'image/png',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json',
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
@@ -48,6 +52,7 @@ const routes = new Map([
   ['/apps/browser/catalog.js', 'apps/browser/catalog.js'],
   ['/apps/browser/frame.html', 'apps/browser/frame.html'],
   ['/apps/browser/frame.js', 'apps/browser/frame.js'],
+  ['/apps/browser/bridge.js', 'apps/browser/bridge.js'],
   ['/apps/browser/frame.css', 'apps/browser/frame.css'],
   ['/styles.css', 'styles.css'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
@@ -64,6 +69,8 @@ const routes = new Map([
   ['/assets/dock/workentry.webp', 'assets/dock/workentry.webp'],
 ]);
 
+const followUpsBundle = /^\/apps\/browser\/dist\/followups\/(?:assets\/)?[a-zA-Z0-9_.-]+\.(?:js|css|png|webp|svg|jpg|woff2?|ttf)$/;
+
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url ?? '/', `http://127.0.0.1:${port}`).pathname;
 
@@ -74,9 +81,10 @@ const server = createServer(async (request, response) => {
     : "'none'";
   const scriptSources = connected ? "'self' https://www.gstatic.com" : "'self'";
   const isAppFrame = pathname === '/apps/browser/frame.html';
+  const browserHostOrigin = connected ? 'http://localhost:3003' : 'http://127.0.0.1:4280';
   const frameSources = connected ? `'self' https://${firebaseConfig.authDomain}` : "'self'";
   const policy = isAppFrame
-    ? "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts"
+    ? `default-src 'none'; script-src 'self' ${browserHostOrigin}; style-src 'self' ${browserHostOrigin} 'unsafe-inline'; img-src 'self' ${browserHostOrigin} data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts`
     : `default-src 'self'; script-src ${scriptSources}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSources}; frame-src ${frameSources}; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
   response.setHeader('Content-Security-Policy', policy);
 
@@ -97,7 +105,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const relativePath = routes.get(pathname);
+  // Vite's immutable asset names must be served without enabling arbitrary file access.
+  // An opaque-origin sandbox needs CORS on public, static JavaScript modules.
+  const bundle = followUpsBundle.test(pathname);
+  const relativePath = bundle ? pathname.slice(1) : routes.get(pathname);
+  if (bundle) response.setHeader('Access-Control-Allow-Origin', '*');
   if (!relativePath) {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
     return;
