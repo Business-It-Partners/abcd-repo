@@ -1,4 +1,4 @@
-import type { AppNavigationSnapshot, AppSdk } from '../../../electron/sdk/contracts';
+import type { AppNavigationSnapshot, AppSdk } from '../../browser-sdk/src/contracts';
 
 type AppHistoryEntry<T> = { id: string; page: T };
 
