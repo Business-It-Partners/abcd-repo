@@ -1,0 +1,121 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "sourceBranch": "production",
+  "revision": "f44d3e30ca6f79cba61e32601c53d58826500201",
+  "method": "Directly import the pinned SaaS patient-record presentation and workflow components. Adapt only their app-shell, session, route, JSON API, and media transport seams to the Dental OS SDK.",
+  "uiParity": {
+    "vendoredFiles": 128,
+    "byteIdenticalFiles": 116,
+    "adapterFiles": [
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
+        "purpose": "Use the supplied Dental OS profile-update command; remove the Firebase fallback."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/components/XRayGallery.tsx",
+        "purpose": "Read patient-scoped image bytes through the Dental OS media SDK instead of Firebase and direct media HTTP; show the metadata loading state while the X-ray section fetches on demand."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/hooks/useServerPatientDirectory.ts",
+        "purpose": "Retain the SaaS directory criteria type; the app wrapper supplies directory state through ClinicClient."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx",
+        "purpose": "Use brokered media begin, transfer and finalise operations instead of direct Firebase, HTTP and signed URLs."
+      },
+      {
+        "path": "apps/clinic-web/src/features/work-entry/model/chartData.ts",
+        "purpose": "Carry the patient identifier required to scope private image reads."
+      },
+      {
+        "path": "apps/clinic-web/src/shell/routing/useClinicRouteState.ts",
+        "purpose": "Keep source tab and detail routing in memory in the isolated app window instead of Next.js navigation."
+      },
+      {
+        "path": "apps/clinic-web/src/shell/session/ClinicRoleContext.tsx",
+        "purpose": "Receive the active clinic role from the verified Dental OS session."
+      }
+    ],
+    "visibleMarkupAndStylesChanged": true,
+    "localUiChanges": [
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientRecordView.tsx",
+        "purpose": "Align the directory title and integrated filters/count/pagination with the Standard Window 1 main-page pattern while retaining the pinned patient workflow."
+      },
+      {
+        "path": "apps/clinic-web/src/shared/ui/workspace-primitives/Layout.tsx",
+        "purpose": "Add an opt-in standard-page presentation marker used only by the Patient Record directory."
+      },
+      {
+        "path": "apps/clinic-web/src/shared/ui/ClinicDataTable.tsx",
+        "purpose": "Expose the standard-page toolbar and table markers for the directory's existing filters and table."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
+        "purpose": "Add a semantic patient-record navigation heading, align tab icons with the Files-inspired sidebar, notify the adapter when the active section changes, and show loading states while lazy section reads are pending."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/components/PatientLabTab.tsx",
+        "purpose": "Show loading and error feedback while lab orders and supplier references load on demand for the Lab section."
+      },
+      {
+        "path": "apps/clinic-web/src/features/patients/patient-record.module.css",
+        "purpose": "Match the Files sidebar's quiet gray surface, compact selected navigation row, and clear divider; keep the sidebar anchored while it and the unchanged patient views scroll independently."
+      }
+    ],
+    "shellLayoutClasses": [
+      "clinicApp",
+      "clinicWorkspaceCanvas",
+      "clinicCareWorkspace"
+    ]
+  },
+  "sourceFiles": [
+    "apps/clinic-web/src/app/globals.css",
+    "apps/clinic-web/src/shared/clinic.css",
+    "apps/clinic-web/src/features/patients/patient-record.module.css",
+    "apps/clinic-web/src/features/patients/components/PatientRecordView.tsx",
+    "apps/clinic-web/src/features/work-entry/components/CaseEntryView.tsx",
+    "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx",
+    "apps/clinic-web/src/features/patients/components/PatientProfileTab.tsx",
+    "apps/clinic-web/src/features/patients/components/TreatmentPlanTab.tsx",
+    "apps/clinic-web/src/features/patients/components/PrescriptionTab.tsx",
+    "apps/clinic-web/src/features/patients/components/XRayGallery.tsx",
+    "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx",
+    "apps/clinic-web/src/features/patients/model/domain.ts",
+    "apps/clinic-web/src/features/patients/types.ts",
+    "apps/clinic-web/src/features/patients/patientDirectory.ts",
+    "apps/clinic-web/src/features/work-entry/model/caseData.ts",
+    "apps/clinic-web/src/features/work-entry/model/chartData.ts",
+    "apps/clinic-web/src/shared/dates/MonthPicker.tsx",
+    "apps/clinic-web/src/shared/dates/NepaliDatePicker.tsx",
+    "apps/clinic-web/src/shared/ui/workspace-primitives"
+  ],
+  "referenceBlobs": {
+    "apps/clinic-web/src/app/globals.css": "4ad0fe66d48eaa6c8000e53275ca7896b783108f",
+    "apps/clinic-web/src/shared/clinic.css": "54d1275217759d95df2f2a1cbafdd9563d05be08",
+    "apps/clinic-web/src/features/patients/patient-record.module.css": "04fdec0960c7fe43f6dc92891ba0d1605cdf5bd0",
+    "apps/clinic-web/src/features/patients/components/PatientRecordView.tsx": "aded4a7e4e830c9de5956761e917a22334e1c5b1",
+    "apps/clinic-web/src/features/work-entry/components/CaseEntryView.tsx": "a563c7925f52dc8b6220b7c1ba704dc551645afd",
+    "apps/clinic-web/src/features/patients/components/PatientDrawer.tsx": "b32f3420ac4af7b07a03b36e51a934fdf7b6132e",
+    "apps/clinic-web/src/features/patients/components/PatientProfileTab.tsx": "dd793812227a07c323a66bc97a7847ff6cec3dc4",
+    "apps/clinic-web/src/features/patients/components/TreatmentPlanTab.tsx": "fc05359e53b92ebdde10cc02caeb47398e7aa254",
+    "apps/clinic-web/src/features/patients/components/PrescriptionTab.tsx": "8a623af2d24e6ec64dafe41fba94fa625d59ea9f",
+    "apps/clinic-web/src/features/patients/components/XRayGallery.tsx": "0e0c564c99e78b9aeb96b9cc268c18c4533d2458",
+    "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx": "23c576697350dc57b8396846a9a60777d49a284c",
+    "apps/clinic-web/src/shared/dates/MonthPicker.tsx": "5d9ddf6b2eaecd640e8d15128f53b5a0ce284282",
+    "apps/clinic-web/src/shared/dates/NepaliDatePicker.tsx": "d54643c2c7e7608207c40d7a203d62f424e36b65"
+  },
+  "adapterEntryPoints": [
+    "src/saasDirectory.tsx",
+    "src/saasPatientIntake.tsx",
+    "src/saasPatientDetail.tsx",
+    "src/saasMediaContext.tsx",
+    "src/api.ts"
+  ],
+  "boundaries": [
+    "No production API credentials or renderer direct HTTP",
+    "No app-to-app navigation or native print/export capability added",
+    "No changes to the Dental SaaS repository",
+    "No local authoritative business database or offline write queue"
+  ]
+}

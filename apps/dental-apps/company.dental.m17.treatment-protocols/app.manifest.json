@@ -1,0 +1,13 @@
+{
+  "appId": "company.dental.m17.treatment-protocols",
+  "publisher": "company",
+  "version": "1.0.6",
+  "entry": "index.html",
+  "sdkMajor": 1,
+  "apiMajor": 1,
+  "capabilities": [
+    "clinic.app.treatment-protocols",
+    "clinic.api.request",
+    "session.context"
+  ]
+}

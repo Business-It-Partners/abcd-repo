@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "appId": "company.dental.m17.treatment-protocols",
+  "title": "Treatment Protocols",
+  "description": "Reusable clinical stages and default pricing for future treatment plans.",
+  "icon": "assets/protocols.png",
+  "anyCapabilities": ["treatment_protocols.manage"],
+  "excludedRoles": [],
+  "allowedRoles": [],
+  "preferredContentWidth": 1000,
+  "modules": [
+    {
+      "id": "treatment-protocols",
+      "label": "Treatment Protocols",
+      "tab": "treatment-protocols",
+      "capability": "treatment_protocols.manage"
+    }
+  ]
+}

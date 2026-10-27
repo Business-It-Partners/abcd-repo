@@ -1,0 +1,441 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "revision": "f44d3e30ca6f79cba61e32601c53d58826500201",
+  "branch": "production",
+  "branchMapping": "The remote has no refs/heads/main. Remote HEAD points to cloudfare-staging; production is the production branch used as the requested source.",
+  "appId": "company.dental.work-entry.m17",
+  "version": "1.0.0",
+  "referencePolicy": "Dental SaaS production is the UI and business-contract reference. Worker, Firebase authentication, direct HTTP, and database code are excluded; all business calls use the Dental OS ClinicClient/host broker.",
+  "imports": [
+    {
+      "source": "apps/clinic-web/src/features/finance/suppliers/types.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/finance/suppliers/types.ts",
+      "gitBlob": "ba2afa2b1f5ce654f59907ed87c5b5d41c1142c3",
+      "sourceSha256": "2449b8dec299a5cd6078e82fe88e0c61e99c88dd67a836944f76f44bdb7bcf98",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/labs/components/LabOrderBlock.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/labs/components/LabOrderBlock.tsx",
+      "gitBlob": "f9c921340e124b1dc97c7f0947c40956ff581e21",
+      "sourceSha256": "5b75c9983c4e4f182bb449d06e78067c66b89ff70312ec5d29d442af8e7b7fab",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/labs/model/labWork.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/labs/model/labWork.ts",
+      "gitBlob": "67d1080036a5062c79a4255a9f86387164196d5a",
+      "sourceSha256": "4919cfac09ee299bf2e7b329e6dca7ab7e026112bea74ac34c0d475c26b01279",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/labs/types.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/labs/types.ts",
+      "gitBlob": "b454b24a52ab07c9e9bb8698b7d45e0447848acf",
+      "sourceSha256": "f18705671dc31f9616508e3d36f5b548e9b05f8bedd03a81f2571305e7641180",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/components/NewPatientStylePrescription.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/patients/components/NewPatientStylePrescription.tsx",
+      "gitBlob": "f51be9f894a1e25801c3dd2991d1c2eb8d4f7256",
+      "sourceSha256": "33081702e3ee99d5189ee4af93411974ce9688bb15a35665468f52fbe70929af",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/model/domain.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/patients/model/domain.ts",
+      "gitBlob": "b1eee207cc3b51d2dd43ed5c06094c1d861fbc82",
+      "sourceSha256": "ab1b7a812c71ce106928ff4af8e73ce61923d544a5d102463a7a89f9a12c9a4d",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/patient-record.module.css",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/patients/patient-record.module.css",
+      "gitBlob": "04fdec0960c7fe43f6dc92891ba0d1605cdf5bd0",
+      "sourceSha256": "3e3c45d193db70fa97a0cc9318323edfb5742e2425ca0b99ca8bcdd4631fc1de",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/standalonePatientRegistration.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/patients/standalonePatientRegistration.ts",
+      "gitBlob": "efa8aa4b7234e95ab9dac5da73ce2c8687bd1eea",
+      "sourceSha256": "f6291c6d6aad82ef7bfda202402fbd60bdb1cf48548ae4101e6d018771bf5939",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/types.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/patients/types.ts",
+      "gitBlob": "e1baa4c1dad3ac768e6dd5e0f9d2da633a31f73a",
+      "sourceSha256": "7a1bc72c0606ece0c73eaeb23f649a5ea723aaa38d6209901cad4345f5ae7ad8",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/staff/types.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/staff/types.ts",
+      "gitBlob": "b4e21f1acace7e4316f3b51b3885b2eb280e4099",
+      "sourceSha256": "fea99e431ee7b98f510d5704b141882ca3a8de12dbdf669da3f5739be6e5c784",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/CaseStatusUpdateModal.module.css",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/CaseStatusUpdateModal.module.css",
+      "gitBlob": "0ae8066fbb88736a40de4e203450e4e70d11d50a",
+      "sourceSha256": "aa5b8f24ed191c8d1dd65c6e601a3f4f53e555678940fa7677e3b7e1024ab29c",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/CaseStatusUpdateModal.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/CaseStatusUpdateModal.tsx",
+      "gitBlob": "c5df00b29c522b5417ba51f618b39599303005d7",
+      "sourceSha256": "fc21951c099149fd7f2a3f49e03b1f781d4a5709f1d3c2e6f41e7dbb3ff3cba9",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/InProgressWorkEntry.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/InProgressWorkEntry.tsx",
+      "gitBlob": "e6ee0e215a7354a5fe7650bde552616f3ea02447",
+      "sourceSha256": "55e71cb2db22de665b7ff7d95bfdd80c202a5fe1f6628ee2957fe9b5a02cbe85",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/WorkEntryWorkspace.module.css",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/WorkEntryWorkspace.module.css",
+      "gitBlob": "d295da78a994d5e199e83b08700e7dc77830ab64",
+      "sourceSha256": "bb8e04d6bbb4b21ef8289c00c705a8c7bf1b8d9c47ba4c34ff96489d6b2e7e73",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/WorkEntryWorkspace.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/WorkEntryWorkspace.tsx",
+      "gitBlob": "a9b080ab1750774d44e46642b2adad4011252547",
+      "sourceSha256": "ee0af06540a909cb599576f1c0b362ce2a1b28bc67286b7c68b74f7fcbce114a",
+      "adaptation": "Presentation retained. Firebase token lookup removed and replaced with the empty compatibility parameter consumed only by SDK adapters; route state and host lifecycle guards adapted to the managed app."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/api.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/api.ts",
+      "gitBlob": "f96dabdf9ff06914be97361b345e7cd2fb2f4b1b",
+      "sourceSha256": "ae2e6be719243151438e0d39aaf54b8441c10ea4ac793e69b5304f400c773ac4",
+      "adaptation": "SaaS route/type behavior retained; direct HTTP adapter replaced with ClinicClient/ClinicCommand using the host API broker."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/charts/api.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/charts/api.ts",
+      "gitBlob": "50e65f6d6472cea9afc83b5dd145a243e40d604a",
+      "sourceSha256": "dd1d03882b67ba92cd46622a6753159f853efe735d230289448f525efc1f9046",
+      "adaptation": "SaaS route/type behavior retained; direct HTTP adapter replaced with the host ClinicClient."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/AddTreatmentPlanModal.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/AddTreatmentPlanModal.tsx",
+      "gitBlob": "de7f7cade1c8eec921a7c5dd7e4604ab5e7b61ce",
+      "sourceSha256": "3574ba444349679d6c6cf5e93064c8ed6cb9ea9d85208a0e72147149af113668",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/CanalDrawer.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CanalDrawer.tsx",
+      "gitBlob": "b8fd1ea77d7eeae3f142c6b0b9c9d5119c701087",
+      "sourceSha256": "af52b03f6b891f6cd5f4932d471c7439735e0de4ce614e1ebc1ae47644fdd7af",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/CaseEntryView.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CaseEntryView.tsx",
+      "gitBlob": "a563c7925f52dc8b6220b7c1ba704dc551645afd",
+      "sourceSha256": "ee663ed43fc7df4c9e917c1406a9aacc57828fa49b3ae2ce659ab21337493f6e",
+      "adaptation": "Presentation retained. Conflict handling no longer performs an automatic second write with a new key after the SDK normalizes the Worker response."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/CaseReviewLedger.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CaseReviewLedger.tsx",
+      "gitBlob": "567f93cef9bc4cff6ad48edf84bc021f4b2e3365",
+      "sourceSha256": "8fc4bff21e0914d5503a8307a8789f59b5d3acfe7105f655b2237d26cc67a9bf",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/ChairsideChart.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/ChairsideChart.tsx",
+      "gitBlob": "23e7a47b1b0ae9d236050561b62f0305ca896b2e",
+      "sourceSha256": "910ead0f4f8cc74bd4ba5cfa2195147c562b293032c3a97548f5ac04567a29ec",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/DoctorRecallWorkspace.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/DoctorRecallWorkspace.tsx",
+      "gitBlob": "92226137f33a0b7523d27186241cfac4069053d4",
+      "sourceSha256": "15c63fcab09e4057a19cadf1263fd7ab384fb5cf31b9ea42c021b213c3dd58ce",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/PeriodontalChart.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/PeriodontalChart.tsx",
+      "gitBlob": "bfb9b40cd0428125dcb929ffe941a84903a2d74e",
+      "sourceSha256": "6fe4635d6a23f4b4f6d6323b8ce2a0f82e195ea7dc12036f0d2633b95e12af4b",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/ReasonPicker.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/ReasonPicker.tsx",
+      "gitBlob": "cd2189a45b44548a05df0f0ee571e83393297232",
+      "sourceSha256": "42f1e72689a54d21b35b0857b235eaf4e4649cbabf7bfae6c752362c5697a5b6",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/ReviewBlocks.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/ReviewBlocks.tsx",
+      "gitBlob": "4c47ae100245d79603c67d2f5d12dd012db27de2",
+      "sourceSha256": "1bf7cbb6c39728de807da6dcaba950115603d1ea209fea8a383f7b813e856df2",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/ScreeningChart.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/ScreeningChart.tsx",
+      "gitBlob": "1be533ffa70c94861a4ee4194c4271521a2796cb",
+      "sourceSha256": "89ac3491f9e227be9b36c5076dbb624cd461258545afbfd886a3c3c157e81c06",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/ToothArches.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/ToothArches.tsx",
+      "gitBlob": "ee28abc141d3058c969d7cbec22d865059253c93",
+      "sourceSha256": "55457693b5d378830c2d5f7eca68efa17b03ce026cebfc6a0a97cda897262ac8",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/WorkEntryPaymentPanel.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/WorkEntryPaymentPanel.tsx",
+      "gitBlob": "2b8a5390028f4ce9db6f3a576bebbc677803eb3a",
+      "sourceSha256": "456b2e7c73f93ed1db48a2098cbb72469bff36b69e3980d523faa5ec99924394",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/WorkEntryView.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/WorkEntryView.tsx",
+      "gitBlob": "a0c80a6e6b86b234ed35353e3db428d3dfcff25d",
+      "sourceSha256": "8d7c8eab940af7d91f9a9f8deac30a6b0dac8601830a566c9e07771d80e10e91",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/components/WorkReviewSheet.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/WorkReviewSheet.tsx",
+      "gitBlob": "ef9ee192601d78278964598180739cc0ae0ab504",
+      "sourceSha256": "c4cbbdb610b0d414959b9271aee6bce30c9b8c9ded77e5067a7cf47206ddef06",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/index.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/index.ts",
+      "gitBlob": "128c3cff59ed31f8ec062bafa36d17ee4da0f24e",
+      "sourceSha256": "142ee2cfc6a1cd7df3304342a09978721c046adede4934ec0b9718c54e0879a7",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/labOrderInvalidation.test.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/labOrderInvalidation.test.ts",
+      "gitBlob": "34fe2838c4e979b36901d2c3caac18fdae324787",
+      "sourceSha256": "1c88875228070b87720f7f03878a5ca6adbc92f94c525c3b746ec860f05af4e3",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/labOrderInvalidation.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/labOrderInvalidation.ts",
+      "gitBlob": "1226002914d25c9498f1250da82bd10751bd708b",
+      "sourceSha256": "723522059a5dd2ef2374c505071b8fefb27beb4cb6c8812516f1c55f58664e19",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/labOrderReview.test.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/labOrderReview.test.ts",
+      "gitBlob": "61c5f9751d132de29e809575f7cddfafcce588ed",
+      "sourceSha256": "bed65aa183a2524e7a4e627a5967343b119ba6bde654d41cb9715a5198e0d38b",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/labOrderReview.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/labOrderReview.ts",
+      "gitBlob": "2d7248c34d4f5916aff503a667190629d2fcde49",
+      "sourceSha256": "6c840cac9f0ef6b93d339ed7ecf89d4d2a9b186f2f892e71b2741adce582be7a",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/canalData.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/canalData.ts",
+      "gitBlob": "dde43f049d4b9793d19d75a27c42b832602e972e",
+      "sourceSha256": "dfe42d0754d8900e7f55765e75ed6a19c25f43115b4291b89c4af880eb7a0185",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/caseData.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/caseData.ts",
+      "gitBlob": "743a99ff5b74fb6e7f7717683fe6be55d539a883",
+      "sourceSha256": "604a09ba02f40b3cdab87de1bed975cc93850f09f6ccc5730abf9d8e99f9f480",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/chartData.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/chartData.ts",
+      "gitBlob": "0fa2b62787bacfc9fa2ae81a6c2af9a96fb2338d",
+      "sourceSha256": "2a5479c08166f687eaeffae478fc8d46bb696353a31ab07f40c116a6598cc2a3",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/draftTypes.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/draftTypes.ts",
+      "gitBlob": "82f36af8297120ab244de5a09cd0ed4e9d2d82d7",
+      "sourceSha256": "0f9314e2227ff2ad55b9a48b6dfc7c36881b13bf88d516387760a12f098deabf",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/encounterDraft.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/encounterDraft.ts",
+      "gitBlob": "750420bee77feae732cb590967aec58e830d0568",
+      "sourceSha256": "eb383333b3adff5bf0a93a62751c8b7edaf48829271511701ed4400f51c623e9",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/treatmentProtocolSuggestions.test.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/treatmentProtocolSuggestions.test.ts",
+      "gitBlob": "485aa09edc480a6816c268d159911d40844ecf7b",
+      "sourceSha256": "e2b8f251db3702d3c021b69b2418b7d59eccad0da2cfedcf841d6ed0f2eee3d0",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/treatmentProtocolSuggestions.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/treatmentProtocolSuggestions.ts",
+      "gitBlob": "1a92414c201e42766e6088bc8b4bc98c8224c36a",
+      "sourceSha256": "0f92096d4de5bf524f161e07763649cca13299b3898a82ac16a7fbdb9bae059a",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/model/workEntryTooth.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/model/workEntryTooth.ts",
+      "gitBlob": "eeba6d5b225255a95667e8fcbf0c6744ba27c48a",
+      "sourceSha256": "a2245d86bc5946ed207c6ed9efe8a8ad0e50508315ae222fb4a72b86e22816a1",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/patientStepActions.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/patientStepActions.ts",
+      "gitBlob": "0725b05e75270c3170906ab0bf05152b414e31cd",
+      "sourceSha256": "c7916a57fd28b2a7466662812529ec0f3ae90506fb03cf48613d3b0088994c99",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/workEntryPayment.test.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/workEntryPayment.test.ts",
+      "gitBlob": "079796258b017f78095de425d5001def900c88f2",
+      "sourceSha256": "31aa1e92bb32282fb80b2140b19d2d25436da8e75d60c57b8a789253089756bb",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/workEntryPayment.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/workEntryPayment.ts",
+      "gitBlob": "ff0236f7b86cf43fd0fd62a28689c9d75f46992f",
+      "sourceSha256": "c88dffd7be85c68e785189bd18f2744ccc579aa96fa1aa0a979d4dce9b236e31",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/workEntryRouteState.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/workEntryRouteState.ts",
+      "gitBlob": "8c429c7928fca879b4030d94a85c9b5a261932dc",
+      "sourceSha256": "6ca0f0165f0dffabb2d2ffcc72342268d30b2924ef95592023cabd95a01e8f92",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/shared/money/decimal.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/shared/money/decimal.ts",
+      "gitBlob": "bc343c77ea2654ce8d0b8ba4db7df094bf034d74",
+      "sourceSha256": "b0c5083fe54d9c730a4b8630ca72f2eb8386c733769e91e3e5a65ab646b0cd12",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/shared/money/inputs.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/shared/money/inputs.ts",
+      "gitBlob": "b5d563c6d8a36f2865981bf8cd0461d21b804d5c",
+      "sourceSha256": "81b6dbe5aaedc4c4f909570af780a41864e292dfadf84c7439afd19e0ffcf2a1",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/shared/ui/ConfirmDialog.tsx",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/shared/ui/ConfirmDialog.tsx",
+      "gitBlob": "55f6f39cd36f220be88c48d11fbad363321c716c",
+      "sourceSha256": "d67246018d1edee1028c88c4e5ec2e6d09448851c3a9e29922c3b045274da812",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/shell/permissions.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/shell/permissions.ts",
+      "gitBlob": "e4a3b5adb4faa26bb2d7af5e9869792e89a2aa01",
+      "sourceSha256": "3c9b77ed22486ae246de4547002cb8f8fd89042e7f5b25f3aefd414fe1ee6252",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    },
+    {
+      "source": "apps/clinic-web/src/shell/routing/clinicRouteState.ts",
+      "destination": "apps/dental-apps/company.dental.work-entry.m17/src/shell/routing/clinicRouteState.ts",
+      "gitBlob": "b9d58f248ee92516f8c1821dcc508ba943ab6f1a",
+      "sourceSha256": "b329843310c61dff09319ac2921c422c6a03601481838082c89af518f354d0af",
+      "adaptation": "SaaS feature presentation/model source retained within the isolated Dental OS app package; app-to-app navigation is not added."
+    }
+  ],
+  "contractReferences": [
+    {
+      "source": "docs/product/workflows/treatment-and-work-entry.md",
+      "gitBlob": "55677b5bfca0ec9c5b7b779c1eeb2a35f05ccde0",
+      "sourceSha256": "c27d6aa419146cdc28dbc11860e303a32c16fd5f9bd6de4b4ce1e5c90fe9ac3b",
+      "usedFor": "Workflow rules and separate media lifecycle."
+    },
+    {
+      "source": "docs/decisions/records/ADR-0002-atomic-open-case-work-entry.md",
+      "gitBlob": "84c40a53752e429260b1f82ff4fb740113112622",
+      "sourceSha256": "7d0c6d3fa1ace1b369dcaa14f0fd840102fc43f0ff92c321ae0d9ea1da691092",
+      "usedFor": "Accepted decision that open-case non-media clinical edits commit through one command."
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/work-entry/workEntry.routes.ts",
+      "gitBlob": "8f890955b3f80ae770b2fc41a786c3329fe07276",
+      "sourceSha256": "1ff811dcfd9658c0b2ad80101cca8c041701da5204486242d8648d7e5bb0931b",
+      "usedFor": "Exact route methods, permissions and idempotency boundary."
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/patients/internal/patientCare.types.ts",
+      "gitBlob": "853cdc49f6757697de6e886222c2419af391eb0f",
+      "sourceSha256": "899d5a6de0314945629f4e372cf40d1f5af9026c0516d821e1059705b7a7dfed",
+      "usedFor": "Commit payload/result fields and Worker parsing/validation."
+    },
+    {
+      "source": "apps/platform-worker/src/clinic/patients/internal/patientCare.service.ts",
+      "gitBlob": "a2bb6fb7750f985ae5d0431424bf1f7f290c7283",
+      "sourceSha256": "98a53fed5ff85943317bca82b95fc0e999c49f9404dffacfb83a2bcbba63bc3f",
+      "usedFor": "Commit payload/result fields and Worker parsing/validation."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/api.ts",
+      "gitBlob": "f96dabdf9ff06914be97361b345e7cd2fb2f4b1b",
+      "sourceSha256": "ae2e6be719243151438e0d39aaf54b8441c10ea4ac793e69b5304f400c773ac4",
+      "usedFor": "Source route/payload envelopes; renderer transport intentionally not copied."
+    },
+    {
+      "source": "apps/clinic-web/src/features/work-entry/charts/api.ts",
+      "gitBlob": "50e65f6d6472cea9afc83b5dd145a243e40d604a",
+      "sourceSha256": "dd1d03882b67ba92cd46622a6753159f853efe735d230289448f525efc1f9046",
+      "usedFor": "Source route/payload envelopes; renderer transport intentionally not copied."
+    },
+    {
+      "source": "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx",
+      "gitBlob": "23c576697350dc57b8396846a9a60777d49a284c",
+      "sourceSha256": "221b31ce8995bf15dfdbfc8ae75d314917f7251b13ac35ffb3d6f23cfba68036",
+      "usedFor": "Source X-ray controls; current Work Entry host grant lacks upload/withdraw and UI is explicitly gated."
+    }
+  ],
+  "excluded": [
+    "apps/platform-worker/**",
+    "apps/clinic-web/src/shared/auth/firebaseClient.ts",
+    "apps/clinic-web/src/shared/api/httpClient.ts",
+    "apps/clinic-web/src/features/patients/media/api.ts (production transport implementation)",
+    "direct app-owned fetch, credentials, Worker/R2 access, local authoritative database and hidden write queue"
+  ],
+  "mediaBoundary": "The Work Entry family has no patient-media upload or withdrawal grant in this host revision. The SaaS upload widget is replaced with a visible unavailable state; no media bytes are sent.",
+  "writeBoundary": "Open-case clinical draft uses one POST /v1/work-entry/commit and one stable immutable SDK command. Source-defined patient/case edits and other explicit case-management commands remain their own Worker operations."
+}

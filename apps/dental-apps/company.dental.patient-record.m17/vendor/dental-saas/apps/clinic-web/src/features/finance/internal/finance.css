@@ -1,0 +1,568 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* THE ANCHOR. Without this, every string that carries no explicit font-size inherits the
+     browser's 16px — which is why the app read one step too large everywhere at 100% zoom and
+     only looked right in a browser left at ~80%. This is a clinic ops tool: 14px is the body. */
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ============================================================
+   FINAL POLISH — system-wide visibility, theme preserved.
+   Shared tokens + form-control base so every input, select and
+   textarea reads clearly and shows a consistent focus ring.
+   These use :focus-visible and box-shadow, which inline styles
+   cannot set, so they apply everywhere without being overridden.
+   ============================================================ */
+:root {
+  --field-border: #cbd5e1;        /* slate 300 — clear input border */
+  --field-border-strong: #94a3b8;  /* slate 400 */
+  --ink-1: #0f172a;               /* slate 900 — high contrast body text (19.3:1 contrast) */
+  --ink-2: #334155;               /* slate 700 — clear label text (10.7:1 contrast) */
+  --ink-3: #64748b;               /* slate 500 — secondary text */
+  --ok: #16a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+
+  /* Typography & Geometry Tokens */
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-17: 17px;
+  --fs-22: 22px;
+
+  --fw-normal: 400;
+  --fw-medium: 600;
+  --fw-bold: 700;
+
+  --icon-inline: 14px;
+  --icon-row: 13px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  --control-h: 36px;
+  --control-h-sm: 32px;
+  --control-h-xs: 26px;
+
+  --cell-pad-y: 8px;
+  --cell-pad-x: 10px;
+  /* Every table row keeps the same calm, scan-friendly minimum as a row that
+     carries a primary fact plus secondary context (for example a lab order).
+     A one-line payment or supplier row must not collapse into a denser rhythm. */
+  --row-h: 54px;
+
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 9999px;
+
+  /* Sky Blue Light Theme Surface & Geometry Tokens — NO YELLOW/CREAM TINTS */
+  --surface: #ffffff;             /* pure clean white card background */
+  --surface-alt: #f1f5f9;         /* slate 100 table headers & alt surfaces */
+  --line: #d5dee9;                /* clear card and control border */
+  --line-strong: #b8c5d4;         /* stronger structural border */
+
+  /* Default Sky Blue Accent Theme */
+  --acc: #0284c7;                 /* Sky Blue 600 */
+  --acc-hover: #0369a1;           /* Sky Blue 700 */
+  --acc-soft: #e0f2fe;            /* Sky Blue 100 */
+  --acc-border: #bae6fd;          /* Sky Blue 200 */
+  --acc-grad1: #38bdf8;
+  --acc-grad2: #0284c7;
+  --acc-glow: rgba(2, 132, 199, 0.25);
+
+  --sidebar-w: 250px;
+  --sidebar-bg: #f8fafc;          /* clean slate/sky tint sidebar background */
+  --page-bg: #e8eef5;             /* distinct slate canvas behind white work cards */
+
+  --page-max: 1600px;
+  --page-pad-x: clamp(16px, 1.6vw, 28px);
+  --page-pad-top: clamp(24px, 2.2vw, 36px);
+}
+
+/* ============================================================
+   VIEWPORT STEPS — the same tokens, tightened as the screen shrinks.
+
+   Fixed pixel sizes are correct on a 1920 desktop and one step too
+   generous on a 1366 laptop: the geometry does not shrink, so the
+   same table eats a larger share of a smaller screen and reads as
+   "everything got bigger" even though nothing changed.
+
+   GEOMETRY steps down; TYPE does not. Spacing a reader never
+   consciously sees can be taken away for free — a font size cannot.
+   Below ~13px this stops being a dense ops tool and starts being a
+   legibility problem for a clinic reading it across a desk.
+   ============================================================ */
+
+/* Laptop — 1366/1440 class. The common case in the clinic. */
+@media (max-width: 1440px) {
+  :root {
+    --sidebar-w: 240px;
+    --sp-5: 16px;
+    --sp-6: 20px;
+    --sp-8: 24px;
+    --cell-pad-y: 6px;
+    --row-h: 54px;
+    --control-h: 34px;
+    --control-h-sm: 30px;
+  }
+}
+
+/* Small laptop / large tablet. Type finally gives up its one step, at the
+   heading only — 17px was a page title, and a page title can be 16px. */
+@media (max-width: 1280px) {
+  :root {
+    --sidebar-w: 230px;
+    --fs-17: 16px;
+    --fs-22: 20px;
+    --sp-4: 12px;
+    --cell-pad-x: 8px;
+    --row-h: 54px;
+    --control-h: 32px;
+    --control-h-sm: 28px;
+    --control-h-xs: 24px;
+  }
+}
+
+/* A calm, consistent transition on interactive controls. */
+input,
+select,
+textarea,
+button {
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+/* Clear, consistent focus ring on every field — the single biggest legibility win. */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--acc, #6a5ae0) !important;
+  box-shadow: 0 0 0 3px var(--acc-soft, #f0edfe);
+}
+
+/* Placeholders were near-invisible in places; give them a readable, uniform tone. */
+input::placeholder,
+textarea::placeholder {
+  color: #4c4c56;
+  opacity: 1;
+}
+
+/* Keyboard focus on buttons and links stays visible for non-mouse users. */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--acc, #6a5ae0);
+  outline-offset: 2px;
+}
+
+/* Native date/time/month/select controls: show the picker affordance clearly.
+   `cursor: pointer` across the WHOLE control is only honest because lib/pickers.ts makes the whole
+   control open the picker. Natively, only the little indicator glyph does — so without that, this
+   rule would be promising a click that does nothing. */
+select {
+  cursor: pointer;
+}
+input[type="date"],
+input[type="time"],
+input[type="month"] {
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+::selection {
+  background: var(--acc-soft, #f0edfe);
+}
+
+/* Disabled controls read as disabled, not broken. */
+input:disabled,
+select:disabled,
+textarea:disabled,
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Accent themes — swapped per route to compare directions */
+.theme-purple {
+  --acc: #6a5ae0;
+  --acc-hover: #5a4ad0;
+  --acc-soft: #f0edfe;
+  --acc-border: #ddd4fa;
+  --acc-grad1: #8b7bf7;
+  --acc-grad2: #6a5ae0;
+  --acc-glow: rgba(106, 90, 224, 0.32);
+}
+
+.theme-amber {
+  --acc: #b07d1c;
+  --acc-hover: #986c17;
+  --acc-soft: #fbf0d6;
+  --acc-border: #f0dcac;
+  --acc-grad1: #f4cd63;
+  --acc-grad2: #e3a12e;
+  --acc-glow: rgba(224, 161, 47, 0.34);
+}
+
+/* ============================================================
+   BUTTONS — ONE standard for the whole system.
+
+   A button meant something different on every page: purple here,
+   white with grey text there, off-cream somewhere else. Same word,
+   same job, three looks. These classes are the single definition,
+   so `Details` on the recall worklist and `Detail` on the staff
+   roster are visibly the same control.
+
+   THE DEFAULT IS `.btn .btn-primary` — accent fill, white label.
+   Reach for another variant only for the two cases below, both of
+   which exist to keep a click safe rather than to decorate:
+
+     .btn-secondary  the subordinate half of a PAIR (Cancel beside
+                     Save). If both halves are solid accent, a
+                     confirm dialog becomes a coin-flip.
+     .btn-danger     irreversible (delete, deactivate). Red is the
+                     one convention a user must never have to read
+                     a label to understand.
+
+   Colour comes from `--acc`, never a hex, so the accent stays
+   swappable in one place.
+   ============================================================ */
+/* Every named action should look deliberate enough to be found quickly in a busy clinic.
+   Compact table actions retain the smaller `.btn-sm` treatment below. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 36px;
+  padding: 7px 15px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: var(--fs-14);
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.10);
+  transition: background-color 0.13s ease, border-color 0.13s ease, box-shadow 0.13s ease, transform 0.13s ease, opacity 0.13s ease;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* A save that SUCCEEDED is disabled to stop a double-submit, but it is the opposite of
+   unavailable — it is the confirmation the doctor is waiting for. Dimming it to 55% made
+   "Saved" read as "greyed out". Success outranks disabled. */
+.btn-done:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--acc, #6a5ae0);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.24);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--acc-hover, #5a4ad0);
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--acc, #6a5ae0);
+  border-color: var(--acc-border, #c4b5fd);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--acc-soft, #f0edfe);
+  border-color: var(--acc, #6a5ae0);
+  box-shadow: 0 3px 7px rgba(79, 70, 229, 0.16);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.20);
+}
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 3px 8px rgba(185, 28, 28, 0.24);
+  transform: translateY(-1px);
+}
+
+/* Hands off to WhatsApp. Green because the clinic's eye goes straight to it, and because the
+   icon-only version of this same action is already green in every table — one action, one colour,
+   whichever shape it takes. Not a decoration: it marks the button that LEAVES the app. */
+.btn-whatsapp {
+  background: #16906f;
+  color: #fff;
+}
+.btn-whatsapp:hover:not(:disabled) {
+  background: #137a5e;
+  box-shadow: 0 3px 8px rgba(19, 122, 94, 0.22);
+  transform: translateY(-1px);
+}
+
+/* Caught — a terminal "resolve" action (it takes the recall off the worklist). Green OUTLINE at
+   rest so it stays quiet while the desk scans the list, filling solid only on hover when it is
+   actually reached for. Kept a button, not a checkbox, because it is one-way. */
+.btn-caught {
+  background: #fff;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+.btn-caught:hover:not(:disabled) {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+  box-shadow: 0 3px 7px rgba(22, 163, 74, 0.20);
+  transform: translateY(-1px);
+}
+
+/* These variants are used by detail drawers, table actions, and paired list actions.
+   They used to rely on browser defaults, which made valid actions look faint or inconsistent. */
+.btn-outline {
+  background: #fff;
+  color: var(--acc, #6a5ae0);
+  border-color: var(--acc-border, #c4b5fd);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--acc-soft, #f0edfe);
+  border-color: var(--acc, #6a5ae0);
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.14);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-2, #334155);
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.10);
+}
+
+.btn-icon {
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
+}
+
+/* Table-row scale — same colours, tighter box. This size is load-bearing: a 40px row survives
+   a button inside it only because the button is ~26px. Do not grow it without moving --row-h. */
+.btn-sm {
+  gap: var(--sp-1);
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: var(--fs-13);
+  font-weight: 650;
+  box-shadow: none;
+}
+.btn-icon.btn-sm {
+  width: 28px;
+  min-width: 28px;
+  padding-inline: 0;
+}
+
+/* Used for terminal review actions and success acknowledgements. It is intentionally scoped
+   rather than changing every compact operational button in the application. */
+.btn-tall {
+  min-height: 42px;
+  padding: 9px 16px;
+}
+
+/* Form actions should be easy to find without becoming a page-wide coloured bar. */
+.btn-block {
+  width: auto;
+  min-width: 168px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The busy spinner, written inline in 18 places as `animation: "spin 0.8s linear infinite"`.
+   One class so the rate is the same everywhere — two spinners at different speeds on one screen
+   reads as one of them being stuck. */
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Patient account dialogs: separate identity, totals, and activity so reception staff can
+   understand the ledger at a glance instead of scanning one visually flat block. */
+.patientPaymentIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+}
+
+.patientPaymentIdentity > div,
+.patientPaymentSectionHeader > div {
+  display: grid;
+  gap: 2px;
+}
+
+.patientPaymentIdentity strong,
+.patientPaymentSectionHeader strong {
+  color: var(--ink-1);
+  font-size: var(--fs-14);
+}
+
+.patientPaymentIdentity span:not(.patientPaymentAvatar),
+.patientPaymentSectionHeader span {
+  color: var(--ink-3);
+  font-size: var(--fs-12);
+}
+
+.patientPaymentAvatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  background: #0284c7;
+  color: #fff;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-bold);
+}
+
+.patientPaymentSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.patientPaymentSummary {
+  min-width: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  background: var(--surface-2);
+}
+
+.patientPaymentSummary > span {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+}
+
+.patientPaymentSummary > strong {
+  display: block;
+  margin-top: var(--sp-1);
+  color: var(--ink-1);
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+}
+
+.patientPaymentSummary--billed { border-left-color: #f59e0b; background: #fffbeb; }
+.patientPaymentSummary--billed > strong { color: #92400e; }
+.patientPaymentSummary--paid { border-left-color: #22c55e; background: #f0fdf4; }
+.patientPaymentSummary--paid > strong { color: #166534; }
+.patientPaymentSummary--due { border-left-color: #ef4444; background: #fef2f2; }
+.patientPaymentSummary--due > strong { color: #b91c1c; }
+.patientPaymentSummary--result { border-left-color: #0284c7; background: #f0f9ff; }
+.patientPaymentSummary--result > strong { color: #0369a1; }
+
+.patientPaymentSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  background: #f8fafc;
+}
+
+.patientLedgerType {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.patientLedgerType--charge { background: #fef3c7; color: #92400e; }
+.patientLedgerType--payment { background: #dcfce7; color: #166534; }
+.patientLedgerType--correction { background: #e0e7ff; color: #3730a3; }
+.patientLedgerType--reversal { background: #fee2e2; color: #991b1b; }
+
+.patientLedgerAmount,
+.patientLedgerBalance {
+  white-space: nowrap;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.patientLedgerAmount--charge { color: #b45309; }
+.patientLedgerAmount--paid { color: #15803d; }
+.patientLedgerAmount--discount { color: #7e22ce; }
+.patientLedgerBalance { color: var(--ink-1); }
+
+@media (max-width: 720px) {
+  .patientPaymentSummaryGrid { grid-template-columns: 1fr; }
+}

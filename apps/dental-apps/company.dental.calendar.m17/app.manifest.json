@@ -1,0 +1,13 @@
+{
+  "appId": "company.dental.calendar.m17",
+  "publisher": "company",
+  "version": "1.0.4",
+  "entry": "index.html",
+  "sdkMajor": 1,
+  "apiMajor": 1,
+  "capabilities": [
+    "clinic.app.calendar",
+    "clinic.api.request",
+    "session.context"
+  ]
+}

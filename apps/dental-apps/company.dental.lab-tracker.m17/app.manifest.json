@@ -1,0 +1,9 @@
+{
+  "appId": "company.dental.lab-tracker.m17",
+  "publisher": "company",
+  "version": "1.0.3",
+  "entry": "index.html",
+  "sdkMajor": 1,
+  "apiMajor": 1,
+  "capabilities": ["clinic.app.lab-tracker", "clinic.api.request", "session.context"]
+}

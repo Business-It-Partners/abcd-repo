@@ -1,0 +1,898 @@
+/* ============================================================
+   UI PRIMITIVES — the shared shell every view is built from.
+
+   Rule for this file: NO literal sizes. Every padding, height,
+   radius and font-size reads a token from globals.css. If a value
+   is needed that no token expresses, add the token — do not type
+   the number here, or we are back to six table paddings again.
+
+   Colour is deliberately untouched: the warm cream identity
+   (--surface / --line / --surface-alt) is kept exactly as it was.
+   Only geometry changed.
+   ============================================================ */
+
+/* ---------- Page scaffold ---------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  /* Keeps a short list from leaving the shell background half-painted. Derived from the shell's
+     own inset rather than a fixed 110px, so it stays correct as --page-pad-top flexes. */
+  min-height: calc(100vh - var(--page-pad-top) - var(--sp-8));
+}
+
+.pageSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 100%;
+  padding: var(--sp-4);
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  box-shadow: 0 10px 24px -16px rgba(15, 23, 42, 0.32), 0 1px 4px rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+}
+
+.pageSheetFill {
+  flex: 1;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3) var(--sp-5);
+}
+
+/* 26px page titles were the single loudest thing on every screen. 17px is the ceiling —
+   the icon beside it does the work of announcing the page, not the point size. */
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-17);
+  font-weight: var(--fw-bold);
+  color: var(--ink-1);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+  margin-top: var(--sp-1);
+}
+
+.pageActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------- Card ---------- */
+
+.card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  /* Primary content compartments follow the intake reference: sharp edges
+     make the boundary between the page canvas and the working section clear. */
+  border-radius: var(--r-lg, 16px);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* The intake reference uses hard-edged section compartments.  Kept opt-in so
+   drawers and compact popovers can retain their softer geometry. */
+.cardSquare {
+  border-radius: var(--r-lg, 16px);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.cardTitle {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-bold);
+  color: var(--ink-1);
+  margin: 0;
+}
+
+.cardBody {
+  padding: var(--sp-4);
+}
+
+/* ---------- Toolbar (search + filters + primary action) ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--sp-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+/* ---------- Form controls ---------- */
+
+.control {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-14);
+  font-family: inherit;
+  color: var(--ink-1);
+  background: var(--surface);
+  outline: none;
+}
+
+.controlSearch {
+  padding-left: var(--sp-8);
+}
+
+.controlSelect {
+  cursor: pointer;
+}
+
+/* A textarea cannot take a fixed height, but it can start on the same rhythm. */
+.controlArea {
+  height: auto;
+  min-height: calc(var(--control-h) * 2);
+  padding: var(--sp-2) var(--sp-3);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.controlInvalid {
+  border-color: var(--danger);
+}
+
+/* An inline filter toggle sitting in a toolbar beside the controls, not a form field. */
+.inlineCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.inlineCheckBox {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--acc, #6a5ae0);
+  cursor: pointer;
+}
+
+/* ---------- Field (label + control + error) ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+/* Field labels must be clear at a glance for a busy clinic user. The control
+   boundary and spacing provide hierarchy; a tiny, pale, uppercase label does not. */
+.fieldLabel {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2);
+}
+
+.fieldRequired {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+/* Reserves no space when empty — an error must not shift the form as it appears. */
+.fieldError {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-medium);
+  color: var(--danger);
+}
+
+.fieldHint {
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+}
+
+/* ---------- Table ---------- */
+
+.tableWrap {
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--fs-14);
+}
+
+.th {
+  background: var(--surface-alt);
+  color: var(--ink-1);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-bold);
+  text-transform: none;
+  letter-spacing: 0;
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.td {
+  height: var(--row-h);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: middle;
+  /* Stated, not inherited: the old .tableTd set 500 and a half-migrated page would otherwise
+     show two different text weights in the same table. */
+  font-weight: var(--fw-normal);
+}
+
+.tr {
+  transition: background 0.15s ease;
+}
+
+.tr:hover {
+  background: var(--surface-alt);
+}
+
+/* Last row sits flush against the footer border rather than doubling it. */
+.table tbody tr:last-child .td {
+  border-bottom: none;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+/* The row's own action cluster. Buttons here are --control-h-xs so the row stays --row-h. */
+.rowActions {
+  display: inline-flex;
+  gap: var(--sp-1);
+}
+
+.tableFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-top: 1px solid var(--line);
+  /* Pagination is part of the table card, not a continuation of the page canvas. */
+  background: var(--surface);
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+}
+
+.tableFooterNav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.tableFooterPage {
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+/* ---------- Chip ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium);
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.chipNeutral {
+  background: #f4f1ea;
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
+
+.chipOk {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.chipWarn {
+  background: #fff7ed;
+  color: var(--warn);
+  border-color: #fed7aa;
+}
+
+.chipDanger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.chipAccent {
+  background: var(--acc-soft, #f0edfe);
+  color: var(--acc, #6a5ae0);
+  border-color: var(--acc-border, #ddd4fa);
+}
+
+/* ---------- Modal ---------- */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6vh var(--sp-4);
+  overflow-y: auto;
+}
+
+.modalCard {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 0;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--acc, #6a5ae0);
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+.modalTitle {
+  font-size: var(--fs-15);
+  font-weight: var(--fw-bold);
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.modalClose {
+  display: grid;
+  place-items: center;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  border: none;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modalClose:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  /* The shared ClinicModal owns the outer form padding. Keep Finance's field
+     stack only, so every feature gets one modal frame. */
+  padding: 0;
+}
+
+/* Modal workflows use the same crisp geometry as the clinical intake sheets. */
+.modalBody .control,
+.modalBody .btn {
+  border-radius: 0;
+}
+
+/* A form-level failure, distinct from a per-Field error: it is about the submit, not a value. */
+.modalError {
+  font-size: var(--fs-13);
+  color: #b3261e;
+  background: #fdf1f0;
+  border: 1px solid #f2d4d1;
+  border-radius: 0;
+  padding: var(--sp-2) var(--sp-3);
+}
+
+/* Two fields sharing a row inside a modal — the commonest form shape in the app. */
+.fieldPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+/* ---------- States ---------- */
+
+.stateBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-5);
+  text-align: center;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.stateIcon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--sp-1);
+  border: 1px solid var(--acc-border);
+  border-radius: 50%;
+  background: var(--acc-soft);
+  color: var(--acc);
+}
+
+.stateMessage {
+  color: var(--ink-2);
+  font-weight: var(--fw-medium);
+}
+
+.stateHint {
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+  max-width: 46ch;
+}
+
+.stateError {
+  color: var(--danger);
+}
+
+.stateLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8);
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ---------- Drawer (right-hand detail sheet) ---------- */
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(4px);
+  animation: drawerFade 0.25s ease;
+}
+
+@keyframes drawerFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes drawerSlide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.drawerSheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 101;
+  width: 92%;
+  min-width: 760px;
+  background: var(--surface-alt);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -15px 0 50px rgba(15, 23, 42, 0.08), -30px 0 90px rgba(15, 23, 42, 0.06);
+  animation: drawerSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* A lab order is one focused item. It should open beside the worklist, not
+   replace almost the entire screen like a full patient record does. */
+.drawerSheetCompact {
+  width: min(680px, 100vw);
+  min-width: 0;
+  background: var(--page-bg);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+/* Drawer headers are white, unlike coloured modal headers. Keep the close
+   control visible and immediately legible beside actions such as Edit. */
+.drawerHeader .modalClose {
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink-2);
+}
+
+.drawerHeader .modalClose:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: var(--danger);
+}
+
+.drawerTitle {
+  font-size: var(--fs-17);
+  font-weight: var(--fw-bold);
+  color: var(--ink-1);
+  margin: 0;
+}
+
+.drawerSubtitle {
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* The sheet's own scroll region. The header and tab bar stay put; only this moves. */
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4) var(--sp-5) var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ---------- Tabs ---------- */
+
+.tabBar {
+  display: flex;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.tabBar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabBar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--r-pill);
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 10px 10px 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-medium);
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tabBtn:hover {
+  color: var(--ink-1);
+}
+
+/* The underline carries the selection, so the label only steps up one weight — the old version
+   jumped 600 -> 700 AND changed colour AND drew a bar, which made the tab strip flicker as the
+   selected word visibly widened and pushed its neighbours along. */
+.tabBtnActive,
+.tabBtnActive:hover {
+  color: var(--acc);
+  border-bottom-color: var(--acc);
+}
+
+/* ---------- StatTile (clickable KPI / filter tile) ---------- */
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-3);
+}
+
+/* Finance overview: three cards per desktop row keeps each metric legible. */
+.financeMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+/* Filled finance tiles carry their meaning in the background; black text keeps every value
+   equally readable instead of switching colour from tile to tile. */
+.financeMetricGrid .card :is(span, div) {
+  color: var(--ink-1) !important;
+}
+
+@media (max-width: 1180px) {
+  .financeMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .financeMetricGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+/* Tone comes in as --tone / --tone-bg / --tone-num set inline by the caller, so the tile keeps
+   its per-bucket colour without the primitive knowing anything about recall buckets. */
+.statTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: 0;
+  border: 1px solid var(--line, #e2e8f0);
+  background: var(--surface, #ffffff);
+  cursor: pointer;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+/* The lift that was lost when these tiles moved off their stylesheet — a hover cue cannot be
+   done with inline styles without inventing per-tile React state, which is not worth it. */
+.statTile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(96, 78, 36, 0.10);
+  border-color: var(--tone, var(--line-strong));
+}
+
+.statTileActive,
+.statTileActive:hover {
+  border-color: var(--tone);
+  box-shadow: 0 0 0 3px var(--tone-bg), 0 8px 20px rgba(96, 78, 36, 0.09);
+}
+
+.statTileIcon {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  display: grid;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border-radius: var(--r-sm);
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+.statTileActive .statTileIcon {
+  background: var(--tone);
+  color: #fff;
+}
+
+.statTileValue {
+  font-size: var(--fs-22);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--tone-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.statTileLabel {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-medium);
+  color: var(--ink-1);
+  margin-top: var(--sp-1);
+}
+
+.statTileHint {
+  font-size: var(--fs-13);
+  color: var(--ink-3);
+}
+
+/* ---------- DataTable: the FewaCure-style grid ---------- */
+
+/* Full grid, not just horizontal rules. On a 4-column table horizontal rules are enough; on the
+   8-column Patient Record the eye loses its place crossing a wide row, and a vertical line is
+   what stops that. The reference ops system rules every cell for exactly this reason. */
+.th,
+.td {
+  border-right: 1px solid var(--line);
+}
+
+.th:last-child,
+.td:last-child {
+  border-right: none;
+}
+
+/* Zebra. Kept very light — it is a reading aid, not decoration, and at full strength it fights
+   the row-hover highlight for attention. */
+.tableStriped tbody tr:nth-child(even) .td {
+  background: var(--surface-alt);
+}
+
+.tableStriped tbody tr:hover .td {
+  background: var(--acc-soft, #f0edfe);
+}
+
+/* Sortable header */
+.thSortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.thSortable:hover {
+  color: var(--acc);
+}
+
+.sortArrow {
+  display: inline-block;
+  margin-left: var(--sp-1);
+  opacity: 0.35;
+  font-size: var(--fs-11);
+}
+
+.sortArrowActive {
+  opacity: 1;
+  color: var(--acc);
+}
+
+/* The toolbar strip INSIDE the card, directly above the grid: page-size on the left, the view's
+   own filters and search on the right. It belongs to the table, so it lives with the table. */
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.tableToolbarLeft,
+
+
+
+/* Footer sum row. Bold, top-ruled, and it must sit inside <tfoot> so it stays put when the
+   grid scrolls horizontally and so screen readers announce it as a summary, not another record. */
+.tfootRow .td {
+  /* The summary line is a proper table row and stays on the same clean white
+     surface as the records above it. */
+  background: var(--surface);
+  font-weight: var(--fw-bold);
+  color: var(--ink-1);
+  border-top: 2px solid var(--line-strong);
+}
+
+/* ---------- StackCell: two facts in one cell ---------- */
+
+/* A record's identity is often two things, not one — patient name AND record ID, staff name AND
+   email, product name AND its spec. Splitting them into two columns doubles the width for no gain
+   and breaks the link between them; stacking keeps them read as ONE identity. */
+.stackCell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.stackAvatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  border-radius: var(--r-pill);
+  background: var(--acc-soft, #f0edfe);
+  color: var(--acc, #6a5ae0);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.stackText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stackPrimary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-weight: var(--fw-medium);
+  color: var(--ink-1);
+}
+
+/* Deliberately one step down in BOTH size and colour. If the secondary line matched the primary,
+   the eye would read two records where there is one. */
+.stackSecondary {
+  font-size: var(--fs-12);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.totalsLabelCell {
+  font-weight: var(--fw-bold);
+  color: var(--ink-1);
+}

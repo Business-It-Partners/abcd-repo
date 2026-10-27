@@ -1,0 +1,525 @@
+{
+  "repository": "Business-It-Partners/dental-saas",
+  "sourceBranch": "production",
+  "revision": "f44d3e30ca6f79cba61e32601c53d58826500201",
+  "financePackageVersion": "1.7.0",
+  "method": "Port each selected Finance sub-app from the pinned Dental SaaS production source into one Finance package. Adapt every API seam to the Dental OS ClinicClient and keep the Worker as the source of every report, balance, ledger value, and financial write.",
+  "implementedModules": ["transaction-record", "patient-payments", "general-expenses", "salary-payments", "product-list", "purchases", "supplier-list", "supplier-payments"],
+  "sourceFiles": [
+    "apps/clinic-web/src/features/finance/TransactionRecordWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/TransactionRecordView.tsx",
+    "apps/clinic-web/src/features/finance/transaction-record/api.ts",
+    "apps/clinic-web/src/features/finance/transaction-record/types.ts",
+    "apps/clinic-web/src/features/finance/internal/lib/financeTruth.ts",
+    "apps/clinic-web/src/features/finance/internal/lib/domain.ts",
+    "apps/clinic-web/src/shared/dates/MonthPicker.tsx",
+    "apps/platform-worker/src/clinic/finance/transaction-record/transactionRecord.controller.ts",
+    "apps/platform-worker/src/clinic/finance/transaction-record/transactionRecord.repository.ts",
+    "apps/platform-worker/src/clinic/finance/transaction-record/transactionRecord.service.ts",
+    "apps/platform-worker/src/clinic/finance/transaction-record/transactionRecord.types.ts",
+    "apps/platform-worker/src/clinic/auth/clinicAccess.ts",
+    "apps/platform-worker/src/clinic/router.ts",
+    "apps/clinic-web/src/features/finance/PatientPaymentsWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/FinanceView.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/usePagedPayments.ts",
+    "apps/clinic-web/src/features/patients/billing/api.ts",
+    "apps/clinic-web/src/features/patients/types.ts",
+    "apps/platform-worker/src/clinic/patients/billing/billing.routes.ts",
+    "apps/platform-worker/src/clinic/patients/internal/patientCareHttp.ts",
+    "apps/platform-worker/src/clinic/patients/internal/patientCare.service.ts",
+    "apps/platform-worker/src/clinic/patients/internal/patientCare.repository.ts",
+    "apps/platform-worker/src/clinic/patients/internal/patientCare.types.ts",
+    "electron/sdk/clinicRoutes.ts",
+    "electron/sdk/appPolicy.ts",
+    "apps/clinic-web/src/features/finance/GeneralExpensesWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/usePagedFinance.ts",
+    "apps/clinic-web/src/features/finance/expenses/api.ts",
+    "apps/clinic-web/src/features/finance/expenses/types.ts",
+    "apps/platform-worker/src/clinic/finance/operating-expenses/operatingExpenses.controller.ts",
+    "apps/platform-worker/src/clinic/finance/operating-expenses/operatingExpenses.service.ts",
+    "apps/platform-worker/src/clinic/finance/operating-expenses/operatingExpenses.repository.ts",
+    "apps/platform-worker/src/clinic/finance/operating-expenses/operatingExpenses.types.ts",
+    "apps/clinic-web/src/features/finance/SalaryPaymentsWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/FinanceView.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/usePagedFinance.ts",
+    "apps/clinic-web/src/features/finance/payroll/api.ts",
+    "apps/clinic-web/src/features/finance/payroll/types.ts",
+    "apps/clinic-web/src/features/staff/api.ts",
+    "apps/clinic-web/src/features/staff/types.ts",
+    "apps/platform-worker/src/clinic/finance/salary-payouts/salaryPayouts.controller.ts",
+    "apps/platform-worker/src/clinic/finance/salary-payouts/salaryPayouts.service.ts",
+    "apps/platform-worker/src/clinic/finance/salary-payouts/salaryPayouts.repository.ts",
+    "apps/platform-worker/src/clinic/finance/salary-payouts/salaryPayouts.types.ts",
+    "apps/platform-worker/src/clinic/staff/staff.controller.ts",
+    "apps/platform-worker/src/clinic/router.ts",
+    "apps/platform-worker/src/clinic/auth/clinicAccess.ts",
+    "apps/clinic-web/src/features/finance/ProductListWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/ProductsView.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/ProductFormModal.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/ProductDrawer.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/usePagedProducts.ts",
+    "apps/clinic-web/src/features/finance/products/api.ts",
+    "apps/clinic-web/src/features/finance/products/types.ts",
+    "apps/clinic-web/src/features/finance/PurchasesWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/PurchasesListView.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/PurchaseForm.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/purchaseItemsSummary.ts",
+    "apps/clinic-web/src/features/finance/purchases/api.ts",
+    "apps/clinic-web/src/features/finance/purchases/types.ts",
+    "apps/platform-worker/src/clinic/finance/products/products.controller.ts",
+    "apps/platform-worker/src/clinic/finance/products/products.repository.ts",
+    "apps/platform-worker/src/clinic/finance/products/products.service.ts",
+    "apps/platform-worker/src/clinic/finance/products/products.types.ts",
+    "apps/platform-worker/src/clinic/finance/purchases/purchases.controller.ts",
+    "apps/platform-worker/src/clinic/finance/purchases/purchases.repository.ts",
+    "apps/platform-worker/src/clinic/finance/purchases/purchases.service.ts",
+    "apps/platform-worker/src/clinic/finance/purchases/purchases.types.ts",
+    "apps/clinic-web/src/features/finance/SupplierListWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/SuppliersView.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/SupplierDetailView.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/SupplierFormModal.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/PurchaseDetailsModal.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/SupplierPaymentsView.tsx",
+    "apps/clinic-web/src/features/finance/internal/lib/usePagedSuppliers.ts",
+    "apps/clinic-web/src/features/finance/internal/lib/domain.ts",
+    "apps/clinic-web/src/features/finance/suppliers/api.ts",
+    "apps/clinic-web/src/features/finance/suppliers/types.ts",
+    "apps/clinic-web/src/features/finance/suppliers/paymentsApi.ts",
+    "apps/clinic-web/src/features/finance/suppliers/paymentTypes.ts",
+    "apps/platform-worker/src/clinic/finance/suppliers/suppliers.controller.ts",
+    "apps/platform-worker/src/clinic/finance/suppliers/suppliers.repository.ts",
+    "apps/platform-worker/src/clinic/finance/suppliers/suppliers.service.ts",
+    "apps/platform-worker/src/clinic/finance/suppliers/suppliers.types.ts",
+    "apps/platform-worker/src/clinic/finance/supplier-payments/supplierPayments.controller.ts",
+    "apps/platform-worker/src/clinic/finance/supplier-payments/supplierPayments.repository.ts",
+    "apps/platform-worker/src/clinic/finance/supplier-payments/supplierPayments.service.ts",
+    "apps/platform-worker/src/clinic/finance/supplier-payments/supplierPayments.types.ts",
+    "apps/platform-worker/src/clinic/router.ts",
+    "apps/platform-worker/src/clinic/auth/clinicAccess.ts",
+    "electron/sdk/clinicRoutes.ts",
+    "apps/clinic-web/src/features/finance/SupplierPaymentsWorkspace.tsx",
+    "apps/clinic-web/src/features/finance/internal/components/SupplierPaymentsView.module.css"
+  ],
+  "copiedFiles": [
+    "apps/clinic-web/src/features/finance/internal/components/TransactionRecordView.tsx",
+    "apps/clinic-web/src/features/finance/transaction-record/types.ts",
+    "apps/clinic-web/src/shared/dates/MonthPicker.tsx"
+  ],
+  "adapterFiles": [
+    {
+      "path": "src/features/finance/transaction-record/TransactionRecordWorkspace.tsx",
+      "purpose": "Replace Firebase token acquisition and the SaaS page hooks with ClinicClient session context, the existing Worker route, Dental OS loading and refresh providers, and the pinned report mapping."
+    },
+    {
+      "path": "src/features/finance/transaction-record/api.ts",
+      "purpose": "Call GET /v1/clinic/transaction-record through ClinicClient.read, preserve optional from/to query parameters, and validate the Worker report shape."
+    },
+    {
+      "path": "src/features/finance/internal/lib/domain.ts",
+      "purpose": "Use the shared Dental OS Bikram Sambat date conversion and preserve the SaaS NPR/date display helpers needed by this page."
+    },
+    {
+      "path": "src/features/finance/patient-payments/PatientPaymentsWorkspace.tsx",
+      "purpose": "Replace SaaS Firebase/page hooks with ClinicClient report reads, inclusive Bikram Sambat month ranges, and Dental OS loading and refresh providers."
+    },
+    {
+      "path": "src/features/finance/patient-payments/PatientPaymentsView.tsx",
+      "purpose": "Port the pinned Received and Outstanding books, patient ledger dialog and cursor paging, and payment/discount workflow using Finance module capability checks and shared Dental OS UI."
+    },
+    {
+      "path": "src/features/finance/patient-payments/api.ts",
+      "purpose": "Use only ClinicClient.read and an immutable ClinicCommand for the pinned patient report, ledger, and payment routes; validate Worker response shapes."
+    },
+    {
+      "path": "src/features/finance/general-expenses/GeneralExpensesWorkspace.tsx",
+      "purpose": "Load the Worker operating-expense list through ClinicClient, keep month filtering in the presentation, and use the shared Finance loading and refresh lifecycle."
+    },
+    {
+      "path": "src/features/finance/general-expenses/GeneralExpensesView.tsx",
+      "purpose": "Port the SaaS General expenses directory, month/all filter, expense form, reason-required correction and removal dialogs, and list states. Report dialog state to the host, block Finance module switching while a dialog is open, and hold each immutable ClinicCommand through an unknown write result for same-operation retry."
+    },
+    {
+      "path": "src/features/finance/general-expenses/api.ts",
+      "purpose": "Use ClinicClient.read and ClinicClient.command for the Worker list, create, correction, and void routes, with response-shape validation and no app-owned transport."
+    },
+    {
+      "path": "src/features/finance/salary-payments/SalaryPaymentsWorkspace.tsx",
+      "purpose": "Load the Worker salary payout book and active staff directory concurrently through ClinicClient, keep the directory's finance.manage and staff.manage permissions intact, and connect Finance loading and refresh lifecycles."
+    },
+    {
+      "path": "src/features/finance/salary-payments/SalaryPaymentsView.tsx",
+      "purpose": "Port the pinned Salary payments month filter, payout table, active-staff selection, base/bonus form, and reason-required correction/void dialogs. Use Worker payout amounts, report modal state to the host, block module switching while a dialog is open, and retain immutable commands for same-operation unknown-result retry."
+    },
+    {
+      "path": "src/features/finance/salary-payments/api.ts",
+      "purpose": "Use ClinicClient.read and ClinicClient.command for GET /v1/clinic/salary-payouts, GET /v1/clinic/staff, create, correction, and void routes, validating response shapes without app-owned transport."
+    },
+    {
+      "path": "src/features/finance/salary-payments/types.ts",
+      "purpose": "Describe the pinned Worker payout, staff directory, and write contracts, including the Worker payout types and payment methods."
+    },
+    {
+      "path": "src/features/finance/product-list/ProductListWorkspace.tsx",
+      "purpose": "Load products and the read-only purchase-history dependency through ClinicClient, keep product-list and drawer history loading/error states distinct, and register Finance page loading and refresh."
+    },
+    {
+      "path": "src/features/finance/product-list/ProductListView.tsx",
+      "purpose": "Port the SaaS product search, category and active filters, product table, status switch, details entry, and add/edit dialogs; hold an immutable status-update command for same-operation retry after an unknown result."
+    },
+    {
+      "path": "src/features/finance/product-list/ProductFormModal.tsx",
+      "purpose": "Port the product name, unit, category, note, and edit-only active fields; validate Worker limits, send expectedRowVersion, and retain the original ClinicCommand while an update result is unknown."
+    },
+    {
+      "path": "src/features/finance/product-list/ProductDrawer.tsx",
+      "purpose": "Port the full-page product details and purchase history view, using Worker purchase lines for quantity/value summaries and the shared Bikram Sambat month filter."
+    },
+    {
+      "path": "src/features/finance/product-list/api.ts",
+      "purpose": "Use ClinicClient.read for product and read-only drawer purchase lists and ClinicClient.command for product create/PATCH; validate product and purchase Worker response shapes."
+    },
+    {
+      "path": "src/features/finance/product-list/types.ts",
+      "purpose": "Represent the pinned Worker product enums, product row-version/write contract, and purchase-history response used by ProductDrawer."
+    },
+    {
+      "path": "src/features/finance/supplier-list/SupplierListWorkspace.tsx",
+      "purpose": "Load the supplier directory through ClinicClient and use browser history/hash route state for full-page supplier detail/back navigation; separately load the Worker statement and supporting purchase/payment detail lists."
+    },
+    {
+      "path": "src/features/finance/supplier-list/SupplierListView.tsx",
+      "purpose": "Port the SaaS active/inactive tabs, search, supplier rows, add/edit entry, and active toggle; use Worker-provided due values, expectedRowVersion updates, and same-command retry after an unknown status result."
+    },
+    {
+      "path": "src/features/finance/supplier-list/SupplierFormModal.tsx",
+      "purpose": "Port supplier name/type/contact/address/opening-balance/date/active fields; validate Worker limits, include expectedRowVersion for edits, and retain the original ClinicCommand through unknown create/update outcomes."
+    },
+    {
+      "path": "src/features/finance/supplier-list/SupplierDetailView.tsx",
+      "purpose": "Port full-page statement and purchases tabs, Bikram Sambat month filtering, opening/purchased/paid/current-due tiles, purchase/payment detail dialogs, loading/empty/error states, and detail payment action; authoritative statement values are withheld on statement failure."
+    },
+    {
+      "path": "src/features/finance/supplier-list/SupplierPaymentModal.tsx",
+      "purpose": "Port the detail-locked supplier payment form with optional purchase link, Worker-validated scope, date/amount/method/reference/note, host dirty/modal reporting, and immutable same-key retry for unknown write results."
+    },
+    {
+      "path": "src/features/finance/supplier-list/api.ts",
+      "purpose": "Use ClinicClient.read for supplier, statement, purchase, and payment lists and ClinicClient.command for supplier create/PATCH and supplier-payment create/correction/void; validate exact Worker response shapes."
+    },
+    {
+      "path": "src/features/finance/supplier-list/types.ts",
+      "purpose": "Describe the pinned Worker supplier, statement, purchase, and supplier-payment response/write/correction/void contracts and enum values."
+    },
+    {
+      "path": "src/features/finance/purchases/PurchasesWorkspace.tsx",
+      "purpose": "Load the full Worker purchase list together with supplier and product references through ClinicClient and connect Finance loading, refresh, and module-navigation lifecycle."
+    },
+    {
+      "path": "src/features/finance/purchases/PurchasesView.tsx",
+      "purpose": "Port the purchases directory, Bikram Sambat month filter, supplier/invoice search, row total, detail/correction/void actions, empty/loading/error states, and reason-required void flow."
+    },
+    {
+      "path": "src/features/finance/purchases/PurchaseForm.tsx",
+      "purpose": "Port product and lab-service invoice entry, supplier/product quick-create, line editing, duplicate/high-value warnings, review, Worker-bound create/correction payloads, dirty-form protection, and SDK-size preflight."
+    },
+    {
+      "path": "src/features/finance/purchases/PurchaseDetailsDialog.tsx",
+      "purpose": "Show Worker invoice metadata, item snapshots, line totals, discount, note, and correction replacement context without deriving supplier ledger values."
+    },
+    {
+      "path": "src/features/finance/purchases/api.ts",
+      "purpose": "Use ClinicClient.read for GET /v1/clinic/purchases and immutable ClinicClient.command writes for create, correction, and void; validate exact Worker response shapes."
+    },
+    {
+      "path": "src/features/finance/purchases/types.ts",
+      "purpose": "Describe the pinned purchase line, purchase create/correction/void payloads, and shared supplier/product references."
+    },
+    {
+      "path": "src/features/finance/supplier-payments/SupplierPaymentsWorkspace.tsx",
+      "purpose": "Load full supplier-payment, supplier, and purchase lists through ClinicClient; refresh the affected Worker supplier statement after each successful write and report when statement reconciliation fails."
+    },
+    {
+      "path": "src/features/finance/supplier-payments/SupplierPaymentsView.tsx",
+      "purpose": "Port the full supplier-payment directory, clinic-month/all-month filter, recorded-only rows, totals, loading/empty/error states, correction form entry, reason-required void confirmation, and host modal/navigation state."
+    },
+    {
+      "path": "src/features/finance/supplier-payments/SupplierPaymentFormDialog.tsx",
+      "purpose": "Record or replace a supplier payment with active supplier selection, optional matching recorded purchase, Worker-derived general/lab scope, method/date/amount/reference/note validation, correction reason, and same-key retry for unknown writes."
+    }
+  ],
+  "sdkContract": {
+    "family": "clinic.app.finance",
+    "operations": ["clinic.api.request", "session.context"],
+    "route": "GET /v1/clinic/transaction-record?from=YYYY-MM-DD&to=YYYY-MM-DD",
+    "capability": "finance.manage",
+    "pagination": "The pinned report has no pagination parameters; SDK response size remains bounded by the host contract.",
+    "patientPayments": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/patient-payments?from=YYYY-MM-DD&to=YYYY-MM-DD",
+          "capability": "patient_payments.outstanding.read",
+          "response": "PatientPaymentsReport; Worker returns received rows only to patient_payments.received.read actors. The Worker keeps the outstanding list current and applies the range to received rows."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/patients/:id/ledger?month=YYYY-MM&cursor=opaque",
+          "capability": "patient_billing_ledger.read",
+          "response": "{ ledger: { summary, entries, nextCursor } }; omit optional month when reading the full account ledger."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/patients/:id/payments",
+          "capability": "patient_payments.collect",
+          "response": "201 { payment }; ClinicClient.command supplies the idempotency key and retains one immutable request intent."
+        }
+      ],
+      "pagination": "The report response is unpaginated; ledger pages use the Worker nextCursor."
+    },
+    "generalExpenses": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/operating-expenses",
+          "capability": "finance.manage",
+          "response": "{ operatingExpenses: ClinicOperatingExpense[] }; Worker returns currently recorded entries, ordered newest expense date first."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/operating-expenses",
+          "capability": "finance.manage",
+          "request": "OperatingExpenseWriteInput",
+          "response": "201 { operatingExpense }; ClinicClient.command supplies an idempotency key."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/operating-expenses/:id/correct",
+          "capability": "finance.manage",
+          "request": "{ replacement: OperatingExpenseWriteInput, reason: string }",
+          "response": "201 { operatingExpense }; Worker voids the current row and writes its replacement and audit record atomically."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/operating-expenses/:id/void",
+          "capability": "finance.manage",
+          "request": "{ reason: string }",
+          "response": "200 { operatingExpense }; only a currently recorded row can be voided."
+        }
+      ],
+      "pagination": "The list accepts no cursor or date filter. The Bikram Sambat month/all filter is applied to the full returned Worker list in the UI; the SDK response remains subject to the 256 KiB cap."
+    },
+    "salaryPayments": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/salary-payouts",
+          "capability": "finance.manage",
+          "response": "{ salaryPayouts: ClinicSalaryPayout[] }; Worker returns currently recorded payouts ordered by paid date and creation time."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/staff",
+          "capability": "staff.manage",
+          "response": "{ staff: ClinicStaffProfile[] }; the Finance view filters selectable staff to active profiles and uses baseSalaryAmount only as a form default."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/salary-payouts",
+          "capability": "finance.manage",
+          "request": "SalaryPayoutWriteInput",
+          "response": "201 { salaryPayout }; ClinicClient.command supplies the idempotency key."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/salary-payouts/:id/correct",
+          "capability": "finance.manage",
+          "request": "{ replacement: SalaryPayoutWriteInput, reason: string }",
+          "response": "201 { salaryPayout }; Worker voids the current payout and writes the replacement and audit record atomically."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/salary-payouts/:id/void",
+          "capability": "finance.manage",
+          "request": "{ reason: string }",
+          "response": "200 { salaryPayout }; only a currently recorded payout can be voided."
+        }
+      ],
+      "pagination": "Salary and staff lists accept no cursor or date filter. Salary month filtering is applied to the full Worker payout array; both responses remain subject to the SDK 256 KiB response ceiling."
+    },
+    "productList": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/products",
+          "capability": "finance.manage",
+          "response": "{ products: ClinicProduct[] }; Worker products include category/unit enums, active state, timestamps, and rowVersion."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/products",
+          "capability": "finance.manage",
+          "request": "ProductWriteInput",
+          "response": "201 { product }; ClinicClient.command supplies an idempotency key."
+        },
+        {
+          "method": "PATCH",
+          "path": "/v1/clinic/products/:id",
+          "capability": "finance.manage",
+          "request": "ProductWriteInput & { expectedRowVersion }",
+          "response": "200 { product }; Worker conflicts on a stale row version and increments rowVersion after an accepted update."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/purchases",
+          "capability": "finance.manage",
+          "response": "{ purchases: ClinicPurchase[] }; read-only ProductDrawer history dependency. Product lines are matched by productId; no Purchases sub-app workflow is included here."
+        }
+      ],
+      "pagination": "Products and purchase history accept no cursor or limit. Purchase history is only read to populate ProductDrawer, and both responses are subject to the SDK 256 KiB response ceiling. The source drawer uses recorded Worker purchase lines for displayed quantities and value; those figures are not quantity-on-hand or inventory valuation."
+    },
+    "supplierList": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/suppliers",
+          "capability": "finance.manage",
+          "response": "{ suppliers: ClinicSupplier[] }; currentDueAmount is a Worker projection and each supplier includes rowVersion."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/suppliers",
+          "capability": "finance.manage",
+          "request": "SupplierWriteInput",
+          "response": "201 { supplier }; immutable ClinicClient.command supplies an idempotency key."
+        },
+        {
+          "method": "PATCH",
+          "path": "/v1/clinic/suppliers/:id",
+          "capability": "finance.manage",
+          "request": "SupplierWriteInput & { expectedRowVersion }",
+          "response": "{ supplier }; Worker rejects stale row versions and returns the updated rowVersion."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/suppliers/:id/statement",
+          "capability": "finance.manage",
+          "response": "{ statement: ClinicSupplierStatement }; Worker totals, entries, running balances, and currentDueAmount are authoritative."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/purchases",
+          "capability": "finance.manage",
+          "response": "{ purchases: ClinicPurchase[] }; read only for this child's Purchases tab, purchase detail, and optional payment association."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/supplier-payments",
+          "capability": "finance.manage",
+          "response": "{ supplierPayments: ClinicSupplierPayment[] }; read only for statement payment detail."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/supplier-payments",
+          "capability": "finance.manage",
+          "request": "SupplierPaymentWriteInput",
+          "response": "201 { supplierPayment }; same Worker record used by M17.7.8, with server validation for active supplier, linked purchase ownership, and scope."
+        }
+      ],
+      "pagination": "Supplier, purchase, and supplier-payment lists and each supplier statement are unpaginated. The UI never calculates statement totals from these supporting lists. All responses remain subject to the SDK 256 KiB response ceiling."
+    },
+    "purchases": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/purchases",
+          "capability": "finance.manage",
+          "response": "{ purchases: ClinicPurchase[] }; full recorded purchase history, including Worker line snapshots and totals."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/purchases",
+          "capability": "finance.manage",
+          "request": "PurchaseWriteInput",
+          "response": "201 { purchase }; Worker validates branch, active supplier/product references, lines, quantities, rates, invoice uniqueness, and computes the stored totals."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/purchases/:id/correct",
+          "capability": "finance.manage",
+          "request": "{ replacement: PurchaseWriteInput, reason }",
+          "response": "201 { purchase }; Worker atomically preserves the original audit record and creates its corrected replacement."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/purchases/:id/void",
+          "capability": "finance.manage",
+          "request": "{ reason }",
+          "response": "200 { purchase }; Worker voids only a currently recorded invoice and retains the audit record."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/products",
+          "capability": "finance.manage",
+          "response": "{ products: ClinicProduct[] }; reference choices for active product invoice lines and product quick-create."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/suppliers",
+          "capability": "finance.manage",
+          "response": "{ suppliers: ClinicSupplier[] }; reference choices for active compatible suppliers and supplier quick-create."
+        }
+      ],
+      "limits": "All three list reads are unpaginated and subject to the SDK 256 KiB response ceiling. The Worker accepts up to 100 purchase lines, while the SDK caps each JSON request body at 12,000 bytes. The form rejects an oversized immutable invoice command rather than splitting or bypassing the SDK; a reviewed contract change is needed for the full Worker-valid payload range."
+    },
+    "supplierPayments": {
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/v1/clinic/supplier-payments",
+          "capability": "finance.manage",
+          "response": "{ supplierPayments: ClinicSupplierPayment[] }; full Worker payment history, with recorded and voided audit rows."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/supplier-payments",
+          "capability": "finance.manage",
+          "request": "SupplierPaymentWriteInput",
+          "response": "201 { supplierPayment }; ClinicClient.command supplies one idempotency key. Finance uses finance.manage. Worker also supports a restricted lab_tracker.access create for a Lab supplier with lab scope and no linked purchase, used outside this Finance module. Worker verifies active supplier/default branch and validates any purchase owner and product-vs-lab scope."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/supplier-payments/:id/correct",
+          "capability": "finance.manage",
+          "request": "{ replacement: SupplierPaymentWriteInput, reason }",
+          "response": "201 { supplierPayment }; Worker preserves the original audit row and creates a replacement atomically; only a current recorded row can be corrected."
+        },
+        {
+          "method": "POST",
+          "path": "/v1/clinic/supplier-payments/:id/void",
+          "capability": "finance.manage",
+          "request": "{ reason }",
+          "response": "200 { supplierPayment }; Worker voids only a current recorded row and retains its audit history."
+        },
+        {
+          "method": "GET",
+          "path": "/v1/clinic/suppliers/:id/statement",
+          "capability": "finance.manage",
+          "response": "{ statement: ClinicSupplierStatement }; refresh after writes and use Worker totals as authoritative."
+        }
+      ],
+      "businessRules": "Methods are cash, eSewa, Khalti, card, bank_transfer, and cheque. Amount is positive NPR with at most two decimals. Scope is general or lab; a linked purchase must be current, belong to the supplier, and match product/general or lab_service/lab. No overpayment limit is added by the app. Correction/void require a reason and use the Worker audit and idempotency receipt behavior.",
+      "pagination": "Supplier-payment, supplier, purchase, and statement responses are unpaginated and remain subject to the SDK 256 KiB response ceiling. The SDK has no host-mediated receipt lookup after app view/session replacement; same-command retry remains session scoped."
+    }
+  },
+  "boundaries": [
+    "Transaction-record, patient-payments, general-expenses, salary-payments, product-list, purchases, supplier-list, and supplier-payments are present in this single M17 Finance package.",
+    "No app-owned HTTP, Firebase/auth code, credentials, Worker code, local authoritative data, or offline write queue.",
+    "The Finance Supplier payments module remains gated by finance.manage. The Worker’s Lab Tracker-only supplier-payment create exception is not exposed as Finance access or a new app capability.",
+    "Reception remains excluded by the M15 clinic.app.finance host policy. The user deferred this policy change; this app source does not bypass it.",
+    "An uncertain payment, expense, salary payout, product, supplier, purchase, or supplier-payment write can retry its same in-memory ClinicCommand while the app remains mounted. The shared SDK has no host-mediated lookup/recovery path after the webview or clinic session is replaced.",
+    "General-expense history, product catalogue, purchase history, supplier directory/statements, and supplier-payment history are unpaginated and may exceed the 256 KiB SDK JSON response ceiling; do not claim support for unbounded history until the Worker contracts are paginated or response budgets are established.",
+    "The Worker accepts purchases with up to 100 lines, but a ClinicClient business request body is capped at 12,000 bytes. The app blocks oversize purchase writes without splitting an invoice. Full Worker-valid payload range requires a reviewed SDK/API size-contract change.",
+    "ClinicClient.send maps ordinary 4xx responses to a generic VALIDATION error and does not expose the Worker error body, so Finance cannot distinguish detailed validation, missing-record, inactive staff/supplier, or missing-default-branch causes. The app keeps the SDK boundary and shows a generic refresh/review message.",
+    "The historical M13 company.dental.finance package and its module list remain untouched."
+  ]
+}
