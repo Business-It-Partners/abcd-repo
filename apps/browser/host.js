@@ -40,6 +40,7 @@ export function mountBrowserApp({ content, appId, connected, apiBaseUrl, getAcce
   const launchNonce = Array.from(crypto.getRandomValues(new Uint8Array(24)), v => v.toString(16).padStart(2, '0')).join('');
   const startingAccess = getAccess();
   const launchUid = startingAccess?.user?.uid ?? null;
+  let initialized = false;
 
   function dispose() {
     if (stopped) return;
@@ -104,7 +105,9 @@ export function mountBrowserApp({ content, appId, connected, apiBaseUrl, getAcce
       const body = await response.text();
       if (body.length > MAX_RESPONSE_CHARACTERS) throw new Error('Response is too large for the browser window.');
       const data = JSON.parse(body);
-      if (getAccess()?.allowed && getAccess()?.user?.uid === launchUid) send({ ok: true, data });
+      const latestAccess = getAccess();
+      if (latestAccess?.allowed && latestAccess?.user?.uid === launchUid &&
+          validateFrameRead(appId, request, latestAccess.capabilities)) send({ ok: true, data });
     } catch (error) {
       if (!stopped) send({
         ok: false,
@@ -118,6 +121,9 @@ export function mountBrowserApp({ content, appId, connected, apiBaseUrl, getAcce
 
   iframe.addEventListener('load', () => {
     if (stopped || !iframe.contentWindow) return;
+    // An unexpected subsequent navigation must never receive a new capability port.
+    if (initialized) { dispose(); return; }
+    initialized = true;
     const channel = new MessageChannel();
     bridge?.close();
     bridge = channel.port1;
