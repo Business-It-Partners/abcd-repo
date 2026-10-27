@@ -340,6 +340,42 @@ window.addEventListener('message', event => {
     views: init.views.filter(v => typeof v.id === 'string' && typeof v.title === 'string' &&
       typeof v.route === 'string').slice(0, 12),
   });
+  if (!app.preview && init.session?.clinicUser && init.session?.clinic &&
+      typeof window.createBrowserAppBridge === 'function' &&
+      /^company\\.dental\\.[a-z0-9.-]+$/.test(init.source)) {
+    // The original React renderer expects #root and window.dentalApp. Here the SDK is a
+    // browser-native, token-free MessageChannel facade, not Electron preload/IPC.
+    const originalRoot = document.getElementById('app-root');
+    originalRoot.id = 'root';
+    originalRoot.replaceChildren(node('p', 'opening', 'Opening original ' + app.title + ' interface…'));
+    let adapter;
+    try {
+      adapter = window.createBrowserAppBridge({
+        port, appId: app.appId, source: init.source,
+        title: app.title, icon: app.icon, views: app.views, session: init.session,
+      });
+      Object.defineProperty(window, 'dentalApp', {
+        configurable: true, writable: false, value: adapter,
+      });
+    } catch {
+      originalRoot.replaceChildren(node('p', 'opening', 'The clinic session could not open this app.'));
+      return;
+    }
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = '/apps/browser/dist/' + app.appId + '/assets/app.css';
+    document.head.append(stylesheet);
+    // Only a fixed, allowlisted app ID is used in the module path. No arbitrary sources.
+    import('/apps/browser/dist/' + app.appId + '/assets/app.js').catch(() => {
+      adapter.close();
+      delete window.dentalApp;
+      stylesheet.remove();
+      originalRoot.id = 'app-root';
+      originalRoot.replaceChildren(node('p', 'opening',
+        'The original ' + app.title + ' React bundle has not been built or could not load. Run npm run build:apps.'));
+    });
+    return;
+  }
   port.onmessage = message => {
     const reply = message.data;
     if (!reply || reply.type !== 'response' || !Number.isSafeInteger(reply.id)) return;
