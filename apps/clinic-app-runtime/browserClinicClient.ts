@@ -4,7 +4,7 @@ import type { BrowserAppBridge, BrowserMediaOperation, ClinicResponse } from './
 export type ClinicOutcome = 'not_sent' | 'rejected' | 'unknown';
 export type BrowserClinicSessionContext = {
   clinic: { displayName: string };
-  clinicUser: { role: string; capabilities: string[] };
+  clinicUser: { role: string; capabilities: string[]; clinicUserId?: string };
 };
 export type BrowserRuntimeInfo = { appId: string; title: string; version: string };
 
@@ -68,7 +68,11 @@ export class BrowserClinicClient {
     }
     const session = {
       clinic: { displayName: this.context.clinicDisplayName },
-      clinicUser: { role: this.context.role, capabilities: [...this.context.capabilities] },
+      clinicUser: {
+        role: this.context.role,
+        capabilities: [...this.context.capabilities],
+        ...(this.context.clinicUserId ? { clinicUserId: this.context.clinicUserId } : {}),
+      },
     };
     return { info: { appId: this.context.appId, title: this.context.title, version: this.context.version }, session };
   }

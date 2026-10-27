@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { networkInterfaces } from 'node:os';
 
 const root = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const expectedFlavor = '--flavor';
@@ -19,6 +20,10 @@ if (args[0] !== expectedFlavor || !['preview', 'staging'].includes(flavor)
 
 const connected = flavor === 'staging';
 const port = requestedPort ?? (connected ? 3003 : 4280);
+const listenAddress = connected ? '0.0.0.0' : '127.0.0.1';
+const lanAddress = connected
+  ? Object.values(networkInterfaces()).flat().find((address) => address && !address.internal && address.family === 'IPv4')?.address
+  : null;
 const stagingApiBaseUrl = 'https://dentmitra-api-cloudfare-staging.tiwariamritbabu.workers.dev';
 let firebaseConfig = null;
 
@@ -39,6 +44,7 @@ const contentTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.jpg': 'image/jpeg',
+  '.png': 'image/png',
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
@@ -67,6 +73,10 @@ const routes = new Map([
   ['/apps/finance.v1.js', 'apps/finance.v1.js'],
   ['/apps/finance.v1.css', 'apps/finance.v1.css'],
   ['/apps/finance/asset-manifest.js', 'apps/finance/asset-manifest.js'],
+  ['/apps/user-management.v1.html', 'apps/user-management.v1.html'],
+  ['/apps/user-management.v1.js', 'apps/user-management.v1.js'],
+  ['/apps/user-management.v1.css', 'apps/user-management.v1.css'],
+  ['/apps/dental-apps/company.dental.user-management.m17/asset-manifest.js', 'apps/dental-apps/company.dental.user-management.m17/asset-manifest.js'],
   ['/apps/followups.v1.html', 'apps/followups.v1.html'],
   ['/apps/followups.v1.js', 'apps/followups.v1.js'],
   ['/apps/followups.v1.css', 'apps/followups.v1.css'],
@@ -106,12 +116,13 @@ const routes = new Map([
   ['/assets/dock/treatment.webp', 'assets/dock/treatment.webp'],
   ['/assets/dock/staff.webp', 'assets/dock/staff.webp'],
   ['/assets/dock/workentry.webp', 'assets/dock/workentry.webp'],
+  ['/assets/dock/user-management.png', 'assets/dock/user-management.png'],
 ]);
 
 const isolatedAppPages = new Set([
   '/apps/treatment-protocols.v1.html', '/apps/appointments.v1.html', '/apps/followups.v1.html',
   '/apps/staff.v1.html', '/apps/lab.v1.html', '/apps/workentry.v1.html', '/apps/patients.v1.html',
-  '/apps/calendar.v1.html', '/apps/finance.v1.html', '/apps/treatment-progress.v1.html',
+  '/apps/calendar.v1.html', '/apps/finance.v1.html', '/apps/treatment-progress.v1.html', '/apps/user-management.v1.html',
 ]);
 const isolatedAppAssets = new Set([
   '/apps/runtime.v1.js',
@@ -125,6 +136,7 @@ const isolatedAppAssets = new Set([
   '/apps/calendar.v1.js', '/apps/calendar.v1.css',
   '/apps/finance.v1.js', '/apps/finance.v1.css',
   '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css',
+  '/apps/user-management.v1.js', '/apps/user-management.v1.css',
 ]);
 
 const server = createServer(async (request, response) => {
@@ -198,9 +210,10 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  const host = connected ? 'localhost' : '127.0.0.1';
-  console.log(`Dental OS Browser ${connected ? 'staging integration' : 'offline preview'}: http://${host}:${port}`);
+server.listen(port, listenAddress, () => {
+  const url = connected && lanAddress ? `http://${lanAddress}:${port}` : `http://127.0.0.1:${port}`;
+  console.log(`Dental OS Browser ${connected ? 'staging integration' : 'offline preview'}: ${url}`);
+  if (connected) console.log(`Listening on ${listenAddress}:${port} for access from this network.`);
   console.log(connected
     ? `Firebase staging sign-in and read-only /v1/me use ${workerOrigin}`
     : 'Network requests are blocked in this preview.');

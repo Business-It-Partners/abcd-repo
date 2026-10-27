@@ -20,7 +20,7 @@ import "./styles.css";
 
 const APP_ID = "finance";
 const FINANCE_MODULES = {
-  "transaction-record": { label: "Transaction Record", capability: "finance.manage" },
+  "transaction-record": { label: "Overview", capability: "finance.manage" },
   "patient-payments": { label: "Patient payments", capability: "patient_payments.outstanding.read" },
   "general-expenses": { label: "General expenses", capability: "finance.manage" },
   "salary-payments": { label: "Salary payments", capability: "finance.manage" },

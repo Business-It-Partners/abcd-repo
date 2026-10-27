@@ -104,7 +104,7 @@ export default function TransactionRecordView({
         <ErrorState
           message={hasSuccessfulReport
             ? "Refresh failed. Showing the last successful report."
-            : "The transaction record could not be loaded. Summary values are unavailable."}
+            : "The overview could not be loaded. Summary values are unavailable."}
           hint={loadError}
         />
       )}
@@ -132,7 +132,7 @@ export default function TransactionRecordView({
         rowKey={(t) => t.id}
         noun="transactions"
         loading={loading}
-        loadingLabel="Loading the transaction record…"
+        loadingLabel="Loading overview…"
         filters={transactionFilters}
         empty={<EmptyState message="No transactions found for the selected period." />}
         columns={[

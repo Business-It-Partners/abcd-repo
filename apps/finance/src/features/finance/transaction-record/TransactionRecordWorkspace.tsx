@@ -24,14 +24,14 @@ const emptyOverview: ClinicFinanceOverview = {
 function readableError(cause: unknown): string {
   if (cause instanceof ClinicError) {
     if (cause.code === "FORBIDDEN" || cause.code === "ACCESS_DENIED") {
-      return "Your clinic role cannot open the transaction record.";
+      return "Your clinic role cannot open the Finance overview.";
     }
     if (cause.code === "AUTH_REQUIRED" || cause.code === "STALE_SESSION") {
       return "The clinic session changed. Reopen Finance from Dental OS.";
     }
-    return cause.message || "The transaction record could not be loaded.";
+    return cause.message || "The overview could not be loaded.";
   }
-  return cause instanceof Error ? cause.message : "The transaction record could not be loaded.";
+  return cause instanceof Error ? cause.message : "The overview could not be loaded.";
 }
 
 export function TransactionRecordWorkspace({ client }: { client: ClinicClient }) {
@@ -45,7 +45,7 @@ export function TransactionRecordWorkspace({ client }: { client: ClinicClient })
   const requestSequence = useRef(0);
   const api = useMemo(() => new TransactionRecordApi(client), [client]);
 
-  useClinicPageLoading("Transaction Record", loading);
+  useClinicPageLoading("Overview", loading);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     const sequence = ++requestSequence.current;
@@ -98,9 +98,9 @@ export function TransactionRecordWorkspace({ client }: { client: ClinicClient })
 
   useClinicPageRefresh(useMemo(() => ({
     key: `transaction-record:${monthFilter}`,
-    label: "Transaction Record",
+    label: "Overview",
     refresh: () => load(),
-    successMessage: "Transaction Record is up to date.",
+    successMessage: "Overview is up to date.",
     busy: loading,
     placement: "page-action" as const,
   }), [load, loading, monthFilter]));

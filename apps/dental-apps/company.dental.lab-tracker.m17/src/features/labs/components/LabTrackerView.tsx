@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Briefcase, Check, Truck, Eye, Edit3, Calendar, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Briefcase, Check, Truck, Eye, Edit3, Calendar, Trash2, Plus } from "lucide-react";
 import { formatDateShort, type LabOrder, type LabSupplier } from "@/features/labs/model/domain";
 import { LAB_WORK_OPTIONS } from "@/features/labs/model/labWork";
 import LabsPanel from "./LabsPanel";
@@ -31,7 +31,13 @@ import {
   Modal,
   ModalBody,
 } from "@/shared/ui/workspace-primitives";
-import type { ClinicLabOrder, LabOrderAssignmentInput } from "@/features/labs/types";
+import type {
+  ClinicLabOrder,
+  LabOrderAssignmentInput,
+  LabOrderCreateInput,
+  LabPatientCase,
+  LabPatientSummary,
+} from "@/features/labs/types";
 
 interface LabTrackerViewProps {
   onUpdateOrderStatus: (id: string, status: LabOrder["status"]) => Promise<void> | void;
@@ -47,6 +53,10 @@ interface LabTrackerViewProps {
   ordersRefreshing?: boolean;
   pendingRequests?: ClinicLabOrder[];
   onAssignPendingRequest?: (id: string, input: LabOrderAssignmentInput) => Promise<void>;
+  onSearchPatients: (query: string) => Promise<LabPatientSummary[]>;
+  onListPatientCases: (patientId: string) => Promise<LabPatientCase[]>;
+  onCreateLabOrder: (input: LabOrderCreateInput) => Promise<void>;
+  canCreateLabOrder?: boolean;
   canManageSharedSuppliers?: boolean;
   active?: boolean;
   onLifecycle?: (state: { dirty: boolean; modal: boolean }) => void;
@@ -77,6 +87,10 @@ export default function LabTrackerView({
   ordersRefreshing = false,
   pendingRequests = [],
   onAssignPendingRequest,
+  onSearchPatients,
+  onListPatientCases,
+  onCreateLabOrder,
+  canCreateLabOrder = false,
   canManageSharedSuppliers = false,
   active = true,
   onLifecycle,
@@ -106,6 +120,7 @@ export default function LabTrackerView({
     targetStatus: LabOrder["status"];
   } | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<ClinicLabOrder | null>(null);
+  const [addingLabOrder, setAddingLabOrder] = useState(false);
 
   const detailOrder = detailId ? orders.find((o) => o.id === detailId) ?? null : null;
   useEffect(() => {
@@ -139,10 +154,10 @@ export default function LabTrackerView({
   const openLabSupplier = openLabSupplierId ? labs.find((l) => l.id === openLabSupplierId) : null;
   useEffect(() => {
     if (!active || section === "labs") return;
-    const formOpen = Boolean(editingOrder || deletingOrder || assigningRequest);
+    const formOpen = Boolean(editingOrder || deletingOrder || assigningRequest || addingLabOrder);
     const modalOpen = formOpen || Boolean(statusConfirm) || Boolean(detailId);
     onLifecycle?.({ dirty: formOpen, modal: modalOpen });
-  }, [active, assigningRequest, deletingOrder, detailId, editingOrder, onLifecycle, openLabSupplierId, section, statusConfirm]);
+  }, [active, addingLabOrder, assigningRequest, deletingOrder, detailId, editingOrder, onLifecycle, openLabSupplierId, section, statusConfirm]);
   useEffect(() => {
     if (active && section === "labs" && !labsLoading && !loadError && openLabSupplierId && !openLabSupplier) {
       onInvalidLabSupplierDetail?.();
@@ -163,6 +178,9 @@ export default function LabTrackerView({
       {section === "orders" && (
         <PageHeader title="Lab Tracker" icon={<Briefcase size={17} style={{ color: "var(--acc)" }} />}>
           {ordersRefreshing ? <span aria-live="polite" role="status" style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)" }}>Refreshing…</span> : null}
+          {canCreateLabOrder ? <button type="button" className="btn btn-primary" onClick={() => setAddingLabOrder(true)} disabled={labsLoading}>
+            <Plus size={15} /> Add Lab
+          </button> : null}
         </PageHeader>
       )}
       {section === "labs" && (
@@ -563,17 +581,29 @@ export default function LabTrackerView({
       )}
       {assigningRequest && (
         <AssignLabRequestModal
+          key={assigningRequest.labOrderId}
           request={assigningRequest}
           labs={labs.filter((lab) => lab.active)}
           onClose={() => setAssigningRequest(null)}
+          onSearchPatients={onSearchPatients}
+          onListPatientCases={onListPatientCases}
+          onCreateLabOrder={onCreateLabOrder}
           onAssign={async (input) => {
-            try {
-              await onAssignPendingRequest?.(assigningRequest.labOrderId, input);
-              setAssigningRequest(null);
-              showToast("Lab assigned and marked sent.");
-            } catch (cause) {
-              showError(cause instanceof Error ? cause.message : "Could not assign this lab request.");
-            }
+            await onAssignPendingRequest?.(assigningRequest.labOrderId, input);
+            setAssigningRequest(null);
+          }}
+        />
+      )}
+      {addingLabOrder && (
+        <AssignLabRequestModal
+          key="new-lab-order"
+          request={null}
+          labs={labs.filter((lab) => lab.active)}
+          onClose={() => setAddingLabOrder(false)}
+          onSearchPatients={onSearchPatients}
+          onListPatientCases={onListPatientCases}
+          onCreateLabOrder={async (input) => {
+            await onCreateLabOrder(input);
           }}
         />
       )}
@@ -581,29 +611,155 @@ export default function LabTrackerView({
   );
 }
 
-function AssignLabRequestModal({ request, labs, onClose, onAssign }: { request: ClinicLabOrder; labs: LabSupplier[]; onClose: () => void; onAssign: (input: LabOrderAssignmentInput) => Promise<void> }) {
+function AssignLabRequestModal({
+  request,
+  labs,
+  onClose,
+  onAssign,
+  onSearchPatients,
+  onListPatientCases,
+  onCreateLabOrder,
+}: {
+  request: ClinicLabOrder | null;
+  labs: LabSupplier[];
+  onClose: () => void;
+  onAssign?: (input: LabOrderAssignmentInput) => Promise<void>;
+  onSearchPatients: (query: string) => Promise<LabPatientSummary[]>;
+  onListPatientCases: (patientId: string) => Promise<LabPatientCase[]>;
+  onCreateLabOrder: (input: LabOrderCreateInput) => Promise<void>;
+}) {
+  const { showToast, showError } = useSnackbar();
+  const [patient, setPatient] = useState<LabPatientSummary | null>(null);
+  const [patientQuery, setPatientQuery] = useState("");
+  const [patientMatches, setPatientMatches] = useState<LabPatientSummary[]>([]);
+  const [patientMatchIndex, setPatientMatchIndex] = useState(-1);
+  const [patientSearchBusy, setPatientSearchBusy] = useState(false);
+  const [patientSearchError, setPatientSearchError] = useState("");
+  const [patientCases, setPatientCases] = useState<LabPatientCase[]>([]);
+  const [caseId, setCaseId] = useState("");
+  const [casesBusy, setCasesBusy] = useState(false);
+  const [casesError, setCasesError] = useState("");
   const [supplierId, setSupplierId] = useState("");
-  const [labWorkName, setLabWorkName] = useState(request.labWorkName || "");
-  const [toothScope, setToothScope] = useState(request.toothScope || "");
-  const [shade, setShade] = useState(request.shade || "");
+  const [labWorkName, setLabWorkName] = useState(request?.labWorkName || "");
+  const [toothScope, setToothScope] = useState(request?.toothScope || "");
+  const [shade, setShade] = useState(request?.shade || "");
   const [sentOn, setSentOn] = useState(todayNepalISO());
   const [receptionNote, setReceptionNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const openCases = patientCases.filter((item) => item.status === "open");
+
+  useEffect(() => {
+    if (request) return;
+    const query = patientQuery.trim();
+    if (!query) {
+      setPatientMatches([]);
+      setPatientMatchIndex(-1);
+      setPatientSearchBusy(false);
+      setPatientSearchError("");
+      return;
+    }
+    let current = true;
+    setPatientSearchBusy(true);
+    setPatientSearchError("");
+    const timer = window.setTimeout(() => {
+      void onSearchPatients(query).then((matches) => {
+        if (!current) return;
+        setPatientMatches(matches.slice(0, 8));
+        setPatientMatchIndex(matches.length ? 0 : -1);
+      }).catch((cause) => {
+        if (!current) return;
+        setPatientMatches([]);
+        setPatientMatchIndex(-1);
+        setPatientSearchError(cause instanceof Error ? cause.message : "Registered patients could not be searched.");
+      }).finally(() => {
+        if (current) setPatientSearchBusy(false);
+      });
+    }, 250);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [onSearchPatients, patientQuery, request]);
+
+  useEffect(() => {
+    if (request || !patient) return;
+    let current = true;
+    setPatientCases([]);
+    setCaseId("");
+    setCasesError("");
+    setCasesBusy(true);
+    void onListPatientCases(patient.patientId).then((items) => {
+      if (!current) return;
+      setPatientCases(items);
+      const available = items.filter((item) => item.status === "open");
+      if (available.length === 1) setCaseId(available[0].chiefComplaintId);
+    }).catch((cause) => {
+      if (current) setCasesError(cause instanceof Error ? cause.message : "This patient’s cases could not be loaded.");
+    }).finally(() => {
+      if (current) setCasesBusy(false);
+    });
+    return () => { current = false; };
+  }, [onListPatientCases, patient, request]);
+
+  const selectPatient = (selected: LabPatientSummary) => {
+    setPatient(selected);
+    setPatientQuery("");
+    setPatientMatches([]);
+    setPatientMatchIndex(-1);
+    setCaseId("");
+  };
+
+  const handlePatientSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!patientMatches.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setPatientMatchIndex((current) => current < patientMatches.length - 1 ? current + 1 : 0);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setPatientMatchIndex((current) => current > 0 ? current - 1 : patientMatches.length - 1);
+    } else if (event.key === "Enter" && patientMatchIndex >= 0) {
+      event.preventDefault();
+      selectPatient(patientMatches[patientMatchIndex]);
+    } else if (event.key === "Escape") {
+      setPatientMatches([]);
+      setPatientMatchIndex(-1);
+    }
+  };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!supplierId || !labWorkName.trim() || !sentOn || saving) return;
+    if (!request && (!patient || !caseId)) return;
     setSaving(true);
     try {
-      await onAssign({
-        supplierId,
-        labWorkName: labWorkName.trim(),
-        toothScope: toothScope.trim() || null,
-        shade: shade.trim() || null,
-        sentOn,
-        receptionNote: receptionNote.trim() || null,
-        expectedRowVersion: request.rowVersion,
-      });
+      if (request) {
+        await onAssign?.({
+          supplierId,
+          labWorkName: labWorkName.trim(),
+          toothScope: toothScope.trim() || null,
+          shade: shade.trim() || null,
+          sentOn,
+          receptionNote: receptionNote.trim() || null,
+          expectedRowVersion: request.rowVersion,
+        });
+      } else if (patient && caseId) {
+        await onCreateLabOrder({
+          patientId: patient.patientId,
+          chiefComplaintId: caseId,
+          supplierId,
+          labWorkName: labWorkName.trim(),
+          toothScope: toothScope.trim() || null,
+          shade: shade.trim() || null,
+          requestedOn: todayNepalISO(),
+          sentOn,
+          status: "sent",
+          note: receptionNote.trim() || null,
+        });
+      }
+      onClose();
+      showToast(request ? "Lab assigned and marked sent." : "Lab order created and marked sent.");
+    } catch (cause) {
+      showError(cause instanceof Error ? cause.message : request ? "Could not assign this lab request." : "Could not create this lab order.");
     } finally {
       setSaving(false);
     }
@@ -614,11 +770,67 @@ function AssignLabRequestModal({ request, labs, onClose, onAssign }: { request: 
       <ModalBody as="form" onSubmit={submit} aria-busy={saving}>
         <Card square style={{ background: "#f8fafc", border: "1px solid #e2e8f0", marginBottom: "var(--sp-3)" }}>
           <CardBody>
-            <strong style={{ display: "block" }}>{request.patientName} · {request.patientNumber}</strong>
+            {request ? <strong style={{ display: "block" }}>{request.patientName} · {request.patientNumber}</strong> : patient ? <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--sp-2)" }}>
+                <strong>{patient.fullName} · {patient.patientNumber}</strong>
+                <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => { setPatient(null); setPatientCases([]); setCaseId(""); setPatientQuery(""); }}>Change</button>
+              </div>
+              {patient.phone ? <small style={{ display: "block", color: "var(--ink-3)", marginTop: "3px" }}>{patient.phone}</small> : null}
+            </> : <Field label="Find patient" required>
+              <div style={{ position: "relative" }}>
+                <Input
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  name="sajilo-lab-patient-lookup"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  autoFocus={!request}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="lab-patient-matches"
+                  aria-expanded={patientMatches.length > 0}
+                  aria-activedescendant={patientMatchIndex >= 0 ? `lab-patient-match-${patientMatches[patientMatchIndex]?.patientId}` : undefined}
+                  value={patientQuery}
+                  onChange={(event) => { setPatientQuery(event.target.value); setPatientMatches([]); setPatientMatchIndex(-1); }}
+                  onKeyDown={handlePatientSearchKeyDown}
+                  disabled={saving}
+                  placeholder="Search by name, record ID or phone"
+                />
+                {patientMatches.length ? <div id="lab-patient-matches" role="listbox" aria-label="Patient suggestions" style={{ position: "absolute", zIndex: 5, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: "220px", overflowY: "auto", border: "1px solid #c6d6e5", background: "#fff", boxShadow: "0 8px 22px rgba(15, 23, 42, 0.16)" }}>
+                  {patientMatches.map((match, index) => <button
+                    aria-selected={index === patientMatchIndex}
+                    id={`lab-patient-match-${match.patientId}`}
+                    key={match.patientId}
+                    role="option"
+                    type="button"
+                    onMouseEnter={() => setPatientMatchIndex(index)}
+                    onClick={() => selectPatient(match)}
+                    style={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "flex-start", gap: "2px", border: 0, borderBottom: "1px solid #e2e8f0", padding: "9px 10px", textAlign: "left", background: index === patientMatchIndex ? "#eaf5fb" : "#fff", color: "var(--ink-1)", cursor: "pointer" }}
+                  >
+                    <strong>{match.fullName}</strong>
+                    <small style={{ color: "var(--ink-3)" }}>{match.patientNumber}{match.phone ? ` · ${match.phone}` : ""}</small>
+                  </button>)}
+                </div> : null}
+              </div>
+              {patientSearchBusy ? <small role="status" style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>Searching registered patients…</small> : null}
+              {!patientSearchBusy && patientQuery.trim() && !patientMatches.length && !patientSearchError ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>No matching registered patient.</small> : null}
+              {patientSearchError ? <small role="alert" style={{ display: "block", marginTop: "5px", color: "var(--danger)" }}>{patientSearchError}</small> : null}
+            </Field>}
+            {!request && patient ? <Field label="Open patient case" required style={{ marginTop: "var(--sp-3)" }}>
+              <Select value={caseId} onChange={(event) => setCaseId(event.target.value)} disabled={casesBusy || saving}>
+                <option value="">{casesBusy ? "Loading patient cases…" : "Select an open case…"}</option>
+                {openCases.map((item) => <option key={item.chiefComplaintId} value={item.chiefComplaintId}>{item.chiefComplaint} · Opened {item.openedOn}</option>)}
+              </Select>
+              {casesError ? <small role="alert" style={{ display: "block", marginTop: "5px", color: "var(--danger)" }}>{casesError}</small> : null}
+              {!casesBusy && !casesError && patientCases.length > 0 && !openCases.length ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>This patient has no open case available for a new lab order.</small> : null}
+              {!casesBusy && !casesError && !patientCases.length ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>Select an open case to attach this lab order to the patient’s clinical record.</small> : null}
+            </Field> : null}
           </CardBody>
         </Card>
         <Field label="Procedure / work" required>
-          <Input list="lab-work-options" value={labWorkName} onChange={(event) => setLabWorkName(event.target.value)} autoFocus disabled={saving} placeholder="Select or type lab work" />
+          <Input list="lab-work-options" value={labWorkName} onChange={(event) => setLabWorkName(event.target.value)} autoFocus={Boolean(request)} disabled={saving} placeholder="Select or type lab work" />
           <datalist id="lab-work-options">{LAB_WORK_OPTIONS.map((work) => <option key={work} value={work} />)}</datalist>
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-2)" }}>
@@ -643,7 +855,7 @@ function AssignLabRequestModal({ request, labs, onClose, onAssign }: { request: 
         </Field>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--sp-2)" }}>
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={!supplierId || !labWorkName.trim() || !sentOn || saving}>{saving ? "Sending…" : "Send to lab"}</button>
+          <button type="submit" className="btn btn-primary" disabled={!supplierId || !labWorkName.trim() || !sentOn || (!request && (!patient || !caseId || casesBusy || !openCases.length)) || saving}>{saving ? "Sending…" : "Send to lab"}</button>
         </div>
       </ModalBody>
     </Modal>

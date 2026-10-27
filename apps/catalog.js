@@ -1,7 +1,7 @@
 const appIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const appVersionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const capabilityPattern = /^[a-z0-9][a-z0-9_.-]{0,99}$/;
-const iconPathPattern = /^\/assets\/dock\/[a-z0-9-]+\.webp$/;
+const iconPathPattern = /^\/assets\/dock\/[a-z0-9-]+\.(?:webp|png)$/;
 const appAssetPathPattern = /^\/apps\/[a-z0-9.-]+\.(?:html|js|css)$/;
 const apiPathPattern = /^\/v1\/(?:[a-z0-9-]+|\{uuid\})(?:\/(?:[a-z0-9-]+|\{uuid\}))*$/;
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -17,6 +17,7 @@ const knownMediaGrants = Object.freeze({
   followups: Object.freeze([]),
   lab: Object.freeze([]),
   staff: Object.freeze([]),
+  'user-management': Object.freeze([]),
   treatment: Object.freeze([]),
   protocols: Object.freeze([]),
   workentry: Object.freeze(['clinic.media.read']),
@@ -40,6 +41,7 @@ const knownAppContextCapabilities = Object.freeze({
   appointments: Object.freeze(['appointments.access', 'staff.reference.read']),
   followups: Object.freeze(['followups.access', 'staff.reference.read']),
   staff: Object.freeze(['staff.manage', 'finance.manage']),
+  'user-management': Object.freeze(['clinic_users.manage']),
   lab: Object.freeze(['lab_tracker.access', 'lab_requests.create', 'finance.manage']),
 });
 
@@ -117,8 +119,17 @@ const apiRoutePolicies = Object.freeze({
     apiGrant('GET', '/v1/clinic/staff/{uuid}/documents', ['staff.manage']),
     apiGrant('POST', '/v1/clinic/staff/{uuid}/documents/{uuid}/withdraw', ['staff.manage']),
   ]),
+  'user-management': Object.freeze([
+    apiGrant('GET', '/v1/clinic/users', ['clinic_users.manage']),
+    apiGrant('POST', '/v1/clinic/users', ['clinic_users.manage']),
+    apiGrant('PATCH', '/v1/clinic/users/{uuid}', ['clinic_users.manage']),
+    apiGrant('POST', '/v1/clinic/users/{uuid}/password', ['clinic_users.manage']),
+  ]),
   lab: Object.freeze([
     apiGrant('GET', '/v1/lab-orders', ['lab_tracker.access']),
+    apiGrant('GET', '/v1/patients', ['lab_tracker.access'], 'work-entry-patient-lookup'),
+    apiGrant('GET', '/v1/patients/{uuid}/treatment-plans', ['lab_tracker.access']),
+    apiGrant('POST', '/v1/lab-orders', ['lab_tracker.access']),
     apiGrant('GET', '/v1/clinic/suppliers', ['lab_tracker.access'], 'lab-suppliers'),
     apiGrant('POST', '/v1/lab-orders/{uuid}/assign', ['lab_tracker.access']),
     apiGrant('PATCH', '/v1/lab-orders/{uuid}', ['lab_tracker.access']),

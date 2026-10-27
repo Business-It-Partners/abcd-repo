@@ -1,0 +1,11 @@
+{
+  "sourceRepository": "fewa_demo/dental-saas",
+  "sourceFiles": [
+    "apps/clinic-web/src/features/clinic-settings/users/UserManagementWorkspace.tsx",
+    "apps/clinic-web/src/features/clinic-settings/users/UserManagementWorkspace.module.css",
+    "apps/clinic-web/src/features/clinic-settings/users/loginName.ts",
+    "apps/clinic-web/src/features/clinic-settings/types.ts",
+    "apps/clinic-web/src/features/clinic-settings/api.ts"
+  ],
+  "adaptation": "Preserves the SaaS account workflows and login-name rules. Replaces renderer-held Firebase ID tokens and direct fetch calls with the Dental OS ClinicClient and host-mediated clinic API routes."
+}

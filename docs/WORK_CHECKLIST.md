@@ -82,7 +82,7 @@ Use this checklist with the [roadmap](ROADMAP.md) and [status record](STATUS.md)
 
 **Status: IMPLEMENTATION PRESENT; ACCEPTANCE OPEN**
 
-Finance, Calendar, and Treatment Progress were already present on `browser-version` in commits `44a77d8` and `32d5793`; Work Entry and Patient Record were integrated from their migration worktree, and Appointments, Follow-ups, Staff, and Lab Tracker are now integrated from the app-bringing worktree. All ten app-specific implementations have catalog entries and generated bundles. Keep B5 visual and authenticated workflow acceptance open while B4 is active. Source revision attribution needs reconciliation: the Work Entry and Patient Record import manifests identify `production` revision `f44d3e30`, while the older status narrative identifies `abcd/main` revision `90f4a47`.
+Finance, Calendar, and Treatment Progress were already present on `browser-version` in commits `44a77d8` and `32d5793`; Work Entry and Patient Record were integrated from their migration worktree, and Appointments, Follow-ups, Staff, and Lab Tracker are now integrated from the app-bringing worktree. User Management has now been migrated from `origin/main` into the Browser runtime. All eleven app-specific implementations have catalog entries and generated bundles. Keep B5 visual and authenticated workflow acceptance open while B4 is active. Source revision attribution needs reconciliation: the Work Entry and Patient Record import manifests identify `production` revision `f44d3e30`, while the older status narrative identifies `abcd/main` revision `90f4a47`.
 
 - [x] Prioritize Work Entry and Patient Record for the requested migration; retain the B4 acceptance gate as open.
 - [x] Port both source app UIs/assets into the browser runtime and replace desktop session/API seams with the host bridge.
@@ -94,7 +94,11 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 - [x] Add the Finance-style module sidebar to Finance and Lab Tracker, sourced from `abcd-repo` main's `WindowModuleSidebar` pattern.
 - [x] Keep Follow-ups read-only and Staff document media fail-closed pending relevant Browser acceptance and supported host transport.
 - [x] Make app-window sizing adapt to browser full-screen and normal viewport changes, including proportional drag/resize geometry.
-- [x] Restart the local staging dev server after bundle generation so it loads the updated app route map and window styles.
+- [ ] Restart the local staging dev server after the latest bundle generation so its in-memory app route map includes User Management.
+- [x] Migrate User Management from `origin/main` into the scripts-only Browser runtime with Admin and `clinic_users.manage` checks, host-mediated session/API access, and four exact route grants.
+- [x] Generate the User Management entry, script, style, CSP/SRI hashes, catalog metadata, and nested asset manifest from one build; typecheck and verify app assets through a private offline server.
+- [x] Replace the Finance sidebar's “Transaction Record” label with “Overview” in source metadata and visible loading/error/title text.
+- [x] Add capability, exact-route, sandbox, asset-route, and bundle-integrity assertions; the root unit suite passes 28/28.
 - [ ] Compare both app screens at agreed Brave desktop sizes and verify visual/interaction parity.
 - [ ] Verify authenticated read/write, denial, retry, and saved-state behavior using the approved synthetic staging dataset after the cleanup plan is recorded.
 - [ ] Confirm dock and role behavior across supported roles in Brave; defer other browsers until V1 milestones finish.

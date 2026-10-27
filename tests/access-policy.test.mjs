@@ -7,6 +7,7 @@ import { visibleAppsForCapabilities } from '../apps/catalog.js';
 
 const mainSource = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
 const pageSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const styleSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const devServerSource = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
 const sessionSource = mainSource.match(/function clinicSessionFromMeResponse\(payload\) \{[\s\S]*?^\}/m)?.[0];
 const workspaceRolesSource = mainSource.match(/function availableWorkspaceRoles\(session\) \{[\s\S]*?^\}/m)?.[0];
@@ -52,6 +53,8 @@ test('fails closed for absent or unrelated capabilities', () => {
   assert.deepEqual(ids(undefined), []);
   assert.deepEqual(ids(['clinic_profile.read', 'unknown.admin']), []);
   assert.deepEqual(ids([{ role: 'admin' }]), []);
+  assert.deepEqual(ids(['clinic_users.manage']), ['user-management']);
+  assert.equal(ids(doctorCapabilities).includes('user-management'), false);
 });
 
 test('unwraps the staging Worker /v1/me session response and rejects malformed payloads', () => {
@@ -82,7 +85,16 @@ test('uses the Worker workspace-role endpoint and maps its authorization errors'
 
 test('keeps workspace role switching inside an accessible confirmation dialog', () => {
   assert.match(pageSource, /<dialog[^>]*id="workspace-switch-dialog"[^>]*aria-labelledby=/);
-  assert.match(pageSource, /id="workspace-pin-input"[^>]*type="password"[^>]*inputmode="numeric"/);
+  const pinInput = pageSource.match(/<input[^>]*id="workspace-pin-input"[^>]*>/)?.[0];
+  assert.ok(pinInput);
+  assert.match(pinInput, /type="text"[^>]*inputmode="numeric"/);
+  assert.match(pinInput, /autocomplete="off"/);
+  assert.match(pinInput, /class="is-obscured"/);
+  assert.match(styleSource, /\.workspace-pin-field input\.is-obscured\s*\{\s*-webkit-text-security:\s*disc;/);
+  assert.match(pageSource, /id="workspace-pin-reveal"[^>]*aria-label="Show Admin PIN"[^>]*aria-pressed="false"/);
+  assert.match(mainSource, /function updateWorkspacePinVisibility\(visible\)/);
+  assert.match(mainSource, /workspacePinReveal\.addEventListener\('click',[\s\S]*?updateWorkspacePinVisibility\(workspacePinInput\.classList\.contains\('is-obscured'\)\)\)/);
+  assert.match(mainSource, /workspaceSwitchDialog\.addEventListener\('close',[\s\S]*?updateWorkspacePinVisibility\(false\)/);
   assert.match(mainSource, /workspaceSwitchDialog\.addEventListener\('cancel'/);
   assert.match(mainSource, /workspaceSwitchDialog\.addEventListener\('close'/);
 });

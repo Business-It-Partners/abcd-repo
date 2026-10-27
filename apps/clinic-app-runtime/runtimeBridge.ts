@@ -1,6 +1,6 @@
 export type BrowserAppRole = 'admin' | 'doctor' | 'reception' | 'assistant';
 export type BrowserAppContext = {
-  appId: 'workentry' | 'patients' | 'appointments' | 'followups' | 'staff' | 'lab';
+  appId: 'workentry' | 'patients' | 'appointments' | 'followups' | 'staff' | 'lab' | 'user-management';
   title: string;
   version: string;
   nonce: string;
@@ -8,6 +8,7 @@ export type BrowserAppContext = {
   capabilities: readonly string[];
   clinicDisplayName: string;
   role: BrowserAppRole;
+  clinicUserId?: string;
 };
 export type ClinicResponse<T> = { status: number; body: T };
 export type BrowserMediaOperation = 'clinic.media.read' | 'clinic.media.upload';
@@ -47,6 +48,7 @@ const capabilitiesByApp = Object.freeze({
   appointments: new Set(['appointments.access', 'staff.reference.read']),
   followups: new Set(['followups.access', 'staff.reference.read']),
   staff: new Set(['staff.manage', 'finance.manage']),
+  'user-management': new Set(['clinic_users.manage']),
   lab: new Set(['lab_tracker.access', 'lab_requests.create', 'finance.manage']),
 });
 const pending = new Map<string, PendingRequest>();
@@ -151,8 +153,9 @@ function validInitialization(data: unknown, ports: readonly MessagePort[]): data
   if (!record(data) || ports.length !== 1) return false;
   const value = data as Record<string, unknown>;
   const keys = ['appId', 'bundleSha256', 'capabilities', 'clinicDisplayName', 'nonce', 'role', 'title', 'type', 'version'];
+  if (value.appId === 'user-management') keys.push('clinicUserId');
   if (Object.keys(value).sort().join(',') !== keys.sort().join(',') || value.type !== 'dental-os:init'
-    || !['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab'].includes(String(value.appId))
+    || !['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab', 'user-management'].includes(String(value.appId))
     || typeof value.title !== 'string' || value.title.length < 1 || value.title.length > 64
     || typeof value.version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value.version)
     || typeof value.nonce !== 'string' || !noncePattern.test(value.nonce)
@@ -160,6 +163,8 @@ function validInitialization(data: unknown, ports: readonly MessagePort[]): data
     || typeof value.clinicDisplayName !== 'string' || value.clinicDisplayName.length > 160 || /[\u0000-\u001f\u007f]/.test(value.clinicDisplayName)
     || !['admin', 'doctor', 'reception', 'assistant'].includes(String(value.role))
     || !Array.isArray(value.capabilities) || value.capabilities.length > 16) return false;
+  if (value.appId === 'user-management'
+    && (typeof value.clinicUserId !== 'string' || !uuidPattern.test(value.clinicUserId))) return false;
   const allowed = capabilitiesByApp[value.appId as keyof typeof capabilitiesByApp];
   return value.capabilities.every(capability => typeof capability === 'string' && allowed.has(capability))
     && new Set(value.capabilities).size === value.capabilities.length;
@@ -178,6 +183,7 @@ export function connectBrowserRuntime(): Promise<BrowserAppBridge> {
         capabilities: Object.freeze([...event.data.capabilities]),
         clinicDisplayName: event.data.clinicDisplayName,
         role: event.data.role,
+        ...(event.data.clinicUserId ? { clinicUserId: event.data.clinicUserId } : {}),
       });
       port = event.ports[0];
       port.onmessage = handlePortMessage;
@@ -201,7 +207,7 @@ export function connectBrowserRuntime(): Promise<BrowserAppBridge> {
           }
           return sendRequest<ClinicResponse<unknown>>('api', { type: 'app:api-request', method, path, body, idempotencyKey }, signal);
         },
-        mediaRequest<T>(operation, input, signal) {
+        mediaRequest<T>(operation: BrowserMediaOperation, input: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
           if (!['clinic.media.read', 'clinic.media.upload'].includes(operation) || !record(input)) {
             return Promise.reject(Object.assign(new Error('This media request is not available.'), { code: 'invalid_request' }));
           }

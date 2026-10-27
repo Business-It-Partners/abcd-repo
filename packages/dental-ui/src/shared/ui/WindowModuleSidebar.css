@@ -11,17 +11,21 @@
   overscroll-behavior: contain;
   scrollbar-color: #c8c8c8 transparent;
   scrollbar-width: thin;
-  font-family: Inter, "Segoe UI", sans-serif;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  line-height: 1.5;
 }
+
+.window-module-sidebar::-webkit-scrollbar { width: 6px; }
+.window-module-sidebar::-webkit-scrollbar-thumb { border-radius: 999px; background: #c8c8c8; }
 
 .window-module-sidebar-heading {
   overflow: hidden;
-  padding: 12px 10px 10px;
+  margin: 0;
+  padding: 10px 10px 7px;
   color: #555;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  line-height: 1.2;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.045em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
@@ -30,16 +34,16 @@
 .window-module-sidebar-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .window-module-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   width: 100%;
   min-width: 0;
-  min-height: 35px;
+  min-height: 33px;
   padding: 6px 10px;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -56,6 +60,7 @@
 .window-module-sidebar-item svg {
   flex: 0 0 auto;
   color: #555;
+  transition: color 120ms ease;
 }
 
 .window-module-sidebar-item span {
@@ -104,7 +109,6 @@
   .window-module-sidebar-item {
     gap: 6px;
     padding-inline: 7px;
-    font-size: 13px;
   }
 }
 

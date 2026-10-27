@@ -11,7 +11,7 @@
   "modules": [
     {
       "id": "transaction-record",
-      "label": "Transaction Record",
+      "label": "Overview",
       "tab": "finance/transactions",
       "capability": "finance.manage"
     },

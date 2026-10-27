@@ -1,0 +1,23 @@
+{
+  "name": "dental-os-browser-user-management",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-isolated User Management app for Dental OS.",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^1.56.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}

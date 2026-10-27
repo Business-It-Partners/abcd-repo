@@ -144,13 +144,46 @@ button:focus-visible, a:focus-visible {
 .workspace-switch-form > p { margin: 0; color: #5c6c71; font-size: 13px; line-height: 1.5; }
 .workspace-pin-field { display: grid; gap: 6px; color: #3e5259; font-size: 12px; font-weight: 650; }
 .workspace-pin-field[hidden] { display: none; }
-.workspace-pin-field input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid #b9c9cc; border-radius: 7px; background: #fff; color: #25383e; font: inherit; font-variant-numeric: tabular-nums; letter-spacing: .18em; }
+.workspace-pin-control { position: relative; display: flex; align-items: center; }
+.workspace-pin-field input { width: 100%; min-height: 40px; padding: 8px 42px 8px 10px; border: 1px solid #b9c9cc; border-radius: 7px; background: #fff; color: #25383e; font: inherit; font-variant-numeric: tabular-nums; letter-spacing: .18em; }
+.workspace-pin-field input.is-obscured { -webkit-text-security: disc; }
+.workspace-pin-reveal { position: absolute; top: 50%; right: 7px; margin: 0; transform: translateY(-50%); color: #536d75; }
+.workspace-pin-reveal:hover { background: #eaf2f3; color: #285d6c; }
 .workspace-switch-error { padding: 9px 10px; border-radius: 7px; background: #fae9e6; color: #913e35 !important; }
 .workspace-switch-error[hidden] { display: none; }
 .workspace-switch-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .workspace-switch-actions button { min-height: 36px; padding: 7px 12px; border: 1px solid #bdcdd0; border-radius: 7px; background: #fff; color: #2c444c; font-size: 12px; font-weight: 650; }
 .workspace-switch-actions .workspace-switch-confirm { border-color: #286579; background: #286579; color: #fff; }
 .workspace-switch-actions button:disabled { cursor: wait; opacity: .58; }
+.signout-confirmation-form { gap: 0; padding: 25px 26px 22px; }
+.signout-confirmation-mark { width: 40px; height: 40px; margin-bottom: 17px; }
+.signout-confirmation-form h2 { color: #233342; font-size: 20px; line-height: 1.4; letter-spacing: -.015em; }
+.signout-confirmation-form > p { margin: 10px 0 0; color: #526675; font-size: 14px; line-height: 1.5; }
+.signout-confirmation-form .workspace-switch-error { color: #a33830 !important; }
+.signout-confirmation-form .workspace-switch-actions { gap: 9px; margin-top: 24px; }
+.signout-confirmation-form .workspace-switch-actions button { min-width: 82px; min-height: 38px; padding: 0 15px; font-size: 13px; }
+.signout-confirmation-form .workspace-switch-actions .workspace-switch-cancel { border-color: #cbd7e0; background: #fff; color: #34495a; }
+.signout-confirmation-form .workspace-switch-actions .workspace-switch-cancel:hover { background: #f2f6f8; }
+.signout-confirmation-form .workspace-switch-actions .workspace-switch-confirm { border-color: #c95049; background: #d95e56; color: #fff; box-shadow: 0 2px 6px #a3413a30; }
+.signout-confirmation-form .workspace-switch-actions .workspace-switch-confirm:hover:not(:disabled) { background: #c94c45; }
+.workspace-switching-backdrop { position: fixed; z-index: 12010; inset: 0; display: grid; place-items: center; padding: 24px; background: #07182ca6; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+.workspace-switching-backdrop[hidden] { display: none; }
+.workspace-switching-card { width: min(440px, 100%); display: flex; align-items: center; gap: 16px; padding: 24px; border: 1px solid #ffffffd9; border-radius: 18px; background: linear-gradient(150deg, #fff, #f2f7fa); box-shadow: 0 24px 72px #07182c66, inset 0 1px #fff; color: #233342; }
+.workspace-switching-card > img { width: 42px; height: 42px; flex: 0 0 auto; }
+.workspace-switching-spinner { width: 24px; height: 24px; flex: 0 0 24px; border: 3px solid #d3e8eb; border-top-color: #287f91; border-radius: 50%; animation: workspace-switch-spin 1s linear infinite; }
+.workspace-switching-card h2 { margin: 0; font-size: 18px; font-weight: 650; line-height: 1.35; }
+.workspace-switching-card p { margin: 4px 0 0; color: #34495a; font-size: 14px; }
+.workspace-switching-card div > span { display: block; margin-top: 4px; color: #657782; font-size: 12px; }
+@keyframes workspace-switch-spin { to { transform: rotate(360deg); } }
+.workspace-switch-success { position: fixed; z-index: 12020; left: 50%; bottom: 96px; transform: translateX(-50%); max-width: calc(100vw - 32px); display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #a8d8bf; border-radius: 12px; background: #f2fbf6f5; box-shadow: 0 12px 32px #102f4545; color: #254638; }
+.workspace-switch-success[hidden] { display: none; }
+.workspace-switch-success-icon { width: 22px; height: 22px; flex: 0 0 auto; fill: none; stroke: #26845c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.workspace-switch-success > div { display: grid; gap: 3px; }
+.workspace-switch-success strong { font-size: 13px; font-weight: 700; }
+.workspace-switch-success span { color: #536f60; font-size: 12px; }
+.workspace-switch-success button { display: grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; margin-left: 4px; border: 1px solid #55788a26; border-radius: 7px; background: #ffffff9c; color: #476354; cursor: pointer; font-size: 20px; line-height: 1; }
+.workspace-switch-success button:hover { background: #fff; }
+.workspace-switch-success button:focus-visible { outline: 2px solid #317d9b; outline-offset: 2px; }
 
 .statusbar-right {
   display: flex;
@@ -226,20 +259,23 @@ button:focus-visible, a:focus-visible {
 .home-view[hidden] { display: none; }
 
 .desktop-widget { position: absolute; z-index: 5; color: #202c31; border: 1px solid #ffffffb0; border-radius: 19px; background: linear-gradient(145deg, #f2f8f6de, #eaf1f2c9); box-shadow: 0 12px 32px #102f4530, inset 0 1px #ffffffc4; backdrop-filter: blur(28px) saturate(165%); -webkit-backdrop-filter: blur(28px) saturate(165%); pointer-events: none; }
-.desktop-clinic-widget { top: 24px; left: 18px; width: min(430px, calc(50vw - 30px)); min-height: 104px; display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
+.desktop-clinic-widget { top: 24px; left: 18px; width: min(390px, calc(50vw - 30px)); min-height: 104px; display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
 .desktop-clinic-widget[hidden] { display: none; }
-.operating-role-widget { bottom:24px; left:18px; width:min(250px, calc(50vw - 30px)); min-height:88px; display:flex; flex-direction:column; justify-content:center; padding:12px 14px; }
+.operating-role-widget { bottom:12px; left:18px; width:max-content; max-width:min(200px, calc(50vw - 30px)); min-height:44px; display:inline-flex; align-items:center; justify-content:flex-start; gap:9px; padding:7px 13px 7px 8px; border:1px solid #ffffff73; border-radius:999px; background:linear-gradient(135deg, #155f67f2, #123f59f2); box-shadow:0 6px 18px #0b313b4d, inset 0 1px #ffffff38; color:#f7fffc; backdrop-filter:blur(14px) saturate(145%); -webkit-backdrop-filter:blur(14px) saturate(145%); }
 .operating-role-widget[hidden] { display:none; }
-.operating-role-value { margin-top:4px; overflow:hidden; color:#202c31; font-size:clamp(22px, 1.8vw, 29px); font-weight:650; letter-spacing:-.035em; line-height:1.1; text-overflow:ellipsis; white-space:nowrap; }
+.operating-role-icon { width:27px; height:27px; flex:0 0 27px; padding:5px; border:1px solid #ffffff35; border-radius:50%; background:#ffffff19; fill:none; stroke:#d7f5eb; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.8; }
+.operating-role-copy { display:flex; min-width:0; flex-direction:column; gap:1px; }
+.operating-role-label { color:#c6e6e1; font-size:9.5px; font-weight:650; letter-spacing:.035em; line-height:1.15; white-space:nowrap; }
+.operating-role-value { min-width:0; margin:0; overflow:hidden; color:#fff; font-size:14px; font-weight:750; letter-spacing:0; line-height:1.1; text-overflow:ellipsis; white-space:nowrap; }
 .clinic-widget-mark { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; border: 1px solid #ffffffc9; border-radius: 15px; background: linear-gradient(145deg, #c7e8e2, #8cc3bc); box-shadow: 0 5px 13px #1c58602b; color: #164d50; font-size: 15px; font-weight: 750; letter-spacing: .04em; }
 .clinic-widget-mark.has-logo { width: 104px; height: 72px; flex-basis: 104px; overflow: hidden; padding: 2px; border-color: #ffffffd6; border-radius: 15px; background: #fff; }
 .clinic-widget-mark img { display: block; width: auto; height: auto; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 11px; }
-.clinic-widget-copy { display: flex; flex: 1 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
+.clinic-widget-copy { display: flex; flex: 0 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
 .clinic-widget-copy strong, .clinic-widget-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clinic-widget-copy strong { color: #29383e; font-size: 14px; font-weight: 700; }
 .clinic-widget-copy span { color: #29383e; font-size: 13px; font-weight: 600; }
 .clinic-widget-copy small { color: #3d494e; font-size: 11px; font-weight: 600; }
-.clinic-widget-signout { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 32px; margin-left: auto; padding: 6px 8px; border: 1px solid #55788a36; border-radius: 8px; background: #ffffffa8; color: #29444b; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; }
+.clinic-widget-signout { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 32px; margin-left: 0; padding: 6px 8px; border: 1px solid #55788a36; border-radius: 8px; background: #ffffffa8; color: #29444b; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; }
 .clinic-widget-signout svg { width: 15px; height: 15px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .clinic-widget-signout:hover { border-color: #55788a70; background: #fff; color: #173e47; }
 .clinic-widget-signout:focus-visible { outline: 2px solid #317d9b; outline-offset: 2px; }
@@ -553,7 +589,7 @@ button:focus-visible, a:focus-visible {
   top: 43px !important;
   left: 8px !important;
   width: calc(100% - 16px) !important;
-  height: calc(100% - 122px) !important;
+  height: calc(100% - 136px) !important;
   transform: none !important;
 }
 
@@ -658,19 +694,19 @@ button:focus-visible, a:focus-visible {
 .window-history-button:disabled { color: #aab4bd; cursor: default; }
 .window-history-button:focus-visible { outline: 2px solid #23404a; outline-offset: -3px; }
 
-.window-resize-handle { position: absolute; z-index: 5; touch-action: none; user-select: none; background: transparent; }
-.window-resize-n, .window-resize-s { right: 14px; left: 14px; height: 7px; }
+.window-resize-handle { position: absolute; z-index: 5; touch-action: none; user-select: none; background: transparent; transition: background-color .12s ease; }
+.window-resize-handle:hover { background-color: #1687b326; }
+.window-resize-n, .window-resize-s { right: 18px; left: 18px; height: 10px; }
 .window-resize-n { top: 0; cursor: n-resize; }
 .window-resize-s { bottom: 0; cursor: s-resize; }
-.window-resize-e, .window-resize-w { top: 14px; bottom: 14px; width: 7px; }
+.window-resize-e, .window-resize-w { top: 18px; bottom: 18px; width: 10px; }
 .window-resize-e { right: 0; cursor: e-resize; }
 .window-resize-w { left: 0; cursor: w-resize; }
-.window-resize-nw, .window-resize-ne, .window-resize-sw, .window-resize-se { width: 14px; height: 14px; }
+.window-resize-nw, .window-resize-ne, .window-resize-sw, .window-resize-se { width: 18px; height: 18px; }
 .window-resize-nw { top: 0; left: 0; cursor: nwse-resize; }
 .window-resize-ne { top: 0; right: 0; cursor: nesw-resize; }
 .window-resize-sw { bottom: 0; left: 0; cursor: nesw-resize; }
 .window-resize-se { right: 0; bottom: 0; cursor: nwse-resize; }
-.app-window.is-maximized .window-resize-handle { display: none; }
 
 .window-content {
   flex: 1;
@@ -682,7 +718,15 @@ button:focus-visible, a:focus-visible {
 
 .window-content.app-runtime-content { display: flex; overflow: hidden; padding: 0; }
 .app-runtime-host { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; background: #fff; }
-.app-runtime-frame { display: block; width: 100%; height: 100%; min-height: 100%; border: 0; background: #fff; }
+.app-runtime-frame { position: absolute; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; min-height: 100%; border: 0; background: #fff; opacity: 0; transition: opacity .26s ease; }
+.app-runtime-frame.is-revealed { opacity: 1; }
+.app-runtime-loading { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; padding: 24px; background: #fff; color: #202a38; text-align: center; opacity: 1; transition: opacity .26s ease; pointer-events: auto; }
+.app-runtime-loading.is-exiting { opacity: 0; pointer-events: none; }
+.app-runtime-loading-icon { width: 68px; height: 68px; object-fit: contain; border-radius: 16px; box-shadow: 0 4px 14px #17202c24; }
+.app-runtime-loading > strong { max-width: 100%; overflow: hidden; color: #202a38; font-size: 23px; font-weight: 700; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.app-runtime-loading-progress { display: inline-flex; align-items: center; justify-content: center; gap: 9px; color: #46525f; font-size: 13px; line-height: 1.3; }
+.app-runtime-spinner { width: 16px; height: 16px; flex: 0 0 16px; border: 2px solid #d2e7f1; border-top-color: #45a2c8; border-radius: 50%; animation: app-runtime-spin .8s linear infinite; }
+@keyframes app-runtime-spin { to { transform: rotate(360deg); } }
 .app-runtime-state { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: clamp(22px, 4vw, 42px); }
 .app-runtime-state strong { color: #202a38; font-size: 17px; }
 .app-runtime-state span { max-width: 460px; color: #626b78; font-size: 13px; }
@@ -800,17 +844,17 @@ button:focus-visible, a:focus-visible {
 .running-dot {
   position: absolute;
   right: 50%;
-  bottom: -8px;
+  top: -7px;
   width: 5px;
   height: 5px;
   transform: translateX(50%);
   border-radius: 50%;
-  background: #526b9a;
+  background: #078ac3;
   opacity: 0;
 }
 
 .dock-icon.is-running .running-dot { opacity: 1; }
-.dock-icon.is-active .running-dot { width: 7px; height: 7px; background: #315e4b; }
+.dock-icon.is-active .running-dot { width: 7px; height: 7px; background: #078ac3; }
 
 .sr-only {
   position: absolute;
@@ -832,7 +876,7 @@ button:focus-visible, a:focus-visible {
   .statusbar-battery svg { width: 15px; height: 15px; }
   .home-view { inset-block-start: 53px; }
   .desktop-clinic-widget { top: 24px; left: 10px; width: calc(100vw - 20px); min-height: 96px; gap: 12px; padding: 12px 14px; }
-  .operating-role-widget { left:10px; width:min(250px, calc(100vw - 20px)); }
+  .operating-role-widget { left:10px; max-width:calc(100vw - 20px); }
   .home-clinic-actions { top:132px; left:10px; }
   .desktop-widget-collection { top: 190px; right: 10px; left: 10px; width: auto; grid-template-columns: minmax(0, 1.16fr) minmax(145px, .84fr); gap: 9px; }
   .nepali-calendar-widget { padding: 11px 12px; }
@@ -888,22 +932,23 @@ button:focus-visible, a:focus-visible {
 
 /* Entering the browser's Full screen control should use the larger viewport
    for the open app window, then restore its normal size when Full screen exits. */
-.desktop:fullscreen .app-window:not([hidden]) {
+.desktop:fullscreen .app-window:not([hidden]):not(.is-fullscreen-resized) {
   top: 43px !important;
-  left: 8px !important;
-  width: calc(100% - 16px) !important;
-  height: calc(100% - 122px) !important;
+  left: 50% !important;
+  width: 90% !important;
+  height: calc(100% - 136px) !important;
   min-width: 0;
   min-height: 0;
-  transform: none !important;
+  transform: translateX(-50%) !important;
 }
 
 @media (max-width: 760px) {
-  .desktop:fullscreen .app-window:not([hidden]) {
+  .desktop:fullscreen .app-window:not([hidden]):not(.is-fullscreen-resized) {
     top: 60px !important;
-    left: 6px !important;
-    width: calc(100% - 12px) !important;
+    left: 50% !important;
+    width: 90% !important;
     height: calc(100% - 144px) !important;
+    transform: translateX(-50%) !important;
   }
 }
 
@@ -914,4 +959,8 @@ button:focus-visible, a:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
+  .app-runtime-spinner { animation: none; border-color: #73b4ce; }
+  .workspace-switching-spinner { animation: none; border-color: #287f91; }
+  .workspace-switching-backdrop { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .app-runtime-frame, .app-runtime-loading { transition: none; }
 }

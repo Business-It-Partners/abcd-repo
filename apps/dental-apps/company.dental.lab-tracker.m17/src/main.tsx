@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ClinicClient, ClinicError, type ClinicCommand } from '../../../../packages/app-sdk/src/clinicClient';
 import type { AppHistory } from '../../../../packages/app-sdk/src/appHistory';
 import { connectBrowserRuntime } from '../../../../apps/clinic-app-runtime/runtimeBridge';
-import type { ClinicLabOrder, LabOrderAssignmentInput, LabOrderUpdateInput } from '@/features/labs/types';
+import type { ClinicLabOrder, LabOrderAssignmentInput, LabOrderCreateInput, LabOrderUpdateInput } from '@/features/labs/types';
 import type { ClinicSupplier, SupplierUpdateInput, SupplierWriteInput } from '@/features/labs/supplierTypes';
 import { LabTrackerApi } from '@/features/labs/api';
 import { toLabOrder, toLabSupplier, type LabOrder, type LabSupplier } from '@/features/labs/model/domain';
@@ -277,6 +277,14 @@ function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capa
     await runWrite(api.assignLabRequest(id, input), 'Lab assignment');
   }, [api, orderById, runWrite]);
 
+  const searchPatients = useCallback((query: string) => api.searchPatients(query), [api]);
+
+  const listPatientCases = useCallback((patientId: string) => api.listPatientCases(patientId), [api]);
+
+  const createLabOrder = useCallback(async (input: LabOrderCreateInput) => {
+    await runWrite(api.createLabOrder(input), 'Lab order');
+  }, [api, runWrite]);
+
   const createSupplier = useCallback(async (supplier: Omit<LabSupplier, 'id' | 'isLab'>) => {
     const input: SupplierWriteInput = {
       name: supplier.name,
@@ -334,6 +342,8 @@ function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capa
           orders={activeOrders} removedOrders={cancelledOrders} labs={labs} labsLoading={loading}
           ordersRefreshing={ordersRefreshing} onUpdateOrderStatus={updateStatus} onUpdateOrder={updateReceptionNote}
           onRemoveOrder={cancelOrder} pendingRequests={pendingRequests} onAssignPendingRequest={assignPending}
+          onSearchPatients={searchPatients} onListPatientCases={listPatientCases} onCreateLabOrder={createLabOrder}
+          canCreateLabOrder={capabilities.includes('lab_tracker.access')}
           onAddLab={createSupplier} onUpdateLab={updateSupplier} canManageSharedSuppliers={canManageSharedSuppliers}
           loadError={loadError}
         />
@@ -346,6 +356,8 @@ function LabTrackerWorkspace({ client, activeModule, selectedLabSupplierId, capa
           orders={activeOrders} removedOrders={cancelledOrders} labs={labs} labsLoading={loading}
           ordersRefreshing={ordersRefreshing} onUpdateOrderStatus={updateStatus} onUpdateOrder={updateReceptionNote}
           onRemoveOrder={cancelOrder} pendingRequests={pendingRequests} onAssignPendingRequest={assignPending}
+          onSearchPatients={searchPatients} onListPatientCases={listPatientCases} onCreateLabOrder={createLabOrder}
+          canCreateLabOrder={capabilities.includes('lab_tracker.access')}
           onAddLab={createSupplier} onUpdateLab={updateSupplier} canManageSharedSuppliers={canManageSharedSuppliers}
           selectedLabSupplierId={selectedLabSupplierId}
           onOpenLabSupplierDetail={onOpenLabSupplier}

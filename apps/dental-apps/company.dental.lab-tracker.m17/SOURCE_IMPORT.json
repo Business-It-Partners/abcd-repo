@@ -29,6 +29,7 @@
   ],
   "adaptations": [
     "All clinic reads and writes use the M15 ClinicClient and exact registered routes; Dental SaaS HTTP/auth transport was not copied.",
+    "Add Lab searches registered patients, loads that patient’s open treatment cases, and creates a directly assigned lab order through POST /v1/lab-orders; it does not require a pending lab request.",
     "Lab request procedure, tooth scope, shade and clinical note are immutable after submission; only the separate reception note is editable.",
     "Pending requests are assigned through POST /v1/lab-orders/:id/assign. Receipt and fit updates use revision-controlled PATCH commands; the Worker supplies transition dates when omitted.",
     "Cancellation is an audited status change with its reason in receptionNote. Only sent or received orders can be cancelled; cancelled history cannot be restored, and pending/fitted orders do not expose cancellation.",

@@ -27,7 +27,7 @@ export const clinicLoadingCopy: Record<string, ClinicLoadingCopy> = {
   "Treatment Progress": { title: "Opening treatment progress…", message: "Loading active treatment plans and return visits." },
   "Lab Tracker": { title: "Opening lab tracker…", message: "Loading lab orders, suppliers and case details." },
   "Lab supplier record": { title: "Opening lab suppliers…", message: "Loading laboratory suppliers and account records." },
-  "Transaction Record": { title: "Opening transaction record…", message: "Loading clinic cash activity and monthly totals." },
+  Overview: { title: "Opening overview…", message: "Loading clinic cash activity and monthly totals." },
   "Patient payments": { title: "Opening patient payments…", message: "Loading patient balances and payment records." },
   "General expenses": { title: "Opening general expenses…", message: "Loading clinic expense records." },
   "Salary payments": { title: "Opening salary payments…", message: "Loading staff and salary payout records." },

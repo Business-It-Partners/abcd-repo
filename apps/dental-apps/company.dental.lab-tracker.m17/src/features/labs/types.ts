@@ -10,3 +10,17 @@ export type LabOrderCreateInput = { patientId: string; chiefComplaintId: string;
 export type LabRequestCreateInput = { patientId: string; chiefComplaintId: string; labWorkName: string; toothScope: string | null; shade: string | null; clinicalNote: string | null; };
 export type LabOrderAssignmentInput = { supplierId: string; labWorkName: string; toothScope: string | null; shade: string | null; sentOn: string; receptionNote: string | null; expectedRowVersion: number };
 export type LabOrderUpdateInput = { expectedRowVersion: number; status?: LabOrderStatus; clearAssignment?: boolean; receivedOn?: string | null; fittedOn?: string | null; receptionNote?: string | null; };
+
+export type LabPatientSummary = {
+  patientId: string;
+  patientNumber: string;
+  fullName: string;
+  phone: string | null;
+};
+
+export type LabPatientCase = {
+  chiefComplaintId: string;
+  chiefComplaint: string;
+  openedOn: string;
+  status: "open" | "completed" | "closed";
+};

@@ -7,6 +7,7 @@ import { patientRecordBundle, patientRecordVersion } from './dental-apps/company
 import { appointmentsBundle, appointmentsVersion } from './dental-apps/company.dental.appointments.m17/asset-manifest.js';
 import { followupsBundle, followupsVersion } from './dental-apps/company.dental.followups.m17/asset-manifest.js';
 import { staffBundle, staffVersion } from './dental-apps/company.dental.staff.m17/asset-manifest.js';
+import { userManagementBundle, userManagementVersion } from './dental-apps/company.dental.user-management.m17/asset-manifest.js';
 import { labBundle, labVersion } from './dental-apps/company.dental.lab-tracker.m17/asset-manifest.js';
 import { appApiGrantsForApp, appMediaGrantsForApp, financeSessionCapabilities } from './catalog.js';
 
@@ -63,6 +64,10 @@ export const firstPartyApps = Object.freeze([
   app('staff', 'Staff', '/assets/dock/staff.webp', ['staff.manage'], {
     version: staffVersion,
     bundle: staffBundle,
+  }),
+  app('user-management', 'User Management', '/assets/dock/user-management.png', ['clinic_users.manage'], {
+    version: userManagementVersion,
+    bundle: userManagementBundle,
   }),
   app('workentry', 'Work Entry', '/assets/dock/workentry.webp', ['work_entry.access'], {
     version: workEntryVersion,

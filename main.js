@@ -13,6 +13,18 @@ import { BrowserClinicMediaHost } from './apps/clinic-app-runtime/mediaHost.js';
 const config = window.DENTAL_OS_BROWSER_CONFIG;
 const appCatalogTrusted = isValidAppCatalog(firstPartyApps, window.location.origin);
 const apps = appCatalogTrusted ? firstPartyApps : [];
+const appDisplayOrder = [
+  'followups', 'appointments', 'workentry', 'patients', 'lab',
+  'treatment', 'protocols', 'staff', 'user-management', 'calendar', 'finance',
+];
+const appDisplayRank = new Map(appDisplayOrder.map((appId, index) => [appId, index]));
+const APP_LAUNCH_MIN_VISIBLE_MS = 2_000;
+const APP_LAUNCH_SETTLE_MS = 340;
+
+function orderAppsForDisplay(appList) {
+  return [...appList].sort((left, right) => (appDisplayRank.get(left.id) ?? appDisplayOrder.length)
+    - (appDisplayRank.get(right.id) ?? appDisplayOrder.length));
+}
 
 const appById = new Map(apps.map((app) => [app.id, app]));
 const dock = document.getElementById('app-dock');
@@ -44,6 +56,11 @@ const clinicRoleLabel = document.getElementById('clinic-role');
 const operatingRoleWidget = document.getElementById('operating-role-widget');
 const operatingRoleValue = document.getElementById('operating-role-value');
 const signOutButton = document.getElementById('signout-button');
+const signOutConfirmationDialog = document.getElementById('signout-confirmation-dialog');
+const signOutConfirmationForm = document.getElementById('signout-confirmation-form');
+const signOutConfirmationError = document.getElementById('signout-confirmation-error');
+const signOutConfirmationCancel = document.getElementById('signout-confirmation-cancel');
+const signOutConfirmationConfirm = document.getElementById('signout-confirmation-confirm');
 const announcement = document.getElementById('workspace-announcement');
 const desktop = document.querySelector('.desktop');
 const fullscreenToggle = document.getElementById('fullscreen-toggle');
@@ -63,9 +80,16 @@ const workspaceSwitchForm = document.getElementById('workspace-switch-form');
 const workspaceSwitchDescription = document.getElementById('workspace-switch-description');
 const workspacePinField = document.getElementById('workspace-pin-field');
 const workspacePinInput = document.getElementById('workspace-pin-input');
+const workspacePinReveal = document.getElementById('workspace-pin-reveal');
 const workspaceSwitchError = document.getElementById('workspace-switch-error');
 const workspaceSwitchConfirm = document.getElementById('workspace-switch-confirm');
 const workspaceSwitchCancel = document.getElementById('workspace-switch-cancel');
+const workspaceSwitchingBackdrop = document.getElementById('workspace-switching-backdrop');
+const workspaceSwitchingCard = document.getElementById('workspace-switching-card');
+const workspaceSwitchingMessage = document.getElementById('workspace-switching-message');
+const workspaceSwitchSuccess = document.getElementById('workspace-switch-success');
+const workspaceSwitchSuccessTitle = document.getElementById('workspace-switch-success-title');
+const workspaceSwitchSuccessDismiss = document.getElementById('workspace-switch-success-dismiss');
 const networkStatus = document.getElementById('network-status');
 const networkLabel = document.getElementById('network-label');
 const batteryStatus = document.getElementById('status-battery');
@@ -88,6 +112,8 @@ let clinicLogoGeneration = 0;
 let clinicLogoController = null;
 let pendingWorkspaceRole = null;
 let workspaceSwitchBusy = false;
+let signOutBusy = false;
+let workspaceSwitchNoticeTimer = null;
 let allowedAppIds = new Set();
 let authGeneration = 0;
 let signInNotice = null;
@@ -107,7 +133,10 @@ let shownGregorianMonth = new Date(new Date().getFullYear(), new Date().getMonth
 const clinicMediaHost = new BrowserClinicMediaHost({
   getContext: () => ({ connected: connectedStaging, session: clinicSession, user: firebaseUser, apiBaseUrl: config?.apiBaseUrl }),
   isCurrent: (app, entry, attempt) => isCurrentAppLaunch(app, entry, attempt) && allowedAppIds.has(app.id),
-  onPendingChange: (entry, pending) => { entry.mediaPending = pending; },
+  onPendingChange: (entry, pending) => {
+    entry.mediaPending = pending;
+    updateAppHistoryControls(entry);
+  },
 });
 
 const calendarWeekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -198,9 +227,40 @@ function selectWorkspaceRole(role) {
   workspaceSwitchError.hidden = true;
   workspaceSwitchConfirm.disabled = false;
   workspaceSwitchConfirm.textContent = `Switch to ${workspaceRoleName(role)}`;
-  workspaceSwitchDialog.showModal();
-  if (role === 'admin') workspacePinInput.focus();
-  else workspaceSwitchConfirm.focus();
+  if (role === 'admin') {
+    workspaceSwitchDialog.showModal();
+    workspacePinInput.focus();
+    return;
+  }
+  void confirmWorkspaceRoleSwitch(true);
+}
+
+function showWorkspaceSwitching(role) {
+  workspaceSwitchingMessage.textContent = `Opening the ${workspaceRoleName(role)} workspace…`;
+  workspaceSwitchingBackdrop.setAttribute('aria-label', `Switching to the ${workspaceRoleName(role)} workspace`);
+  setShellRegionsInert(true);
+  workspaceSwitchingBackdrop.hidden = false;
+  workspaceSwitchingCard.focus({ preventScroll: true });
+}
+
+function hideWorkspaceSwitching() {
+  workspaceSwitchingBackdrop.hidden = true;
+  workspaceSwitchingBackdrop.removeAttribute('aria-label');
+}
+
+function dismissWorkspaceSwitchSuccess() {
+  workspaceSwitchSuccess.hidden = true;
+  if (workspaceSwitchNoticeTimer !== null) {
+    window.clearTimeout(workspaceSwitchNoticeTimer);
+    workspaceSwitchNoticeTimer = null;
+  }
+}
+
+function showWorkspaceSwitchSuccess(role) {
+  dismissWorkspaceSwitchSuccess();
+  workspaceSwitchSuccessTitle.textContent = `${workspaceRoleName(role)} workspace is active`;
+  workspaceSwitchSuccess.hidden = false;
+  workspaceSwitchNoticeTimer = window.setTimeout(dismissWorkspaceSwitchSuccess, 5_000);
 }
 
 function finishWorkspaceRoleSwitch(role) {
@@ -208,9 +268,10 @@ function finishWorkspaceRoleSwitch(role) {
   workspaceSwitchDialog.close();
   pendingWorkspaceRole = null;
   workspacePinInput.value = '';
+  hideWorkspaceSwitching();
+  setShellRegionsInert(false);
   announcement.textContent = `${workspaceRoleName(role)} workspace is active.`;
-  if (!switchRoleButton.hidden) switchRoleButton.focus();
-  else document.querySelector('.statusbar-brand').focus();
+  showWorkspaceSwitchSuccess(role);
 }
 
 function setWorkspaceSwitchError(message) {
@@ -324,6 +385,12 @@ function updatePasswordVisibility(visible) {
   authPassword.type = visible ? 'text' : 'password';
   passwordReveal.setAttribute('aria-pressed', String(visible));
   passwordReveal.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+}
+
+function updateWorkspacePinVisibility(visible) {
+  workspacePinInput.classList.toggle('is-obscured', !visible);
+  workspacePinReveal.setAttribute('aria-pressed', String(visible));
+  workspacePinReveal.setAttribute('aria-label', visible ? 'Hide Admin PIN' : 'Show Admin PIN');
 }
 
 function updateIdentityClock() {
@@ -508,6 +575,13 @@ function setWindowControlIcon(button, restore = false) {
   button.replaceChildren(svg);
 }
 
+function syncMaximizeControl(section, button, title) {
+  const maximized = section.classList.contains('is-maximized');
+  button.setAttribute('aria-label', (maximized ? 'Restore ' : 'Maximize ') + title);
+  button.title = maximized ? 'Restore window size' : 'Maximize window';
+  setWindowControlIcon(button, maximized);
+}
+
 function setHistoryButtonIcon(button) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -549,7 +623,7 @@ function buildDock() {
   exploreButton.addEventListener('click', openAppExplorer);
   dock.append(exploreButton);
 
-  for (const app of apps) {
+  for (const app of orderAppsForDisplay(apps.filter((app) => app.id !== 'calendar'))) {
     if (!allowedAppIds.has(app.id)) continue;
     const button = document.createElement('button');
     button.className = 'dock-icon';
@@ -607,7 +681,7 @@ function hideDockTooltip() {
 
 function renderAppExplorer() {
   appExplorerGrid.replaceChildren();
-  const visibleApps = apps.filter((app) => allowedAppIds.has(app.id));
+  const visibleApps = orderAppsForDisplay(apps.filter((app) => app.id !== 'calendar' && allowedAppIds.has(app.id)));
   appExplorerEmpty.hidden = visibleApps.length > 0;
 
   for (const app of visibleApps) {
@@ -671,7 +745,92 @@ function focusWindow(appId, shouldFocus = false) {
   activeWindowId = appId;
   updateHome();
   updateDock();
+  syncAppLaunchFeedbackForWindows();
   if (shouldFocus) entry.element.focus({ preventScroll: true });
+}
+
+function clearAppLaunchTimers(entry) {
+  if (entry.launchTimer) window.clearTimeout(entry.launchTimer);
+  if (entry.launchHandoffTimer) window.clearTimeout(entry.launchHandoffTimer);
+  entry.launchTimer = null;
+  entry.launchHandoffTimer = null;
+}
+
+function pauseAppLaunchFeedback(entry) {
+  if (entry.launchTimer) window.clearTimeout(entry.launchTimer);
+  entry.launchTimer = null;
+  if (entry.launchStartedAt !== null) {
+    entry.launchElapsedMs = Math.min(APP_LAUNCH_MIN_VISIBLE_MS,
+      entry.launchElapsedMs + Math.max(0, performance.now() - entry.launchStartedAt));
+  }
+  entry.launchStartedAt = null;
+}
+
+function isForegroundAppLaunch(entry) {
+  return !document.hidden && !entry.element.hidden && activeWindowId === entry.app.id
+    && topVisibleWindowId() === entry.app.id;
+}
+
+function revealAppRuntime(entry) {
+  if (entry.launchHandoff !== 'waiting' || !entry.runtimeReady || !entry.frame) return;
+  pauseAppLaunchFeedback(entry);
+  entry.launchHandoff = 'revealing';
+  entry.frame.removeAttribute('aria-hidden');
+  entry.frame.removeAttribute('tabindex');
+  const splash = entry.runtimeHost.querySelector('.app-runtime-loading');
+  window.requestAnimationFrame(() => {
+    if (entry.launchHandoff !== 'revealing') return;
+    entry.frame?.classList.add('is-revealed');
+    splash?.classList.add('is-exiting');
+  });
+  const settleDelay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : APP_LAUNCH_SETTLE_MS;
+  entry.launchHandoffTimer = window.setTimeout(() => {
+    entry.launchHandoffTimer = null;
+    if (entry.launchHandoff !== 'revealing') return;
+    splash?.remove();
+    entry.launchHandoff = 'complete';
+  }, settleDelay);
+}
+
+function syncAppLaunchFeedback(entry) {
+  if (entry.launchHandoff !== 'waiting') return;
+  if (!isForegroundAppLaunch(entry)) {
+    pauseAppLaunchFeedback(entry);
+    return;
+  }
+
+  if (entry.launchElapsedMs >= APP_LAUNCH_MIN_VISIBLE_MS) {
+    if (entry.runtimeReady) revealAppRuntime(entry);
+    return;
+  }
+
+  if (entry.launchStartedAt === null) entry.launchStartedAt = performance.now();
+  const elapsed = entry.launchElapsedMs + Math.max(0, performance.now() - entry.launchStartedAt);
+  if (elapsed >= APP_LAUNCH_MIN_VISIBLE_MS) {
+    entry.launchElapsedMs = APP_LAUNCH_MIN_VISIBLE_MS;
+    entry.launchStartedAt = null;
+    if (entry.launchTimer) window.clearTimeout(entry.launchTimer);
+    entry.launchTimer = null;
+    if (entry.runtimeReady) revealAppRuntime(entry);
+    return;
+  }
+  if (!entry.launchTimer) {
+    entry.launchTimer = window.setTimeout(() => {
+      entry.launchTimer = null;
+      syncAppLaunchFeedback(entry);
+    }, Math.max(1, APP_LAUNCH_MIN_VISIBLE_MS - elapsed));
+  }
+}
+
+function syncAppLaunchFeedbackForWindows() {
+  for (const entry of openWindows.values()) syncAppLaunchFeedback(entry);
+}
+
+function resetAppLaunchFeedback(entry) {
+  clearAppLaunchTimers(entry);
+  entry.launchElapsedMs = 0;
+  entry.launchStartedAt = null;
+  entry.launchHandoff = 'waiting';
 }
 
 function isCurrentAppLaunch(app, entry, attempt) {
@@ -681,6 +840,7 @@ function isCurrentAppLaunch(app, entry, attempt) {
 
 function setAppRuntimeState(entry, title, description, retry) {
   entry.runtimeHost.dataset.state = retry ? 'error' : 'loading';
+  entry.runtimeHost.setAttribute('aria-busy', 'false');
   const message = document.createElement('div');
   message.className = 'app-runtime-state';
   message.setAttribute('role', retry ? 'alert' : 'status');
@@ -697,12 +857,46 @@ function setAppRuntimeState(entry, title, description, retry) {
   entry.runtimeHost.replaceChildren(message);
 }
 
+function setAppRuntimeLoading(entry, app) {
+  entry.runtimeHost.dataset.state = 'loading';
+  entry.runtimeHost.setAttribute('aria-busy', 'true');
+  entry.element.dataset.appState = 'loading';
+
+  const splash = document.createElement('div');
+  splash.className = 'app-runtime-loading';
+  splash.setAttribute('role', 'status');
+  splash.setAttribute('aria-live', 'polite');
+
+  const icon = document.createElement('img');
+  icon.className = 'app-runtime-loading-icon';
+  icon.src = app.icon;
+  icon.alt = '';
+  icon.draggable = false;
+
+  const title = document.createElement('strong');
+  title.textContent = app.title;
+
+  const progress = document.createElement('span');
+  progress.className = 'app-runtime-loading-progress';
+  const spinner = document.createElement('span');
+  spinner.className = 'app-runtime-spinner';
+  spinner.setAttribute('aria-hidden', 'true');
+  const description = document.createElement('span');
+  description.textContent = 'Opening your workspace…';
+  progress.append(spinner, description);
+  splash.append(icon, title, progress);
+  entry.runtimeHost.replaceChildren(splash);
+}
+
 function disposeAppRuntime(entry) {
   if (!entry || entry.disposed) return;
   entry.disposed = true;
   entry.runtimeAttempt += 1;
   if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
   entry.readyTimer = null;
+  clearAppLaunchTimers(entry);
+  entry.launchStartedAt = null;
+  entry.launchHandoff = 'disposed';
   for (const controller of entry.apiControllers?.values() ?? []) controller.abort();
   entry.apiControllers?.clear();
   clinicMediaHost.dispose(entry);
@@ -906,7 +1100,9 @@ async function handleAppPortMessage(app, entry, attempt, message) {
     if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
     entry.readyTimer = null;
     entry.runtimeHost.dataset.state = 'ready';
+    entry.runtimeHost.setAttribute('aria-busy', 'false');
     entry.element.dataset.appState = 'ready';
+    syncAppLaunchFeedback(entry);
     return;
   }
 
@@ -923,6 +1119,7 @@ async function handleAppPortMessage(app, entry, attempt, message) {
       return;
     }
     entry.lifecycle = { dirty: message.dirty, modal: message.modal, pendingWrite: message.pendingWrite };
+    updateAppHistoryControls(entry);
     return;
   }
   if (message.type === 'app:navigation-state') {
@@ -1022,6 +1219,9 @@ function failAppRuntime(app, entry, attempt, message) {
   if (!isCurrentAppLaunch(app, entry, attempt)) return;
   if (entry.readyTimer) window.clearTimeout(entry.readyTimer);
   entry.readyTimer = null;
+  clearAppLaunchTimers(entry);
+  entry.launchStartedAt = null;
+  entry.launchHandoff = 'failed';
   entry.port?.close();
   entry.port = null;
   entry.frame?.remove();
@@ -1032,11 +1232,12 @@ function failAppRuntime(app, entry, attempt, message) {
 
 async function initializeAppRuntime(app, entry) {
   const attempt = ++entry.runtimeAttempt;
+  resetAppLaunchFeedback(entry);
   entry.runtimeReady = false;
   entry.requestCount = 0;
   entry.pendingRequests = 0;
   entry.requestWindowStartedAt = Date.now();
-  setAppRuntimeState(entry, 'Starting ' + app.title, 'Verifying the trusted first-party app package…');
+  setAppRuntimeLoading(entry, app);
   try {
     await verifyTrustedAppBundle(app);
     if (!isCurrentAppLaunch(app, entry, attempt)) return;
@@ -1044,6 +1245,8 @@ async function initializeAppRuntime(app, entry) {
     const iframe = document.createElement('iframe');
     iframe.className = 'app-runtime-frame';
     iframe.title = app.title + ' isolated app';
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.tabIndex = -1;
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.referrerPolicy = 'no-referrer';
     iframe.allow = '';
@@ -1051,7 +1254,7 @@ async function initializeAppRuntime(app, entry) {
     entry.frame = iframe;
     entry.nonce = createAppLaunchNonce();
     entry.runtimeHost.dataset.state = 'connecting';
-    entry.runtimeHost.replaceChildren(iframe);
+    entry.runtimeHost.append(iframe);
 
     const channel = new MessageChannel();
     entry.port = channel.port1;
@@ -1067,7 +1270,7 @@ async function initializeAppRuntime(app, entry) {
       }
       loaded = true;
       try {
-        const clinicContext = ['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab'].includes(app.id) ? (() => {
+        const clinicContext = ['workentry', 'patients', 'appointments', 'followups', 'staff', 'lab', 'user-management'].includes(app.id) ? (() => {
           const rawCapabilities = clinicSession?.clinicUser?.capabilities;
           const appContextCapabilities = appContextCapabilitiesForApp(app.id);
           const capabilities = Array.isArray(rawCapabilities)
@@ -1076,12 +1279,15 @@ async function initializeAppRuntime(app, entry) {
           const sourceRole = clinicSession?.clinicUser?.role;
           const role = sourceRole === 'reception' ? 'assistant' : sourceRole;
           const clinicDisplayName = clinicSession?.clinic?.displayName ?? clinicSession?.clinic?.name ?? 'Dental clinic';
+          const clinicUserId = clinicSession?.clinicUser?.clinicUserId;
           if (!['admin', 'doctor', 'reception', 'assistant'].includes(role)
             || typeof clinicDisplayName !== 'string' || clinicDisplayName.length > 160
-            || /[\u0000-\u001f\u007f]/.test(clinicDisplayName) || capabilities.length > 16) {
+            || /[\u0000-\u001f\u007f]/.test(clinicDisplayName) || capabilities.length > 16
+            || (app.id === 'user-management' && (role !== 'admin' || !capabilities.includes('clinic_users.manage')
+              || typeof clinicUserId !== 'string' || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(clinicUserId)))) {
             throw new Error('The verified clinic session context is incomplete.');
           }
-          return { capabilities, role, clinicDisplayName };
+          return { capabilities, role, clinicDisplayName, ...(app.id === 'user-management' ? { clinicUserId } : {}) };
         })() : {};
         const financeContext = Array.isArray(app.sessionCapabilities) ? {
           capabilities: app.sessionCapabilities.filter(capability => clinicSession?.clinicUser?.capabilities?.includes(capability)),
@@ -1124,6 +1330,7 @@ function syncRouteToVisibleWindow() {
   setRoute(nextActiveId, true);
   updateHome();
   updateDock();
+  syncAppLaunchFeedbackForWindows();
 }
 
 function closeWindow(appId) {
@@ -1138,7 +1345,10 @@ function closeWindow(appId) {
   entry.element.remove();
   openWindows.delete(appId);
   if (activeWindowId === appId) syncRouteToVisibleWindow();
-  else updateDock();
+  else {
+    updateDock();
+    syncAppLaunchFeedbackForWindows();
+  }
   announcement.textContent = (appById.get(appId)?.title || 'App') + ' closed.';
 }
 
@@ -1160,6 +1370,7 @@ function closeAllWindows({ force = false } = {}) {
   setRoute(null, true);
   updateHome();
   updateDock();
+  syncAppLaunchFeedbackForWindows();
   return true;
 }
 
@@ -1182,11 +1393,17 @@ function ensureNoAppWork(action) {
 
 function updateAppHistoryControls(entry) {
   if (!entry.backButton) return;
-  entry.backButton.disabled = !(entry.runtimeReady && entry.navigationState?.canGoBack && entry.navigationState?.canNavigate);
+  entry.backButton.disabled = !(entry.runtimeReady
+    && entry.navigationState?.canGoBack
+    && entry.navigationState?.canNavigate
+    && !entry.lifecycle?.modal
+    && !entry.lifecycle?.pendingWrite
+    && !entry.mediaPending);
 }
 
 function navigateAppBack(entry) {
-  if (!entry || !entry.runtimeReady || entry.backButton?.disabled || hasUnresolvedAppWork(entry)) return;
+  if (!entry || !entry.runtimeReady || entry.backButton?.disabled
+    || entry.lifecycle?.modal || entry.lifecycle?.pendingWrite || entry.mediaPending) return;
   sendAppPortMessage(entry, { type: 'app:navigate-back' });
 }
 
@@ -1195,7 +1412,10 @@ function minimizeWindow(appId) {
   if (!entry) return;
   entry.element.hidden = true;
   if (activeWindowId === appId) syncRouteToVisibleWindow();
-  else updateHome();
+  else {
+    updateHome();
+    syncAppLaunchFeedbackForWindows();
+  }
   announcement.textContent = (appById.get(appId)?.title || 'App') + ' minimized.';
 }
 
@@ -1219,10 +1439,8 @@ function createWindow(app, shift) {
   controls.className = 'window-controls';
 
   const maximizeButton = makeButton('window-control maximize-control', 'Maximize ' + app.title, '', () => {
-    const maximized = section.classList.toggle('is-maximized');
-    maximizeButton.setAttribute('aria-label', (maximized ? 'Restore ' : 'Maximize ') + app.title);
-    maximizeButton.title = maximized ? 'Restore window size' : 'Maximize window';
-    setWindowControlIcon(maximizeButton, maximized);
+    section.classList.toggle('is-maximized');
+    syncMaximizeControl(section, maximizeButton, app.title);
   });
   setWindowControlIcon(maximizeButton);
   controls.append(
@@ -1260,14 +1478,19 @@ function createWindow(app, shift) {
     handle.dataset.edge = edge;
     handle.setAttribute('aria-hidden', 'true');
     section.append(handle);
-    enableWindowResize(section, handle);
+    enableWindowResize(section, handle, maximizeButton, app.title);
   }
   enableWindowDrag(section, titlebar);
   windowStage.append(section);
   return {
     element: section, app, runtimeHost, backButton, frame: null, port: null, readyTimer: null,
+    maximizeButton,
     runtimeReady: false, runtimeAttempt: 0, disposed: false,
+    launchElapsedMs: 0, launchStartedAt: null, launchTimer: null, launchHandoffTimer: null, launchHandoff: 'waiting',
     lifecycle: { dirty: false, modal: false, pendingWrite: false }, navigationState: { canGoBack: false, canNavigate: true },
+    fullscreenRestore: document.fullscreenElement === desktop
+      ? { style: section.getAttribute('style'), maximized: section.classList.contains('is-maximized') }
+      : null,
     apiControllers: new Map(), mediaPending: false,
   };
 }
@@ -1290,8 +1513,11 @@ function enableWindowDrag(section, titlebar) {
   titlebar.addEventListener('pointermove', (event) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
     const { stageRect } = drag;
+    const dockRect = dock.hidden ? null : dock.getBoundingClientRect();
+    const bottomLimit = dockRect ? Math.min(stageRect.bottom, dockRect.top - 12) : stageRect.bottom;
     const left = Math.min(stageRect.right - 80, Math.max(stageRect.left, drag.left + event.clientX - drag.x));
-    const top = Math.min(stageRect.bottom - 48, Math.max(stageRect.top + 35, drag.top + event.clientY - drag.y));
+    const maxTop = Math.max(stageRect.top + 35, bottomLimit - section.getBoundingClientRect().height);
+    const top = Math.min(maxTop, Math.max(stageRect.top + 35, drag.top + event.clientY - drag.y));
     section.style.left = ((left - stageRect.left) / stageRect.width * 100) + '%';
     section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
   });
@@ -1305,16 +1531,21 @@ function enableWindowDrag(section, titlebar) {
   titlebar.addEventListener('pointercancel', endDrag);
 }
 
-function enableWindowResize(section, handle) {
+function enableWindowResize(section, handle, maximizeButton, appTitle) {
   handle.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || section.classList.contains('is-maximized')) return;
+    if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     const edge = handle.dataset.edge;
     const initial = section.getBoundingClientRect();
     const stageRect = windowStage.getBoundingClientRect();
+    const dockRect = dock.hidden ? null : dock.getBoundingClientRect();
+    const bottomLimit = dockRect ? Math.min(stageRect.bottom, dockRect.top - 12) : stageRect.bottom;
     const minWidth = Math.min(360, stageRect.width - 24);
-    const minHeight = Math.min(260, stageRect.height - 100);
+    const minHeight = Math.min(260, Math.max(120, bottomLimit - stageRect.top - 35));
+    section.classList.remove('is-maximized');
+    if (document.fullscreenElement === desktop) section.classList.add('is-fullscreen-resized');
+    syncMaximizeControl(section, maximizeButton, appTitle);
     section.style.left = ((initial.left - stageRect.left) / stageRect.width * 100) + '%';
     section.style.top = ((initial.top - stageRect.top) / stageRect.height * 100) + '%';
     section.style.width = (initial.width / stageRect.width * 100) + '%';
@@ -1335,7 +1566,7 @@ function enableWindowResize(section, handle) {
       if (edge.includes('w')) left = Math.min(initial.right - minWidth, Math.max(stageRect.left, initial.left + dx));
       if (edge.includes('e')) right = Math.max(initial.left + minWidth, Math.min(stageRect.right, initial.right + dx));
       if (edge.includes('n')) top = Math.min(initial.bottom - minHeight, Math.max(stageRect.top + 35, initial.top + dy));
-      if (edge.includes('s')) bottom = Math.max(initial.top + minHeight, Math.min(stageRect.bottom, initial.bottom + dy));
+      if (edge.includes('s')) bottom = Math.max(initial.top + minHeight, Math.min(bottomLimit, initial.bottom + dy));
       section.style.left = ((left - stageRect.left) / stageRect.width * 100) + '%';
       section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
       section.style.width = ((right - left) / stageRect.width * 100) + '%';
@@ -1373,6 +1604,7 @@ function showHome(fromRoute = false) {
   activeWindowId = null;
   updateHome();
   updateDock();
+  syncAppLaunchFeedbackForWindows();
   if (!fromRoute) setRoute(null);
 }
 
@@ -1393,13 +1625,17 @@ function setAuthMessage(message, tone = 'normal') {
 }
 
 function clearClinicAccess() {
+  hideWorkspaceSwitching();
+  dismissWorkspaceSwitchSuccess();
   clinicSession = null;
   clearClinicWidgetLogo();
   allowedAppIds = new Set();
   closeWorkspaceRoleMenu();
   if (workspaceSwitchDialog.open) workspaceSwitchDialog.close();
+  if (signOutConfirmationDialog.open) signOutConfirmationDialog.close();
   pendingWorkspaceRole = null;
   workspaceSwitchBusy = false;
+  signOutBusy = false;
   closeAllWindows({ force: true });
   buildDock();
   dock.hidden = true;
@@ -1408,6 +1644,9 @@ function clearClinicAccess() {
   switchRoleButton.hidden = true;
   switchRoleButton.disabled = false;
   signOutButton.hidden = true;
+  signOutButton.disabled = false;
+  signOutConfirmationConfirm.disabled = false;
+  signOutConfirmationCancel.disabled = false;
   homeView.hidden = true;
 }
 
@@ -1637,23 +1876,43 @@ authForm.addEventListener('submit', async (event) => {
   }
 });
 
+function openSignOutConfirmation() {
+  if (!firebaseAuth || !firebaseAuthSdk || signOutBusy) return;
+  signOutConfirmationError.textContent = '';
+  signOutConfirmationError.hidden = true;
+  signOutConfirmationConfirm.disabled = false;
+  signOutConfirmationConfirm.textContent = 'Sign out';
+  signOutConfirmationCancel.disabled = false;
+  signOutConfirmationDialog.showModal();
+  signOutConfirmationCancel.focus();
+}
+
 async function signOutCurrentAccount() {
-  if (!firebaseAuth || !firebaseAuthSdk) return;
+  if (!firebaseAuth || !firebaseAuthSdk || signOutBusy) return;
   if (!ensureNoAppWork('sign out')) return;
+  signOutBusy = true;
   signOutButton.disabled = true;
   switchRoleButton.disabled = true;
-  setAuthMessage('Signing out…', 'normal');
+  signOutConfirmationConfirm.disabled = true;
+  signOutConfirmationCancel.disabled = true;
+  signOutConfirmationConfirm.textContent = 'Signing out…';
   try {
     await firebaseAuthSdk.signOut(firebaseAuth);
+    if (signOutConfirmationDialog.open) signOutConfirmationDialog.close();
   } catch {
-    setAuthMessage('Could not sign out right now. Try again.', 'error');
-  } finally {
+    signOutBusy = false;
     signOutButton.disabled = false;
     switchRoleButton.disabled = false;
+    signOutConfirmationConfirm.disabled = false;
+    signOutConfirmationCancel.disabled = false;
+    signOutConfirmationConfirm.textContent = 'Sign out';
+    signOutConfirmationError.textContent = 'Could not sign out right now. Try again.';
+    signOutConfirmationError.hidden = false;
+    signOutConfirmationConfirm.focus();
   }
 }
 
-async function confirmWorkspaceRoleSwitch() {
+async function confirmWorkspaceRoleSwitch(workAlreadyChecked = false) {
   const targetRole = pendingWorkspaceRole;
   const user = firebaseAuth?.currentUser;
   if (!targetRole || !user || !clinicSession || workspaceSwitchBusy) return;
@@ -1661,7 +1920,7 @@ async function confirmWorkspaceRoleSwitch() {
     setWorkspaceSwitchError('That workspace is no longer available. Refresh your clinic session and try again.');
     return;
   }
-  if (!ensureNoAppWork('switch workspaces')) return;
+  if (!workAlreadyChecked && !ensureNoAppWork('switch workspaces')) return;
   const pin = targetRole === 'admin' ? workspacePinInput.value : '';
   if (targetRole === 'admin' && !/^\d{4}$/.test(pin)) {
     setWorkspaceSwitchError('Enter the four-digit Admin PIN.');
@@ -1675,6 +1934,9 @@ async function confirmWorkspaceRoleSwitch() {
   workspaceSwitchCancel.disabled = true;
   workspaceSwitchConfirm.textContent = 'Switching…';
   setWorkspaceSwitchError('');
+  dismissWorkspaceSwitchSuccess();
+  if (workspaceSwitchDialog.open) workspaceSwitchDialog.close();
+  showWorkspaceSwitching(targetRole);
 
   const refreshAndConfirm = async () => {
     const refreshedSession = await loadClinicSession(user, ++authGeneration);
@@ -1732,16 +1994,42 @@ async function confirmWorkspaceRoleSwitch() {
     workspaceSwitchBusy = false;
     switchRoleButton.disabled = false;
     workspaceSwitchCancel.disabled = false;
+    hideWorkspaceSwitching();
+    if (clinicSession) setShellRegionsInert(false);
     if (workspaceSwitchDialog.open) {
       workspaceSwitchConfirm.disabled = false;
       workspaceSwitchConfirm.textContent = pendingWorkspaceRole
         ? `Switch to ${workspaceRoleName(pendingWorkspaceRole)}`
         : 'Switch workspace';
+    } else if (pendingWorkspaceRole && clinicSession) {
+      workspaceSwitchConfirm.disabled = false;
+      workspaceSwitchConfirm.textContent = `Switch to ${workspaceRoleName(pendingWorkspaceRole)}`;
+      workspaceSwitchDialog.showModal();
+      workspaceSwitchConfirm.focus();
+    } else if (clinicSession) {
+      if (!switchRoleButton.hidden) switchRoleButton.focus();
+      else document.querySelector('.statusbar-brand').focus();
     }
   }
 }
 
-signOutButton.addEventListener('click', () => void signOutCurrentAccount());
+signOutButton.addEventListener('click', openSignOutConfirmation);
+signOutConfirmationForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  void signOutCurrentAccount();
+});
+signOutConfirmationCancel.addEventListener('click', () => {
+  if (!signOutBusy && signOutConfirmationDialog.open) signOutConfirmationDialog.close();
+});
+signOutConfirmationDialog.addEventListener('cancel', (event) => {
+  if (signOutBusy) event.preventDefault();
+});
+signOutConfirmationDialog.addEventListener('close', () => {
+  if (signOutBusy) return;
+  signOutConfirmationError.textContent = '';
+  signOutConfirmationError.hidden = true;
+});
+workspaceSwitchSuccessDismiss.addEventListener('click', dismissWorkspaceSwitchSuccess);
 switchRoleButton.addEventListener('click', () => {
   if (workspaceRoleMenu.hidden) {
     workspaceRoleMenu.hidden = false;
@@ -1777,11 +2065,13 @@ workspaceSwitchDialog.addEventListener('close', () => {
   if (workspaceSwitchBusy) return;
   pendingWorkspaceRole = null;
   workspacePinInput.value = '';
+  updateWorkspacePinVisibility(false);
   setWorkspaceSwitchError('');
 });
 authEmail.addEventListener('input', persistEmailPreference);
 rememberEmailInput.addEventListener('change', persistEmailPreference);
 passwordReveal.addEventListener('click', () => updatePasswordVisibility(authPassword.type === 'password'));
+workspacePinReveal.addEventListener('click', () => updateWorkspacePinVisibility(workspacePinInput.classList.contains('is-obscured')));
 startupSoundToggle.addEventListener('click', () => {
   startupSoundEnabled = !startupSoundEnabled;
   try { localStorage.setItem(startupSoundPreferenceKey, startupSoundEnabled ? 'on' : 'off'); } catch { /* Session-only preference. */ }
@@ -1804,6 +2094,29 @@ function updateFullscreenToggle() {
   fullscreenToggleLabel.textContent = label;
 }
 
+function updateDesktopFullscreenState() {
+  const isFullscreen = document.fullscreenElement === desktop;
+  for (const entry of openWindows.values()) {
+    if (isFullscreen) {
+      if (!entry.fullscreenRestore) {
+        entry.fullscreenRestore = {
+          style: entry.element.getAttribute('style'),
+          maximized: entry.element.classList.contains('is-maximized'),
+        };
+      }
+      continue;
+    }
+    if (!entry.fullscreenRestore) continue;
+    if (entry.fullscreenRestore.style === null) entry.element.removeAttribute('style');
+    else entry.element.setAttribute('style', entry.fullscreenRestore.style);
+    entry.element.classList.toggle('is-maximized', entry.fullscreenRestore.maximized);
+    entry.element.classList.remove('is-fullscreen-resized', 'is-resizing');
+    syncMaximizeControl(entry.element, entry.maximizeButton, entry.app.title);
+    entry.fullscreenRestore = null;
+  }
+  updateFullscreenToggle();
+}
+
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement === desktop) await document.exitFullscreen();
@@ -1822,7 +2135,8 @@ appExplorerDialog.addEventListener('click', (event) => {
   if (event.target === appExplorerDialog) appExplorerDialog.close();
 });
 fullscreenToggle.addEventListener('click', toggleFullscreen);
-document.addEventListener('fullscreenchange', updateFullscreenToggle);
+document.addEventListener('fullscreenchange', updateDesktopFullscreenState);
+document.addEventListener('visibilitychange', syncAppLaunchFeedbackForWindows);
 document.addEventListener('scroll', hideDockTooltip, true);
 window.addEventListener('resize', hideDockTooltip);
 

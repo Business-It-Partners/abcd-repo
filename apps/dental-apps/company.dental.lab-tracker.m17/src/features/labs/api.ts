@@ -1,10 +1,27 @@
 import type { ClinicClient, ClinicCommand } from '../../../../../../packages/app-sdk/src/clinicClient';
-import type { ClinicLabOrder, LabOrderAssignmentInput, LabOrderUpdateInput } from './types';
+import type {
+  ClinicLabOrder,
+  LabOrderAssignmentInput,
+  LabOrderCreateInput,
+  LabOrderUpdateInput,
+  LabPatientCase,
+  LabPatientSummary,
+} from './types';
 import type { ClinicSupplier, SupplierUpdateInput, SupplierWriteInput } from './supplierTypes';
 
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string';
 const nullableText = (value: unknown): value is string | null => value === null || text(value);
+
+function patientSummary(value: unknown): value is LabPatientSummary {
+  return record(value) && text(value.patientId) && text(value.patientNumber)
+    && text(value.fullName) && nullableText(value.phone);
+}
+
+function patientCase(value: unknown): value is LabPatientCase {
+  return record(value) && text(value.chiefComplaintId) && text(value.chiefComplaint)
+    && text(value.openedOn) && ['open', 'completed', 'closed'].includes(String(value.status));
+}
 
 export function isClinicLabOrder(value: unknown): value is ClinicLabOrder {
   if (!record(value)) return false;
@@ -57,6 +74,34 @@ export class LabTrackerApi {
       throw new Error('The clinic returned an invalid lab supplier list.');
     }
     return value.suppliers;
+  }
+
+  async searchPatients(query: string): Promise<LabPatientSummary[]> {
+    const params = new URLSearchParams({ q: query.trim(), limit: '8' });
+    const value = await this.client.read<unknown>(`/v1/patients?${params.toString()}`);
+    if (!record(value) || !Array.isArray(value.patients) || !value.patients.every(patientSummary)) {
+      throw new Error('The clinic returned an invalid patient search result.');
+    }
+    return value.patients.slice(0, 8);
+  }
+
+  async listPatientCases(patientId: string): Promise<LabPatientCase[]> {
+    const value = await this.client.read<unknown>(`/v1/patients/${encodeURIComponent(patientId)}/treatment-plans`);
+    if (!record(value) || !Array.isArray(value.treatmentPlans)) {
+      throw new Error('The clinic returned an invalid patient case list.');
+    }
+    const cases = value.treatmentPlans.map((plan) => record(plan) ? {
+      chiefComplaintId: plan.chiefComplaintId,
+      chiefComplaint: plan.chiefComplaint,
+      openedOn: plan.openedOn,
+      status: plan.status,
+    } : plan);
+    if (!cases.every(patientCase)) throw new Error('The clinic returned an invalid patient case list.');
+    return cases;
+  }
+
+  createLabOrder(input: LabOrderCreateInput): ClinicCommand<{ labOrder: ClinicLabOrder }> {
+    return this.client.command('POST', '/v1/lab-orders', input, orderReceipt);
   }
 
   assignLabRequest(id: string, input: LabOrderAssignmentInput): ClinicCommand<{ labOrder: ClinicLabOrder }> {

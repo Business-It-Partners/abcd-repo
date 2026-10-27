@@ -1,9 +1,9 @@
 export const labBundle = Object.freeze({
   "entry": "/apps/lab.v1.html",
-  "entrySha256": "95a9674db3b6a113a0382fdb5e8bd8e08f4eb2d50d0e7e922d8c53776b179122",
+  "entrySha256": "6137652658ae6b65c22e0815bdaade695d0f33c39851476c132b5161dbfe84e5",
   "script": "/apps/lab.v1.js",
-  "scriptSha256": "a29871dccb6c65d1f8ff55d33265b8ce79494a7a2fd349d432fa331ac81b70ca",
+  "scriptSha256": "f1dcf320ae28a7e25db7ffc6b02825e914485a2bbc5a8f1e869361178363343e",
   "style": "/apps/lab.v1.css",
-  "styleSha256": "90f405ca6f38a4d9a0a21ddbccf3040029378102695dc4eaa223ca651dd6b035"
+  "styleSha256": "4f0ab4aaf453746f715111618e0436c65efa990582d5744696272d5e2d73da45"
 });
 export const labVersion = "1.0.3";

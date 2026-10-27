@@ -11,6 +11,7 @@ const runtimeScript = readFileSync(new URL('../apps/runtime.v1.js', import.meta.
 const browserClientSource = readFileSync(new URL('../apps/clinic-app-runtime/browserClinicClient.ts', import.meta.url), 'utf8');
 const mediaHostSource = readFileSync(new URL('../apps/clinic-app-runtime/mediaHost.js', import.meta.url), 'utf8');
 const hostScript = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
+const shellStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const protocolAppSource = readFileSync(new URL('../apps/treatment-protocols/src/main.tsx', import.meta.url), 'utf8');
 const financeAppSource = readFileSync(new URL('../apps/finance/src/main.tsx', import.meta.url), 'utf8');
 const financeRuntimeSource = readFileSync(new URL('../apps/finance/src/runtimeBridge.ts', import.meta.url), 'utf8');
@@ -26,7 +27,12 @@ const treatmentProgressSourceImport = JSON.parse(readFileSync(new URL('../apps/t
 const workEntryAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/main.tsx', import.meta.url), 'utf8');
 const workEntryWorkspaceSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/WorkEntryWorkspace.tsx', import.meta.url), 'utf8');
 const workEntryCaseEntrySource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CaseEntryView.tsx', import.meta.url), 'utf8');
+const labTrackerAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/main.tsx', import.meta.url), 'utf8');
+const labTrackerViewSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/features/labs/components/LabTrackerView.tsx', import.meta.url), 'utf8');
+const labTrackerApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/features/labs/api.ts', import.meta.url), 'utf8');
 const patientRecordAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.patient-record.m17/src/main.tsx', import.meta.url), 'utf8');
+const userManagementAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/main.tsx', import.meta.url), 'utf8');
+const userManagementApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/userManagementApi.ts', import.meta.url), 'utf8');
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
 const appLaunchSource = hostScript.match(/function openApp\(appId, fromRoute = false\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeFailureSource = hostScript.match(/function failAppRuntime\(app, entry, attempt, message\) \{[\s\S]*?^\}/m)?.[0];
@@ -37,9 +43,9 @@ function sha256(bytes) {
 }
 
 test('ships a unique, validated catalog of first-party apps with Worker capability grants', () => {
-  assert.equal(firstPartyApps.length, 10);
+  assert.equal(firstPartyApps.length, 11);
   assert.deepEqual(firstPartyApps.map((app) => app.id), [
-    'appointments', 'patients', 'calendar', 'finance', 'followups', 'lab', 'treatment', 'protocols', 'staff', 'workentry',
+    'appointments', 'patients', 'calendar', 'finance', 'followups', 'lab', 'treatment', 'protocols', 'staff', 'user-management', 'workentry',
   ]);
   assert.equal(isValidAppCatalog(firstPartyApps, baseOrigin), true);
   assert.equal(new Set(firstPartyApps.map((app) => app.id)).size, firstPartyApps.length);
@@ -60,7 +66,75 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
   assert.equal(finance.apiGrants.length, 28);
   assert.deepEqual(firstPartyApps.find((app) => app.id === 'calendar').apiGrants, appApiGrantsForApp('calendar'));
   assert.deepEqual(firstPartyApps.find((app) => app.id === 'treatment').apiGrants, appApiGrantsForApp('treatment'));
+  const userManagement = firstPartyApps.find((app) => app.id === 'user-management');
+  assert.deepEqual(userManagement.capabilities, ['clinic_users.manage']);
+  assert.deepEqual(userManagement.mediaGrants, []);
+  assert.deepEqual(userManagement.apiGrants, appApiGrantsForApp('user-management'));
   assert.equal(isValidAppCatalog([firstPartyApps[0], firstPartyApps[0]], baseOrigin), false);
+});
+
+test('limits User Management to its admin capability and exact account routes', () => {
+  const app = firstPartyApps.find((candidate) => candidate.id === 'user-management');
+  const userId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
+  assert.deepEqual(appContextCapabilitiesForApp('user-management'), ['clinic_users.manage']);
+  assert.deepEqual(app.apiGrants.map(({ method, path }) => ({ method, path })), [
+    { method: 'GET', path: '/v1/clinic/users' },
+    { method: 'POST', path: '/v1/clinic/users' },
+    { method: 'PATCH', path: '/v1/clinic/users/{uuid}' },
+    { method: 'POST', path: '/v1/clinic/users/{uuid}/password' },
+  ]);
+  assert.ok(findAppApiGrant(app, 'PATCH', `/v1/clinic/users/${userId}`));
+  assert.ok(findAppApiGrant(app, 'POST', `/v1/clinic/users/${userId}/password`));
+  assert.equal(findAppApiGrant(app, 'DELETE', `/v1/clinic/users/${userId}`), null);
+  assert.equal(findAppApiGrant(app, 'PATCH', '/v1/clinic/users/not-a-uuid'), null);
+  assert.equal(findAppApiGrant(app, 'POST', `/v1/clinic/users/${userId}/password/reset`), null);
+  assert.match(userManagementAppSource, /session\.clinicUser\.role !== "admin"/);
+  assert.match(userManagementAppSource, /session\.clinicUser\.capabilities\.includes\("clinic_users\.manage"\)/);
+  assert.match(userManagementAppSource, /const browserRuntime = connectBrowserRuntime\(\)/);
+  assert.match(userManagementApiSource, /client\.command\("PATCH", `\/v1\/clinic\/users\/\$\{clinicUserId\}`/);
+  assert.doesNotMatch(userManagementAppSource + userManagementApiSource, /from ["'][^"']*(?:electron|firebase)|window\.dentalApp|window\.desktop|\bfetch\s*\(|XMLHttpRequest|localStorage|indexedDB/);
+  assert.match(runtimeInitializeSource, /app\.id === 'user-management'.*role !== 'admin'/s);
+  for (const asset of [
+    '/apps/user-management.v1.html',
+    '/apps/user-management.v1.js',
+    '/apps/user-management.v1.css',
+    '/apps/dental-apps/company.dental.user-management.m17/asset-manifest.js',
+    '/assets/dock/user-management.png',
+  ]) assert.ok(serverScript.includes(asset), `dev server route ${asset}`);
+});
+
+test('allows app page back through dirty drafts while still blocking modals and pending writes', () => {
+  const historyControls = hostScript.match(/function updateAppHistoryControls\(entry\) \{[\s\S]*?^\}/m)?.[0];
+  const navigateBack = hostScript.match(/function navigateAppBack\(entry\) \{[\s\S]*?^\}/m)?.[0];
+  const dockBuilder = hostScript.match(/function buildDock\(\) \{[\s\S]*?^\}/m)?.[0];
+  const appExplorer = hostScript.match(/function renderAppExplorer\(\) \{[\s\S]*?^\}/m)?.[0];
+  assert.ok(historyControls);
+  assert.ok(navigateBack);
+  assert.ok(dockBuilder);
+  assert.ok(appExplorer);
+  assert.match(historyControls, /entry\.navigationState\?\.canNavigate/);
+  assert.match(historyControls, /!entry\.lifecycle\?\.modal/);
+  assert.match(historyControls, /!entry\.lifecycle\?\.pendingWrite/);
+  assert.match(historyControls, /!entry\.mediaPending/);
+  assert.doesNotMatch(historyControls, /entry\.lifecycle\?\.dirty/);
+  assert.doesNotMatch(navigateBack, /hasUnresolvedAppWork/);
+  assert.match(navigateBack, /entry\.lifecycle\?\.modal \|\| entry\.lifecycle\?\.pendingWrite \|\| entry\.mediaPending/);
+  assert.match(shellStyles, /\.running-dot\s*\{[^}]*top:\s*-7px;[^}]*background:\s*#078ac3;/);
+  assert.match(shellStyles, /\.dock-icon\.is-active \.running-dot\s*\{[^}]*background:\s*#078ac3;/);
+  assert.match(dockBuilder, /orderAppsForDisplay\(apps\.filter\(\(app\) => app\.id !== 'calendar'\)\)/);
+  assert.match(appExplorer, /orderAppsForDisplay\(apps\.filter\(\(app\) => app\.id !== 'calendar' && allowedAppIds\.has\(app\.id\)\)\)/);
+});
+
+test('keeps default app windows inset and centered in browser full screen', () => {
+  const desktopFullscreenRule = shellStyles.match(/\.desktop:fullscreen \.app-window:not\(\[hidden\]\):not\(\.is-fullscreen-resized\)\s*\{([^}]*)\}/)?.[1];
+  const narrowFullscreenRule = shellStyles.match(/@media \(max-width: 760px\)\s*\{\s*\.desktop:fullscreen \.app-window:not\(\[hidden\]\):not\(\.is-fullscreen-resized\)\s*\{([^}]*)\}/)?.[1];
+  assert.ok(desktopFullscreenRule);
+  assert.ok(narrowFullscreenRule);
+  for (const rule of [desktopFullscreenRule, narrowFullscreenRule]) {
+    assert.match(rule, /left:\s*50%\s*!important;/);
+    assert.match(rule, /width:\s*90%\s*!important;/);
+    assert.match(rule, /transform:\s*translateX\(-50%\)\s*!important;/);
+  }
 });
 
 test('rejects remote, malformed, and unregistered app metadata', () => {
@@ -118,6 +192,30 @@ test('matches only the explicit Work Entry and Patient Record backend routes and
   assert.equal(findAppApiGrant(protocols, 'DELETE', `/v1/treatment-protocols/${protocolId}`), null);
 });
 
+test('Lab Tracker creates a direct lab order from a searchable patient and open case', () => {
+  const lab = firstPartyApps.find((candidate) => candidate.id === 'lab');
+  const patientId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
+  assert.ok(findAppApiGrant(lab, 'GET', '/v1/patients?q=nirmala&limit=8'));
+  assert.equal(findAppApiGrant(lab, 'GET', '/v1/patients?q=nirmala&limit=100'), null);
+  assert.equal(findAppApiGrant(lab, 'GET', '/v1/patients?limit=8'), null);
+  assert.ok(findAppApiGrant(lab, 'GET', `/v1/patients/${patientId}/treatment-plans`));
+  assert.ok(findAppApiGrant(lab, 'POST', '/v1/lab-orders'));
+  assert.equal(findAppApiGrant(lab, 'POST', '/v1/lab-requests'), null);
+
+  assert.match(labTrackerAppSource, /api\.searchPatients\(query\)/);
+  assert.match(labTrackerAppSource, /api\.listPatientCases\(patientId\)/);
+  assert.match(labTrackerAppSource, /api\.createLabOrder\(input\)/);
+  assert.match(labTrackerViewSource, /onClick=\{\(\) => setAddingLabOrder\(true\)\}/);
+  assert.match(labTrackerViewSource, /<Plus size=\{15\} \/> Add Lab/);
+  assert.match(labTrackerViewSource, /request=\{null\}[\s\S]*?onSearchPatients=\{onSearchPatients\}/);
+  assert.match(labTrackerViewSource, /label="Find patient"[\s\S]*?role="combobox"[\s\S]*?aria-autocomplete="list"/);
+  assert.match(labTrackerViewSource, /label="Open patient case"/);
+  assert.match(labTrackerViewSource, /status: "sent"/);
+  assert.doesNotMatch(labTrackerViewSource, /onCreateLabOrder[\s\S]{0,900}lab-requests/);
+  assert.match(labTrackerApiSource, /client\.read<unknown>\(`\/v1\/patients\?\$\{params\.toString\(\)\}`\)/);
+  assert.match(labTrackerApiSource, /client\.command\('POST', '\/v1\/lab-orders', input/);
+});
+
 test('matches only Finance contract routes and bounded query parameters', () => {
   const finance = firstPartyApps.find((candidate) => candidate.id === 'finance');
   const patientId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
@@ -172,8 +270,10 @@ test('matches Calendar and Treatment Progress routes, identifiers, and bounded d
 test('keeps Finance, Calendar, and Treatment Progress route definitions aligned with their source contracts', () => {
   const financeRoutes = Object.values(financeSourceImport.sdkContract)
     .flatMap((value) => value && typeof value === 'object' && Array.isArray(value.routes) ? value.routes : []);
-  const sourceFinanceRoutes = [financeSourceImport.sdkContract.route, ...financeRoutes]
-    .map(({ method, path }) => `${method} ${path}`.replace(/:\w+/g, '{uuid}').replace(/\?.*$/, ''));
+  const sourceFinanceRoutes = [
+    financeSourceImport.sdkContract.route,
+    ...financeRoutes.map(({ method, path }) => `${method} ${path}`),
+  ].map((route) => String(route).replace(/:\w+/g, '{uuid}').replace(/\?.*$/, ''));
   const browserFinanceRoutes = appApiGrantsForApp('finance').map(({ method, path }) => `${method} ${path}`);
   assert.deepEqual([...new Set(browserFinanceRoutes)].sort(), [...new Set(sourceFinanceRoutes)].sort());
   assert.equal(calendarSourceImport.sourceCommit, 'fd2cc5439694ce844362c9dec8a6267378d11381');
@@ -354,6 +454,16 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
     assert.ok(entry.includes(`integrity="sha256-${scriptIntegrity}"`));
     assert.doesNotMatch(script.toString('utf8'), /process\.env\.NODE_ENV/);
   }
+
+  const userManagement = firstPartyApps.find((candidate) => candidate.id === 'user-management');
+  const userManagementEntry = readFileSync(new URL('../apps/user-management.v1.html', import.meta.url), 'utf8');
+  const userManagementScript = readFileSync(new URL('../apps/user-management.v1.js', import.meta.url), 'utf8');
+  assert.equal(userManagement.bundle.entrySha256, sha256(Buffer.from(userManagementEntry)));
+  assert.equal(userManagement.bundle.scriptSha256, sha256(Buffer.from(userManagementScript)));
+  assert.equal(userManagement.bundle.styleSha256, sha256(readFileSync(new URL('../apps/user-management.v1.css', import.meta.url))));
+  assert.match(userManagementEntry, /connect-src 'none'/);
+  assert.doesNotMatch(userManagementScript, /NEXT_PUBLIC_FIREBASE|idToken|accessToken|getIdToken|window\.dentalApp|window\.desktop/i);
+  assert.doesNotMatch(userManagementScript, /\bfetch\s*\(|XMLHttpRequest|localStorage|indexedDB/);
 });
 
 test('isolates app code in a scripts-only frame with a private host channel and no direct network API', () => {
