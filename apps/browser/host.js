@@ -141,6 +141,8 @@ export function mountBrowserApp({ content, appId, connected, apiBaseUrl, getAcce
       appId,
       title: browserModules[appId].title,
       icon: browserModules[appId].icon,
+      source: browserModules[appId].source,
+      session: connected && getAccess()?.allowed ? getAccess()?.session : null,
       views: browserModules[appId].views
         .filter(view => permittedView(appId, view.id, getAccess()?.capabilities ?? (connected ? [] : ['finance.manage'])))
         .map(({ id, title, route }) => ({ id, title, route })),
