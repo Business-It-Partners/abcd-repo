@@ -13,7 +13,8 @@
     "build:apps": "node tools/build-browser-apps.mjs",
     "test:followups:assets": "node tools/verify-followups-assets.mjs",
     "test:followups:ui": "node tools/smoke-followups-ui.mjs",
-    "build:remaining": "node tools/build-browser-apps.mjs appointments patients calendar finance staff lab treatment protocols workentry"
+    "build:remaining": "node tools/build-browser-apps.mjs appointments patients calendar finance staff lab treatment protocols workentry",
+    "test:remaining:ui": "node tools/smoke-remaining-m17-ui.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",
