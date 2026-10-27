@@ -167,6 +167,7 @@ const DUE_CHIP: Record<FollowUp["status"], { bg: string; text: string; border: s
 };
 
 interface FollowUpsViewProps {
+  readOnly?: boolean;
   doctors: FollowUpDoctorOption[];
   writeState: 'none' | 'saving' | 'unknown';
   onReconcile: () => Promise<void>;
@@ -412,6 +413,7 @@ function RescheduleModal({
 }
 
 export default function FollowUpsView({
+  readOnly = false,
   doctors,
   writeState,
   onReconcile,
@@ -501,7 +503,7 @@ export default function FollowUpsView({
   return (
     <Page sheet standardPage>
       <PageHeader title="Follow-ups">
-        <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+        <button type="button" className="btn btn-primary" disabled={readOnly} title={readOnly ? 'Read-only browser verification' : 'Create follow-up'} onClick={() => setCreateOpen(true)}>
           <Plus size={16} /> Create follow-up
         </button>
       </PageHeader>
@@ -678,6 +680,7 @@ export default function FollowUpsView({
                   color="var(--acc, #7c3aed)"
                   title={f.called ? "Unmark called" : "Mark as called"}
                   pending={savingFollowUpIds.has(f.id)}
+                   disabled={readOnly}
                   onClick={() => void patchAttempt(
                     f,
                     { called: !f.called },
@@ -701,6 +704,7 @@ export default function FollowUpsView({
                   color="#d97706"
                   title={f.noAnswer ? "Remove no-response mark" : "Mark as no response"}
                   pending={savingFollowUpIds.has(f.id)}
+                   disabled={readOnly}
                   onClick={() => void patchAttempt(
                     f,
                     { noAnswer: !f.noAnswer },
@@ -724,6 +728,7 @@ export default function FollowUpsView({
                   color="#16a34a"
                   title={f.caught ? "Reopen follow-up" : "Mark as caught"}
                   pending={savingFollowUpIds.has(f.id)}
+                   disabled={readOnly}
                   onClick={() => void patchAttempt(
                     f,
                     { active: f.caught, caught: !f.caught },
@@ -759,6 +764,8 @@ export default function FollowUpsView({
                       className="btn btn-primary btn-sm"
                       style={{ minHeight: "26px", padding: "4px 10px", borderRadius: "2px", fontSize: "var(--fs-12)", justifyContent: "center" }}
                       onClick={() => setRescheduleTarget(f)}
+                       disabled={readOnly}
+                       title={readOnly ? 'Read-only browser verification' : 'Reschedule follow-up'}
                     >
                       Reschedule
                     </button>
