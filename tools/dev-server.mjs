@@ -70,7 +70,7 @@ const routes = new Map([
   ['/assets/dock/workentry.webp', 'assets/dock/workentry.webp'],
 ]);
 
-const followUpsBundle = /^\/apps\/browser\/dist\/followups\/(?:assets\/)?[a-zA-Z0-9_.-]+\.(?:js|css|png|webp|svg|jpg|woff2?|ttf)$/;
+const firstPartyBundle = /^\/apps\/browser\/dist\/(?:appointments|patients|calendar|finance|followups|staff|lab|treatment|protocols|workentry)\/(?:assets\/)?[a-zA-Z0-9_.-]+\.(?:js|css|png|webp|svg|jpg|woff2?|ttf)$/;
 
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url ?? '/', `http://127.0.0.1:${port}`).pathname;
@@ -108,7 +108,7 @@ const server = createServer(async (request, response) => {
 
   // Vite's immutable asset names must be served without enabling arbitrary file access.
   // An opaque-origin sandbox needs CORS on public, static JavaScript modules.
-  const bundle = followUpsBundle.test(pathname);
+  const bundle = firstPartyBundle.test(pathname);
   const relativePath = bundle ? pathname.slice(1) : routes.get(pathname);
   if (bundle) response.setHeader('Access-Control-Allow-Origin', '*');
   if (!relativePath) {
