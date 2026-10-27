@@ -340,9 +340,21 @@ window.addEventListener('message', event => {
     views: init.views.filter(v => typeof v.id === 'string' && typeof v.title === 'string' &&
       typeof v.route === 'string').slice(0, 12),
   });
-  if (app.appId === 'followups' && !app.preview && init.session?.clinicUser && init.session?.clinic &&
+  const originalSources = Object.freeze({
+    appointments: 'company.dental.appointments.m17',
+    patients: 'company.dental.patient-record.m17',
+    calendar: 'company.dental.calendar.m17',
+    finance: 'company.dental.finance.m17',
+    followups: 'company.dental.followups.m17',
+    staff: 'company.dental.staff.m17',
+    lab: 'company.dental.lab-tracker.m17',
+    treatment: 'company.dental.treatment-progress.m17',
+    protocols: 'company.dental.m17.treatment-protocols',
+    workentry: 'company.dental.work-entry.m17',
+  });
+  if (!app.preview && init.session?.clinicUser && init.session?.clinic &&
       typeof window.createBrowserAppBridge === 'function' &&
-      init.source === 'company.dental.followups.m17') {    // The original React renderer expects #root and window.dentalApp. Here the SDK is a
+      init.source === originalSources[app.appId]) {    // The original React renderer expects #root and window.dentalApp. Here the SDK is a
     // browser-native, token-free MessageChannel facade, not Electron preload/IPC.
     const originalRoot = document.getElementById('app-root');
     originalRoot.id = 'root';
@@ -359,6 +371,14 @@ window.addEventListener('message', event => {
     } catch {
       originalRoot.replaceChildren(node('p', 'opening', 'The clinic session could not open this app.'));
       return;
+    }
+    // The browser bridge permits GET only. The original M17 write handlers remain
+    // present but cannot reach the Worker; visually disclose this for every app.
+    if (app.appId !== 'followups') {
+      const notice = node('div', 'browser-m17-readonly-note',
+        'Browser migration preview — read-only. Save, update, payment, and media actions are not enabled.');
+      notice.setAttribute('role', 'note');
+      document.body.prepend(notice);
     }
     const stylesheet = document.createElement('link');
     stylesheet.rel = 'stylesheet';
