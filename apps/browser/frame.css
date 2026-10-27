@@ -64,3 +64,18 @@ button:focus-visible, input:focus-visible, tr:focus-visible { outline: 2px solid
   .app-toolbar { flex-wrap: wrap; }
   .record-search { order: -1; width: 100%; }
 }
+
+/* Authenticated M17 browser ports are currently read-only; no optimistic saves. */
+.browser-m17-readonly-note {
+  position: relative;
+  z-index: 5;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 14px;
+  background: #eff8fc;
+  color: #245669;
+  border-bottom: 1px solid #c9e2ec;
+  font-size: 12px;
+  line-height: 1.4;
+  font-family: system-ui, sans-serif;
+}
