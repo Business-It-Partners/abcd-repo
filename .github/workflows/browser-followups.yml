@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/browser-followups.yml'
       - 'package.json'
+      - 'tsconfig.json'
       - 'tools/build-browser-apps.mjs'
       - 'tools/dev-server.mjs'
       - 'tools/verify-followups-assets.mjs'
