@@ -46,3 +46,5 @@ jobs:
         run: npm run build:followups
       - name: Verify built bundle and secure preview delivery
         run: npm run test:followups:assets
+      - name: Smoke original Follow-ups UI in headless Chrome with synthetic clinic records
+        run: npm run test:followups:ui
