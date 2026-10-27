@@ -1,5 +1,5 @@
 import { ClinicClient, ClinicError } from "../../../../../packages/app-sdk/src/clinicClient";
-import type { AppSdk } from "../../../../../electron/sdk/contracts";
+import type { AppSdk } from "../../../../../packages/browser-sdk/src/contracts";
 
 export { ClinicClient, ClinicError };
 export type { ClinicCommand } from "../../../../../packages/app-sdk/src/clinicClient";

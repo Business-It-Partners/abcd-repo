@@ -1,5 +1,5 @@
 import { ClinicError, clinicClient } from '@/sdk/client';
-import { SDK, type AppSdk, type Connection } from '../../../../../../../electron/sdk/contracts';
+import { SDK, type AppSdk, type Connection } from '../../../../../../../packages/browser-sdk/src/contracts';
 import type { PatientMediaAsset, PatientXrayType } from '@/features/patients/types';
 
 type MediaResponse = { status: number; contentType: string; body: Uint8Array };

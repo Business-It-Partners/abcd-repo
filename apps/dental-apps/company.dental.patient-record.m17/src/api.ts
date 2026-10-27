@@ -1,5 +1,5 @@
 import { ClinicClient, ClinicCommand, ClinicError } from "../../../../packages/app-sdk/src/clinicClient";
-import { SDK, type AppSdk, type Connection } from "../../../../electron/sdk/contracts";
+import { SDK, type AppSdk, type Connection } from "../../../../packages/browser-sdk/src/contracts";
 import { bsMonthToADRange, todayBS } from "../../../../packages/dental-ui/src/shared/dates/bikramSambat";
 import type {
   PatientCore, PatientDirectoryPage, PatientDirectoryCounts, PatientSummary, PatientIntakeInput,

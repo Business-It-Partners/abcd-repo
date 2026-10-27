@@ -1,5 +1,5 @@
 import { ClinicError, ClinicClient } from '../../../../../packages/app-sdk/src/clinicClient';
-import type { AppSdk } from '../../../../../electron/sdk/contracts';
+import type { AppSdk } from '../../../../../packages/browser-sdk/src/contracts';
 export { ClinicCommand, ClinicError } from '../../../../../packages/app-sdk/src/clinicClient';
 
 let activeClient: ClinicClient | null = null;

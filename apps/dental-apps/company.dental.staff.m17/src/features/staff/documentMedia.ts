@@ -1,4 +1,4 @@
-import type { AppSdk, Connection, ErrorCode, Outcome } from "../../../../../../electron/sdk/contracts";
+import type { AppSdk, Connection, ErrorCode, Outcome } from "../../../../../../packages/browser-sdk/src/contracts";
 import { ClinicError } from "../../../../../../packages/app-sdk/src/clinicClient";
 import type { StaffDocumentMimeType, StaffDocumentUploadMetadata } from "./types";
 
