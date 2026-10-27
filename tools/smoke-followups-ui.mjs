@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const origin = 'http://127.0.0.1:4280';
@@ -10,6 +13,9 @@ const logs = [];
 server.stdout.on('data', chunk => logs.push(chunk.toString()));
 server.stderr.on('data', chunk => logs.push(chunk.toString()));
 let browser = null;
+let page = null;
+const screenshotDir = path.resolve(fileURLToPath(new URL('../artifacts/', import.meta.url)));
+mkdirSync(screenshotDir, { recursive: true });
 try {
   let up = false;
   for (let i = 0; i < 50; i++) {
@@ -21,7 +27,7 @@ try {
   browser = await chromium.launch({
     channel: 'chrome', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'],
   });
-  const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+  page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
   const pageErrors = [];
   const browserDiagnostics = [];
   page.on('pageerror', err => pageErrors.push(err.message));
@@ -107,7 +113,14 @@ try {
   assert.equal(requested.some(x => !['/v1/follow-ups', '/v1/clinic/staff-references'].includes(x)), false);
   assert.equal(pageErrors.length, 0, 'Unexpected browser exceptions: ' + pageErrors.join('; '));
   console.log('Original Follow-ups React UI rendered in sandbox with synthetic data: passed.');
-} finally {
+ } finally {
+  if (page) {
+    try {
+      await page.locator('#synthetic-followups').screenshot({ path: path.join(screenshotDir, 'followups-actual-ui.png') });
+      await page.screenshot({ path: path.join(screenshotDir, 'followups-browser-shell.png'), fullPage: true });
+      console.log('Synthetic browser screenshots captured in artifacts/.');
+    } catch (cause) { console.error('Screenshot capture failed:', String(cause)); }
+  }
   await browser?.close();
   server.kill('SIGTERM');
 }
