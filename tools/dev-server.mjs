@@ -124,7 +124,7 @@ const server = createServer(async (request, response) => {
     });
     response.end(request.method === 'HEAD' ? undefined : body);
   } catch {
-    response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Preview asset unavailable');
+    response.writeHead(bundle ? 404 : 500, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Preview asset unavailable');
   }
 });
 

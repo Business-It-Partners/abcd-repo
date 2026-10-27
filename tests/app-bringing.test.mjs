@@ -90,7 +90,7 @@ test('frame is sandboxed without same-origin, direct Worker access or Electron g
   assert.match(shell, /mountBrowserApp\(/);
   assert.match(shell, /entry\.dispose\?\.\(\)/);
   assert.match(frame, /createBrowserAppBridge/);
-  assert.match(frame, /init\.source === 'company\.dental\.followups\.m17'/);
+  assert.match(frame, /init\.source === originalSources\[app\.appId\]/);
   assert.doesNotMatch(frame, /window\.electron|ipcRenderer|firebaseAuth|apiBaseUrl|\.fetch\(/);
   assert.match(source('../apps/browser/bridge.js'), /Clinical writes are disabled/);
   assert.doesNotMatch(host, /ipcRenderer|window\.dentalApp|preload/);
