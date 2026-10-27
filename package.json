@@ -8,6 +8,22 @@
     "dev": "npm run dev:browser",
     "dev:browser": "node tools/dev-server.mjs --flavor preview",
     "dev:staging": "node tools/dev-server.mjs --flavor staging",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "build:followups": "node tools/build-browser-apps.mjs followups",
+    "build:apps": "node tools/build-browser-apps.mjs followups"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "lucide-react": "^1.56.0",
+    "nepali-date-utils": "1.0.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4",
+    "typescript": "^7.0.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/node": "^26.6.5",
+    "@sbmdkl/nepali-date-converter": "2.0.5"
   }
 }
