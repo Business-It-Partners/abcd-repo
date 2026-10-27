@@ -10,6 +10,11 @@ export function validateFrameRead(appId, request, capabilities) {
   if (!canReadAppPath(appId, request.path)) return false;
   const view = permittedView(appId, request.viewId, capabilities);
   if (!view) return false;
+  // Staff reference reads are distinct from sensitive staff-management resources.
+  if (appId === 'staff') {
+    if (request.path !== '/v1/clinic/staff-references' && !capabilities?.includes('staff.manage')) return false;
+    if (view.id === 'references' && request.path !== '/v1/clinic/staff-references') return false;
+  }
   // A Patient Payments-only account may not query privileged finance endpoints.
   if (appId === 'finance') {
     if (!request.path.startsWith('/v1/patient-payments') && !capabilities?.includes('finance.manage')) return false;
