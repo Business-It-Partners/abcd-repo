@@ -53,6 +53,7 @@ const routes = new Map([
   ['/apps/browser/frame.html', 'apps/browser/frame.html'],
   ['/apps/browser/frame.js', 'apps/browser/frame.js'],
   ['/apps/browser/bridge.js', 'apps/browser/bridge.js'],
+  ['/vendor/nepali-date-utils/index.js', 'vendor/nepali-date-utils/index.js'],
   ['/apps/browser/frame.css', 'apps/browser/frame.css'],
   ['/styles.css', 'styles.css'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
