@@ -18,4 +18,4 @@ For the connected B2 staging sign-in, run `npm run dev:staging` and open [http:/
 - [Current status](docs/STATUS.md)
 - [Work checklist](docs/WORK_CHECKLIST.md)
 
-The current page is the B1 shell foundation. Its app windows are placeholders and do not represent an authenticated clinic workflow.
+The shell now includes isolated browser app bundles for Treatment Protocols, Work Entry, and Patients. The Work Entry and Patient Record source UI migrations and their exact host-mediated API/media policies are implemented locally; visual and authenticated workflow acceptance remains open. The offline preview is still synthetic and does not prove a clinic workflow. B4 stays active until its synthetic staging data, write/readback, denial, retry, and cleanup gates are complete.

@@ -55,6 +55,15 @@ const routes = new Map([
   ['/apps/treatment-protocols.v1.js', 'apps/treatment-protocols.v1.js'],
   ['/apps/treatment-protocols.v1.css', 'apps/treatment-protocols.v1.css'],
   ['/apps/treatment-protocols/asset-manifest.js', 'apps/treatment-protocols/asset-manifest.js'],
+  ['/apps/workentry.v1.html', 'apps/workentry.v1.html'],
+  ['/apps/workentry.v1.js', 'apps/workentry.v1.js'],
+  ['/apps/workentry.v1.css', 'apps/workentry.v1.css'],
+  ['/apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js', 'apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js'],
+  ['/apps/patients.v1.html', 'apps/patients.v1.html'],
+  ['/apps/patients.v1.js', 'apps/patients.v1.js'],
+  ['/apps/patients.v1.css', 'apps/patients.v1.css'],
+  ['/apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js', 'apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js'],
+  ['/apps/clinic-app-runtime/mediaHost.js', 'apps/clinic-app-runtime/mediaHost.js'],
   ['/styles.css', 'styles.css'],
   ['/vendor/nepali-date-utils/index.js', 'vendor/nepali-date-utils/index.js'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
@@ -91,19 +100,20 @@ const server = createServer(async (request, response) => {
       "default-src 'none'; script-src 'sha256-QxKPypccfuyhMR46nwtOP1sxgoNKNWXp+27ulGg8W+g='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
     );
   }
-  if (pathname === '/apps/treatment-protocols.v1.html') {
+  if (['/apps/treatment-protocols.v1.html', '/apps/workentry.v1.html', '/apps/patients.v1.html'].includes(pathname)) {
     try {
-      const appHtml = await readFile(resolve(root, 'apps/treatment-protocols.v1.html'), 'utf8');
+      const appHtml = await readFile(resolve(root, pathname.slice(1)), 'utf8');
       const scriptHash = appHtml.match(/script-src '(sha256-[A-Za-z0-9+/=]+)'/)?.[1];
       const styleHash = appHtml.match(/style-src '(sha256-[A-Za-z0-9+/=]+)'/)?.[1];
       if (!scriptHash || !styleHash) throw new Error('app CSP hashes are missing');
-      response.setHeader('Content-Security-Policy', `default-src 'none'; script-src '${scriptHash}'; style-src '${styleHash}'; img-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'`);
+      response.setHeader('Content-Security-Policy', `default-src 'none'; script-src '${scriptHash}'; style-src '${styleHash}'; style-src-attr 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'`);
     } catch {
-      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Treatment Protocols bundle is not built');
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('App bundle is not built');
       return;
     }
   }
-  if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css'].includes(pathname)) {
+  if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
+    '/apps/workentry.v1.js', '/apps/workentry.v1.css', '/apps/patients.v1.js', '/apps/patients.v1.css'].includes(pathname)) {
     response.setHeader('Access-Control-Allow-Origin', '*');
   }
 
