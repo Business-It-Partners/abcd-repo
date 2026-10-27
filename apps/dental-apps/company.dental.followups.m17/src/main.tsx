@@ -70,5 +70,5 @@ function FollowupsApp() {
   </SnackbarProvider></ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicSnackbarProvider>;
 }
 
-declare global { interface Window { dentalApp?: import('../../../../electron/sdk/contracts').AppSdk } }
+declare global { interface Window { dentalApp?: import('../../../../packages/browser-sdk/src/contracts').AppSdk } }
 createRoot(document.getElementById('root')!).render(<FollowupsApp />);
