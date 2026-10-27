@@ -10,7 +10,8 @@
     "dev:staging": "node tools/dev-server.mjs --flavor staging",
     "test": "node --test tests/*.test.mjs",
     "build:followups": "node tools/build-browser-apps.mjs followups",
-    "build:apps": "node tools/build-browser-apps.mjs followups"
+    "build:apps": "node tools/build-browser-apps.mjs followups",
+    "test:followups:assets": "node tools/verify-followups-assets.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",
