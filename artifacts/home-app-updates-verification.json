@@ -1,8 +1,0 @@
-{
-  "checks": [
-    "home widget reads the installed app and signed catalogue versions",
-    "home widget counts only installed apps with an available signed update",
-    "Update button stages the verified release through the Store service",
-    "widget reports the staged update without replacing the active app version"
-  ]
-}

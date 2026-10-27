@@ -1,6 +1,0 @@
-{
-  "name": "m17-followups-private-fixture",
-  "version": "0.0.0",
-  "main": "../m17-followups-host.cjs",
-  "private": true
-}

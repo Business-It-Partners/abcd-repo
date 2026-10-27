@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Synthetic scheduled recall', { exact: true }) to be visible\u001b[22m\n\nPrivate page diagnostic: {\"host\":null,\"calls\":[{\"path\":\"/v1/clinic/staff-references\",\"method\":\"GET\",\"operationId\":null},{\"path\":\"/v1/follow-ups\",\"method\":\"GET\",\"operationId\":null}],\"body\":\"Follow-ups\\nThursday, 05/07/2083 · patient recall tracker\\nRefresh\\nCreate follow-up\\n1\\nDue today\\nto follow up today\\n1\\nThis week\\nremaining till Saturday\\n0\\nUpcoming\\nafter this week\\n0\\nMissed\\nwindow passed\\n05/07/2083\\n#\\tPatient⇅\\tDue⇅\\tDoctor⇅\\tLast visit\\tPhone\\tCall\\tUn-response\\tCaught\\tAction\\n\\n1\\n\\t\\nSynthetic M17 Patient\\n\\t\\nToday\\n10:30 AM\\n\\t\\nSynthetic Doctor\\n\\t\\n\\t\\n9800000000\\n\\t\\n\\t\\n\\t\\n\\t\\nReschedule\\nDetails\\nShowing 1 to 1 of 1 follow-ups\\nPrevious\\n1\\nNext\"}\nPrivate host stderr: [22421:1022/212041.030764:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
-  "screenshot": null
-}

@@ -1,9 +1,0 @@
-{
-  "checks": [
-    "CLI assembly is byte-deterministic across two runs",
-    "CLI output passes strict signature/inventory verifier"
-  ],
-  "platform": "linux",
-  "privateKey": "ephemeral outside checkout; removed in finally",
-  "checkpoint": "083f91280fec560000b531bc96d9394b820ddf4d"
-}

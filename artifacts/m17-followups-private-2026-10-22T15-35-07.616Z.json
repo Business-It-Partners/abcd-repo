@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Synthetic scheduled recall', { exact: true }) to be visible\u001b[22m\n\nPrivate host stderr: [21544:1022/212008.676454:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
-  "screenshot": null
-}

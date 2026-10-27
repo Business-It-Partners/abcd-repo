@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "Error: Treatment Progress guest did not open. Pages: \nPrivate host: TypeError: Cannot convert undefined or null to object\n    at Object.hasOwn (<anonymous>)\n    at appTrust (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/packages/format.js:19:19)\n    at verifyPackage (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/packages/format.js:112:17)\n    at /home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/tests/fixtures/m17-treatment-progress-app.cjs:100:27\nPrivate page diagnostic: {\"host\":\"TypeError: Cannot convert undefined or null to object\\n    at Object.hasOwn (<anonymous>)\\n    at appTrust (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/packages/format.js:19:19)\\n    at verifyPackage (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/packages/format.js:112:17)\\n    at /home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/tests/fixtures/m17-treatment-progress-app.cjs:100:27\",\"calls\":null}\nPrivate host stderr: [144319:1023/005016.411276:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless Electron acceptance with ephemeral test-only package signatures and synthetic in-memory projection. No clinic records, live staging, or publication.",
-  "screenshot": null
-}

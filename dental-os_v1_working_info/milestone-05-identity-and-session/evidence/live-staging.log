@@ -1,9 +1,0 @@
-PASS live Worker identifies the mapped staging environment
-PASS approved staging Firebase login and Worker /v1/me establish clinic readiness
-PASS live refresh and fresh Worker access resolution retain the same clinic session
-PASS live Worker rejects an invalid identity token
-PASS clinic identity does not grant Super Admin tenant access
-PASS operation-level denial revalidates clinic access without granting platform authority
-PASS live Firebase refuses an invalid refresh grant
-PASS local sign-out clears authority and persisted credentials
-PASS signed-out generation cannot obtain a credential

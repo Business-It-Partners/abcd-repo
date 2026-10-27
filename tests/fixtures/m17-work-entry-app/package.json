@@ -1,6 +1,0 @@
-{
-  "name": "m17-work-entry-private-fixture",
-  "version": "0.0.0",
-  "main": "../m17-work-entry-host.cjs",
-  "private": true
-}

@@ -1,6 +1,0 @@
-{
-  "name": "m17-appointments-private-fixture",
-  "version": "0.0.0",
-  "main": "../m17-appointments-host.cjs",
-  "private": true
-}

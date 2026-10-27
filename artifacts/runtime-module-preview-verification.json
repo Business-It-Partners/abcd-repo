@@ -1,9 +1,0 @@
-{
-  "checks": [
-    "OS explorer discovers Finance modules from its signed app manifest",
-    "Finance module identity and More Apps appear in the OS title bar beside page navigation",
-    "OS More Apps switches Finance in the same window and waits for the app acknowledgement",
-    "a 2.2-second module acknowledgement still starts the selected sub-app instead of stopping its app"
-  ],
-  "platform": "linux"
-}

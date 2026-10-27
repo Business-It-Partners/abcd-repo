@@ -1,9 +1,0 @@
-{
-  "sha": "ef4e0dcd",
-  "checks": [
-    "real sandboxed patient_media upload at 10485760 bytes; bounded chunks, host SHA-256, stable stage keys, single finalise and safe close state",
-    "real sandboxed staff_document upload at 26214400 bytes; bounded chunks, host SHA-256, stable stage keys, single finalise and safe close state, including lost-finalise reconciliation"
-  ],
-  "passed": true,
-  "scope": "Actual sandboxed preload/IPC/ApiBroker upload protocol at declared bounds; synthetic Worker/R2 and local registration authority. No live media writes, public signed grant or backend concurrency proof inferred."
-}

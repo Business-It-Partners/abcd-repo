@@ -1,9 +1,0 @@
-{
-  "sha": "9ca018cca77179d9806a6d8aa04c4029f9100eb1",
-  "checks": [
-    "real sandboxed preload/IPC receives verified patient_media at exact 10485760-byte limit without host credentials",
-    "real sandboxed preload/IPC receives verified staff_document at exact 26214400-byte limit without host credentials"
-  ],
-  "passed": true,
-  "scope": "Synthetic authenticated metadata/R2 responses and registration authority through actual ApiBroker, IPC and sandboxed appPreload in private Electron. No public release grant, install/Store or live media proof inferred."
-}

@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "TimeoutError: electronApplication.firstWindow: Timeout 30000ms exceeded while waiting for event \"window\"",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
-  "screenshot": null
-}

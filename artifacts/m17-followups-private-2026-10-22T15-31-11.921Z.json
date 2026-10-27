@@ -1,7 +1,0 @@
-{
-  "passed": false,
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
-  "screenshot": "m17-followups-private-2026-10-22T15-31-11.921Z.png"
-}

@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "Error: Treatment Progress guest did not open. Pages: data:text/html,<title>Private M17 Treatment Progress host</title>\nPrivate host: Error: Outside host\n    at FixtureRuntime.sync (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/runtime/manager.js:456:23)\n    at /home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/tests/fixtures/m17-treatment-progress-app.cjs:205:11\nPrivate page diagnostic: {\"host\":\"Error: Outside host\\n    at FixtureRuntime.sync (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/runtime/manager.js:456:23)\\n    at /home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/tests/fixtures/m17-treatment-progress-app.cjs:205:11\",\"calls\":[]}\nPrivate host stderr: [144969:1023/005040.981163:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\nM17 PRIVATE HOST FAILED Error: Outside host\n    at FixtureRuntime.sync (/home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/dist-electron/runtime/manager.js:456:23)\n    at /home/master-x/.codex/worktrees/m17-treatment-progress/fewa_business_os/tests/fixtures/m17-treatment-progress-app.cjs:205:11\n",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless Electron acceptance with ephemeral test-only package signatures and synthetic in-memory projection. No clinic records, live staging, or publication.",
-  "screenshot": null
-}

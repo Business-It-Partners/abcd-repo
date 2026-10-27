@@ -1,9 +1,0 @@
-
-> electron-desktop-prototype@0.1.0 build
-> npm run typecheck && vite build && tsc -p tsconfig.electron.json
-
-
-> electron-desktop-prototype@0.1.0 typecheck
-> tsc --noEmit && tsc -p tsconfig.electron.json --noEmit
-
-tests/sdkHttp.test.ts(39,10): error TS2339: Property 'sequential' does not exist on type 'SuiteAPI'.

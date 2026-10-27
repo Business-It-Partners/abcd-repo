@@ -1,4 +1,0 @@
-export type TransactionRecordKind = "patient_payment" | "operating_expense" | "salary_payout" | "supplier_payment";
-export type ClinicTransactionRecord = { transactionId: string; date: string; kind: TransactionRecordKind; description: string; paymentMethod: string | null; cashInAmount: number; cashOutAmount: number };
-export type ClinicFinanceOverview = { patientOutstandingDueAmount: number; generalExpenseAmount: number; purchaseAmount: number; supplierPayoutAmount: number; salaryPayoutAmount: number; currentSupplierOutstandingAmount: number; labPurchaseAmount: number; labPayoutAmount: number; currentLabOutstandingAmount: number };
-export type ClinicTransactionRecordReport = { transactions: ClinicTransactionRecord[]; cashInTotal: number; cashOutTotal: number; netCashAmount: number; overview: ClinicFinanceOverview };

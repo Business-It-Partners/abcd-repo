@@ -1,8 +1,0 @@
-{
-  "checks": [
-    "version-2 workspace preferences launch normally and remain intact",
-    "corrupt local OS state preserved with narrow support-only recovery view",
-    "known-good OS-only fixture restored offline after shutdown; corrupt evidence remains"
-  ],
-  "platform": "win32"
-}

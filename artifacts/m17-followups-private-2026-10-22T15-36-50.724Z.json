@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "failure": "Error: Follow-ups guest did not open. Pages: \nPrivate host: Error: Invalid capabilities\n    at manifest (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/dist-electron/packages/format.js:78:15)\n    at buildPackage (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/dist-electron/packages/format.js:144:5)\n    at /home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:89:17\nPrivate page diagnostic: {\"host\":\"Error: Invalid capabilities\\n    at manifest (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/dist-electron/packages/format.js:78:15)\\n    at buildPackage (/home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/dist-electron/packages/format.js:144:5)\\n    at /home/master-x/.codex/worktrees/platform-closeout/fewa_business_os/tests/fixtures/m17-followups-host.cjs:89:17\",\"calls\":null}\nPrivate host stderr: [24138:1022/212151.760129:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1823] Installed VAAPI version is too old. min supported version: 1.17 installed version: 1.14\n",
-  "checks": [],
-  "errors": [],
-  "scope": "Private headless GNOME/Electron acceptance using an ephemeral test-only signing key and in-memory synthetic service; no live staging data or publication.",
-  "screenshot": null
-}
