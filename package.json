@@ -10,9 +10,10 @@
     "dev:staging": "node tools/dev-server.mjs --flavor staging",
     "test": "node --test tests/*.test.mjs",
     "build:followups": "node tools/build-browser-apps.mjs followups",
-    "build:apps": "node tools/build-browser-apps.mjs followups",
+    "build:apps": "node tools/build-browser-apps.mjs",
     "test:followups:assets": "node tools/verify-followups-assets.mjs",
-    "test:followups:ui": "node tools/smoke-followups-ui.mjs"
+    "test:followups:ui": "node tools/smoke-followups-ui.mjs",
+    "build:remaining": "node tools/build-browser-apps.mjs appointments patients calendar finance staff lab treatment protocols workentry"
   },
   "dependencies": {
     "react": "^19.3.0",
