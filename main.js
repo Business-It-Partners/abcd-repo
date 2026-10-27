@@ -502,6 +502,7 @@ function createWindow(app, shift) {
     apiBaseUrl: config.apiBaseUrl,
     getAccess: () => ({
       user: firebaseUser,
+      session: clinicSession,
       allowed: Boolean(clinicSession && allowedAppIds.has(app.id)),
       capabilities: clinicSession?.clinicUser?.capabilities ?? [],
     }),
