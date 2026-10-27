@@ -46,8 +46,11 @@ export const browserModules = Object.freeze({
   },
   staff: {
     source: 'company.dental.staff.m17', title: 'Staff', icon: '/assets/dock/staff.webp',
-    views: [{ id: 'directory', title: 'Staff directory', route: '/v1/clinic/staff' }],
-    routes: [/^\/v1\/clinic\/staff$/, /^\/v1\/clinic\/staff\/[a-zA-Z0-9_-]{1,80}(?:\/clinical-work(?:\?[a-zA-Z0-9%=&+_.-]{0,200})?)?$/],
+    views: [
+      { id: 'references', title: 'Clinic team', route: '/v1/clinic/staff-references' },
+      { id: 'directory', title: 'Staff directory', route: '/v1/clinic/staff', capability: 'staff.manage' },
+    ],
+    routes: [/^\/v1\/clinic\/staff-references$/, /^\/v1\/clinic\/staff$/, /^\/v1\/clinic\/staff\/[a-zA-Z0-9_-]{1,80}(?:\/clinical-work(?:\?[a-zA-Z0-9%=&+_.-]{0,200})?)?$/],
   },
   lab: {
     source: 'company.dental.lab-tracker.m17', title: 'Lab Tracker', icon: '/assets/dock/lab.webp',
