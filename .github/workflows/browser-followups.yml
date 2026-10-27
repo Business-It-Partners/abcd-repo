@@ -1,0 +1,47 @@
+name: Browser Follow-ups Source Port
+
+on:
+  push:
+    branches: [app-bringing]
+    paths:
+      - '.github/workflows/browser-followups.yml'
+      - 'package.json'
+      - 'tools/build-browser-apps.mjs'
+      - 'tools/dev-server.mjs'
+      - 'tools/verify-followups-assets.mjs'
+      - 'apps/browser/**'
+      - 'apps/dental-apps/company.dental.followups.m17/**'
+      - 'packages/app-sdk/**'
+      - 'packages/browser-sdk/**'
+      - 'packages/dental-ui/**'
+      - 'vendor/nepali-date-utils/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-followups-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-bundle:
+    name: Original Follow-ups React + browser boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout the app-bringing branch
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser dependencies
+        run: npm install --no-audit --no-fund --prefer-offline
+      - name: Run browser boundary and Follow-ups tests
+        run: npm test
+      - name: Compile the original Follow-ups React application only
+        run: npm run build:followups
+      - name: Verify built bundle and secure preview delivery
+        run: npm run test:followups:assets
