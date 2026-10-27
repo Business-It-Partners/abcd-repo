@@ -1,4 +1,6 @@
 import { treatmentProtocolsBundle, treatmentProtocolsVersion } from './treatment-protocols/asset-manifest.js';
+import { financeBundle, financeVersion } from './finance/asset-manifest.js';
+import { financeApiGrants, financeSessionCapabilities } from './catalog.js';
 
 const bundle = Object.freeze({
   entry: '/apps/runtime.v1.html',
@@ -23,10 +25,13 @@ export const firstPartyApps = Object.freeze([
   app('appointments', 'Appointments', '/assets/dock/appointments.webp', ['appointments.access']),
   app('patients', 'Patients', '/assets/dock/patients.webp', ['patient_record.access']),
   app('calendar', 'Calendar', '/assets/dock/calendar.webp', ['calendar.access']),
-  app('finance', 'Finance', '/assets/dock/finance.webp', [
-    'finance.manage', 'patient_billing_ledger.read', 'patient_payments.outstanding.read',
-    'patient_payments.received.read', 'patient_payments.collect',
-  ]),
+  Object.freeze({
+    ...app('finance', 'Finance', '/assets/dock/finance.webp', ['finance.manage', 'patient_payments.outstanding.read']),
+    version: financeVersion,
+    bundle: financeBundle,
+    sessionCapabilities: financeSessionCapabilities,
+    apiGrants: Object.freeze(financeApiGrants.map(({ method, path }) => Object.freeze({ method, path }))),
+  }),
   app('followups', 'Follow-ups', '/assets/dock/followups.webp', ['followups.access']),
   app('staff', 'Staff', '/assets/dock/staff.webp', ['staff.reference.read', 'staff.manage']),
   app('lab', 'Lab Tracker', '/assets/dock/lab.webp', ['lab_tracker.access', 'lab_requests.create']),

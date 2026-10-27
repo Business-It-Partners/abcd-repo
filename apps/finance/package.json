@@ -1,0 +1,23 @@
+{
+  "name": "dental-os-browser-finance",
+  "version": "1.7.16",
+  "private": true,
+  "type": "module",
+  "description": "Browser Finance app migrated from the pinned M17 Finance package.",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sbmdkl/nepali-date-converter": "2.0.5",
+    "lucide-react": "^1.56.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}

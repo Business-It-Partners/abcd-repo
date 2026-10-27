@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { firstPartyApps } from '../apps/manifest.js';
-import { findAppApiGrant, isValidAppCatalog } from '../apps/catalog.js';
+import { financeApiGrants, findAppApiGrant, isValidAppCatalog } from '../apps/catalog.js';
 
 const baseOrigin = 'https://browser.example.test';
 const runtimeHtml = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url), 'utf8');
 const runtimeScript = readFileSync(new URL('../apps/runtime.v1.js', import.meta.url), 'utf8');
 const hostScript = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
 const protocolAppSource = readFileSync(new URL('../apps/treatment-protocols/src/main.tsx', import.meta.url), 'utf8');
+const financeAppSource = readFileSync(new URL('../apps/finance/src/main.tsx', import.meta.url), 'utf8');
+const financeRuntimeSource = readFileSync(new URL('../apps/finance/src/runtimeBridge.ts', import.meta.url), 'utf8');
+const financeSourceImport = JSON.parse(readFileSync(new URL('../apps/finance/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
 const appLaunchSource = hostScript.match(/function openApp\(appId, fromRoute = false\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeFailureSource = hostScript.match(/function failAppRuntime\(app, entry, attempt, message\) \{[\s\S]*?^\}/m)?.[0];
@@ -23,7 +26,7 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
   assert.equal(firstPartyApps.length, 10);
   assert.equal(isValidAppCatalog(firstPartyApps, baseOrigin), true);
   assert.equal(new Set(firstPartyApps.map((app) => app.id)).size, firstPartyApps.length);
-  assert.ok(firstPartyApps.filter((app) => app.id !== 'protocols').every((app) => app.apiGrants.length === 0));
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance'].includes(app.id)).every((app) => app.apiGrants.length === 0));
   const protocols = firstPartyApps.find((app) => app.id === 'protocols');
   assert.deepEqual(protocols.apiGrants, [
     { method: 'GET', path: '/v1/treatment-protocols' },
@@ -31,6 +34,14 @@ test('ships a unique, validated catalog of first-party apps with Worker capabili
     { method: 'PUT', path: '/v1/treatment-protocols/{uuid}' },
   ]);
   assert.deepEqual(protocols.capabilities, ['treatment_protocols.manage']);
+  const finance = firstPartyApps.find((app) => app.id === 'finance');
+  assert.deepEqual(finance.apiGrants, financeApiGrants);
+  assert.deepEqual(finance.capabilities, ['finance.manage', 'patient_payments.outstanding.read']);
+  assert.deepEqual(finance.sessionCapabilities, [
+    'finance.manage', 'patient_payments.outstanding.read', 'patient_payments.received.read',
+    'patient_billing_ledger.read', 'patient_payments.collect', 'staff.manage',
+  ]);
+  assert.equal(finance.apiGrants.length, 28);
   assert.equal(isValidAppCatalog([firstPartyApps[0], firstPartyApps[0]], baseOrigin), false);
 });
 
@@ -57,6 +68,16 @@ test('rejects remote, malformed, and unregistered app metadata', () => {
   const broadProtocolGrant = structuredClone(firstPartyApps.find((app) => app.id === 'protocols'));
   broadProtocolGrant.apiGrants.push({ method: 'PUT', path: '/v1/treatment-protocols/{uuid}/archive' });
   assert.equal(isValidAppCatalog([broadProtocolGrant], baseOrigin), false);
+
+  const broadFinanceGrant = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
+  broadFinanceGrant.apiGrants.push({ method: 'DELETE', path: '/v1/clinic/products/{uuid}' });
+  assert.equal(isValidAppCatalog([broadFinanceGrant], baseOrigin), false);
+  const unrelatedFinanceGrant = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
+  unrelatedFinanceGrant.apiGrants.push({ method: 'POST', path: '/v1/patients/{uuid}/delete' });
+  assert.equal(isValidAppCatalog([unrelatedFinanceGrant], baseOrigin), false);
+  const unsupportedFinanceSessionCapability = structuredClone(firstPartyApps.find((app) => app.id === 'finance'));
+  unsupportedFinanceSessionCapability.sessionCapabilities.push('unreviewed.capability');
+  assert.equal(isValidAppCatalog([unsupportedFinanceSessionCapability], baseOrigin), false);
 });
 
 test('matches API grants by exact method and path only', () => {
@@ -70,6 +91,43 @@ test('matches API grants by exact method and path only', () => {
   assert.equal(findAppApiGrant(protocols, 'PUT', `/v1/treatment-protocols/${protocolId}`), protocols.apiGrants[2]);
   assert.equal(findAppApiGrant(protocols, 'PUT', `/v1/treatment-protocols/${protocolId}/archive`), null);
   assert.equal(findAppApiGrant(protocols, 'DELETE', `/v1/treatment-protocols/${protocolId}`), null);
+});
+
+test('matches only Finance contract routes, scoped UUIDs, and documented query parameters', () => {
+  const finance = firstPartyApps.find((candidate) => candidate.id === 'finance');
+  const recordGrant = finance.apiGrants[0];
+  const patientId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
+  const productGrant = finance.apiGrants.find((grant) => grant.path === '/v1/clinic/products/{uuid}' && grant.method === 'PATCH');
+  const ledgerGrant = finance.apiGrants.find((grant) => grant.path === '/v1/patients/{uuid}/ledger');
+
+  assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-01-01&to=2026-01-31'), recordGrant);
+  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?month=2026-01&cursor=opaque.cursor_1`), ledgerGrant);
+  assert.equal(findAppApiGrant(finance, 'PATCH', `/v1/clinic/products/${patientId}`), productGrant);
+  assert.equal(findAppApiGrant(finance, 'POST', `/v1/clinic/operating-expenses/${patientId}/void`), finance.apiGrants.find((grant) => grant.path.endsWith('/void')));
+  assert.equal(findAppApiGrant(finance, 'PATCH', `/v1/clinic/products/${patientId}/delete`), null);
+  assert.equal(findAppApiGrant(finance, 'DELETE', `/v1/clinic/products/${patientId}`), null);
+  assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-02-01'), null);
+  assert.equal(findAppApiGrant(finance, 'GET', '/v1/clinic/transaction-record?from=2026-02-01&to=2026-02-28&branch=other'), null);
+  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=worker%3Aopaque%2Ftoken%3D`), ledgerGrant);
+  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=first&cursor=second`), null);
+  assert.equal(findAppApiGrant(finance, 'GET', `/v1/patients/${patientId}/ledger?cursor=${'x'.repeat(513)}`), null);
+  assert.equal(findAppApiGrant(finance, 'POST', `/v1/patients/${patientId}/ledger`), null);
+});
+
+test('keeps the Finance host grants aligned with the pinned backend contract', () => {
+  const contract = financeSourceImport.sdkContract;
+  const sourceRoutes = [contract.route];
+  for (const value of Object.values(contract)) {
+    if (value && typeof value === 'object' && Array.isArray(value.routes)) {
+      sourceRoutes.push(...value.routes.map(({ method, path }) => `${method} ${path}`));
+    }
+  }
+  const normalize = (route) => route
+    .replace(/:\w+/g, '{uuid}')
+    .replace(/\?.*$/, '');
+  const sourceGrantKeys = [...new Set(sourceRoutes.map(normalize))].sort();
+  const browserGrantKeys = financeApiGrants.map(({ method, path }) => `${method} ${path}`).sort();
+  assert.deepEqual(browserGrantKeys, sourceGrantKeys);
 });
 
 test('rejects launches without the Worker capability and keeps credentials out of app code', () => {
@@ -98,6 +156,17 @@ test('registers the Treatment Protocols handshake before React mounts', () => {
   assert.doesNotMatch(protocolAppSource, /void connectBrowserRuntime\(\)\.then/);
 });
 
+test('registers the Finance host handshake before React mounts and keeps credentials outside the app', () => {
+  const listenerRegistration = financeAppSource.indexOf('const browserRuntime = connectBrowserRuntime(APP_ID);');
+  const reactMount = financeAppSource.indexOf('createRoot(document.getElementById');
+  assert.ok(listenerRegistration >= 0 && reactMount > listenerRegistration);
+  assert.match(financeRuntimeSource, /value\.appId !== expectedAppId/);
+  assert.match(financeRuntimeSource, /supportedCapabilities\.has\(capability\)/);
+  assert.match(hostScript, /capabilities: app\.sessionCapabilities\.filter\(\(capability\) => clinicSession\?\.clinicUser\?\.capabilities\?\.includes\(capability\)\)/);
+  assert.doesNotMatch(financeRuntimeSource, /\bfetch\s*\(|authorization|Bearer|idToken|accessToken|window\.desktop|dentalApp/);
+  assert.doesNotMatch(financeAppSource, /window\.dentalApp|electron\/|authorization|idToken|accessToken/);
+});
+
 test('pins the exact app entry and JavaScript bytes in the trusted manifest and SRI attribute', () => {
   const entryBytes = readFileSync(new URL('../apps/runtime.v1.html', import.meta.url));
   const scriptBytes = readFileSync(new URL('../apps/runtime.v1.js', import.meta.url));
@@ -106,7 +175,7 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.equal(bundle.scriptSha256, sha256(scriptBytes));
   const integrity = createHash('sha256').update(scriptBytes).digest('base64');
   assert.ok(runtimeHtml.includes(`integrity="sha256-${integrity}"`));
-  assert.ok(firstPartyApps.filter((app) => app.id !== 'protocols')
+  assert.ok(firstPartyApps.filter((app) => !['protocols', 'finance'].includes(app.id))
     .every((app) => app.bundle.entry === bundle.entry && app.bundle.scriptSha256 === bundle.scriptSha256));
   const protocolBundle = firstPartyApps.find((app) => app.id === 'protocols').bundle;
   const protocolEntry = readFileSync(new URL('../apps/treatment-protocols.v1.html', import.meta.url), 'utf8');
@@ -123,6 +192,18 @@ test('pins the exact app entry and JavaScript bytes in the trusted manifest and 
   assert.ok(protocolEntry.includes(`script-src 'sha256-${protocolScriptIntegrity}'`));
   assert.ok(protocolEntry.includes(`style-src 'sha256-${protocolStyleIntegrity}'`));
   assert.ok(protocolEntry.includes(`integrity="sha256-${protocolScriptIntegrity}"`));
+  const financeBundle = firstPartyApps.find((app) => app.id === 'finance').bundle;
+  const financeEntry = readFileSync(new URL('../apps/finance.v1.html', import.meta.url), 'utf8');
+  const financeScript = readFileSync(new URL('../apps/finance.v1.js', import.meta.url));
+  const financeStyle = readFileSync(new URL('../apps/finance.v1.css', import.meta.url));
+  assert.equal(financeBundle.entrySha256, sha256(Buffer.from(financeEntry)));
+  assert.equal(financeBundle.scriptSha256, sha256(financeScript));
+  assert.equal(financeBundle.styleSha256, sha256(financeStyle));
+  const financeScriptIntegrity = createHash('sha256').update(financeScript).digest('base64');
+  const financeStyleIntegrity = createHash('sha256').update(financeStyle).digest('base64');
+  assert.ok(financeEntry.includes(`script-src 'sha256-${financeScriptIntegrity}'`));
+  assert.ok(financeEntry.includes(`style-src 'sha256-${financeStyleIntegrity}'`));
+  assert.ok(financeEntry.includes(`integrity="sha256-${financeScriptIntegrity}"`));
 });
 
 test('isolates app code in a scripts-only frame with a private host channel and no direct network API', () => {
@@ -147,4 +228,7 @@ test('isolates app code in a scripts-only frame with a private host channel and 
   assert.ok(serverScript.includes(`script-src 'sha256-${scriptIntegrity}'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'`));
   assert.match(serverScript, /frame-src \$\{frameSources\}/);
   assert.match(serverScript, /\['\/apps\/runtime\.v1\.html', 'apps\/runtime\.v1\.html'\]/);
+  assert.match(serverScript, /\['\/apps\/finance\/asset-manifest\.js', 'apps\/finance\/asset-manifest\.js'\]/);
+  assert.match(serverScript, /\['\/apps\/finance\.v1\.js', 'apps\/finance\.v1\.js'\]/);
+  assert.match(serverScript, /'\/apps\/finance\.v1\.js', '\/apps\/finance\.v1\.css'/);
 });

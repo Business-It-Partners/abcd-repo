@@ -711,7 +711,8 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
   if (!grant) return { ok: false, code: 'route_not_granted', message: 'This app does not have permission for that clinic route.' };
   const write = request.method !== 'GET';
   const route = new URL(request.path, config?.apiBaseUrl || window.location.origin);
-  if (route.pathname !== request.path || route.search || route.hash
+  const requestPath = request.path.split('?', 1)[0];
+  if (route.pathname !== requestPath || route.hash
     || (write && (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(request.idempotencyKey)
       || typeof request.body !== 'string' || new TextEncoder().encode(request.body).byteLength > 12_000))) {
     return { ok: false, code: 'invalid_request', message: 'This clinic request is not valid.' };
@@ -721,7 +722,7 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
   }
   const base = new URL(config.apiBaseUrl);
   const url = new URL(request.path, base);
-  if (base.protocol !== 'https:' || url.origin !== base.origin || url.pathname !== request.path || url.search || url.hash) {
+  if (base.protocol !== 'https:' || url.origin !== base.origin || url.pathname !== requestPath || url.hash) {
     return { ok: false, code: 'route_not_granted', message: 'This app route is not available.' };
   }
   const idToken = await firebaseUser.getIdToken();
@@ -741,7 +742,8 @@ async function requestGrantedAppApi(app, entry, attempt, request) {
     redirect: 'error',
     signal: AbortSignal.timeout(30_000),
   });
-  const bytes = await readBoundedResponse(response, 524_288, ['application/json'], true);
+  const responseLimit = app.id === 'finance' ? 262_144 : 524_288;
+  const bytes = await readBoundedResponse(response, responseLimit, ['application/json'], true);
   if (!bytes) return { ok: false, code: 'clinic_service_unavailable', message: 'The clinic service response could not be read.' };
   let data;
   try {
@@ -807,9 +809,9 @@ async function handleAppPortMessage(app, entry, attempt, message) {
   const basicRequestValid = message.type === 'app:api-request'
     && Object.keys(message).sort().join(',') === expectedKeys.join(',')
     && typeof message.requestId === 'string' && /^[a-f0-9]{32}$/.test(message.requestId)
-    && ['GET', 'POST', 'PUT'].includes(message.method)
-    && typeof message.path === 'string' && message.path.length > 0 && message.path.length <= 180;
-  const isWrite = message.method === 'POST' || message.method === 'PUT';
+    && ['GET', 'POST', 'PUT', 'PATCH'].includes(message.method)
+    && typeof message.path === 'string' && message.path.length > 0 && message.path.length <= 1_024;
+  const isWrite = message.method !== 'GET';
   const requestBodyValid = isWrite
     ? typeof message.body === 'string' && new TextEncoder().encode(message.body).byteLength <= 12_000
       && typeof message.idempotencyKey === 'string'
@@ -903,6 +905,9 @@ async function initializeAppRuntime(app, entry) {
           version: app.version,
           nonce: entry.nonce,
           bundleSha256: app.bundle.scriptSha256,
+          ...(Array.isArray(app.sessionCapabilities) ? {
+            capabilities: app.sessionCapabilities.filter((capability) => clinicSession?.clinicUser?.capabilities?.includes(capability)),
+          } : {}),
         }, '*', [channel.port2]);
       } catch {
         failAppRuntime(app, entry, attempt, 'The app could not establish its private channel.');

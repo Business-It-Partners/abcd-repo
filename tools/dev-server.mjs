@@ -55,6 +55,10 @@ const routes = new Map([
   ['/apps/treatment-protocols.v1.js', 'apps/treatment-protocols.v1.js'],
   ['/apps/treatment-protocols.v1.css', 'apps/treatment-protocols.v1.css'],
   ['/apps/treatment-protocols/asset-manifest.js', 'apps/treatment-protocols/asset-manifest.js'],
+  ['/apps/finance.v1.html', 'apps/finance.v1.html'],
+  ['/apps/finance.v1.js', 'apps/finance.v1.js'],
+  ['/apps/finance.v1.css', 'apps/finance.v1.css'],
+  ['/apps/finance/asset-manifest.js', 'apps/finance/asset-manifest.js'],
   ['/styles.css', 'styles.css'],
   ['/vendor/nepali-date-utils/index.js', 'vendor/nepali-date-utils/index.js'],
   ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
@@ -103,7 +107,19 @@ const server = createServer(async (request, response) => {
       return;
     }
   }
-  if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css'].includes(pathname)) {
+  if (pathname === '/apps/finance.v1.html') {
+    try {
+      const html = await readFile(resolve(root, 'apps/finance.v1.html'), 'utf8');
+      const policy = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\s*\/>/i)?.[1];
+      if (!policy) throw new Error('Finance package CSP is missing.');
+      response.setHeader('Content-Security-Policy', policy);
+    } catch {
+      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Finance package is not built.');
+      return;
+    }
+  }
+  if (['/apps/runtime.v1.js', '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
+    '/apps/finance.v1.js', '/apps/finance.v1.css'].includes(pathname)) {
     response.setHeader('Access-Control-Allow-Origin', '*');
   }
 
