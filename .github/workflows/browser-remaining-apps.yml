@@ -7,6 +7,7 @@ on:
       - 'package.json'
       - 'tsconfig.json'
       - 'tools/build-browser-apps.mjs'
+      - 'tools/smoke-remaining-m17-ui.mjs'
       - 'tools/dev-server.mjs'
       - 'apps/browser/**'
       - 'apps/dental-apps/**'
@@ -55,6 +56,18 @@ jobs:
           cat artifacts/m17-build-status.txt
           cat artifacts/m17-build-status.txt >> "$GITHUB_STEP_SUMMARY"
           exit "$failed"
+      - name: Verify original React interfaces inside sandboxed browser frames
+        run: npm run test:remaining:ui
+      - name: Upload screenshots and per-app runtime status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m17-nine-browser-screenshots
+          path: |
+            artifacts/m17-*.png
+            artifacts/m17-remaining-ui-status.json
+          retention-days: 7
+          if-no-files-found: warn
       - name: Upload build results for all nine apps
         if: always()
         uses: actions/upload-artifact@v4
