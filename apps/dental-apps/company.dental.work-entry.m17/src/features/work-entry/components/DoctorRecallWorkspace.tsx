@@ -57,6 +57,7 @@ export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, re
           {
             key: "patient",
             header: "Patient",
+            width: "34%",
             emphasis: "strong",
             sortable: true,
             value: (item) => item.patientName,
@@ -65,6 +66,7 @@ export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, re
           {
             key: "reason",
             header: "Reason / work",
+            width: "37%",
             sortable: true,
             value: (item) => item.reason,
             render: (item) => item.reason || "—",
@@ -72,6 +74,7 @@ export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, re
           {
             key: "date",
             header: "Date",
+            width: "17%",
             sortable: true,
             nowrap: true,
             value: (item) => item.dueOn,
@@ -80,6 +83,7 @@ export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, re
           {
             key: "time",
             header: "Time",
+            width: "12%",
             nowrap: true,
             value: (item) => item.dueTime ?? "",
             render: (item) => item.dueTime ?? "—",

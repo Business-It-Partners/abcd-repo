@@ -2040,6 +2040,9 @@ export default function CaseEntryView({
                           onUploaded={onMediaChanged}
                           savedUploads={savedRadiographUploads}
                           onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
+                          onSavedUploadRemoved={existingCaseWorkflow
+                            ? (mediaAssetId) => setSavedRadiographUploads((current) => current.filter((item) => item.mediaAssetId !== mediaAssetId))
+                            : undefined}
                         />
                       </div>
                     )}
@@ -2413,15 +2416,18 @@ export default function CaseEntryView({
                     );
                   })() : null)}
 
-                  {/* Hosted in Work Entry → return there; standalone → start a fresh registration. */}
-                  <button
-                    type="button"
-                    onClick={createStatus === "done" ? (onFinish ?? onExit ?? finishCreate) : (onExit ?? finishCreate)}
-                    className={`btn btn-tall ${createStatus === "done" ? "btn-primary" : "btn-secondary"}`}
-                    style={{ minWidth: createStatus === "done" ? "180px" : "168px" }}
-                  >
-                    {createStatus === "done" ? <><CheckCircle2 size={16} /> Finish</> : onExit ? <><UserPlus size={16} /> Return to Work Entry</> : <><UserPlus size={16} /> New entry</>}
-                  </button>
+                  {/* Keep the completion action, but don't add a redundant return button
+                      inside the open-case workflow hosted by Work Entry. */}
+                  {(createStatus === "done" || !existingCaseWorkflow) && (
+                    <button
+                      type="button"
+                      onClick={createStatus === "done" ? (onFinish ?? onExit ?? finishCreate) : (onExit ?? finishCreate)}
+                      className={`btn btn-tall ${createStatus === "done" ? "btn-primary" : "btn-secondary"}`}
+                      style={{ minWidth: createStatus === "done" ? "180px" : "168px" }}
+                    >
+                      {createStatus === "done" ? <><CheckCircle2 size={16} /> Finish</> : onExit ? <><UserPlus size={16} /> Return to Work Entry</> : <><UserPlus size={16} /> New entry</>}
+                    </button>
+                  )}
                 </div>
 
                 {createStatus !== "done" && isNew && !intakeTaken ? (
@@ -2681,12 +2687,12 @@ function FloatingSuggestions({
                 {/* Each row is a cart line. The whole cart is added from the single footer action. */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <select
-                    style={{ ...input, flex: 1, minWidth: 0, fontSize: "11.5px", padding: "5px 8px", height: "30px", borderRadius: "0px", borderColor: "#0284c7", background: "#ffffff" }}
+                    style={{ ...input, flex: 1, minWidth: 0, fontSize: "12px", fontWeight: "var(--fw-medium)", color: "#0f172a", padding: "5px 8px", height: "30px", borderRadius: "0px", borderColor: "#0284c7", background: "#ffffff" }}
                     value={sel}
                     onChange={(e) => setSuggestSel((prev) => ({ ...prev, [tooth]: e.target.value }))}
                   >
                     {toothProtocols.map((p) => (
-                      <option key={p.id} value={p.id}>
+                      <option key={p.id} value={p.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>
                         {p.name}
                       </option>
                     ))}
@@ -2882,7 +2888,7 @@ function PlanGroupBlock({
               key={stage.key}
               style={{
                 display: "grid",
-                gridTemplateColumns: showCompletionCheckboxes ? "24px minmax(0, 1fr) 80px 20px" : "minmax(0, 1fr) 80px 20px",
+                gridTemplateColumns: showCompletionCheckboxes ? "24px minmax(0, 1fr) 80px 28px" : "minmax(0, 1fr) 80px 28px",
                 gap: "8px",
                 alignItems: "center",
                 background: "#f8fafc",
@@ -2936,9 +2942,10 @@ function PlanGroupBlock({
                 type="button"
                 onClick={() => removeGroupStage(group.gid, stage.key)}
                 title="Remove this step"
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, flexShrink: 0 }}
+                aria-label={`Remove ${stage.label}`}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: "#fff1f2", border: "1px solid #fecaca", borderRadius: "4px", color: "#dc2626", cursor: "pointer", padding: "2px", flexShrink: 0, width: "24px", height: "24px" }}
               >
-                <X size={13} />
+                <X size={15} strokeWidth={2.5} />
               </button>
             </div>
           );
