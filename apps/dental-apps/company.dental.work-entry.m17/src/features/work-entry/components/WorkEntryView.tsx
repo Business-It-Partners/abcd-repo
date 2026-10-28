@@ -887,13 +887,12 @@ export default function WorkEntryView({
     // Only initialise/reset the encounter draft when the user actually opens another case.
     if (loadedCaseIdentity.current === caseIdentity) return;
     loadedCaseIdentity.current = caseIdentity;
+    setSelectedDoctors([]);
     if (oc) {
       setSessionType("continue");
       setChiefComplaint(oc.chiefComplaint?.trim() || oc.title.trim());
       setLines([]);
       setStageChargeDrafts({});
-      setSelectedDoctors((oc.doctors ?? (oc.doctor ? [oc.doctor] : []))
-        .filter((name) => doctorsList.includes(name)));
       setNewComplaintMode(false);
     } else {
       setNewComplaintMode(true);

@@ -1231,9 +1231,7 @@ function PatientTreatmentPlansTab({ plans, timeline, canalMeasurements, loading,
               onClick={() => setActiveCanalSession(canal)}
               aria-label={`View canal measurements for tooth ${canal.toothCode || protocol.toothCode || ""}`}
             >
-              <strong>Canal measurements</strong>
-              <span>{canal.records.map((record) => `${record.canalLabel}: ${record.workingLengthMm}mm`).join(" · ")}{canal.obturationMaterial ? ` · ${canal.obturationMaterial}` : ""}</span>
-              <span className={styles.protocolCanalAction}>View measurements <ChevronRight size={14} aria-hidden="true" /></span>
+              Canal
             </button> : null}
           </section>;
         })}</div>}
