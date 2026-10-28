@@ -37,6 +37,7 @@ const startupProgress = document.getElementById('startup-progress');
 const startupSoundToggle = document.getElementById('startup-sound-toggle');
 const startupSoundLabel = document.getElementById('startup-sound-label');
 const authView = document.getElementById('auth-view');
+const authExitFullscreenToggle = document.getElementById('auth-exit-fullscreen-toggle');
 const authTitle = document.getElementById('auth-title');
 const authDescription = document.getElementById('auth-description');
 const authStatus = document.getElementById('auth-status');
@@ -2145,6 +2146,8 @@ function updateFullscreenToggle() {
   fullscreenToggle.setAttribute('aria-pressed', String(isFullscreen));
   fullscreenToggle.title = isSupported ? label : 'Full screen is unavailable in this browser';
   fullscreenToggleLabel.textContent = label;
+  authExitFullscreenToggle.hidden = !isFullscreen;
+  authExitFullscreenToggle.disabled = !isFullscreen || typeof document.exitFullscreen !== 'function';
 }
 
 function updateDesktopFullscreenState() {
@@ -2179,6 +2182,15 @@ async function toggleFullscreen() {
   }
 }
 
+async function exitFullscreen() {
+  if (document.fullscreenElement !== desktop || typeof document.exitFullscreen !== 'function') return;
+  try {
+    await document.exitFullscreen();
+  } catch {
+    announcement.textContent = 'Full screen could not be exited. Use the browser full-screen controls.';
+  }
+}
+
 document.querySelector('.statusbar-brand').addEventListener('click', (event) => {
   event.preventDefault();
   showHome();
@@ -2188,6 +2200,7 @@ appExplorerDialog.addEventListener('click', (event) => {
   if (event.target === appExplorerDialog) appExplorerDialog.close();
 });
 fullscreenToggle.addEventListener('click', toggleFullscreen);
+authExitFullscreenToggle.addEventListener('click', exitFullscreen);
 document.addEventListener('fullscreenchange', updateDesktopFullscreenState);
 document.addEventListener('visibilitychange', syncAppLaunchFeedbackForWindows);
 document.addEventListener('scroll', hideDockTooltip, true);

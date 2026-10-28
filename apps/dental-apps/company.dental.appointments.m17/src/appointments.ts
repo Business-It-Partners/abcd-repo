@@ -17,6 +17,7 @@ export type Appointment = {
   rowVersion: number;
 };
 export type AppointmentInput = Omit<Appointment, 'appointmentId' | 'status' | 'createdAt' | 'updatedAt' | 'rowVersion'>;
+// Keep these response keys for older Worker clients; date totals include every status.
 export type AppointmentSummary = { todayBooked: number; thisWeekBooked: number; upcomingBooked: number; cancelled: number };
 export type StaffReference = { staffId: string; fullName: string; staffType: string; jobTitle: string | null; status: string };
 export type AppointmentReceipt = { appointment: Appointment };

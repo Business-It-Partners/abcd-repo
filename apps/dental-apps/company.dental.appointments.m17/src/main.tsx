@@ -318,9 +318,9 @@ function AppointmentsApp() {
     : { column, direction: 'ascending' });
 
   const choices = [
-    { label: 'Today booked', value: 'todayBooked' as const, bucket: 'today' as const, count: summary.todayBooked, hint: 'slots still reserved today', Icon: CalendarPlus, tone: 'today' },
-    { label: 'This week booked', value: 'thisWeekBooked' as const, bucket: 'week' as const, count: summary.thisWeekBooked, hint: 'remaining through Saturday', Icon: CalendarRange, tone: 'week' },
-    { label: 'Upcoming booked', value: 'upcomingBooked' as const, bucket: 'upcoming' as const, count: summary.upcomingBooked, hint: 'after this week', Icon: Clock3, tone: 'upcoming' },
+    { label: 'Today appointments', value: 'todayBooked' as const, bucket: 'today' as const, count: summary.todayBooked, hint: 'scheduled for today', Icon: CalendarPlus, tone: 'today' },
+    { label: 'This week appointments', value: 'thisWeekBooked' as const, bucket: 'week' as const, count: summary.thisWeekBooked, hint: 'scheduled today through Saturday', Icon: CalendarRange, tone: 'week' },
+    { label: 'Upcoming appointments', value: 'upcomingBooked' as const, bucket: 'upcoming' as const, count: summary.upcomingBooked, hint: 'scheduled after this week', Icon: Clock3, tone: 'upcoming' },
     { label: 'Cancelled', value: 'cancelled' as const, bucket: 'cancelled' as const, count: summary.cancelled, hint: 'future slots released', Icon: CalendarDays, tone: 'cancelled' },
   ];
   if (error && !ready) return <main className="appointmentsMessage" role="alert"><h1>Appointments unavailable</h1><p>{error}</p></main>;
