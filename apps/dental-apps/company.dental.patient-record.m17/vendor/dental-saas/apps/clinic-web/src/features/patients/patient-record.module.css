@@ -2373,15 +2373,40 @@
 }
 
 .protocolCanal {
+  appearance: none;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin: 0 12px 12px;
+  width: calc(100% - 24px);
   padding: 10px 12px;
   border: 1px solid #d8b4fe;
   background: #faf5ff;
   color: #7e22ce;
+  font: inherit;
   font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.protocolCanal:hover {
+  border-color: #c084fc;
+  background: #f5edff;
+}
+
+.protocolCanal:focus-visible {
+  outline: 3px solid #d8b4fe;
+  outline-offset: 2px;
+}
+
+.protocolCanalAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+  font-weight: 600;
 }
 
 .timelineVisits {

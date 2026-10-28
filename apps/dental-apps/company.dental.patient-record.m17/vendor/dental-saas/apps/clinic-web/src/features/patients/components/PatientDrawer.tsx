@@ -48,6 +48,7 @@ import { doctorAccent } from "@/features/patients/model/doctorAccent";
 import PatientLabTab from "./PatientLabTab";
 import PatientProfileTab from "./PatientProfileTab";
 import PatientNotesTab from "./PatientNotesTab";
+import CanalDrawer from "@/features/work-entry/components/CanalDrawer";
 import PeriodontalChart from "@/features/work-entry/components/PeriodontalChart";
 import { Card, CardHeader, CardBody, DataTable, RowActions, EmptyState, Field, Input, Select, Textarea, Modal, ModalBody, ModalError } from "@/shared/ui/workspace-primitives";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
@@ -133,6 +134,7 @@ interface PatientDrawerProps {
   protocols?: TreatmentProtocol[];
   feeSchedule?: FeeScheduleItem[];
   patientCanalMeasurements?: PatientCanalMeasurement[];
+  onSaveCanalMeasurement?: (session: PatientCanalMeasurement, data: CanalChartData) => Promise<void>;
   patientLabLoading?: boolean;
   patientLabError?: string | null;
   patientCanalMeasurementsLoading?: boolean;
@@ -1170,9 +1172,26 @@ function PatientTimelineHistoryTab({
   </div>;
 }
 
-function PatientTreatmentPlansTab({ plans, timeline, canalMeasurements, loading, error, selectedCaseId }: { plans: PatientTreatmentPlan[]; timeline: PatientTimelineEvent[]; canalMeasurements: PatientCanalMeasurement[]; loading: boolean; error?: string | null; selectedCaseId?: string }) {
+function PatientTreatmentPlansTab({ plans, timeline, canalMeasurements, loading, error, selectedCaseId, onSaveCanalMeasurement }: { plans: PatientTreatmentPlan[]; timeline: PatientTimelineEvent[]; canalMeasurements: PatientCanalMeasurement[]; loading: boolean; error?: string | null; selectedCaseId?: string; onSaveCanalMeasurement?: (session: PatientCanalMeasurement, data: CanalChartData) => Promise<void> }) {
+  const [activeCanalSession, setActiveCanalSession] = useState<PatientCanalMeasurement | null>(null);
   const visiblePlans = selectedCaseId ? plans.filter((plan) => plan.chiefComplaintId === selectedCaseId) : plans.slice(0, 1);
-  return <div className={styles.treatmentPlanList}>
+  const activeCanalTooth = activeCanalSession?.toothCode || plans.flatMap((plan) => plan.protocols).find((protocol) => protocol.patientProtocolId === activeCanalSession?.patientProtocolId)?.toothCode || "";
+  const activeCanalData = useMemo<CanalChartData | undefined>(() => activeCanalSession ? ({
+    tooth: activeCanalTooth,
+    treatmentId: activeCanalSession.patientProtocolId,
+    date: activeCanalSession.recordedOn,
+    medicament: activeCanalSession.note ?? undefined,
+    obturationMaterial: activeCanalSession.obturationMaterial ?? undefined,
+    canals: activeCanalSession.records.map((record) => ({
+      canal: record.canalLabel,
+      lengthMm: String(record.workingLengthMm),
+      referencePoint: record.reference ?? "",
+      note: record.fileNumber ?? "",
+      date: activeCanalSession.recordedOn,
+    })),
+  }) : undefined, [activeCanalSession, activeCanalTooth]);
+  return <>
+  <div className={styles.treatmentPlanList}>
     {error && <div role="alert" className={styles.patientRecordError}>{error}</div>}
     {loading || !plans.length ? <Card>
       <CardHeader title={<><FileText size={16} /> Treatment plan</>} />
@@ -1206,12 +1225,35 @@ function PatientTreatmentPlansTab({ plans, timeline, canalMeasurements, loading,
                 <strong className={styles.stagePrice}>Rs {stage.price.toLocaleString("en-IN")}</strong>
               </li>;
             })}</ol>
-            {canal ? <div className={styles.protocolCanal}><strong>Canal measurements</strong><span>{canal.records.map((record) => `${record.canalLabel}: ${record.workingLengthMm}mm`).join(" · ")}{canal.obturationMaterial ? ` · ${canal.obturationMaterial}` : ""}</span></div> : null}
+            {canal ? <button
+              type="button"
+              className={styles.protocolCanal}
+              onClick={() => setActiveCanalSession(canal)}
+              aria-label={`View canal measurements for tooth ${canal.toothCode || protocol.toothCode || ""}`}
+            >
+              <strong>Canal measurements</strong>
+              <span>{canal.records.map((record) => `${record.canalLabel}: ${record.workingLengthMm}mm`).join(" · ")}{canal.obturationMaterial ? ` · ${canal.obturationMaterial}` : ""}</span>
+              <span className={styles.protocolCanalAction}>View measurements <ChevronRight size={14} aria-hidden="true" /></span>
+            </button> : null}
           </section>;
         })}</div>}
       </article>;
     })}
-  </div>;
+  </div>
+  {activeCanalSession ? <CanalDrawer
+    isOpen
+    onClose={() => setActiveCanalSession(null)}
+    tooth={activeCanalTooth}
+    treatmentId={activeCanalSession.patientProtocolId}
+    initialData={activeCanalData}
+    onSave={async (data) => {
+      if (!onSaveCanalMeasurement) throw new Error("Canal measurement editing is unavailable in this session.");
+      await onSaveCanalMeasurement(activeCanalSession, data);
+    }}
+    successMessage="Canal measurements saved."
+    notifySaveResult={!onSaveCanalMeasurement}
+  /> : null}
+  </>;
 }
 
 function PatientChiefComplaintsTab({
@@ -1300,6 +1342,7 @@ export default function PatientDrawer({
   followUpList,
   doctorsList,
   patientCanalMeasurements = [],
+  onSaveCanalMeasurement,
   patientLabLoading = false,
   patientLabError,
   canViewBillingLedger,
@@ -1351,7 +1394,6 @@ export default function PatientDrawer({
     patch({ subpage: tab === "profile" ? null : tab }, "push");
   }, [canViewBillingLedger, patch]);
   const [xrayDrafts, setXrayDrafts] = useState<XrayDraft[]>([]);
-  const [replaceMediaAssetId, setReplaceMediaAssetId] = useState<string>("");
   // Forms states for adding timeline visit entries
   // Keyboard navigation shortcuts when drawer is active
   useEffect(() => {
@@ -1593,7 +1635,7 @@ export default function PatientDrawer({
               </>
             )}
 
-             {activeSubTab === "plan" && <PatientTreatmentPlansTab plans={treatmentPlanCases} timeline={patientTimeline} canalMeasurements={patientCanalMeasurements} loading={patientTreatmentPlansLoading || patientTimelineLoading} error={patientTreatmentPlansError || patientTimelineError} selectedCaseId={treatmentPlanCases[treatmentPlanCaseIndex]?.chiefComplaintId} />}
+             {activeSubTab === "plan" && <PatientTreatmentPlansTab plans={treatmentPlanCases} timeline={patientTimeline} canalMeasurements={patientCanalMeasurements} loading={patientTreatmentPlansLoading || patientTimelineLoading} error={patientTreatmentPlansError || patientTimelineError} selectedCaseId={treatmentPlanCases[treatmentPlanCaseIndex]?.chiefComplaintId} onSaveCanalMeasurement={onSaveCanalMeasurement} />}
 
             {activeSubTab === "lab" && (
               <PatientLabTab
@@ -1633,14 +1675,12 @@ export default function PatientDrawer({
                 <Card style={{ marginBottom: "14px", maxWidth: "540px" }}>
                   <CardHeader title={<><ImageIcon size={16} /> Add radiograph / image</>} />
                   <CardBody>
-                    {patientXrays?.length ? <div style={{ display: "grid", gap: 8, marginBottom: 14 }}><Field label="Replace an existing X-ray (optional)"><select value={replaceMediaAssetId} onChange={(event) => setReplaceMediaAssetId(event.target.value)}><option value="">Upload a new X-ray</option>{patientXrays.map((xray) => <option key={xray.id} value={xray.id}>{xray.type} · {xray.tooth || "no tooth"} · {formatDateShort(xray.date)}</option>)}</select></Field></div> : null}
                     <RadiographUploader
                       drafts={xrayDrafts}
                       setDrafts={setXrayDrafts}
                       patientId={selectedPatient.id}
                       defaultType="IOPA"
                       onUploaded={onMediaChanged}
-                      replaceMediaAssetId={replaceMediaAssetId || null}
                     />
                   </CardBody>
                 </Card>

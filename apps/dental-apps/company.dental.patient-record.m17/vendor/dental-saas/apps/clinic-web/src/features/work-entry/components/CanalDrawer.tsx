@@ -74,6 +74,8 @@ interface CanalDrawerProps {
   treatmentId?: string;
   initialData?: CanalChartData;
   onSave: (data: CanalChartData) => Promise<void> | void;
+  successMessage?: string;
+  notifySaveResult?: boolean;
 }
 
 export default function CanalDrawer({
@@ -83,6 +85,8 @@ export default function CanalDrawer({
   treatmentId,
   initialData,
   onSave,
+  successMessage = "Readings added to this Work Entry",
+  notifySaveResult = true,
 }: CanalDrawerProps) {
   const [canals, setCanals] = useState<CanalReading[]>([]);
   const [obturationMat, setObturationMat] = useState<string>("");
@@ -153,13 +157,13 @@ export default function CanalDrawer({
       obturationMaterial: obturationMat,
       });
       setIsEditing(false);
-      showToast("Readings added to this Work Entry");
+      if (notifySaveResult) showToast(successMessage);
     } catch (error) {
-      showError((error as Error).message || "Could not save canal readings.");
+      if (notifySaveResult) showError((error as Error).message || "Could not save canal readings.");
     } finally {
       setSaving(false);
     }
-  }, [onSave, tooth, treatmentId, initialData, canals, obturationMat, saving, showToast, showError]);
+  }, [onSave, tooth, treatmentId, initialData, canals, obturationMat, saving, showToast, showError, successMessage, notifySaveResult]);
 
   useEffect(() => {
     if (!isOpen) return;

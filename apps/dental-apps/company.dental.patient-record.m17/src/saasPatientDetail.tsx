@@ -3,12 +3,13 @@ import PatientDrawer from "@/features/patients/components/PatientDrawer";
 import type { PatientDetail as SaaSPatientDetail, LabOrder as SaaSLabOrder, LabSupplier as SaaSLabSupplier } from "@/features/patients/model/domain";
 import { formatDateShort, todayISO } from "@/features/patients/model/domain";
 import type { Case } from "@/features/work-entry/model/caseData";
+import type { CanalChartData } from "@/features/work-entry/model/canalData";
 import type { PatientCanalMeasurement as SaaSPatientCanalMeasurement } from "@/features/patients/types";
 import type { ToothPerioData, XrayImage } from "@/features/work-entry/model/chartData";
 import { ClinicRoleProvider } from "@/shell/session/ClinicRoleContext";
 import { PatientMediaProvider } from "./saasMediaContext";
 import type { PatientDetail as PatientDetailType } from "@/features/patients/model/domain";
-import type { PatientCore, PatientMediaAsset, PatientTreatmentPlan, PatientTimelineEvent, PatientNote, PatientPrescription, PatientLedger, PatientFollowUp, PatientPaymentInput } from "./types";
+import type { CanalMeasurementSaveInput, PatientCore, PatientMediaAsset, PatientTreatmentPlan, PatientTimelineEvent, PatientNote, PatientPrescription, PatientLedger, PatientFollowUp, PatientPaymentInput } from "./types";
 import { errorText, useApp } from "./main";
 
 type ReadResult<T> = { value: T; error: string | null };
@@ -347,6 +348,25 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
   const currentPerio = toPerio(perioTeeth);
   const lastPerioDate = typeof perioChart?.lastChartedOn === "string" ? perioChart.lastChartedOn : undefined;
   const rawCanals = arrayFrom<SaaSPatientCanalMeasurement>(snapshot.canals.value, "sessions");
+  const saveCanalMeasurement = async (session: SaaSPatientCanalMeasurement, data: CanalChartData) => {
+    const input: CanalMeasurementSaveInput = {
+      patientId,
+      chiefComplaintId: session.chiefComplaintId,
+      patientProtocolId: session.patientProtocolId,
+      plan: null,
+      recordedOn: todayISO(),
+      recordedByStaffId: session.recordedByStaffId,
+      obturationMaterial: data.obturationMaterial?.trim() || null,
+      note: data.medicament?.trim() || null,
+      records: data.canals.filter((canal) => canal.lengthMm.trim()).map((canal) => ({
+        canalLabel: canal.canal,
+        workingLengthMm: Number(canal.lengthMm),
+        fileNumber: canal.note?.trim() || null,
+        reference: canal.referencePoint?.trim() || null,
+      })),
+    };
+    await execute("Save canal measurements", api.saveCanal(patientId, input), ["canals"]);
+  };
   const profileSave = async (patch: Partial<PatientDetailType>) => {
     const current = core;
     if (!current) throw new Error("The patient profile is not available.");
@@ -466,6 +486,7 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
       doctorsList={snapshot.staff.value}
       procedureCatalog={[]}
       patientCanalMeasurements={rawCanals}
+      onSaveCanalMeasurement={saveCanalMeasurement}
       patientLabLoading={snapshot.labOrders.loading || snapshot.suppliers.loading}
       patientLabError={snapshot.labOrders.error ?? snapshot.suppliers.error}
       patientCanalMeasurementsLoading={snapshot.canals.loading}

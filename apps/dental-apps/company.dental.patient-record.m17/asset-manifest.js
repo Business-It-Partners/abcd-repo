@@ -1,9 +1,9 @@
 export const patientRecordBundle = Object.freeze({
   "entry": "/apps/patients.v1.html",
-  "entrySha256": "fa443d3b5dfb0f308eae6bc29897a8a7dbeca4a26632725cac30003a5b4e09da",
+  "entrySha256": "69839129550f5954bb91673a8a1e0fc5fcecc2ae45071ca0d7e18ed13055101d",
   "script": "/apps/patients.v1.js",
-  "scriptSha256": "dd8bc9c0282b3325731d0ebebdfbbf659ed39db8f41225b4bc1fa90de07d04fa",
+  "scriptSha256": "ac9fe306e0013fc7cd18a3c1db87498396756f7081a5f954f61d9bb41126b1c0",
   "style": "/apps/patients.v1.css",
-  "styleSha256": "bad8641c663170a345f1d319c6f376b19eb18b439aa0332da93c9457b76f228b"
+  "styleSha256": "e073b80341008f40799115c4149147d5cc382f151595dea9fb5ea305d0ad0b76"
 });
 export const patientRecordVersion = "1.0.2";
