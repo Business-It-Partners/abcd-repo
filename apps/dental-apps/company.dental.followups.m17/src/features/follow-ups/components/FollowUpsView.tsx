@@ -168,6 +168,7 @@ const DUE_CHIP: Record<FollowUp["status"], { bg: string; text: string; border: s
 
 interface FollowUpsViewProps {
   readOnly?: boolean;
+  allowCreate?: boolean;
   doctors: FollowUpDoctorOption[];
   writeState: 'none' | 'saving' | 'unknown';
   onReconcile: () => Promise<void>;
@@ -414,6 +415,7 @@ function RescheduleModal({
 
 export default function FollowUpsView({
   readOnly = false,
+  allowCreate = false,
   doctors,
   writeState,
   onReconcile,
@@ -503,7 +505,13 @@ export default function FollowUpsView({
   return (
     <Page sheet standardPage>
       <PageHeader title="Follow-ups">
-        <button type="button" className="btn btn-primary" disabled={readOnly} title={readOnly ? 'Read-only browser verification' : 'Create follow-up'} onClick={() => setCreateOpen(true)}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!allowCreate || writeState !== 'none'}
+          title={!allowCreate ? 'Follow-up creation is unavailable in this mode' : writeState !== 'none' ? 'Resolve the pending save before creating another follow-up' : 'Create follow-up'}
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus size={16} /> Create follow-up
         </button>
       </PageHeader>

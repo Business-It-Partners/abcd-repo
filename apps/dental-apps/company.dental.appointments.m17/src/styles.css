@@ -45,12 +45,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .appointmentsSpinner { width: 13px; height: 13px; border: 2px solid #d5e0e3; border-top-color: #0284c7; border-radius: 50%; animation: appointmentSpin .7s linear infinite; }
 @keyframes appointmentSpin { to { transform: rotate(360deg); } }
 .appointmentTableWrap { overflow-x: auto; width: 100%; }
-.appointmentTable { width: 100%; min-width: 960px; border-collapse: collapse; table-layout: fixed; text-align: left; }
-.appointmentTimeColumn { width: 9.5%; }
-.appointmentPatientColumn { width: 19%; }
-.appointmentReasonColumn, .appointmentDoctorColumn { width: 20%; }
-.appointmentArrivedColumn, .appointmentCancelColumn { width: 6.5%; }
-.appointmentActionColumn { width: 18.5%; }
+.appointmentTable { width: 100%; min-width: 1060px; border-collapse: collapse; table-layout: fixed; text-align: left; }
+.appointmentTimeColumn { width: 9%; }
+.appointmentPatientColumn { width: 17%; }
+.appointmentReasonColumn, .appointmentDoctorColumn { width: 18%; }
+.appointmentStatusColumn { width: 10%; }
+.appointmentArrivedColumn, .appointmentCancelColumn { width: 6%; }
+.appointmentActionColumn { width: 16%; }
 .appointmentTable th { height: 40px; padding: 0 12px; border-bottom: 1px solid #c7d3df; background: #f1f5f9; color: #29445b; font-size: 12px; font-weight: 650; white-space: nowrap; }
 .appointmentTable th:first-child, .appointmentTable td:first-child { padding-left: 15px; }
 .appointmentTable th.appointmentCenter { text-align: center; }
@@ -72,6 +73,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .appointmentStatusToggle { display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1.5px solid #64748b; border-radius: 6px; background: #fff; color: #fff; cursor: pointer; }
 .appointmentStatusToggle[aria-checked="true"] { border-color: var(--status-color); background: var(--status-color); }
 .appointmentStatusToggle:disabled { cursor: wait; opacity: .7; }
+.appointmentStatusBadge { display: inline-flex; align-items: center; min-height: 25px; padding: 0 9px; border: 1px solid #c7d3df; border-radius: 999px; background: #f1f5f9; color: #34536b; font-size: 12px; font-weight: 650; white-space: nowrap; }
+.appointmentStatusBadge.status-arrived { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+.appointmentStatusBadge.status-cancelled { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.appointmentStatusBadge.status-no_show { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
 .appointmentRowActions > div { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; white-space: nowrap; }
 .appointmentRowActions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 28px; padding: 3px 8px; font-size: 12px; }
 .appointmentEmpty { display: grid; place-items: center; gap: 7px; min-height: 220px; padding: 28px; color: #607b8e; text-align: center; }

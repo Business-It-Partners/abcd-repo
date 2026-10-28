@@ -42,7 +42,7 @@ const applications = [
     manifestName: 'patientRecord',
   },
   {
-    id: 'appointments', title: 'Appointments', version: '1.0.8', name: 'DentalOSAppointments',
+    id: 'appointments', title: 'Appointments', version: '1.0.9', name: 'DentalOSAppointments',
     appDir: appointments, entry: path.join(appointments, 'src/main.tsx'),
     aliases: [
       { find: /^@\/shared\//, replacement: dentalUi + '/' },
@@ -51,7 +51,7 @@ const applications = [
     manifestName: 'appointments',
   },
   {
-    id: 'followups', title: 'Follow-ups', version: '1.0.5', name: 'DentalOSFollowups',
+    id: 'followups', title: 'Follow-ups', version: '1.0.6', name: 'DentalOSFollowups',
     appDir: followups, entry: path.join(followups, 'src/main.tsx'),
     aliases: [
       { find: /^@\/shared\//, replacement: dentalUi + '/' },

@@ -202,15 +202,26 @@ function AppointmentsApp() {
     setLoading(false);
   }, [bucket, clinicDate, date, doctorFilter]);
 
+  const refreshSummary = useCallback(async () => {
+    if (!api.current || !clinicDate) return;
+    try {
+      setSummary(await api.current.summary(clinicDate));
+      setSummaryError('');
+    } catch {
+      setSummaryError('Appointment summary counts could not be loaded.');
+    }
+  }, [clinicDate]);
+
   useEffect(() => { if (ready) void refresh(false); }, [ready, refresh]);
 
   const runWrite = useCallback(async (command: ClinicCommand<AppointmentReceipt>, label: string, closeModal: boolean) => {
     setWriteError(''); setNotice(''); setPending(null);
     try {
-      await command.execute();
+      const receipt = await command.execute();
       if (closeModal) { setForm(null); setDraftDirty(false); }
-      await refresh(false);
+      if (closeModal) await refresh(false);
       setNotice(`${label} saved.`);
+      return receipt;
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === 'unknown') setPending({ command, label, closeModal });
       if (cause instanceof ClinicError && cause.code === 'CONFLICT') await refresh(false);
@@ -224,17 +235,21 @@ function AppointmentsApp() {
     const current = pending;
     setWriteError('');
     try {
-      await current.command.execute();
+      const receipt = await current.command.execute();
       setPending(null);
       if (current.closeModal) { setForm(null); setDraftDirty(false); }
-      await refresh(false);
+      if (current.closeModal) await refresh(false);
+      else {
+        setAppointments(rows => rows.map(row => row.appointmentId === receipt.appointment.appointmentId ? receipt.appointment : row));
+        await refreshSummary();
+      }
       setNotice(`${current.label} confirmed.`);
     } catch (cause) {
       if (!(cause instanceof ClinicError && cause.outcome === 'unknown')) setPending(null);
       setWriteError(statusText(cause));
       if (cause instanceof ClinicError && cause.code === 'CONFLICT') await refresh(false);
     }
-  }, [pending, refresh]);
+  }, [pending, refresh, refreshSummary]);
 
   const save = useCallback(async (input: AppointmentInput, existing?: Appointment) => {
     if (!api.current) throw new ClinicError('STALE_SESSION', 'The clinic session is not active.');
@@ -256,11 +271,20 @@ function AppointmentsApp() {
   const updateStatus = useCallback((appointment: Appointment, status: AppointmentStatus) => {
     if (!api.current || status === appointment.status || pending || savingStatusIds.has(appointment.appointmentId)) return;
     const command = api.current.setStatus(appointment.appointmentId, status, appointment.rowVersion);
+    setAppointments(rows => rows.map(row => row.appointmentId === appointment.appointmentId
+      ? { ...row, status, rowVersion: appointment.rowVersion + 1 }
+      : row));
     setSavingStatusIds(current => new Set(current).add(appointment.appointmentId));
-    void runWrite(command, 'Appointment status', false).catch(() => {}).finally(() => {
+    void runWrite(command, 'Appointment status', false).then(receipt => {
+      setAppointments(rows => rows.map(row => row.appointmentId === receipt.appointment.appointmentId ? receipt.appointment : row));
+      void refreshSummary();
+    }).catch(cause => {
+      if (cause instanceof ClinicError && cause.code === 'CONFLICT') return;
+      setAppointments(rows => rows.map(row => row.appointmentId === appointment.appointmentId ? appointment : row));
+    }).finally(() => {
       setSavingStatusIds(current => { const next = new Set(current); next.delete(appointment.appointmentId); return next; });
     });
-  }, [pending, runWrite, savingStatusIds]);
+  }, [pending, refreshSummary, runWrite, savingStatusIds]);
 
   const setDay = useCallback((next: string) => { setBucket('day'); setDate(next); }, []);
   const moveDay = (amount: number) => {
@@ -336,19 +360,20 @@ function AppointmentsApp() {
         </div>
         {loading && <div role="status" className="appointmentLoading"><span className="appointmentsSpinner" /> Updating schedule…</div>}
         {visibleAppointments.length === 0 && !loading ? <div className="appointmentEmpty"><CalendarDays size={24} aria-hidden="true" /><strong>{search.trim() ? 'No appointments match this search' : 'No appointments in this range'}</strong><span>{search.trim() ? 'Try a different patient, phone, reason, or doctor.' : 'Bookings for this clinic and filter will appear here.'}</span></div> : visibleAppointments.length > 0 ? <div className="appointmentTableWrap"><table className="appointmentTable" data-sajilo-standard-table=""><colgroup>
-          <col className="appointmentTimeColumn" /><col className="appointmentPatientColumn" /><col className="appointmentReasonColumn" /><col className="appointmentDoctorColumn" /><col className="appointmentArrivedColumn" /><col className="appointmentCancelColumn" /><col className="appointmentActionColumn" />
+          <col className="appointmentTimeColumn" /><col className="appointmentPatientColumn" /><col className="appointmentReasonColumn" /><col className="appointmentDoctorColumn" /><col className="appointmentStatusColumn" /><col className="appointmentArrivedColumn" /><col className="appointmentCancelColumn" /><col className="appointmentActionColumn" />
         </colgroup><thead><tr>
           <th scope="col">Time</th>
           <th scope="col" aria-sort={sort?.column === 'patient' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('patient')}>Patient <ArrowUpDown size={12} aria-hidden="true" /></button></th>
           <th scope="col">Reason</th>
           <th scope="col" aria-sort={sort?.column === 'doctor' ? sort.direction : 'none'}><button className="appointmentSort" type="button" onClick={() => toggleSort('doctor')}>Doctor <ArrowUpDown size={12} aria-hidden="true" /></button></th>
-          <th scope="col" className="appointmentCenter">Arrived</th><th scope="col" className="appointmentCenter">Cancel</th><th scope="col" className="appointmentCenter">Action</th>
+          <th scope="col">Status</th><th scope="col" className="appointmentCenter">Arrived</th><th scope="col" className="appointmentCenter">Cancel</th><th scope="col" className="appointmentCenter">Action</th>
         </tr></thead><tbody>
           {visibleAppointments.map(item => <tr key={item.appointmentId}>
             <td data-label="Time"><strong>{minuteLabel(item.startMinute)}</strong><span>till {minuteLabel(item.startMinute + item.durationMinutes)}</span></td>
             <td data-label="Patient"><strong>{item.patientName}</strong><span>{item.contactPhone || 'No contact added'}</span></td>
             <td data-label="Reason">{item.reason}</td>
             <td data-label="Doctor">{item.doctorName}</td>
+            <td data-label="Status"><span className={`appointmentStatusBadge status-${item.status}`}>{statusLabels[item.status]}</span></td>
             <td data-label="Arrived" className="appointmentCenter"><StatusToggle appointment={item} status="arrived" color="#16a34a" title="Mark arrived" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
             <td data-label="Cancel" className="appointmentCenter"><StatusToggle appointment={item} status="cancelled" color="#dc2626" title="Cancel booking" busy={pending !== null || savingStatusIds.has(item.appointmentId)} onToggle={status => updateStatus(item, status)} /></td>
             <td data-label="Action" className="appointmentRowActions"><div>{(item.status === 'booked' || item.status === 'arrived') && <button type="button" className="btn btn-primary btn-sm" onClick={() => setForm({ appointment: item, date: item.appointmentDate })} disabled={pending !== null}><Clock3 size={13} aria-hidden="true" /> Reschedule</button>}<button type="button" className="btn btn-primary btn-sm" onClick={() => setDetails(item)}>Details</button></div></td>

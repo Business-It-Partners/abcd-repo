@@ -93,7 +93,9 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 - [x] Verify Work Entry and Patient Record X-ray uploads on connected staging, cross-app image readback, and audited withdrawal of the synthetic test images; record the unconfirmed synthetic status of the associated patient record in `STATUS.md`.
 - [x] Port Appointments, Follow-ups, Staff, and Lab Tracker into the isolated Browser runtime with host-owned API access and app-specific bundles.
 - [x] Add the Finance-style module sidebar to Finance and Lab Tracker, sourced from `abcd-repo` main's `WindowModuleSidebar` pattern.
-- [x] Keep Follow-ups read-only and Staff document media fail-closed pending relevant Browser acceptance and supported host transport.
+- [x] Enable Follow-up creation through its existing exact POST grant while keeping existing schedule and call-status changes read-only.
+- [x] Keep an appointment row visible after an Arrived/Cancel checkbox update, show its current status in the row, and refresh the summary without refetching a status-filtered list.
+- [x] Keep Staff document media fail-closed pending relevant Browser acceptance and supported host transport.
 - [x] Make app-window sizing adapt to browser full-screen and normal viewport changes, including proportional drag/resize geometry.
 - [ ] Restart the local staging dev server after the latest bundle generation so its in-memory app route map includes User Management.
 - [x] Migrate User Management from `origin/main` into the scripts-only Browser runtime with Admin and `clinic_users.manage` checks, host-mediated session/API access, and four exact route grants.
@@ -102,6 +104,8 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 - [x] Add capability, exact-route, sandbox, asset-route, and bundle-integrity assertions; the root unit suite passes 28/28.
 - [ ] Compare both app screens at agreed Brave desktop sizes and verify visual/interaction parity.
 - [ ] Verify authenticated read/write, denial, retry, and saved-state behavior using the approved synthetic staging dataset after the cleanup plan is recorded.
+- [ ] Verify Follow-up creation, role denial, retry, saved-state readback, and cleanup using the approved synthetic staging dataset after its cleanup plan is recorded.
+- [ ] During approved Appointments acceptance, verify date and today/week/upcoming list reads include booked, arrived, cancelled, and no-show records. If a status-filtered backend query drops a row after it is toggled, make the follow-up change in the separate Dental SaaS repository: keep those range reads date/range-scoped across statuses, keep summary counts status-specific, and verify saved receipt/readback. No Dental SaaS backend changes are part of this Browser task.
 - [ ] Confirm dock and role behavior across supported roles in Brave; defer other browsers until V1 milestones finish.
 - [ ] Track unsupported desktop-only behavior explicitly; do not silently claim parity.
 
