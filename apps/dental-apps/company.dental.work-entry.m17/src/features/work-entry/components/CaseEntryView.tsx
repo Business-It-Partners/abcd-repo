@@ -2687,12 +2687,12 @@ function FloatingSuggestions({
                 {/* Each row is a cart line. The whole cart is added from the single footer action. */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <select
-                    style={{ ...input, flex: 1, minWidth: 0, fontSize: "12px", fontWeight: "var(--fw-medium)", color: "#0f172a", padding: "5px 8px", height: "30px", borderRadius: "0px", borderColor: "#0284c7", background: "#ffffff" }}
+                    style={{ ...input, flex: 1, minWidth: 0, fontSize: "13px", fontWeight: "var(--fw-medium)", color: "#0f172a", padding: "5px 8px", height: "30px", borderRadius: "0px", borderColor: "#0284c7", background: "#ffffff" }}
                     value={sel}
                     onChange={(e) => setSuggestSel((prev) => ({ ...prev, [tooth]: e.target.value }))}
                   >
                     {toothProtocols.map((p) => (
-                      <option key={p.id} value={p.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>
+                      <option key={p.id} value={p.id} style={{ color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px", fontWeight: "var(--fw-medium)" }}>
                         {p.name}
                       </option>
                     ))}
