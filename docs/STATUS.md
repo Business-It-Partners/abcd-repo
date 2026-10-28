@@ -12,7 +12,7 @@ The browser edition has a browser-owned desktop shell with the Dental OS wallpap
 
 The local shell is not an authenticated clinic workflow or app-runtime acceptance. The offline preview at `http://127.0.0.1:4280` intentionally makes no API calls and is not a staging CORS origin. The connected staging mode uses `http://localhost:3003`, which the existing Worker CORS policy allows. B1 and B2 made no SaaS source, Firebase configuration, Worker, or deployment changes.
 
-Read-only staging review is recorded in [Architecture baseline](ARCHITECTURE.md). Firebase CLI confirmed that existing staging Hosting sites have live releases; none was overwritten. The local SaaS checkout had unrelated uncommitted changes, which were left untouched.
+Read-only staging review is recorded in [Architecture baseline](ARCHITECTURE.md). On 2026-10-28, the user-selected existing clinic Hosting site was updated to serve the Browser Edition. The local SaaS checkout had unrelated uncommitted changes, which were left untouched.
 
 ## Milestone state
 
@@ -24,8 +24,15 @@ Read-only staging review is recorded in [Architecture baseline](ARCHITECTURE.md)
 | B3 — First-party app catalog and isolated runtime | COMPLETE | The strict first-party catalog, capability filtering, hash/SRI-pinned runtime, scripts-only sandbox, CSP network denial, nonce-bound host channel, and retryable launch failures passed focused tests and isolated Brave acceptance. Later B4/B5 migrations added their app-specific route grants. |
 | B4 — First end-to-end clinic app | ACTIVE | Treatment Protocols UI, browser bridge, isolated compiled assets, and exact `treatment_protocols.manage` grants are integrated locally. Build and typecheck pass. Worker CORS preflight for the local staging origin succeeds. Remaining: authenticated workflow/role-denial/retry/readback acceptance and write/cleanup evidence using a confirmed synthetic staging target. No business writes made. |
 | B5 — App migration and experience parity | IMPLEMENTATION PRESENT; ACCEPTANCE OPEN | All eleven first-party app implementations now have catalog entries and bundles, including Appointments, Follow-ups, Staff, User Management, and Lab Tracker. User Management is admin-only and requires `clinic_users.manage`; its four exact routes are capability-gated. Finance and Lab Tracker have the Finance-style module sidebar, and Finance's module is labeled “Overview.” App-window geometry adapts to browser full-screen changes. Work Entry and Patient Record have host-mediated media; Staff document media is fail-closed and unavailable. Browser visual parity and authenticated workflow/denial/retry/readback checks remain; staging writes require the synthetic-data and cleanup gate. B4 remains the active milestone. |
-| B6 — Browser staging readiness | IN PROGRESS — USER-DIRECTED STAGING ROLLOUT | Existing SaaS staging site selected; public source checks and static export are ready. Hosted publication and Brave acceptance remain. B4/B5 workflow and visual acceptance stay open; staging publication does not close them. |
+| B6 — Browser staging readiness | IN PROGRESS — USER-DIRECTED STAGING ROLLOUT | Browser Edition is published to the selected SaaS staging site. Public source checks pass; HTTP/CORS smoke checks pass. Hosted authenticated Brave acceptance, cache/rollback checks, and B4/B5 workflow and visual acceptance remain open; publication does not close those gates. |
 | B7 — Production readiness and release decision | DEFERRED | Production work remains outside the current staging scope and requires separate explicit approval. |
+
+## B6 staging publication — 2026-10-28
+
+The public Browser Edition source snapshot at e5ae621cccca5f6bd3aa31e835b284e2a467bc29 passed GitHub Actions run [40648759039](https://github.com/Business-It-Partners/abcd-repo/actions/runs/40648759039) with 37/37 tests. Hosting-decision documentation commit f091709b58cbcb0494676a2a22d28967c2bab9bf passed run [40649800346](https://github.com/Business-It-Partners/abcd-repo/actions/runs/40649800346). The private SaaS integration commit 88d88af built 66 allowlisted Browser Edition files plus generated runtime config and deployed Firebase Hosting version d2a398543a408d95 to cloudfare-dental-saas-staging in project dental-managemetn-staging. Previous live version d0b4bc592e3fc0eb is the documented rollback target.
+
+Eight post-deploy HTTP checks passed for the Browser shell, JS/CSS assets, staging-only runtime config, app-frame CSP/CORS, clinic/login redirects, and Worker preflight. An unauthenticated hosted-origin GET /v1/me returned 401 with the expected Access-Control-Allow-Origin. No clinic business records were written. The hosted URL has not yet received authenticated-session or full isolated-Brave acceptance; cache behavior and rollback execution are also unverified. B6 remains in progress, and B4/B5 acceptance remains open. No production resource or other Firebase Hosting site was changed.
+
 
 ## Verification record
 

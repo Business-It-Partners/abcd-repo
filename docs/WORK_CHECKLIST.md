@@ -113,9 +113,10 @@ The user selected the existing SaaS clinic staging site on 2026-10-28. Publishin
 
 - [x] Confirm the existing `cloudfare-dental-saas-staging` site in project `dental-managemetn-staging` as the target; do not create another site.
 - [x] Add a repeatable allowlisted staging export and public Browser Edition source checks without secrets.
-- [ ] Publish to the selected site and verify the Browser host, asset CORS, CSP, cache behavior, and read-only Worker session path in isolated Brave.
+- [x] Publish to the selected site and verify the hosted Browser shell/assets, staging runtime config, app-frame CORS/CSP, redirects, Worker preflight, and unauthenticated /v1/me 401/CORS response with HTTP checks.
+- [ ] Verify authenticated sign-in/session in isolated Brave on the hosted URL; check cache behavior and exercise rollback.
 - [ ] Verify the remaining B4/B5 workflow and visual acceptance gates; any business writes still require a confirmed synthetic target and cleanup plan.
-- [ ] Record source revision, release and rollback evidence, known limits, and the staging acceptance decision.
+- [x] Record source revision, release and rollback target, known limits, and current staging acceptance gaps.
 
 ## B7 — Production readiness and release decision
 
