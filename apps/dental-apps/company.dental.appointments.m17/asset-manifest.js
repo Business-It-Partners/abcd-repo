@@ -1,8 +1,8 @@
 export const appointmentsBundle = Object.freeze({
   "entry": "/apps/appointments.v1.html",
-  "entrySha256": "f33763ae4e562757735bd63911c1534e90ac4da0bd9b6cfbabd31c4b842fb82b",
+  "entrySha256": "280111d58cabffce4d7f96b91e4d28fc9b48c6e6768a5b9ac2ce0cee4ff64a07",
   "script": "/apps/appointments.v1.js",
-  "scriptSha256": "64434a7c5473e5ee997c8241415c736f0ca3070db8d5dd8ccd437f587bf0d530",
+  "scriptSha256": "fe4e9770784dda6531bb8fe17bfc01256c12b95f76faa4ca088e85b62f8e319d",
   "style": "/apps/appointments.v1.css",
   "styleSha256": "3d728cef93594ef60d0c8d87dfe94e59be1a601820d627879b0f44415b31b800"
 });

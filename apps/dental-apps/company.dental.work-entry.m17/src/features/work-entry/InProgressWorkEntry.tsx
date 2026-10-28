@@ -33,7 +33,6 @@ type InProgressWorkEntryProps = {
   onStepChange: (step: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) => void;
   onCommit: (draft: WorkEntryCommitDraft, completedStages: CompletionReference[]) => Promise<{ workEntryCase: WorkEntryCase; chargeAmount: number }>;
   onMediaChanged: () => void | Promise<void>;
-  onRemoveXray: (mediaAssetId: string, reason: string) => Promise<void>;
   onSaveCanalData: (data: CanalChartData) => Promise<void>;
   onAppendPlan: (plan: PatientPlanSelectionInput, commandId: string) => Promise<WorkEntryCase>;
   onRemovePendingStage: (patientProtocolId: string, stageId: string, expectedRowVersion: number) => Promise<WorkEntryCase>;
@@ -120,7 +119,7 @@ function planFromDraft(draft: PlanAppendDraft, protocols: TreatmentProtocol[]): 
   };
 }
 
-export function InProgressWorkEntry({ patient, workEntryCase, caseDoctorNames, doctorsList, labs, protocols, initialPerio, initialCanalData, upcomingFollowUps, currentOutstandingDue, canCollectPayment, initialStep, onStepChange, onCommit, onMediaChanged, onRemoveXray, onSaveCanalData, onAppendPlan, onRemovePendingStage, renderPatientStep, onExit }: InProgressWorkEntryProps) {
+export function InProgressWorkEntry({ patient, workEntryCase, caseDoctorNames, doctorsList, labs, protocols, initialPerio, initialCanalData, upcomingFollowUps, currentOutstandingDue, canCollectPayment, initialStep, onStepChange, onCommit, onMediaChanged, onSaveCanalData, onAppendPlan, onRemovePendingStage, renderPatientStep, onExit }: InProgressWorkEntryProps) {
   const [localCase, setLocalCase] = useState(() => continuationCase(workEntryCase, caseDoctorNames));
   const [localPatient, setLocalPatient] = useState(() => ({ ...patient, canalHistory: Object.values(initialCanalData) }));
   const procedureCatalog = useMemo(() => procedureCatalogFor(workEntryCase), [workEntryCase]);
@@ -171,7 +170,6 @@ export function InProgressWorkEntry({ patient, workEntryCase, caseDoctorNames, d
     onSaveEncounter={async () => undefined}
     onCommitWorkEntry={commitWorkEntry}
     onMediaChanged={onMediaChanged}
-    onRemoveXray={onRemoveXray}
     onSaveCanalHistory={async (_patientId, canalHistory) => {
       const newest = canalHistory[0];
       if (!newest) return;

@@ -214,8 +214,6 @@ interface WorkEntryViewProps {
   /** One final Worker-owned clinical commit for the in-progress workflow. */
   onCommitWorkEntry?: (draft: WorkEntryCommitDraft) => Promise<void>;
   onMediaChanged?: () => void | Promise<void>;
-  /** Withdraw an image added to this active Work Entry case. */
-  onRemoveXray?: (mediaAssetId: string, reason: string) => Promise<void>;
   /** Persist canal readings immediately; Work Entry must not wait for the encounter save. */
   onSaveCanalHistory?: (patientId: string, canalHistory: CanalChartData[]) => Promise<void> | void;
   onUpdateCase?: (caseId: string, patch: Partial<Case>) => Promise<void> | void;
@@ -359,7 +357,6 @@ export default function WorkEntryView({
   onSaveRecallTab,
   onCommitWorkEntry,
   onMediaChanged,
-  onRemoveXray,
   onSaveCanalHistory,
   onUpdateCase,
   onAppendTrustedPlan,
@@ -1449,7 +1446,38 @@ export default function WorkEntryView({
                 </div>
               )}
               {/* STEP 1 — PATIENT RESOLUTION */}
-              {effStep === 1 && (renderPatientStep ? renderPatientStep(() => goToStep(2, true), () => undefined) : (
+              {effStep === 1 && (renderPatientStep ? (
+                <>
+                  {renderPatientStep(() => goToStep(2, true), () => undefined)}
+                  {fixedPatientFlow && (
+                    <section style={{ ...card, marginTop: "14px", background: "#f8fafc", padding: "16px 18px" }} aria-label="Visit details">
+                      <h3 style={{ ...sectionTitle, marginBottom: "14px" }}>
+                        <Stethoscope size={16} style={{ color: "#1476a6" }} /> Visit details
+                      </h3>
+                      <div className={styles.visitDetailsGrid} style={{ display: "grid", gap: "16px", alignItems: "start" }}>
+                        <div>
+                          <label style={label}>Visit date</label>
+                          <DatePicker value={dateISO} onChange={setDateISO} fluid />
+                        </div>
+                        <div>
+                          <label style={label}>Attending doctor(s)</label>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
+                            {doctorsList.map((doctorName) => {
+                              const selected = selectedDoctors.includes(doctorName);
+                              return (
+                                <label key={doctorName} style={{ display: "inline-flex", alignItems: "center", gap: "7px", minHeight: "36px", padding: "5px 12px", border: selected ? "1px solid #1476a6" : "1px solid #cbd5e1", borderRadius: "18px", background: selected ? "#eaf5fb" : "#ffffff", color: selected ? "#124c6e" : "#475569", fontSize: "var(--fs-13)", fontWeight: selected ? "var(--fw-bold)" : "var(--fw-medium)", cursor: "pointer" }}>
+                                  <input type="checkbox" checked={selected} onChange={() => setSelectedDoctors((current) => selected ? current.filter((name) => name !== doctorName) : [...current, doctorName])} style={{ accentColor: "#1476a6", cursor: "pointer" }} />
+                                  <span>{doctorName}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                </>
+              ) : (
                 <section
                   style={fixedPatientFlow ? workflowPage : {
                     background: "#ffffff",
@@ -1730,7 +1758,7 @@ export default function WorkEntryView({
                     <StepDot n={2} /> <Stethoscope size={16} style={{ color: "#7c3aed" }} /> Work Done Today
                   </h3>
 
-                  <div style={{ display: "grid", gridTemplateColumns: fixedPatientFlow ? "190px minmax(360px, 1fr)" : "minmax(240px, 1fr) minmax(360px, 2fr) auto", gap: "16px", alignItems: "end", marginBottom: "16px", background: "#f8fafc", padding: "14px 16px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
+                  {!fixedPatientFlow && <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 1fr) minmax(360px, 2fr) auto", gap: "16px", alignItems: "end", marginBottom: "16px", background: "#f8fafc", padding: "14px 16px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
                     <div>
                       <label style={label}>Visit Date</label>
                       <div style={{ width: "180px", maxWidth: "100%" }}>
@@ -1778,7 +1806,7 @@ export default function WorkEntryView({
                         })}
                       </div>
                     </div>
-                  </div>
+                  </div>}
 
                   {sessionType === "new" && (
                     <div style={{ marginBottom: "16px" }}>
@@ -1829,14 +1857,15 @@ export default function WorkEntryView({
                           const recordsCanals = tg.stages.some((stage) => stage.recordCanals === true)
                             || (!hasExplicitCanalSetting && /root\s*canal|rct/i.test(tg.name));
                           return (
-                            <div key={tg.name} style={{ minWidth: 0, border: "1px solid #b3cedc", borderRadius: "0px", background: "#c6e1ef", padding: "13px 14px", boxShadow: "none" }}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "12px", paddingBottom: "10px", borderBottom: "1px solid #f1f5f9" }}>
+                            <div key={tg.name} style={{ minWidth: 0, border: "1px solid #d6e1ed", borderRadius: "2px", background: "#ffffff", padding: "16px", boxShadow: "0 2px 8px rgba(15, 23, 42, 0.03)" }}>
+                              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px", marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid #f1f5f9" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
-                                  <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", letterSpacing: "0.02em", textTransform: "uppercase", color: "#0284c7" }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "var(--fs-14)", fontWeight: "var(--fw-bold)", color: "#7c3aed" }}>
+                                    <Stethoscope size={15} style={{ flexShrink: 0 }} />
                                     {tg.name.replace(/\s*\(\s*Grade\s*(?:I{1,3}|V?I{0,3}|\d+)\s*\)/gi, "")}
                                   </span>
                                   {teeth.length > 0 && (
-                                    <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", color: "#0369a1", background: "#e0f2fe", padding: "2px 8px", borderRadius: "0px" }}>
+                                    <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", color: "#0369a1", background: "#e0f2fe", padding: "2px 8px", borderRadius: "3px" }}>
                                       Tooth {teeth.join(", ")}
                                     </span>
                                   )}
@@ -1858,7 +1887,13 @@ export default function WorkEntryView({
                                 )}
                               </div>
 
-                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              <div style={{ marginTop: "-6px", marginBottom: "12px", display: "flex", alignItems: "center" }}>
+                                <span style={{ fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", color: "#7c3aed", background: "#f3e8ff", padding: "3px 10px", borderRadius: "3px", border: "1px solid #e9d5ff" }}>
+                                  Total: {formatNpr(tg.stages.reduce((total, stage) => total + rupeeAmount(stage.agreedCost), 0))}
+                                </span>
+                              </div>
+
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                                 {donePrior.map((s, dIdx) => {
                                   const isDragging = draggedStageOrder === s.order;
                                   const isOver = dragOverStageOrder === s.order && draggedStageOrder !== s.order;
@@ -1899,11 +1934,11 @@ export default function WorkEntryView({
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "8px",
-                                        padding: "9px 12px",
+                                        padding: "8px 10px",
                                         borderTop: isOver ? "3px solid #7c3aed" : isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
                                         borderRight: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
                                         borderBottom: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
-                                        borderRadius: "0px",
+                                        borderRadius: "5px",
                                         borderLeft: isDragging ? "1.5px dashed #7c3aed" : "1px solid #e2e8f0",
                                         background: isDragging ? "#faf5ff" : isOver ? "#f3e8ff" : "#ffffff",
                                         opacity: isDragging ? 0.4 : 1,
@@ -1933,7 +1968,9 @@ export default function WorkEntryView({
                                           <Hand size={13} />
                                         </div>
                                       )}
-                                      <Check size={16} style={{ color: "#16a34a", flexShrink: 0 }} />
+                                      <span role="checkbox" aria-checked="true" aria-disabled="true" aria-label={`${s.label} already completed`} title="This stage is already recorded" style={{ display: "inline-grid", placeItems: "center", width: "17px", height: "17px", margin: "0 auto", border: "1px solid #15803d", borderRadius: "3px", background: "#16a34a", color: "#ffffff", flexShrink: 0 }}>
+                                        <Check size={12} strokeWidth={3} aria-hidden="true" />
+                                      </span>
                                       <span style={{ flex: 1, minWidth: 0 }}>
                                         <span style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                                           <span style={{ fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)", color: "#1e293b" }}>{dIdx + 1}. {s.label}</span>
@@ -2009,12 +2046,12 @@ export default function WorkEntryView({
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "8px",
-                                        padding: "10px 12px",
+                                        padding: "8px 10px",
                                         borderTop: isOver ? "3px solid #7c3aed" : isDragging ? "1.5px dashed #7c3aed" : `1.5px solid ${done ? "#7c3aed" : "#cbd5e1"}`,
                                         borderLeft: isDragging ? "1.5px dashed #7c3aed" : `1.5px solid ${done ? "#7c3aed" : "#cbd5e1"}`,
                                         borderRight: isDragging ? "1.5px dashed #7c3aed" : `1.5px solid ${done ? "#7c3aed" : "#cbd5e1"}`,
                                         borderBottom: isDragging ? "1.5px dashed #7c3aed" : `1.5px solid ${done ? "#7c3aed" : "#cbd5e1"}`,
-                                        borderRadius: "0px",
+                                        borderRadius: "5px",
                                         background: isDragging ? "#faf5ff" : isOver ? "#f3e8ff" : done ? "#f3e8ff" : "#ffffff",
                                         opacity: isDragging ? 0.4 : 1,
                                         transition: "background-color 0.12s ease, border-color 0.12s ease",
@@ -2177,7 +2214,24 @@ export default function WorkEntryView({
                                         <option value="3">Grade III</option>
                                       </select>
                                     )}
-                                    <input style={{ ...input, width: "80px", minWidth: "80px", height: "39px", padding: "6px 8px", textAlign: "right", fontSize: "12px", fontWeight: "700", background: "#ffffff", borderRadius: "5px", border: "1px solid #cbd5e1", color: "#0f172a" }} inputMode="decimal" placeholder="Cost" value={l.cost} onChange={(e) => setLine(l.key, { cost: readRupeeText(e.target) })} />
+                                    <input
+                                      style={{ ...input, width: "80px", minWidth: "80px", height: "39px", padding: "6px 8px", textAlign: "right", fontSize: "12px", fontWeight: "700", background: "#ffffff", borderRadius: "5px", border: "1px solid #cbd5e1", color: "#0f172a" }}
+                                      inputMode="decimal"
+                                      placeholder="Cost"
+                                      aria-label={`Cost for ${l.procedure || "extra work"}`}
+                                      value={formatIndianRupeeInput(l.cost)}
+                                      onChange={(event) => {
+                                        const target = event.currentTarget;
+                                        const caret = target.selectionStart ?? target.value.length;
+                                        const logicalCaret = target.value.slice(0, caret).replace(/[^\d.]/g, "").length;
+                                        const next = readRupeeText(target);
+                                        const groupedNext = formatIndianRupeeInput(next);
+                                        target.value = groupedNext;
+                                        setLine(l.key, { cost: next });
+                                        const nextCaret = caretPositionForGroupedInput(groupedNext, logicalCaret);
+                                        target.setSelectionRange(nextCaret, nextCaret);
+                                      }}
+                                    />
                                     <button type="button" onClick={() => removeLine(l.key)} title="Remove this step" aria-label="Remove this step" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, flexShrink: 0 }}>
                                       <Trash2 size={14} />
                                     </button>
@@ -2190,7 +2244,7 @@ export default function WorkEntryView({
                                 <button
                                   type="button"
                                   onClick={() => onCommitWorkEntry ? addInlineDraftStage(tg.name) : handleOpenAddStageModal(tg.name)}
-                                  className="btn btn-secondary btn-sm"
+                                  className="btn btn-primary btn-sm"
                                   style={{ marginTop: "10px", minHeight: "36px", padding: "6px 12px", border: "1px solid #0284c7", background: "#0284c7", color: "#ffffff" }}
                                 >
                                   <Plus size={13} /> Add stage
@@ -2346,15 +2400,12 @@ export default function WorkEntryView({
                         patientId={existing?.id}
                         chiefComplaintId={initialChiefComplaintId}
                         defaultType="IOPA"
-                        uploadAvailable={false}
                         dateLabel={formatDateShort(dateISO)}
                         capturedOn={dateISO}
                         onUploaded={onMediaChanged}
                         onError={setSaveError}
                         savedUploads={savedRadiographUploads}
                         onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
-                        onRemoveSavedUpload={undefined}
-                        onSavedUploadRemoved={(mediaAssetId) => setSavedRadiographUploads((current) => current.filter((upload) => upload.mediaAssetId !== mediaAssetId))}
                       />
                     </div>
                     <div data-work-entry-prescription style={{ ...card, padding: "16px", minWidth: 0 }}>

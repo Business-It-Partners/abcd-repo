@@ -1,8 +1,8 @@
 export const treatmentProtocolsBundle = Object.freeze({
   entry: "/apps/treatment-protocols.v1.html",
-  entrySha256: "f9e60abe0642f9bbbfc82cfcd192f16bd567574cd9aaa7468d0f619bec7c934b",
+  entrySha256: "43310d5a36c8ae91e7c205ba1bbc33d468c199558775e69c7927adfad36a51c1",
   script: "/apps/treatment-protocols.v1.js",
-  scriptSha256: "a974bcaefe5fb4c4747ca18e3fb802e04bc2743a7362660629843f972f5b54cc",
+  scriptSha256: "1e21a27ae50f1c56f54a4b62ce7f8013666670e713e5235b7fba3d2b6a385a8e",
   style: "/apps/treatment-protocols.v1.css",
   styleSha256: "20e6cb5016068e7245616252bb36dedf27b919143cf396e78851f7e78a123dd0",
 });

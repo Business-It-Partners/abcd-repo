@@ -18,7 +18,7 @@ const lab = path.join(root, 'apps/dental-apps/company.dental.lab-tracker.m17');
 
 const applications = [
   {
-    id: 'workentry', title: 'Work Entry', version: '1.0.0', name: 'DentalOSWorkEntry',
+    id: 'workentry', title: 'Work Entry', version: '1.0.2', name: 'DentalOSWorkEntry',
     appDir: workEntry, entry: path.join(workEntry, 'src/main.tsx'),
     aliases: [
       { find: /^@\/shared\/money\//, replacement: path.join(workEntry, 'src/shared/money') + '/' },
@@ -29,7 +29,7 @@ const applications = [
     manifestName: 'workEntry',
   },
   {
-    id: 'patients', title: 'Patients', version: '1.0.0', name: 'DentalOSPatientRecord',
+    id: 'patients', title: 'Patients', version: '1.0.2', name: 'DentalOSPatientRecord',
     appDir: patientRecord, entry: path.join(patientRecord, 'src/main.tsx'),
     aliases: [
       { find: /^@\/shared\/api\/httpClient$/, replacement: path.join(patientRecord, 'src/browserClinicApiError.ts') },

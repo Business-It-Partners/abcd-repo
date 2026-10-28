@@ -20,7 +20,7 @@ const knownMediaGrants = Object.freeze({
   'user-management': Object.freeze([]),
   treatment: Object.freeze([]),
   protocols: Object.freeze([]),
-  workentry: Object.freeze(['clinic.media.read']),
+  workentry: Object.freeze(['clinic.media.upload']),
   patients: Object.freeze(['clinic.media.read', 'clinic.media.upload']),
 });
 
@@ -147,6 +147,7 @@ const apiRoutePolicies = Object.freeze({
   workentry: Object.freeze([
     apiGrant('GET', '/v1/work-entry/cases'),
     apiGrant('GET', '/v1/chief-complaints/{uuid}/work-entry', ['work_entry.access']),
+    apiGrant('GET', '/v1/chief-complaints/{uuid}/work-entry/context', ['work_entry.access']),
     apiGrant('PUT', '/v1/chief-complaints/{uuid}/work-entry', ['work_entry.access']),
     apiGrant('POST', '/v1/chief-complaints/{uuid}/treatment-protocols', ['work_entry.access']),
     apiGrant('POST', '/v1/chief-complaints/{uuid}/treatment-protocols/{uuid}/cancel', ['work_entry.access']),
@@ -159,6 +160,7 @@ const apiRoutePolicies = Object.freeze({
     apiGrant('POST', '/v1/work-entry/commit', ['work_entry.access']),
     apiGrant('GET', '/v1/patients', [], 'work-entry-patient-lookup'),
     apiGrant('GET', '/v1/patients/{uuid}/core'),
+    apiGrant('POST', '/v1/patient-media/{uuid}/withdraw', ['work_entry.access']),
     apiGrant('POST', '/v1/patients/{uuid}/cases', ['work_entry.access']),
     apiGrant('GET', '/v1/patients/{uuid}/odontogram', ['work_entry.access']),
     apiGrant('PUT', '/v1/patients/{uuid}/odontogram', ['work_entry.access']),
@@ -167,7 +169,6 @@ const apiRoutePolicies = Object.freeze({
     apiGrant('GET', '/v1/patients/{uuid}/canal-measurements', ['work_entry.access']),
     apiGrant('POST', '/v1/patients/{uuid}/canal-measurements', ['work_entry.access']),
     apiGrant('GET', '/v1/patients/{uuid}/ledger', ['patient_billing_ledger.read'], 'patient-ledger'),
-    apiGrant('GET', '/v1/patients/{uuid}/media', [], 'patient-media-list'),
     apiGrant('GET', '/v1/follow-ups', ['followups.access'], 'follow-up-list'),
     apiGrant('GET', '/v1/treatment-protocols', ['treatment_protocols.reference.read']),
     apiGrant('GET', '/v1/clinic/staff-references', ['staff.reference.read']),

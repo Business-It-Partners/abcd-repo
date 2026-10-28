@@ -28,11 +28,11 @@ type Props = {
 export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, reasonOptions, noFollowUpNeeded, onDateChange, onTimeChange, onReasonChange, onNoFollowUpChange, closeCase, onCloseCaseChange, upcoming, loading = false }: Props) {
   return <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px", alignItems: "start" }}>
     <section style={{ padding: "16px", display: "grid", gap: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderTop: "4px solid #64748b" }}>
-      <div><strong style={{ color: "#1e293b" }}>Follow-up</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "var(--fs-12)" }}>Schedule the next clinical visit for this case.</p></div>
+      <div><strong style={{ color: "#1e293b" }}>Follow-up</strong><p style={{ margin: "4px 0 0", color: "#334155", fontSize: "var(--fs-13)" }}>Schedule the next clinical visit for this case.</p></div>
       <div>
-        <label style={{ display: "block", marginBottom: "6px", fontSize: "var(--fs-12)", fontWeight: 700, textTransform: "uppercase" }}><BellRing size={12} style={{ display: "inline", marginRight: 4 }} />Follow-up date & time</label>
+        <label style={{ display: "block", marginBottom: "6px", color: "#0f172a", fontSize: "var(--fs-12)", fontWeight: 700, textTransform: "uppercase" }}><BellRing size={12} style={{ display: "inline", marginRight: 4 }} />Follow-up date & time</label>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(150px, 190px) minmax(0, 1fr)", gap: "8px" }}>
-          <DatePicker id={`${idPrefix}-date`} value={date} onChange={onDateChange} fluid disabled={noFollowUpNeeded} />
+          <DatePicker id={`${idPrefix}-date`} value={date} onChange={onDateChange} fluid disabled={noFollowUpNeeded} style={{ color: "#0f172a", fontWeight: "var(--fw-medium)" }} />
           <TimePicker id={`${idPrefix}-time`} value={time} onChange={onTimeChange} fluid disabled={noFollowUpNeeded} />
         </div>
       </div>
@@ -44,7 +44,7 @@ export default function DoctorRecallWorkspace({ idPrefix, date, time, reason, re
       {onCloseCaseChange ? <label style={{ display: "flex", gap: "10px", padding: "11px 12px", background: closeCase ? "#fffbeb" : "#f8fafc", border: "1px solid #cbd5e1", cursor: "pointer" }}><input type="checkbox" checked={Boolean(closeCase)} onChange={(event) => onCloseCaseChange(event.target.checked)} style={{ "--checkbox-color": "#d97706" } as React.CSSProperties} /><span><strong style={{ display: "block", color: "#92400e", fontSize: "var(--fs-14)" }}>Close the case</strong></span></label> : null}
     </section>
     <section style={{ padding: "16px", background: "#ffffff", border: "1px solid #cbd5e1", borderTop: "4px solid #0284c7" }}>
-      <div style={{ marginBottom: "10px" }}><strong style={{ color: "#0c4a6e" }}>Upcoming follow-ups</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "var(--fs-12)" }}>Read-only clinic recall schedule.</p></div>
+      <div style={{ marginBottom: "10px" }}><strong style={{ color: "#0c4a6e" }}>Upcoming follow-ups</strong><p style={{ margin: "4px 0 0", color: "#334155", fontSize: "var(--fs-13)" }}>Read-only clinic recall schedule.</p></div>
       <DataTable<FollowUpWorklistItem>
         rows={upcoming}
         rowKey={(item) => item.followUpId}

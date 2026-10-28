@@ -29,6 +29,10 @@ export {
 } from "./Layout";
 
 export { Modal, ModalBody, ModalError, FieldPair } from "./Modal";
+export {
+  handleSandboxedFormSubmitClick,
+  handleSandboxedFormSubmitKeyDown,
+} from "./sandboxedFormSubmit";
 
 export { Drawer, Tabs } from "./Drawer";
 export type { TabDef } from "./Drawer";

@@ -90,6 +90,7 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 - [x] Build both app bundles and generate entry, SRI/CSP, catalog, and nested asset-manifest hashes from the same output.
 - [x] Verify all generated app assets and nested manifests through the offline local dev server.
 - [x] Add focused route, handshake, bundle-integrity, media upload, and role-denial checks.
+- [x] Verify Work Entry and Patient Record X-ray uploads on connected staging, cross-app image readback, and audited withdrawal of the synthetic test images; record the unconfirmed synthetic status of the associated patient record in `STATUS.md`.
 - [x] Port Appointments, Follow-ups, Staff, and Lab Tracker into the isolated Browser runtime with host-owned API access and app-specific bundles.
 - [x] Add the Finance-style module sidebar to Finance and Lab Tracker, sourced from `abcd-repo` main's `WindowModuleSidebar` pattern.
 - [x] Keep Follow-ups read-only and Staff document media fail-closed pending relevant Browser acceptance and supported host transport.

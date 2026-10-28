@@ -8,6 +8,7 @@ import {
   Field, FieldPair, Input, ModalBody, ModalError, Select,
   Page, PageHeader, RowActions, StatTile, Tabs, TileGrid,
 } from "@/shared/ui/workspace-primitives";
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
 import { useClinicPageLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
 import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
@@ -550,7 +551,7 @@ export function StaffDetailPage({
       ) : null}
 
       {activeTab === "profile" && editing ? (
-        <form className="staffEditForm" onSubmit={(event) => void save(event)}>
+        <form className="staffEditForm" onSubmit={(event) => void save(event)} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
           {latestAfterConflict ? (
             <div className="staffConflict" role="alert">
               <div>

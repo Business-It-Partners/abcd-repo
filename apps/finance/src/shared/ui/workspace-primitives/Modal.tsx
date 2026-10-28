@@ -36,7 +36,7 @@ type ModalBodyProps =
 
 export function ModalBody(props: ModalBodyProps) {
   if (props.as === "form") {
-    const { as, className, children, onKeyDown, ...rest } = props;
+    const { as, className, children, onKeyDown, onClickCapture, ...rest } = props;
     void as;
     const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
       if (onKeyDown) onKeyDown(e);
@@ -52,7 +52,15 @@ export function ModalBody(props: ModalBodyProps) {
       ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
 
       const idx = fields.indexOf(target);
-      if (idx === -1) return;
+      if (idx === -1) {
+        const submitBtn = e.currentTarget.querySelector<HTMLButtonElement>("button[type=submit]:not(:disabled)");
+        if (!submitBtn) return;
+        e.preventDefault();
+        const form = e.currentTarget;
+        if (!form.noValidate && !submitBtn.formNoValidate && !form.reportValidity()) return;
+        form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitBtn }));
+        return;
+      }
       e.preventDefault();
 
       const next = fields[idx + 1];
@@ -64,9 +72,26 @@ export function ModalBody(props: ModalBodyProps) {
         submitBtn?.focus();
       }
     };
+    const handleClickCapture = (e: React.MouseEvent<HTMLFormElement>) => {
+      onClickCapture?.(e);
+      if (e.defaultPrevented || !(e.target instanceof Element)) return;
+
+      const submitter = e.target.closest<HTMLButtonElement | HTMLInputElement>(
+        'button[type="submit"], input[type="submit"]',
+      );
+      if (!submitter || submitter.disabled) return;
+
+      // App frames intentionally omit the sandbox allow-forms permission. Start
+      // the app's React submit handler from the button click, without asking the
+      // browser to navigate or perform a native form submission.
+      e.preventDefault();
+      const form = e.currentTarget;
+      if (!form.noValidate && !submitter.formNoValidate && !form.reportValidity()) return;
+      form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter }));
+    };
 
     return (
-      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} {...rest}>
+      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onClickCapture={handleClickCapture} {...rest}>
         {children}
       </form>
     );

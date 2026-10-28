@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "./sandboxedFormSubmit";
 import styles from "./ui.module.css";
 
 /* Finance keeps this adapter for its established import path. The shared
@@ -36,7 +37,7 @@ type ModalBodyProps =
 
 export function ModalBody(props: ModalBodyProps) {
   if (props.as === "form") {
-    const { as, className, children, onKeyDown, ...rest } = props;
+    const { as, className, children, onKeyDown, onClickCapture, ...rest } = props;
     void as;
     const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
       if (onKeyDown) onKeyDown(e);
@@ -52,7 +53,10 @@ export function ModalBody(props: ModalBodyProps) {
       ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
 
       const idx = fields.indexOf(target);
-      if (idx === -1) return;
+      if (idx === -1) {
+        handleSandboxedFormSubmitKeyDown(e);
+        return;
+      }
       e.preventDefault();
 
       const next = fields[idx + 1];
@@ -64,9 +68,13 @@ export function ModalBody(props: ModalBodyProps) {
         submitBtn?.focus();
       }
     };
+    const handleClickCapture = (e: React.MouseEvent<HTMLFormElement>) => {
+      onClickCapture?.(e);
+      if (!e.defaultPrevented) handleSandboxedFormSubmitClick(e);
+    };
 
     return (
-      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} {...rest}>
+      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onClickCapture={handleClickCapture} {...rest}>
         {children}
       </form>
     );

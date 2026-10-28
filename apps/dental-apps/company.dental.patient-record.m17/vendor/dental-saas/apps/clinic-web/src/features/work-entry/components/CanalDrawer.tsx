@@ -13,6 +13,7 @@ import {
   OBTURATION_MATERIALS,
 } from "@/features/work-entry/model/canalData";
 import { Modal, ModalBody } from "@/shared/ui/workspace-primitives";
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
 
 const ACC = "var(--acc, #7c3aed)";
 const INK = "#1b1b27";
@@ -268,11 +269,15 @@ export default function CanalDrawer({
       <ModalBody>
         <form
           ref={formRef}
+          onClickCapture={handleSandboxedFormSubmitClick}
           onSubmit={(e) => {
             e.preventDefault();
             handleSave();
           }}
-          onKeyDown={onFormKeyDown}
+          onKeyDown={(e) => {
+            onFormKeyDown(e);
+            if (!e.defaultPrevented) handleSandboxedFormSubmitKeyDown(e);
+          }}
         >
         {/* Header Metadata Info */}
         <div style={{ fontSize: "var(--fs-13)", color: MUTED, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>

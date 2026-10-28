@@ -50,6 +50,7 @@ import PatientProfileTab from "./PatientProfileTab";
 import PatientNotesTab from "./PatientNotesTab";
 import PeriodontalChart from "@/features/work-entry/components/PeriodontalChart";
 import { Card, CardHeader, CardBody, DataTable, RowActions, EmptyState, Field, Input, Select, Textarea, Modal, ModalBody, ModalError } from "@/shared/ui/workspace-primitives";
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
 import ConfirmDialog from "@/shared/ui/ConfirmDialog";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
@@ -147,6 +148,7 @@ interface PatientDrawerProps {
   onReverseLedgerEntry?: (entry: PatientLedger["entries"][number], reason: string) => Promise<void>;
   onRecordPatientPayment?: (input: Omit<PatientPaymentInput, "patientId">) => Promise<void>;
   patientCoreError?: string | null;
+  patientCoreLoading?: boolean;
   patientFollowUps?: WorkerPatientFollowUp[];
   patientFollowUpsLoading?: boolean;
   patientFollowUpsError?: string | null;
@@ -677,7 +679,7 @@ function PatientBillingLedgerTab({ ledger, loading, error, onCorrect, onReverse,
           {summary.outstandingDue > 0 ? (
             <>
               <p className={styles.paymentIntro}>Outstanding balance: <strong>{formatLedgerAmount(summary.outstandingDue)}</strong></p>
-              <form className={styles.paymentForm} onSubmit={(event) => void recordPayment(event)}>
+              <form className={styles.paymentForm} onSubmit={(event) => void recordPayment(event)} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
                 <Field label="Payment date" htmlFor="patient-payment-date" required>
                   <Input
                     id="patient-payment-date"
@@ -1307,6 +1309,7 @@ export default function PatientDrawer({
   onReverseLedgerEntry,
   onRecordPatientPayment,
   patientCoreError,
+  patientCoreLoading = false,
   patientFollowUps = [],
   patientFollowUpsLoading = false,
   patientFollowUpsError,
@@ -1546,13 +1549,15 @@ export default function PatientDrawer({
                     The authoritative patient profile could not be refreshed. {patientCoreError}
                   </div>
                 )}
-                <PatientProfileTab
-                  patientName={selectedPatient.name}
-                  patientDetail={selectedPatient}
-                  phone={selectedPatient.phone || matchingFollowUp?.phone || ""}
-                  onUpdatePatient={(patch) => patientProfileUpdater(selectedPatient.id, patch)}
-                  doctorsList={doctorsList}
-                />
+                {patientCoreLoading
+                  ? <p role="status">Loading patient record…</p>
+                  : <PatientProfileTab
+                      patientName={selectedPatient.name}
+                      patientDetail={selectedPatient}
+                      phone={selectedPatient.phone || matchingFollowUp?.phone || ""}
+                      onUpdatePatient={(patch) => patientProfileUpdater(selectedPatient.id, patch)}
+                      doctorsList={doctorsList}
+                    />}
               </>
             )}
 

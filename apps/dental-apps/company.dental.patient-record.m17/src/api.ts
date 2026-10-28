@@ -1,11 +1,12 @@
 import { BrowserClinicClient, ClinicCommand, ClinicError } from "../../../clinic-app-runtime/browserClinicClient";
+import { PatientMediaClient, type PatientMediaPending, type PatientXrayMetadata } from "../../../clinic-app-runtime/patientMediaClient";
 import { bsMonthToADRange, todayBS } from "../../../../packages/dental-ui/src/shared/dates/bikramSambat";
 import type {
   PatientCore, PatientDirectoryPage, PatientDirectoryCounts, PatientSummary, PatientIntakeInput,
   PatientProfileUpdateInput, PatientRegistrationContext, PatientTreatmentPlan, PatientTimelineEvent,
   PatientNote, PatientNoteCreateInput, PatientPrescription, PrescriptionCreateInput,
   PatientLedger, PatientPaymentInput, PatientPayment, PatientFollowUp, FollowUpCreateInput,
-  PatientMediaAsset, PatientXrayType,
+  PatientMediaAsset,
 } from "./types";
 
 export const APP_ID = "company.dental.patient-record.m17";
@@ -90,7 +91,7 @@ export class PatientApi {
   }
   media(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/media", signal).then(v => field<PatientMediaAsset[]>(v, "media", isArray)); }
   withdrawMedia(id: string, reason: string) {
-    return this.sdk.command<unknown>("POST", "/v1/patient-media/" + id + "/withdraw", { reason }, isObject);
+    return this.sdk.command<void>("POST", "/v1/patient-media/" + id + "/withdraw", { reason }, value => value === undefined || isObject(value));
   }
   odontogram(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/odontogram", signal); }
   periodontal(id: string, signal?: AbortSignal) { return this.sdk.read("/v1/patients/" + id + "/periodontal-chart", signal); }
@@ -165,49 +166,9 @@ export class PatientApi {
   // No SDK route exists for generic binary fetches, signed URLs, or native print/export.
 }
 
-type MediaResponse = {status: number; contentType: string; body: Uint8Array};
-type MediaReceipt = {transferId: string; received: number; total: number};
-export type XrayMetadata = {chiefComplaintId: string | null; xrayType: PatientXrayType; toothCode: string | null; clinicalNote: string | null; capturedOn: string; displayFilename: string; mimeType: "image/jpeg" | "image/png" | "image/webp"; byteSize: number};
-export class PatientMediaSdk {
-  constructor(private readonly sdk: BrowserClinicClient) {}
-  private request<T>(op: "clinic.media.read" | "clinic.media.upload", input: Record<string, unknown>): Promise<T> {
-    return this.sdk.mediaRequest<T>(op, input);
-  }
-  async view(patientId: string, assetId: string): Promise<string> {
-    const result = await this.request<MediaResponse>("clinic.media.read",{kind:"patient_media",recordId:patientId,assetId});
-    if (result.status !== 200 || !["image/jpeg","image/png","image/webp"].includes(result.contentType) || !(result.body instanceof Uint8Array))
-      throw new ClinicError("INVALID_RESPONSE","The private image could not be verified.");
-    const bytes = new Uint8Array(result.body);
-    return URL.createObjectURL(new Blob([bytes],{type:result.contentType}));
-  }
-  async begin(patientId: string, file: File, metadata: Omit<XrayMetadata,"displayFilename"|"mimeType"|"byteSize">, replacement?: {assetId:string;reason:string}): Promise<MediaPending> {
-    if (file.size < 1 || file.size > 10 * 1024 * 1024 || !["image/jpeg","image/png","image/webp"].includes(file.type) || !dateValid(metadata.capturedOn))
-      throw new ClinicError("VALIDATION","Choose a JPEG, PNG or WebP up to 10 MiB and a valid capture date.");
-    const key = crypto.randomUUID();
-    const fields = {displayFilename:file.name.slice(0,200),mimeType:file.type,byteSize:file.size,...metadata};
-    const input: Record<string,unknown> = {action:"begin",kind:"patient_media",recordId:patientId,metadata:fields,idempotencyKey:key};
-    if (replacement) input.replacement = replacement;
-    const receipt = await this.request<MediaReceipt>("clinic.media.upload",input);
-    if (!receipt.transferId || receipt.total !== file.size) throw new ClinicError("INVALID_RESPONSE","The image transfer receipt is invalid.");
-    return {transferId:receipt.transferId,key,file,offset:0,total:file.size,patientId};
-  }
-  async transfer(pending: MediaPending, onProgress?: (sent:number)=>void): Promise<{committed:boolean;assetId:string}> {
-    const bytes = new Uint8Array(await pending.file.arrayBuffer());
-    if (bytes.length !== pending.total) throw new ClinicError("VALIDATION","The selected file changed. Re-select the same file.");
-    for (let i = pending.offset; i < bytes.length; i += 8192) {
-      const chunk = bytes.subarray(i, Math.min(i + 8192, bytes.length));
-      const data = btoa(Array.from(chunk, x => String.fromCharCode(x)).join(""));
-      const receipt = await this.request<MediaReceipt>("clinic.media.upload",{action:"chunk",transferId:pending.transferId,offset:i,data});
-      if (receipt.received !== i + chunk.length) throw new ClinicError("UNKNOWN_OUTCOME","The image transfer state is uncertain.","unknown");
-      pending.offset = receipt.received;
-      onProgress?.(receipt.received);
-    }
-    return this.commit(pending);
-  }
-  commit(pending: MediaPending) { return this.request<{committed:boolean;assetId:string}>("clinic.media.upload",{action:"commit",transferId:pending.transferId,idempotencyKey:pending.key}); }
-  cancel(pending: MediaPending) { return this.request<{cancelled:boolean;committed:boolean;assetId?:string}>("clinic.media.upload",{action:"cancel",transferId:pending.transferId,idempotencyKey:pending.key}); }
-}
-export type MediaPending = {transferId:string;key:string;file:File;offset:number;total:number;patientId:string};
+export { PatientMediaClient as PatientMediaSdk };
+export type XrayMetadata = PatientXrayMetadata;
+export type MediaPending = PatientMediaPending;
 export type WriteCommand<T> = ClinicCommand<T>;
 export function readable(cause: unknown): string { return cause instanceof Error ? cause.message : "Patient Record could not complete this request."; }
 export function isUnknown(cause: unknown) { return cause instanceof ClinicError && (cause.outcome === "unknown" || cause.code === "UNKNOWN_OUTCOME" || cause.code === "TIMEOUT"); }

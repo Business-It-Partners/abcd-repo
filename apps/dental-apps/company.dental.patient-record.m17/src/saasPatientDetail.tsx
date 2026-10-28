@@ -182,7 +182,7 @@ function invalidateRead<K extends SnapshotKey>(snapshot: Snapshot, key: K): Snap
   return { ...snapshot, [key]: { ...snapshot[key], error: null, loaded: false } } as Snapshot;
 }
 
-export function SaaSPatientDetail({ patientId }: { patientId: string }) {
+export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: string; initialPatient?: SaaSPatientDetail }) {
   const { api, media, session, run, capabilities } = useApp();
   const [snapshot, setSnapshot] = useState<Snapshot>(emptySnapshot);
   const snapshotRef = useRef(snapshot);
@@ -227,18 +227,24 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
     activeSectionRef.current = section;
     setActiveSection(section);
   }, []);
-  const refresh = useCallback(() => {
-    updateSnapshot((current) => {
-      let next = invalidateRead(current, "core");
-      const active = activeSectionRef.current;
-      if (active) for (const key of SECTION_READS[active]) next = invalidateRead(next, key);
-      return next;
-    });
+  const refresh = useCallback((requestedKeys?: SnapshotKey[]) => {
+    const active = activeSectionRef.current ?? "profile";
+    const keys = new Set<SnapshotKey>(requestedKeys ?? ["core", ...SECTION_READS[active]]);
+    const controllers = new Set([...keys].map((key) => inFlightReads.current.get(key)).filter((controller): controller is AbortController => Boolean(controller)));
+    for (const controller of controllers) {
+      const controlledKeys: SnapshotKey[] = [];
+      for (const [key, current] of inFlightReads.current) if (current === controller) controlledKeys.push(key);
+      cancelReads(controller, controlledKeys);
+    }
+    updateSnapshot((current) => [...keys].reduce((next, key) => invalidateRead(next, key), current));
     setRevision((value) => value + 1);
-  }, [updateSnapshot]);
-  const execute = useCallback(async <T,>(label: string, command: import("../../../clinic-app-runtime/browserClinicClient").ClinicCommand<T>): Promise<T> => {
+  }, [cancelReads, updateSnapshot]);
+  const execute = useCallback(async <T,>(label: string, command: import("../../../clinic-app-runtime/browserClinicClient").ClinicCommand<T>, refreshKeys?: SnapshotKey[]): Promise<T> => {
     let result!: T;
-    await run(label, command, (value) => { result = value; refresh(); });
+    await run(label, command, (value) => {
+      result = value;
+      refresh(refreshKeys ?? SECTION_READS[activeSectionRef.current ?? "profile"]);
+    });
     return result;
   }, [refresh, run]);
 
@@ -310,7 +316,11 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
   const plans = snapshot.plans.value;
   const timeline = snapshot.timeline.value;
   const patientLedger = snapshot.ledger.value;
-  const selectedPatient = useMemo(() => core ? legacyPatient(core, plans, timeline, patientLedger?.summary.outstandingDue ?? 0) : null, [core, plans, timeline, patientLedger]);
+  const placeholderPatient = useMemo<SaaSPatientDetail>(() => ({
+    id: patientId, patientNumber: "", createdAt: "", name: initialPatient?.name ?? "Loading patient…", age: 0, sex: "M", language: "",
+    alerts: [], balance: 0, planTitle: "", planDone: 0, planTotal: 0, teeth: [], visits: [], notes: "",
+  }), [initialPatient?.name, patientId]);
+  const selectedPatient = useMemo(() => core ? legacyPatient(core, plans, timeline, patientLedger?.summary.outstandingDue ?? 0) : initialPatient ?? placeholderPatient, [core, initialPatient, plans, placeholderPatient, timeline, patientLedger]);
   const rawLabOrder = (id: string) => snapshot.labOrders.value.find((order) => String(order.labOrderId) === id);
   const role = session.clinicUser.role === "admin" ? "admin" : session.clinicUser.role === "doctor" ? "doctor" : "assistant";
   const labOrders = useMemo(() => snapshot.labOrders.value.map((order) => workerLabOrder(order, core?.fullName ?? "Patient")), [snapshot.labOrders.value, core?.fullName]);
@@ -327,10 +337,9 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
     isCloudflareImage: true,
   })), [snapshot.media.value, core?.fullName]);
 
-  if (!snapshot.core.loaded && !snapshot.core.error) return <main className="saasAdapterMessage" role="status">Loading patient record…</main>;
   if (!selectedPatient) return <main className="saasAdapterMessage" role="alert">
     <h2>Patient record unavailable</h2><p>{snapshot.core.error ?? "The clinic could not load this patient record."}</p>
-    <button type="button" onClick={refresh}>Retry</button>
+    <button type="button" onClick={() => refresh()}>Retry</button>
   </main>;
 
   const perioChart = record(record(snapshot.periodontal.value)?.chart);
@@ -368,7 +377,7 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
       medicalProfile,
       allergies,
     };
-    await execute("Update patient profile", api.updateProfile(patientId, input));
+    await execute("Update patient profile", api.updateProfile(patientId, input), ["core"]);
   };
 
   const createPatientNote = async (body: string) => {
@@ -432,7 +441,7 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
       patientXrays={xrayRows}
       patientXraysLoading={snapshot.media.loading}
       xrayLoadError={snapshot.media.error}
-      onMediaChanged={refresh}
+      onMediaChanged={() => refresh(["media"])}
       onRemoveXray={async (id, reason) => { await execute("Withdraw patient X-ray", api.withdrawMedia(id, reason)); }}
       currentPerio={currentPerio}
       patientPeriodontalLoading={snapshot.periodontal.loading}
@@ -469,6 +478,7 @@ export function SaaSPatientDetail({ patientId }: { patientId: string }) {
       onReverseLedgerEntry={reverseLedger}
       onRecordPatientPayment={recordPayment}
       patientCoreError={snapshot.core.error}
+      patientCoreLoading={!snapshot.core.loaded && !snapshot.core.error}
       patientFollowUps={snapshot.followUps.value}
       patientFollowUpsLoading={snapshot.followUps.loading}
       patientFollowUpsError={snapshot.followUps.error}

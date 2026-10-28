@@ -9,13 +9,14 @@ import { SaaSPatientDirectory } from "./saasDirectory";
 import { SaaSPatientDetail } from "./saasPatientDetail";
 import { SaaSPatientIntake } from "./saasPatientIntake";
 import { ClinicPageRefreshAction, ClinicPageRefreshProvider } from "@/shared/ui/ClinicPageRefresh";
-import { ClinicSnackbarProvider } from "@/shared/ui/ClinicSnackbar";
+import { ClinicSnackbarProvider, useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { ClinicLoadingProvider } from "@/shared/ui/ClinicLoadingOverlay";
 import { SnackbarProvider } from "@/shared/ui/SnackbarProvider";
+import type { PatientDetail as PatientViewModel } from "@/features/patients/model/domain";
 import "../vendor/dental-saas/apps/clinic-web/src/app/globals.css";
 import "./saasAdapter.css";
 
-type Screen = {mode:"directory"} | {mode:"intake"} | {mode:"detail";patientId:string};
+type Screen = {mode:"directory"} | {mode:"intake"} | {mode:"detail";patientId:string;initialPatient?:PatientViewModel};
 type Pending = {label:string; retry:()=>Promise<void>};
 type ClinicSessionContext = BrowserClinicSessionContext;
 export type AppStore = {
@@ -49,7 +50,7 @@ export function useDraft(key:string, dirty:boolean) {
   const {dirty:register}=useApp();
   useEffect(()=>{register(key,dirty);return ()=>register(key,false);},[key,dirty,register]);
 }
-function Main() {
+function PatientRecordWorkspace() {
   const [ready,setReady]=useState(false),[openingError,setOpeningError]=useState("");
   const [session,setSession]=useState<ClinicSessionContext|null>(null);
   const [screen,setScreen]=useState<Screen>({mode:"directory"});
@@ -62,6 +63,7 @@ function Main() {
   const dirtyKeys=useRef(new Set<string>()),lock=useRef(false),currentPending=useRef<Pending|null>(null);
   const client=useRef<BrowserClinicClient|null>(null),alive=useRef(true);
   const [api,setApi]=useState<PatientApi|null>(null),[media,setMedia]=useState<PatientMediaSdk|null>(null);
+  const {showLoading,showSuccess,showError}=useClinicSnackbar();
   const report=useCallback(()=>{
     client.current?.report({dirty:dirtyKeys.current.size>0||lock.current||!!currentPending.current||screenRef.current.mode==="intake",
       modal:!!document.querySelector("[role='dialog'][aria-modal='true']")});
@@ -78,18 +80,21 @@ function Main() {
   const run=useCallback(async<T,>(label:string,cmd:ClinicCommand<T>,done:(value:T)=>void|Promise<void>)=>{
     if(currentPending.current||lock.current)throw new ClinicError("BUSY","Finish or reconcile the previous save first.");
     lock.current=true;setBusy(label);setReconcileError("");report();
+    showLoading(`${label}…`);
     try{
       const value=await cmd.execute();
       if(!alive.current)throw new ClinicError("STALE_SESSION","The clinic session changed. Reopen Patient Record.");
       await done(value);
+      showSuccess(`${label} completed.`);
     }catch(e){
       if(isUnknown(e)&&alive.current){
         const retry=async()=>{const result=await cmd.execute();if(!alive.current)throw new ClinicError("STALE_SESSION","Clinic session changed.");await done(result);};
         const record={label,retry};currentPending.current=record;setPending(record);
       }
+      showError(errorText(e));
       throw e;
     }finally{lock.current=false;setBusy("");report();}
-  },[report]);
+  },[report,showError,showLoading,showSuccess]);
   useEffect(()=>{
     alive.current=true;
     let active=true;
@@ -110,7 +115,7 @@ function Main() {
         throw new ClinicError("FORBIDDEN","Patient Record is unavailable for this clinic role.");
       if(!active)return;
       const history=sdk.createHistory<Screen>({mode:"directory"},()=>
-        !dirtyKeys.current.size&&!lock.current&&!currentPending.current&&screenRef.current.mode!=="intake");
+        !lock.current&&!currentPending.current&&(screenRef.current.mode==="intake"||!dirtyKeys.current.size));
       navigation.current=history;
       history.subscribe(page=>{screenRef.current=page;setScreen(page);});
       setSession(ctx);setApi(new PatientApi(sdk));setMedia(new PatientMediaSdk(sdk));
@@ -124,17 +129,18 @@ function Main() {
   useEffect(()=>{report();},[report,screen]);
   const retry=useCallback(async()=>{
     const record=currentPending.current;if(!record)return;setBusy("Checking original save");setReconcileError("");lock.current=true;report();
-    try{await record.retry();currentPending.current=null;setPending(null);setRevision(v=>v+1);}
-    catch(e){setReconcileError(errorText(e));}
+    showLoading("Checking original save…");
+    try{await record.retry();currentPending.current=null;setPending(null);showSuccess("Original save completed.");}
+    catch(e){setReconcileError(errorText(e));showError(errorText(e));}
     finally{lock.current=false;setBusy("");report();}
-  },[report]);
+  },[report,showError,showLoading,showSuccess]);
   const store=useMemo<AppStore|null>(()=>api&&media&&session?{
     api,media,session,busy,pending:!!pending,capabilities:new Set(session.clinicUser.capabilities),
     run,dirty,go,refreshDirectory:()=>setRevision(v=>v+1)
   }:null,[api,media,session,busy,pending,run,dirty,go]);
   if(openingError)return <main className="saasAdapterMessage" role="alert"><h1>Patient Record unavailable</h1><p>{openingError}</p></main>;
   if(!ready||!store)return <main className="saasAdapterMessage" role="status">Opening Patient Record…</main>;
-  return <ClinicSnackbarProvider><SnackbarProvider><ClinicLoadingProvider><ClinicPageRefreshProvider><Context.Provider value={store}>
+  return <Context.Provider value={store}>
     <main className="clinicApp">
       <section className="clinicWorkspaceCanvas" data-dental-os-app={APP_ID}>
         <ClinicPageRefreshAction />
@@ -143,16 +149,21 @@ function Main() {
             <p>The clinic may have received this change. Do not submit it again as a new action. Only retry the original operation.</p>
             {reconcileError&&<Alert>{reconcileError}</Alert>}
             <button type="button" onClick={()=>void retry()} disabled={!!busy}>Retry original save</button></section>}
-          {busy&&<p className="prBusy" role="status">{busy}…</p>}
-          {screen.mode==="directory"&&<SaaSPatientDirectory key={revision} onOpenPatient={patientId=>go({mode:"detail",patientId})}
+          {screen.mode==="directory"&&<SaaSPatientDirectory key={revision} onOpenPatient={patient=>go({mode:"detail",patientId:patient.id,initialPatient:patient})}
             onAddPatient={()=>go({mode:"intake"})}/>}
           {screen.mode==="intake"&&<SaaSPatientIntake onBack={()=>{navigation.current?.back(true);}}
             onSaved={()=>setRevision(v=>v+1)}/>}
-          {screen.mode==="detail"&&<SaaSPatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId}/>}
+          {screen.mode==="detail"&&<SaaSPatientDetail key={screen.patientId+"-"+revision} patientId={screen.patientId} initialPatient={screen.initialPatient}/>}
         </div>
         <ClinicPageRefreshAction placement="page-bottom" />
       </section>
     </main>
-  </Context.Provider></ClinicPageRefreshProvider></ClinicLoadingProvider></SnackbarProvider></ClinicSnackbarProvider>;
+  </Context.Provider>;
+}
+
+function Main() {
+  return <ClinicSnackbarProvider><SnackbarProvider><ClinicLoadingProvider><ClinicPageRefreshProvider>
+    <PatientRecordWorkspace />
+  </ClinicPageRefreshProvider></ClinicLoadingProvider></SnackbarProvider></ClinicSnackbarProvider>;
 }
 createRoot(document.getElementById("root")!).render(<Main/>);

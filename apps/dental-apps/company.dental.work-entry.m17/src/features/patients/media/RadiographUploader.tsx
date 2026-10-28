@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
-import type { PatientMediaAsset } from '@/features/patients/types';
 import type { XrayDraft, XrayType } from '@/features/work-entry/model/chartData';
-import { patientMediaApi } from './api';
 import ConfirmDialog from '@/shared/ui/ConfirmDialog';
+import { patientMediaApi } from './api';
 import styles from './RadiographUploader.module.css';
 
 type Props = {
@@ -18,10 +17,8 @@ type Props = {
   replaceMediaAssetId?: string | null;
   savedUploads?: SavedRadiographUpload[];
   onUploadCompleted?: (upload: SavedRadiographUpload) => void;
-  onError?: (message: string) => void;
-  onRemoveSavedUpload?: (mediaAssetId: string, reason: string) => Promise<void>;
   onSavedUploadRemoved?: (mediaAssetId: string) => void;
-  uploadAvailable?: boolean;
+  onError?: (message: string) => void;
 };
 
 export type SavedRadiographUpload = {
@@ -35,10 +32,6 @@ const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 const maxFileBytes = 10 * 1024 * 1024;
 const formatBytes = (value: number) => value < 1024 * 1024 ? `${Math.max(1, Math.round(value / 1024))} KB` : `${(value / (1024 * 1024)).toFixed(1)} MB`;
 
-function xrayType(value: PatientMediaAsset['xrayType'], fallback: XrayType): XrayType {
-  return value === 'IOPA' || value === 'OPG' || value === 'CBCT' || value === 'Intraoral photo' ? value : fallback;
-}
-
 export default function RadiographUploader({
   drafts,
   setDrafts,
@@ -50,114 +43,43 @@ export default function RadiographUploader({
   onUploaded,
   savedUploads = [],
   onUploadCompleted,
-  onError,
-  onRemoveSavedUpload,
   onSavedUploadRemoved,
-  uploadAvailable = true,
+  onError,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [listError, setListError] = useState('');
-  const [remoteAssets, setRemoteAssets] = useState<PatientMediaAsset[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
-  const [previewLoadingId, setPreviewLoadingId] = useState('');
-  const [removalTarget, setRemovalTarget] = useState<SavedRadiographUpload | null>(null);
+  const [removalTarget, setRemovalTarget] = useState<{ upload: SavedRadiographUpload; commandId: string } | null>(null);
   const [removingId, setRemovingId] = useState('');
-  const [removalError, setRemovalError] = useState('');
   const [busyUploads, setBusyUploads] = useState(0);
-  const canUpload = Boolean(patientId) && uploadAvailable;
+  const canUpload = Boolean(patientId);
   const reportError = (setLocalError: React.Dispatch<React.SetStateAction<string>>, message: string) => {
     if (onError) onError(message);
     else setLocalError(message);
   };
 
-  const reloadMedia = useCallback(async () => {
-    if (!patientId) {
-      setRemoteAssets([]);
-      setListError('');
-      return;
-    }
-    try {
-      const media = await patientMediaApi.listPatientMedia(patientId);
-      setRemoteAssets(media);
-      setListError('');
-    } catch (cause) {
-      reportError(setListError, cause instanceof Error ? cause.message : 'Saved radiographs could not be loaded.');
-    }
-  }, [onError, patientId]);
-
-  useEffect(() => { void reloadMedia(); }, [reloadMedia]);
-
-  const savedImages = useMemo(() => {
-    const known = new Set(savedUploads.map(item => item.mediaAssetId));
-    return [
-      ...savedUploads,
-      ...remoteAssets.filter(asset => !known.has(asset.mediaAssetId)).map(asset => ({
-        mediaAssetId: asset.mediaAssetId,
-        displayFilename: asset.displayFilename,
-        xrayType: xrayType(asset.xrayType, defaultType),
-        previewUrl: previewUrls[asset.mediaAssetId] ?? '',
-      })),
-    ];
-  }, [defaultType, previewUrls, remoteAssets, savedUploads]);
-
-  const openSavedPreview = async (upload: SavedRadiographUpload) => {
-    if (upload.previewUrl) {
-      setPreview({ url: upload.previewUrl, name: upload.displayFilename });
-      return;
-    }
-    if (!patientId || previewLoadingId) return;
-    setPreviewLoadingId(upload.mediaAssetId);
-    setUploadError('');
-    try {
-      const url = await patientMediaApi.viewPatientMedia(patientId, upload.mediaAssetId);
-      setPreviewUrls(current => ({ ...current, [upload.mediaAssetId]: url }));
-      setPreview({ url, name: upload.displayFilename });
-    } catch (cause) {
-      reportError(setUploadError, cause instanceof Error ? cause.message : 'This radiograph could not be opened.');
-    } finally {
-      setPreviewLoadingId('');
-    }
+  const openSavedPreview = (upload: SavedRadiographUpload) => {
+    if (upload.previewUrl) setPreview({ url: upload.previewUrl, name: upload.displayFilename });
   };
 
   const removeSavedImage = async () => {
     const target = removalTarget;
-    if (!target || !onRemoveSavedUpload) return;
-    setRemovingId(target.mediaAssetId);
-    setRemovalError('');
+    if (!target || !patientId || !onSavedUploadRemoved) return;
+    setRemovingId(target.upload.mediaAssetId);
+    setUploadError('');
     try {
-      // SaaS records an audited withdrawal. If the response is lost, confirm through a fresh list
-      // read before changing the local gallery or asking the clinician to retry.
-      try {
-        await onRemoveSavedUpload(target.mediaAssetId, 'Removed by clinician from Work Entry.');
-      } catch (withdrawalError) {
-        if (!patientId) throw withdrawalError;
-        let current: PatientMediaAsset[];
-        try {
-          current = await patientMediaApi.listPatientMedia(patientId);
-        } catch {
-          throw new Error(`${withdrawalError instanceof Error ? withdrawalError.message : 'The removal response was unclear.'} The clinic could not confirm whether the image was withdrawn; refresh the patient radiographs before retrying.`);
-        }
-        setRemoteAssets(current);
-        if (current.some(asset => asset.mediaAssetId === target.mediaAssetId)) throw withdrawalError;
-      }
-      const localUrl = savedUploads.find(item => item.mediaAssetId === target.mediaAssetId)?.previewUrl;
-      const remoteUrl = previewUrls[target.mediaAssetId];
-      if (preview?.url === localUrl || preview?.url === remoteUrl) setPreview(null);
-      if (localUrl) URL.revokeObjectURL(localUrl);
-      if (remoteUrl) URL.revokeObjectURL(remoteUrl);
-      setPreviewUrls(current => {
-        const next = { ...current };
-        delete next[target.mediaAssetId];
-        return next;
-      });
-      setRemoteAssets(current => current.filter(asset => asset.mediaAssetId !== target.mediaAssetId));
-      onSavedUploadRemoved?.(target.mediaAssetId);
+      await patientMediaApi.withdrawPatientMedia(
+        target.upload.mediaAssetId,
+        'Removed by clinician from Work Entry.',
+        target.commandId,
+      );
+      if (preview?.url === target.upload.previewUrl) setPreview(null);
+      if (target.upload.previewUrl) URL.revokeObjectURL(target.upload.previewUrl);
+      onSavedUploadRemoved(target.upload.mediaAssetId);
       setRemovalTarget(null);
     } catch (cause) {
-      reportError(setRemovalError, cause instanceof Error ? cause.message : 'The image was not removed. Please try again.');
+      reportError(setUploadError, cause instanceof Error ? cause.message : 'The image could not be removed. Please try again.');
     } finally {
       setRemovingId('');
     }
@@ -201,9 +123,8 @@ export default function RadiographUploader({
       setBusyUploads(current => Math.max(0, current - 1));
       try {
         await onUploaded?.();
-        await reloadMedia();
       } catch (cause) {
-        reportError(setListError, cause instanceof Error ? cause.message : 'The image was saved, but the gallery could not be refreshed.');
+        reportError(setUploadError, cause instanceof Error ? cause.message : 'The image was uploaded, but related case data could not be refreshed.');
       }
     }
   };
@@ -261,21 +182,23 @@ export default function RadiographUploader({
         onChange={onFiles} className={styles.fileInput} />
 
       <div className={styles.gallery}>
-          {savedImages.map(upload => (
-            <article key={upload.mediaAssetId} className={styles.imageCard}>
-              <button type="button" onClick={() => void openSavedPreview(upload)} disabled={previewLoadingId === upload.mediaAssetId}
-                aria-label={`Preview ${upload.displayFilename}`} title="Open full-size image"
-                className={styles.imageButton}>
-                {upload.previewUrl ? <img src={upload.previewUrl} alt={upload.displayFilename} className={styles.image} />
-                  : previewLoadingId === upload.mediaAssetId ? <Loader2 size={20} aria-label="Loading image" /> : <ImageIcon size={22} className={styles.imagePlaceholder} aria-hidden="true" />}
-              </button>
-              <div className={styles.caption} title={upload.displayFilename}>{upload.xrayType}</div>
-              {onRemoveSavedUpload && <button type="button" onClick={() => { setRemovalError(''); setRemovalTarget(upload); }} disabled={Boolean(removingId)}
-                aria-label={`Remove ${upload.displayFilename}`} title={`Remove ${upload.displayFilename}`} className={styles.removeImage}>
-                {removingId === upload.mediaAssetId ? <Loader2 size={13} aria-label="Removing image" /> : <X size={14} aria-hidden="true" />}
-              </button>}
-            </article>
-          ))}
+        {savedUploads.map(upload => (
+          <article key={upload.mediaAssetId} className={styles.imageCard}>
+            <button type="button" onClick={() => openSavedPreview(upload)}
+              aria-label={`Preview ${upload.displayFilename}`} title="Open full-size image"
+              className={styles.imageButton}>
+              {upload.previewUrl ? <img src={upload.previewUrl} alt={upload.displayFilename} className={styles.image} />
+                : <ImageIcon size={22} className={styles.imagePlaceholder} aria-hidden="true" />}
+            </button>
+            <div className={styles.caption} title={upload.displayFilename}>{upload.xrayType}</div>
+            {onSavedUploadRemoved && <button type="button" className={styles.removeImage}
+              aria-label={`Remove ${upload.displayFilename}`} title="Remove image"
+              disabled={Boolean(removingId)}
+              onClick={() => { setUploadError(''); setRemovalTarget({ upload, commandId: crypto.randomUUID() }); }}>
+              <X size={14} aria-hidden="true" />
+            </button>}
+          </article>
+        ))}
 
         {drafts.map(draft => (
           <article key={draft.key} className={styles.imageCard}>
@@ -300,18 +223,16 @@ export default function RadiographUploader({
         onDragEnter={onDragOver} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
         aria-label={!canUpload ? 'Select a patient before adding images' : 'Add Image. Drop or browse'}>
           <span className={styles.uploadIcon}>{busyUploads ? <Loader2 size={17} aria-label="Upload in progress" /> : <Upload size={17} aria-hidden="true" />}</span>
-          <strong className={styles.addTitle}>{!patientId ? 'Select a patient' : !uploadAvailable ? 'Upload in Patient Record' : busyUploads ? 'Uploading…' : 'Add Image'}</strong>
-          <span className={styles.addHint}>{!patientId ? 'Choose a patient first' : !uploadAvailable ? 'Work Entry has read-only radiograph access' : 'Drop or browse'}</span>
+          <strong className={styles.addTitle}>{!patientId ? 'Select a patient' : busyUploads ? 'Uploading…' : 'Add Image'}</strong>
+          <span className={styles.addHint}>{!patientId ? 'Choose a patient first' : 'Drop or browse'}</span>
         </button>
       </div>
 
       <p className={styles.filingNote}>
-        {uploadAvailable ? <>Each film is stored in this clinic’s private imaging record after upload{dateLabel ? `. It is filed for ${dateLabel}.` : '.'}</> : 'Radiographs can be viewed here. Add or remove images in Patient Record.'}
+        Each film is stored in this clinic’s private imaging record after upload{dateLabel ? `. It is filed for ${dateLabel}.` : '.'}
       </p>
 
       {!onError && uploadError && <p role="alert" className={styles.error}>{uploadError}</p>}
-      {!onError && listError && <p role="alert" className={styles.error}>{listError}</p>}
-      {!onError && removalError && <p role="alert" className={styles.error}>{removalError}</p>}
 
       {preview && <div role="dialog" aria-modal="true" aria-label={`Radiograph preview: ${preview.name}`} onClick={() => setPreview(null)}
         style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 28, background: 'rgba(15,23,42,.82)' }}>
@@ -321,9 +242,10 @@ export default function RadiographUploader({
       </div>}
 
       {removalTarget && <ConfirmDialog title="Remove radiograph?"
-        body={<>Work Entry will ask the clinic service to withdraw <strong>{removalTarget.displayFilename}</strong>. The preview will disappear after the service confirms.</>}
-        confirmLabel="Remove image" cancelLabel="Keep image" destructive busy={removingId === removalTarget.mediaAssetId}
+        body={<>This withdraws <strong>{removalTarget.upload.displayFilename}</strong> from the patient’s imaging record. The image will disappear from this work screen after the clinic confirms.</>}
+        confirmLabel="Remove image" cancelLabel="Keep image" destructive busy={removingId === removalTarget.upload.mediaAssetId}
         onConfirm={() => void removeSavedImage()} onCancel={() => setRemovalTarget(null)} />}
+
     </section>
   );
 }

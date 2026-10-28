@@ -131,10 +131,16 @@ export class BrowserClinicClient {
       }
       throw new ClinicError('UNKNOWN_OUTCOME', 'The save result is not confirmed. Check the original save before making another change.', 'unknown', command.operationId);
     }
-    if (!response || !Number.isInteger(response.status) || !Object.hasOwn(response, 'body')) {
+    if (!response || !Number.isInteger(response.status)) {
       throw new ClinicError('UNKNOWN_OUTCOME', 'The save result is not confirmed. Check the original save before making another change.', 'unknown', command.operationId);
     }
     if (response.status < 200 || response.status >= 300) throw responseError(response.status, command.operationId);
+    // A bodyless 204 is an explicit success. Routes that require a receipt still
+    // validate the returned `undefined` in ClinicCommand.execute().
+    if (response.status === 204 && !Object.hasOwn(response, 'body')) return undefined as T;
+    if (!Object.hasOwn(response, 'body')) {
+      throw new ClinicError('UNKNOWN_OUTCOME', 'The save result is not confirmed. Check the original save before making another change.', 'unknown', command.operationId);
+    }
     return response.body as T;
   }
 

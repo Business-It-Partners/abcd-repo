@@ -8,7 +8,6 @@
   "capabilities": [
     "clinic.app.work-entry",
     "clinic.api.request",
-    "clinic.media.read",
     "clinic.media.upload",
     "session.context"
   ]

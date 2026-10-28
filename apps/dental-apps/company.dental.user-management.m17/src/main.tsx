@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { KeyRound, Pencil, Plus, RefreshCw, Search, ShieldCheck, UserRoundCog, UserRoundPlus } from "lucide-react";
+import { Check, Copy, KeyRound, Pencil, Plus, RefreshCw, Search, ShieldCheck, UserRoundCog, UserRoundPlus } from "lucide-react";
 import { ClinicClient, ClinicError, type ClinicCommand } from "../../../../packages/app-sdk/src/clinicClient";
 import { connectBrowserRuntime } from "../../../../apps/clinic-app-runtime/runtimeBridge";
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "../../../../packages/dental-ui/src/shared/ui/workspace-primitives/sandboxedFormSubmit";
+import { ClinicSnackbarProvider, useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import {
   cleanLoginNameInput,
@@ -40,6 +42,7 @@ function friendly(cause: unknown, fallback: string): string {
 }
 
 function App() {
+  const { showSuccess, showError } = useClinicSnackbar();
   const clientRef = useRef<ClinicClient | null>(null);
   const apiRef = useRef<UserManagementApi | null>(null);
   const pendingWriteRef = useRef<PendingWrite | null>(null);
@@ -52,9 +55,9 @@ function App() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [actionError, setActionError] = useState("");
-  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState("");
+  const copyTimeoutRef = useRef<number | null>(null);
   const [createForm, setCreateForm] = useState<CreateForm | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [passwordForm, setPasswordForm] = useState<PasswordForm | null>(null);
@@ -90,8 +93,6 @@ function App() {
     const epoch = ++loadEpochRef.current;
     setLoading(true);
     setLoadError("");
-    setActionError("");
-    setNotice("");
     try {
       const rows = await api.list();
       if (epoch === loadEpochRef.current) setUsers(sortClinicUsers(rows));
@@ -152,8 +153,6 @@ function App() {
     if (!pending || writeBusyRef.current) return;
     writeBusyRef.current = true;
     setSaving(true);
-    setActionError("");
-    setNotice("");
     try {
       const value = await pending.command.execute();
       if (pendingWriteRef.current !== pending) return;
@@ -164,17 +163,19 @@ function App() {
       if (pendingWriteRef.current !== pending) return;
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setPendingLabel(pending.label);
-        setActionError("The clinic has not confirmed this save. Check the original request before starting another change.");
+        const message = "The clinic has not confirmed this save. Check the original request before starting another change.";
+        showError(message);
       } else {
         pendingWriteRef.current = null;
         setPendingLabel("");
-        setActionError(friendly(cause, "The clinic could not save this change."));
+        const message = friendly(cause, "The clinic could not save this change.");
+        showError(message);
       }
     } finally {
       writeBusyRef.current = false;
       setSaving(false);
     }
-  }, []);
+  }, [showError]);
 
   const submitWrite = useCallback(<T,>(command: ClinicCommand<T>, label: string, apply: (value: T) => void) => {
     if (writeBusyRef.current || pendingWriteRef.current) return;
@@ -229,7 +230,7 @@ function App() {
       setUsers(current => sortClinicUsers([...current, user]));
       setCreateForm(null);
       setFormDirty(false);
-      setNotice(`Login created for ${user.username}.`);
+      showSuccess(`Login created for ${user.username}.`);
     });
   };
 
@@ -248,7 +249,7 @@ function App() {
       setUsers(current => sortClinicUsers(current.map(item => item.clinicUserId === user.clinicUserId ? user : item)));
       setEditForm(null);
       setFormDirty(false);
-      setNotice(`${user.displayName}'s access was updated.`);
+      showSuccess(`${user.displayName}'s access was updated.`);
     });
   };
 
@@ -265,7 +266,7 @@ function App() {
     submitWrite(command, "change password", (_receipt: PasswordReceipt) => {
       setPasswordForm(null);
       setFormDirty(false);
-      setNotice(`Password changed for ${account.username}.`);
+      showSuccess(`Password changed for ${account.username}.`);
     });
   };
 
@@ -281,9 +282,45 @@ function App() {
     const command = apiRef.current.update(account.clinicUserId, input);
     submitWrite(command, `change ${account.displayName}'s status`, ({ user }) => {
       setUsers(current => sortClinicUsers(current.map(item => item.clinicUserId === user.clinicUserId ? user : item)));
-      setNotice(`${user.displayName} is now ${user.status}.`);
+      showSuccess(`${user.displayName} is now ${user.status}.`);
     });
   };
+
+  const copyLoginEmail = async (email: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(email);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = email;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        let copied = false;
+        try {
+          textarea.select();
+          copied = document.execCommand("copy");
+        } finally {
+          textarea.remove();
+        }
+        if (!copied) throw new Error("Clipboard unavailable");
+      }
+      setCopiedEmail(email);
+      showSuccess("Login email copied.");
+      if (copyTimeoutRef.current !== null) window.clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = window.setTimeout(() => {
+        setCopiedEmail(current => current === email ? "" : current);
+        copyTimeoutRef.current = null;
+      }, 1_400);
+    } catch {
+      showError("Login email could not be copied.");
+    }
+  };
+
+  useEffect(() => () => {
+    if (copyTimeoutRef.current !== null) window.clearTimeout(copyTimeoutRef.current);
+  }, []);
 
   const visibleUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -313,8 +350,6 @@ function App() {
       </div>
 
       {loadError && <p className="umAlert" role="alert">{loadError}</p>}
-      {actionError && <div className="umAlert" role="alert"><span>{actionError}</span>{pendingLabel && <button className="umTextButton" type="button" disabled={saving} onClick={() => void runPendingWrite()}>Check original save</button>}</div>}
-      {notice && <p className="umNotice" role="status">{notice}</p>}
 
       <div className="umTableWrap">
         <table className="umTable">
@@ -323,7 +358,7 @@ function App() {
             {!loading && !loadError && visibleUsers.length === 0 && <tr><td colSpan={6} className="umEmpty">{users.length ? "No users match this search." : "No clinic users found."}</td></tr>}
             {visibleUsers.map(account => <tr key={account.clinicUserId}>
               <td><span className="umName"><span className="umAvatar" aria-hidden="true">{account.displayName.trim().slice(0, 1).toUpperCase() || "?"}</span><strong>{account.displayName}</strong></span></td>
-              <td className="umEmail">{account.username}</td>
+              <td className="umEmail"><span className="umEmailText">{account.username}</span><button className="umCopyEmail" type="button" aria-label={`Copy ${account.username}`} title="Copy login email" onClick={() => void copyLoginEmail(account.username)}>{copiedEmail === account.username ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}</button></td>
               <td><span className={`umRole umRole-${account.role}`}>{account.role}</span></td>
               <td><span className={`umStatus umStatus-${account.status}`}>{account.status}</span></td>
               <td><span className={`umIdentity umIdentity-${account.identityStatus}`}>{account.identityStatus === "linked" ? "Linked" : "Pending"}</span></td>
@@ -342,7 +377,7 @@ function App() {
     </section>
 
     {createForm && <ClinicModal title="Add clinic user" description="Create a doctor or reception login. The password is sent to the clinic service and is not persisted to this device." onClose={closeDialogs} closeDisabled={writeBlocked} size="large">
-      <form className="umForm" onSubmit={submitCreate}>
+      <form className="umForm" onSubmit={submitCreate} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
         <label>Display name<input autoComplete="off" maxLength={160} required value={createForm.displayName} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, displayName: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Username<span className="umLoginField"><input autoComplete="off" maxLength={64} required value={createForm.loginName} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, loginName: cleanLoginNameInput(event.target.value) }); setFormDirty(true); setDialogError(""); }} /><span>@{LOGIN_DOMAIN}</span></span><small>Login email: {finalLoginName(createForm.loginName) || "username"}@{LOGIN_DOMAIN}</small></label>
         <label>Role<select value={createForm.role} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, role: event.target.value as "doctor" | "reception" }); setFormDirty(true); }}><option value="doctor">Doctor</option><option value="reception">Reception</option></select></label>
@@ -354,7 +389,7 @@ function App() {
     </ClinicModal>}
 
     {editForm && <ClinicModal title="Edit clinic user" description={`Update the name and access role for ${editForm.account.username}.`} onClose={closeDialogs} closeDisabled={writeBlocked} size="small">
-      <form className="umForm" onSubmit={submitEdit}>
+      <form className="umForm" onSubmit={submitEdit} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
         <label>Display name<input autoComplete="off" maxLength={160} required value={editForm.displayName} disabled={writeBlocked} onChange={event => { setEditForm({ ...editForm, displayName: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Role<select value={editForm.role} disabled={writeBlocked} onChange={event => { setEditForm({ ...editForm, role: event.target.value as "doctor" | "reception" }); setFormDirty(true); }}><option value="doctor">Doctor</option><option value="reception">Reception</option></select></label>
         {dialogError && <p className="umAlert" role="alert">{dialogError}</p>}
@@ -363,7 +398,7 @@ function App() {
     </ClinicModal>}
 
     {passwordForm && <ClinicModal title="Change password" description={`Set a new password for ${passwordForm.account.username}. No reset email will be sent.`} onClose={closeDialogs} closeDisabled={writeBlocked} size="small">
-      <form className="umForm" onSubmit={submitPassword}>
+      <form className="umForm" onSubmit={submitPassword} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
         <label>New password<input autoComplete="new-password" type="password" minLength={8} maxLength={128} required value={passwordForm.password} disabled={writeBlocked} onChange={event => { setPasswordForm({ ...passwordForm, password: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Confirm new password<input autoComplete="new-password" type="password" minLength={8} maxLength={128} required value={passwordForm.confirmPassword} disabled={writeBlocked} onChange={event => { setPasswordForm({ ...passwordForm, confirmPassword: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         {dialogError && <p className="umAlert" role="alert">{dialogError}</p>}
@@ -373,4 +408,4 @@ function App() {
   </main>;
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<ClinicSnackbarProvider><App /></ClinicSnackbarProvider>);

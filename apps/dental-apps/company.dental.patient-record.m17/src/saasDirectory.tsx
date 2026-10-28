@@ -30,7 +30,7 @@ function legacyPatient(patient: PatientSummary): SaaSPatientDetail {
 }
 
 export function SaaSPatientDirectory({ onOpenPatient, onAddPatient }: {
-  onOpenPatient: (patientId: string) => void;
+  onOpenPatient: (patient: SaaSPatientDetail) => void;
   onAddPatient: () => void;
 }) {
   const { api } = useApp();

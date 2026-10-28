@@ -1,9 +1,9 @@
 export const userManagementBundle = Object.freeze({
   entry: "/apps/user-management.v1.html",
-  entrySha256: "8db7bde31ed167a1282d15a13dbcd7cf9765dc36b4847d905fddba546bde75cd",
+  entrySha256: "4cb38e461f289bfc3ac723d9d1196f39f36b748159ecec9d9f59f8f90bc54f56",
   script: "/apps/user-management.v1.js",
-  scriptSha256: "a061669b1a673c2cc54cb41c4bd4ecdbe943ad8948ba3192dbadae0184fe5aeb",
+  scriptSha256: "71479c35d7fc9330d1bdc13091aa2868db52bd9728b4bc868f794b5c65a08c6e",
   style: "/apps/user-management.v1.css",
-  styleSha256: "4f359351ca692d4f38a1ab7528b27fbd35b8ff43213c2c7111a8a20f1d997cbc",
+  styleSha256: "1c9b84b4130e7e01befa4fbe9a2aea04ba3b66c0756535ef11ab43984fa323aa",
 });
 export const userManagementVersion = "1.0.0";

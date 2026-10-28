@@ -426,7 +426,7 @@
       "source": "apps/clinic-web/src/features/patients/media/RadiographUploader.tsx",
       "gitBlob": "23c576697350dc57b8396846a9a60777d49a284c",
       "sourceSha256": "221b31ce8995bf15dfdbfc8ae75d314917f7251b13ac35ffb3d6f23cfba68036",
-      "usedFor": "Source X-ray controls; current Work Entry host grant lacks upload/withdraw and UI is explicitly gated."
+      "usedFor": "Source X-ray controls; the initial browser import gated uploads pending a host grant, later enabled through the shared host-mediated media client."
     }
   ],
   "excluded": [
@@ -436,6 +436,6 @@
     "apps/clinic-web/src/features/patients/media/api.ts (production transport implementation)",
     "direct app-owned fetch, credentials, Worker/R2 access, local authoritative database and hidden write queue"
   ],
-  "mediaBoundary": "The Work Entry family has no patient-media upload or withdrawal grant in this host revision. The SaaS upload widget is replaced with a visible unavailable state; no media bytes are sent.",
+  "mediaBoundary": "The initial browser import disabled patient-media upload and replaced the SaaS uploader with an unavailable state. On 2026-10-28, upload was enabled through the shared host-mediated media client and the app received the clinic.media.upload grant. Work Entry now supports audited withdrawal of an image uploaded in the current work session; it does not load patient image history.",
   "writeBoundary": "Open-case clinical draft uses one POST /v1/work-entry/commit and one stable immutable SDK command. Source-defined patient/case edits and other explicit case-management commands remain their own Worker operations."
 }

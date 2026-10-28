@@ -7,13 +7,13 @@ import { fileURLToPath } from 'node:url';
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relative => fs.readFileSync(path.join(app, relative), 'utf8');
 
-test('M17 Work Entry declares its host-mediated patient radiograph capabilities', () => {
+test('M17 Work Entry declares host-mediated radiograph upload without patient-history access', () => {
   const manifest = JSON.parse(read('app.manifest.json'));
   const packageMetadata = JSON.parse(read('package.json'));
   const metadata = JSON.parse(read('app.json'));
   assert.equal(manifest.appId, 'company.dental.work-entry.m17');
   assert.equal(manifest.version, packageMetadata.version);
-  assert.deepEqual(manifest.capabilities, ['clinic.app.work-entry', 'clinic.api.request', 'clinic.media.read', 'clinic.media.upload', 'session.context']);
+  assert.deepEqual(manifest.capabilities, ['clinic.app.work-entry', 'clinic.api.request', 'clinic.media.upload', 'session.context']);
   assert.equal(metadata.appId, manifest.appId);
   assert.equal(metadata.modules[0].id, 'work-entry');
   assert.deepEqual(metadata.anyCapabilities, ['work_entry.access']);
@@ -60,18 +60,27 @@ test('Open Case combines Today’s Work and stage completion in the plan without
   assert.doesNotMatch(routes, /4:\s*"work"/);
 });
 
-test('radiographs are uploaded, previewed, listed, and withdrawn through approved host APIs', () => {
+test('Work Entry shows only its current upload session and does not load patient radiograph history', () => {
   const source = read('src/features/patients/media/RadiographUploader.tsx');
   const mediaApi = read('src/features/patients/media/api.ts');
+  const caseEntry = read('src/features/work-entry/components/CaseEntryView.tsx');
+  const workEntry = read('src/features/work-entry/components/WorkEntryView.tsx');
+  const mediaClient = fs.readFileSync(path.join(app, '../../clinic-app-runtime/patientMediaClient.ts'), 'utf8');
+  const mediaHost = fs.readFileSync(path.join(app, '../../clinic-app-runtime/mediaHost.js'), 'utf8');
   assert.match(source, /type="file"/);
   assert.match(source, /uploadPatientMedia/);
-  assert.match(source, /viewPatientMedia/);
-  assert.match(source, /Removed by clinician from Work Entry/);
-  assert.match(source, /preview will disappear after the service confirms/);
-  assert.match(mediaApi, /clinic\.media\.upload/);
-  assert.match(mediaApi, /clinic\.media\.read/);
-  assert.match(mediaApi, /\/v1\/patient-media\//);
-  assert.doesNotMatch(mediaApi, /fetch\s*\(|getIdToken|clinicAuth|firebaseAuth/i);
+  assert.match(source, /savedUploads\.map/);
+  assert.doesNotMatch(source, /listPatientMedia|viewPatientMedia|remoteAssets|previewUrls/);
+  assert.doesNotMatch(source, /read-only radiograph access|Upload in Patient Record/);
+  assert.doesNotMatch(`${caseEntry}\n${workEntry}`, /uploadAvailable=\{false\}/);
+  assert.doesNotMatch(mediaApi, /listPatientMedia|viewPatientMedia|clinic\.media\.read/);
+  assert.match(mediaClient, /clinic\.media\.upload/);
+  assert.match(mediaClient, /this\.cancel\(pending\)/);
+  assert.match(mediaHost, /\/v1\/patient-media\/upload-intents/);
+  assert.match(mediaApi, /new PatientMediaClient\(clinicClient\(\)\)/);
+  assert.match(mediaApi, /media\.transfer\(pending, onProgress\)/);
+  assert.doesNotMatch(mediaApi, /upload is unavailable from Work Entry/);
+  assert.doesNotMatch(mediaClient, /fetch\s*\(|getIdToken|clinicAuth|firebaseAuth/i);
 });
 
 test('source import record pins the production SaaS revision and records adaptations', () => {

@@ -25,12 +25,15 @@ const treatmentProgressAppSource = readFileSync(new URL('../apps/treatment-progr
 const treatmentProgressRuntimeSource = readFileSync(new URL('../apps/treatment-progress/src/runtimeBridge.ts', import.meta.url), 'utf8');
 const treatmentProgressSourceImport = JSON.parse(readFileSync(new URL('../apps/treatment-progress/SOURCE_IMPORT.json', import.meta.url), 'utf8'));
 const workEntryAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/main.tsx', import.meta.url), 'utf8');
+const workEntryApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/api.ts', import.meta.url), 'utf8');
 const workEntryWorkspaceSource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/WorkEntryWorkspace.tsx', import.meta.url), 'utf8');
 const workEntryCaseEntrySource = readFileSync(new URL('../apps/dental-apps/company.dental.work-entry.m17/src/features/work-entry/components/CaseEntryView.tsx', import.meta.url), 'utf8');
 const labTrackerAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/main.tsx', import.meta.url), 'utf8');
 const labTrackerViewSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/features/labs/components/LabTrackerView.tsx', import.meta.url), 'utf8');
 const labTrackerApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.lab-tracker.m17/src/features/labs/api.ts', import.meta.url), 'utf8');
 const patientRecordAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.patient-record.m17/src/main.tsx', import.meta.url), 'utf8');
+const patientDetailAdapterSource = readFileSync(new URL('../apps/dental-apps/company.dental.patient-record.m17/src/saasPatientDetail.tsx', import.meta.url), 'utf8');
+const patientRecordViewSource = readFileSync(new URL('../apps/dental-apps/company.dental.patient-record.m17/vendor/dental-saas/apps/clinic-web/src/features/patients/components/PatientRecordView.tsx', import.meta.url), 'utf8');
 const userManagementAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/main.tsx', import.meta.url), 'utf8');
 const userManagementApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/userManagementApi.ts', import.meta.url), 'utf8');
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
@@ -119,6 +122,10 @@ test('allows app page back through dirty drafts while still blocking modals and 
   assert.doesNotMatch(historyControls, /entry\.lifecycle\?\.dirty/);
   assert.doesNotMatch(navigateBack, /hasUnresolvedAppWork/);
   assert.match(navigateBack, /entry\.lifecycle\?\.modal \|\| entry\.lifecycle\?\.pendingWrite \|\| entry\.mediaPending/);
+  const patientHistory = patientRecordAppSource.match(/const history=sdk\.createHistory<Screen>[\s\S]*?\);/)?.[0];
+  assert.ok(patientHistory);
+  assert.match(patientHistory, /!lock\.current&&!currentPending\.current/);
+  assert.match(patientHistory, /screenRef\.current\.mode==="intake"\|\|!dirtyKeys\.current\.size/);
   assert.match(shellStyles, /\.running-dot\s*\{[^}]*top:\s*-7px;[^}]*background:\s*#078ac3;/);
   assert.match(shellStyles, /\.dock-icon\.is-active \.running-dot\s*\{[^}]*background:\s*#078ac3;/);
   assert.match(dockBuilder, /orderAppsForDisplay\(apps\.filter\(\(app\) => app\.id !== 'calendar'\)\)/);
@@ -135,6 +142,29 @@ test('keeps default app windows inset and centered in browser full screen', () =
     assert.match(rule, /width:\s*90%\s*!important;/);
     assert.match(rule, /transform:\s*translateX\(-50%\)\s*!important;/);
   }
+});
+
+test('restores a maximized app window when its titlebar is dragged', () => {
+  const windowDragSource = hostScript.match(/function enableWindowDrag\(section, titlebar, maximizeButton, appTitle\) \{[\s\S]*?^\}/m)?.[0];
+  assert.ok(windowDragSource);
+  assert.doesNotMatch(windowDragSource, /section\.classList\.contains\('is-maximized'\)\) return/);
+  assert.match(windowDragSource, /drag\.maximized/);
+  assert.match(windowDragSource, /Math\.hypot\(event\.clientX - drag\.x, event\.clientY - drag\.y\) < 4/);
+  assert.match(windowDragSource, /section\.classList\.remove\('is-maximized'\)/);
+  assert.match(windowDragSource, /syncMaximizeControl\(section, maximizeButton, appTitle\)/);
+  assert.match(windowDragSource, /titlebar\.setPointerCapture\(event\.pointerId\)/);
+});
+
+test('keeps the Patient Record sidebar mounted and refreshes only the affected section after saves', () => {
+  assert.match(patientRecordAppSource, /onOpenPatient=\{patient=>go\(\{mode:"detail",patientId:patient\.id,initialPatient:patient\}\)\}/);
+  assert.match(patientRecordViewSource, /onOpenPatientDetail\(p\)/);
+  assert.doesNotMatch(patientDetailAdapterSource, /if\s*\(!snapshot\.core\.loaded\s*&&\s*!snapshot\.core\.error\)\s*return <main/);
+  assert.match(patientDetailAdapterSource, /patientCoreLoading=\{!snapshot\.core\.loaded\s*&&\s*!snapshot\.core\.error\}/);
+  assert.match(patientDetailAdapterSource, /const keys = new Set<SnapshotKey>\(requestedKeys \?\? \["core", \.\.\.SECTION_READS\[active\]\]\)/);
+  assert.match(patientDetailAdapterSource, /refresh\(refreshKeys \?\? SECTION_READS\[activeSectionRef\.current \?\? "profile"\]\)/);
+  assert.match(patientDetailAdapterSource, /onMediaChanged=\{\(\)\s*=>\s*refresh\(\["media"\]\)\}/);
+  assert.match(patientRecordAppSource, /showLoading\(`\$\{label\}…`\)/);
+  assert.match(patientRecordAppSource, /showSuccess\(`\$\{label\} completed\.`\)/);
 });
 
 test('rejects remote, malformed, and unregistered app metadata', () => {
@@ -165,7 +195,9 @@ test('rejects remote, malformed, and unregistered app metadata', () => {
 test('matches only the explicit Work Entry and Patient Record backend routes and bounded queries', () => {
   const workEntry = firstPartyApps.find((candidate) => candidate.id === 'workentry');
   const patients = firstPartyApps.find((candidate) => candidate.id === 'patients');
+  const caseId = 'f12b56d1-2633-4a79-8fd8-2a4a0d39515c';
   assert.ok(findAppApiGrant(workEntry, 'GET', '/v1/work-entry/cases'));
+  assert.ok(findAppApiGrant(workEntry, 'GET', `/v1/chief-complaints/${caseId}/work-entry/context`));
   assert.ok(findAppApiGrant(workEntry, 'POST', '/v1/work-entry/commit'));
   assert.ok(findAppApiGrant(workEntry, 'PUT', '/v1/patients/f12b56d1-2633-4a79-8fd8-2a4a0d39515c/odontogram'));
   assert.ok(findAppApiGrant(workEntry, 'GET', '/v1/patients?q=alia&limit=8'));
@@ -173,6 +205,8 @@ test('matches only the explicit Work Entry and Patient Record backend routes and
   assert.equal(findAppApiGrant(workEntry, 'DELETE', '/v1/work-entry/cases'), null);
   assert.equal(findAppApiGrant(workEntry, 'POST', '/v1/patients'), null);
   assert.equal(findAppApiGrant(workEntry, 'GET', '/v1/patients?q=alia&limit=8&tenant=other'), null);
+  assert.match(workEntryApiSource, /workEntryContext: async[\s\S]*?\/work-entry\/context/);
+  assert.match(workEntryWorkspaceSource, /workEntryApi\.workEntryContext\(idToken, chiefComplaintId\)/);
 
   assert.ok(findAppApiGrant(patients, 'GET', '/v1/patients?limit=50'));
   assert.ok(findAppApiGrant(patients, 'GET', '/v1/patients?limit=20&cohort=regular'));
@@ -306,12 +340,12 @@ test('passes only app-scoped session capabilities as UI context without widening
   assert.match(workEntryWorkspaceSource, /labOrders: \[\],\s*followUp:[\s\S]*?payment,/);
 });
 
-test('limits radiograph permissions to the Patient Record app', () => {
+test('grants radiograph upload only to Work Entry and Patient Record apps', () => {
   const workEntry = firstPartyApps.find((candidate) => candidate.id === 'workentry');
   const patients = firstPartyApps.find((candidate) => candidate.id === 'patients');
-  assert.deepEqual(workEntry.mediaGrants, ['clinic.media.read']);
+  assert.deepEqual(workEntry.mediaGrants, ['clinic.media.upload']);
   assert.deepEqual(patients.mediaGrants, ['clinic.media.read', 'clinic.media.upload']);
-  assert.equal(isValidAppCatalog([{ ...workEntry, mediaGrants: ['clinic.media.read', 'clinic.media.upload'] }], baseOrigin), false);
+  assert.equal(isValidAppCatalog([{ ...workEntry, mediaGrants: ['clinic.media.read'] }], baseOrigin), false);
 });
 
 test('rejects launches without the Worker capability and keeps credentials out of app code', () => {

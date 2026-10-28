@@ -3,12 +3,10 @@
 import { staffApi } from "@/features/staff/api";
 import { treatmentProtocolsApi } from "@/features/treatment-protocols/api";
 import { patientsApi } from "@/features/patients/api";
-import { patientMediaApi } from "@/features/patients/media/api";
 import { patientBillingApi } from "@/features/patients/billing/api";
 import { workEntryApi } from "@/features/work-entry/api";
 import { clinicalChartsApi } from "@/features/work-entry/charts/api";
 import { suppliersApi } from "@/features/finance/suppliers/api";
-import { followUpsApi } from "@/features/follow-ups/api";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { TreatmentProtocol } from "@/shell/session/types";
@@ -70,16 +68,6 @@ function canalDataFromApi(sessions: PatientCanalMeasurement[], doctors: StaffRef
     obturationMaterial: session.obturationMaterial ?? undefined,
     canals: session.records.map((record) => ({ canal: record.canalLabel, lengthMm: String(record.workingLengthMm), note: record.fileNumber ?? "", referencePoint: record.reference ?? "", date: session.recordedOn })),
   }]));
-}
-
-async function patientOdontogramOrEmpty(idToken: string, patientId: string): Promise<OdontogramMark[]> {
-  try {
-    return await clinicalChartsApi.patientOdontogram(idToken, patientId);
-  } catch (cause) {
-    // An unavailable chart route is surfaced to the clinician; do not silently
-    // turn a transport or authorization failure into an empty clinical record.
-    throw cause;
-  }
 }
 
 function legacyLab(supplier: ClinicSupplier): LabSupplier {
@@ -272,10 +260,8 @@ function medicalProfileFromEntry(entry: CaseEntryData, current: PatientCore["med
   };
 }
 
-export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: {
+export function WorkEntryWorkspace({ canCollectPayment }: {
   canCollectPayment: boolean;
-  /** Doctors submit a supplier-free lab request and must not load the lab directory. */
-  canChooseLabSupplier: boolean;
   onLabOrdersChanged?: () => Promise<void>;
 }) {
   const { beginOperation } = useClinicLoading();
@@ -448,33 +434,19 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: 
     setError(null);
     try {
       const idToken = await token();
-      const workEntryCase = normaliseWorkEntryCase(await workEntryApi.workEntryCase(idToken, chiefComplaintId));
-      const patientId = workEntryCase.patientId;
-      // ApiBroker caps each app at four in-flight calls (and the whole OS at
-      // eight). Keep this chart/context fan-out to three concurrent GETs and
-      // retry a local BUSY rejection rather than failing the entire case open.
-      const [patientResult, ledger, marks] = await Promise.all([
-        readWithBrokerCapacityRetry(() => patientsApi.patientCore(idToken, patientId)),
-        readWithBrokerCapacityRetry(() => loadPatientLedger(idToken, patientId)),
-        readWithBrokerCapacityRetry(() => patientOdontogramOrEmpty(idToken, patientId)),
-      ]);
-      const [labSuppliers, periodontalChart, canalMeasurements] = await Promise.all([
-        readWithBrokerCapacityRetry(() => canChooseLabSupplier ? suppliersApi.listSuppliers(idToken, "lab") : Promise.resolve<ClinicSupplier[]>([])),
-        readWithBrokerCapacityRetry(() => clinicalChartsApi.patientPeriodontalChart(idToken, patientId)),
-        readWithBrokerCapacityRetry(() => clinicalChartsApi.patientCanalMeasurements(idToken, patientId)),
-      ]);
-      const followUps = await readWithBrokerCapacityRetry(() => followUpsApi.listFollowUps(idToken));
+      const context = await workEntryApi.workEntryContext(idToken, chiefComplaintId);
+      const workEntryCase = normaliseWorkEntryCase(context.case);
       if (requestVersion !== caseOpenVersion.current || closingCaseRef.current) return;
-      const patient = normalisePatientCore(patientResult);
+      const patient = normalisePatientCore(context.patient);
       setSelectedPatientCore(patient);
-      setSelectedLedger(ledger);
+      setSelectedLedger(context.ledger);
       setSelectedCase(workEntryCase);
       setSelectedFlow(flow);
-      setSelectedChartMarks(chartMarksFromApi(marks));
-      setSelectedLabs(labSuppliers.map(legacyLab));
-      setSelectedPerio(perioFromApi(periodontalChart.teeth));
-      setSelectedCanalData(canalDataFromApi(canalMeasurements.filter((session) => session.chiefComplaintId === workEntryCase.chiefComplaintId), doctors));
-      setUpcomingFollowUps(followUps.filter((followUp) => followUp.status === "pending" && followUp.dueOn >= today()).slice(0, 12));
+      setSelectedChartMarks(chartMarksFromApi(context.odontogram));
+      setSelectedLabs(context.labSuppliers.map(legacyLab));
+      setSelectedPerio(perioFromApi(context.periodontalChart.teeth));
+      setSelectedCanalData(canalDataFromApi(context.canalMeasurements.filter((session) => session.chiefComplaintId === workEntryCase.chiefComplaintId), doctors));
+      setUpcomingFollowUps(context.followUps.filter((followUp) => followUp.status === "pending" && followUp.dueOn >= today()).slice(0, 12));
       setCompletedDoctorIds(workEntryCase.caseDoctorStaffIds);
     }
     catch (cause) {
@@ -730,9 +702,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: 
         return { workEntryCase: updated, chargeAmount: commit.chargeAmount };
       }}
       onMediaChanged={async () => undefined}
-      onRemoveXray={async (mediaAssetId, reason) => {
-        await patientMediaApi.withdrawPatientMedia(mediaAssetId, reason);
-      }}
       onSaveCanalData={async (data) => {
         const protocol = selectedCase.protocols.find((item) => item.toothCode === data.tooth && protocols.find((template) => template.protocolId === item.sourceProtocolId)?.recordsCanalMeasurements);
         if (!protocol) throw new Error("This tooth does not have an eligible root-canal protocol in the selected case.");
@@ -862,9 +831,6 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: 
       cases={{}}
       onExit={exitSelectedCase}
       onMediaChanged={async () => undefined}
-      onRemoveXray={async (mediaAssetId, reason) => {
-        await patientMediaApi.withdrawPatientMedia(mediaAssetId, reason);
-      }}
       onCreateCase={saveSelectedPatientCase}
       onSavePerioChart={async (teeth) => {
         const chart = await clinicalChartsApi.savePatientPeriodontalChart(await token(), selectedCase.patientId, { patientId: selectedCase.patientId, chiefComplaintId: selectedCase.chiefComplaintId, recordedOn: today(), teeth: perioForApi(teeth) });
@@ -922,7 +888,7 @@ export function WorkEntryWorkspace({ canCollectPayment, canChooseLabSupplier }: 
           const [caseResult, ledger, chart, canals] = await Promise.all([
             workEntryApi.workEntryCase(idToken, currentCase.chiefComplaintId),
             loadPatientLedger(idToken, currentCase.patientId),
-            patientOdontogramOrEmpty(idToken, currentCase.patientId),
+            clinicalChartsApi.patientOdontogram(idToken, currentCase.patientId),
             clinicalChartsApi.patientCanalMeasurements(idToken, currentCase.patientId),
           ]);
           const updatedCase = normaliseWorkEntryCase(caseResult);

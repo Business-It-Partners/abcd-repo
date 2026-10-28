@@ -376,7 +376,6 @@ export default function PatientPaymentsView({
     >
       {collecting ? (
         <ModalBody as="form" noValidate onSubmit={(event) => void submitPayment(event)}>
-          <PatientPaymentIdentity name={selectedPatient.patientName} patientNumber={selectedPatient.patientNumber} />
           <div className="patientPaymentSummaryGrid">
             <PaymentSummary label="Total charges" value={ledger?.summary.totalBilled} tone="billed" />
             <PaymentSummary label="Total paid" value={ledger?.summary.totalCollected} tone="paid" />
@@ -417,7 +416,6 @@ export default function PatientPaymentsView({
         </ModalBody>
       ) : (
         <ModalBody>
-          <PatientPaymentIdentity name={selectedPatient.patientName} patientNumber={selectedPatient.patientNumber} />
           <div className="patientPaymentSummaryGrid">
             <PaymentSummary label="Total charges" value={ledger?.summary.totalBilled} tone="billed" />
             <PaymentSummary label="Total paid" value={ledger?.summary.totalCollected} tone="paid" />
@@ -511,18 +509,6 @@ export default function PatientPaymentsView({
         </>
       )}
     </Page>
-  );
-}
-
-function PatientPaymentIdentity({ name, patientNumber }: { name: string; patientNumber: string }) {
-  return (
-    <div className="patientPaymentIdentity">
-      <span className="patientPaymentAvatar" aria-hidden="true">{initials(name)}</span>
-      <div>
-        <strong>{name}</strong>
-        <span>{patientNumber}</span>
-      </div>
-    </div>
   );
 }
 

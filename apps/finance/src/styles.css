@@ -253,44 +253,19 @@ body {
   gap: var(--sp-2);
 }
 
-.patientPaymentIdentity {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  border: 1px solid #bae6fd;
-  background: #f0f9ff;
-}
-
-.patientPaymentIdentity > div,
 .patientPaymentSectionHeader > div {
   display: grid;
   gap: 2px;
 }
 
-.patientPaymentIdentity strong,
 .patientPaymentSectionHeader strong {
   color: var(--ink-1);
   font-size: var(--fs-14);
 }
 
-.patientPaymentIdentity span:not(.patientPaymentAvatar),
 .patientPaymentSectionHeader span {
   color: var(--ink-3);
   font-size: var(--fs-12);
-}
-
-.patientPaymentAvatar {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border-radius: 50%;
-  background: #0284c7;
-  color: #fff;
-  font-size: var(--fs-13);
-  font-weight: var(--fw-bold);
 }
 
 .patientPaymentSummaryGrid {

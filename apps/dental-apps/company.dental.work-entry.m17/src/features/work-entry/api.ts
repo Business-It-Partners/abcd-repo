@@ -3,6 +3,11 @@ import type {
   ClinicalWorkFinalisation,
   ClinicalWorkFinalisationInput,
   PatientCore,
+  PatientCanalMeasurement,
+  PatientLedger,
+  PatientPeriodontalChart,
+  FollowUpWorklistItem,
+  OdontogramMark,
   WorkEntryCase,
   WorkEntryCaseRow,
   WorkEntryCaseUpdateInput,
@@ -13,8 +18,20 @@ import type {
   WorkEntryStageAddInput,
   WorkEntryStageCancelInput,
 } from '@/features/patients/types';
+import type { ClinicSupplier } from '@/features/finance/suppliers/types';
 import { clinicClient } from '@/sdk/client';
 import { executeClinicCommand } from '@/sdk/commands';
+
+export type WorkEntryContext = {
+  case: WorkEntryCase;
+  patient: PatientCore;
+  ledger: PatientLedger | null;
+  odontogram: OdontogramMark[];
+  labSuppliers: ClinicSupplier[];
+  periodontalChart: PatientPeriodontalChart;
+  canalMeasurements: PatientCanalMeasurement[];
+  followUps: FollowUpWorklistItem[];
+};
 
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const validCommitEnvelope = (value: unknown): boolean => record(value) && record(value.commit)
@@ -26,6 +43,7 @@ const validCommitEnvelope = (value: unknown): boolean => record(value) && record
 export const workEntryApi = {
   workEntryCases: async (_idToken: string): Promise<WorkEntryCaseRow[]> => (await clinicClient().read<{ cases: WorkEntryCaseRow[] }>('/v1/work-entry/cases')).cases,
   workEntryCase: async (_idToken: string, chiefComplaintId: string): Promise<WorkEntryCase> => (await clinicClient().read<{ case: WorkEntryCase }>(`/v1/chief-complaints/${chiefComplaintId}/work-entry`)).case,
+  workEntryContext: async (_idToken: string, chiefComplaintId: string): Promise<WorkEntryContext> => (await clinicClient().read<{ context: WorkEntryContext }>(`/v1/chief-complaints/${chiefComplaintId}/work-entry/context`)).context,
   updateWorkEntryCase: async (_idToken: string, chiefComplaintId: string, input: WorkEntryCaseUpdateInput, idempotencyKey?: string): Promise<{ patient: PatientCore; case: WorkEntryCase }> =>
     executeClinicCommand('PUT', `/v1/chief-complaints/${chiefComplaintId}/work-entry`, input, idempotencyKey),
   addWorkEntryProtocol: async (_idToken: string, chiefComplaintId: string, input: WorkEntryProtocolAddInput, idempotencyKey?: string): Promise<WorkEntryCase> =>

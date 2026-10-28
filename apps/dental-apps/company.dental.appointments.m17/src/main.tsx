@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StandardPageScroll } from '@/shared/ui/StandardPageScroll';
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from '@/shared/ui/workspace-primitives/sandboxedFormSubmit';
 import { ArrowUpDown, CalendarDays, CalendarPlus, CalendarRange, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Plus, RefreshCw, Search, Stethoscope } from 'lucide-react';
 import { ClinicClient, ClinicError, type ClinicCommand } from '../../../../packages/app-sdk/src/clinicClient';
 import { connectBrowserRuntime } from '../../../../apps/clinic-app-runtime/runtimeBridge';
@@ -103,7 +104,7 @@ function AppointmentForm({ seed, doctors, rows, onSave, onClose, pending, onRetr
   };
 
   return <ClinicModal title={original ? 'Reschedule appointment' : 'Book appointment'} onClose={close} closeDisabled={busy || !!pending} maxWidth={700}>
-    <form className="appointmentForm" onSubmit={event => void submit(event)}>
+    <form className="appointmentForm" onSubmit={event => void submit(event)} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
       <p className="appointmentFormNote">This diary entry keeps its own name and contact. It does not create or link a patient record.</p>
       {error && <p className="appointmentFormError" role="alert">{error}</p>}
       {pending && <div className="appointmentFormActions"><button className="btn btn-secondary" type="button" onClick={onRetry}>Check original save</button></div>}

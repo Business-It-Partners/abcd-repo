@@ -23,7 +23,7 @@ import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
 
 interface PatientRecordViewProps {
-  onOpenPatientDetail: (patientId: string) => void;
+  onOpenPatientDetail: (patient: PatientDetail) => void;
   onAddPatient: () => void;
   onRefresh: () => Promise<void>;
   /** Tenant-scoped Worker directory rows, adapted only for the preserved legacy presentation. */
@@ -201,7 +201,7 @@ export default function PatientRecordView(props: PatientRecordViewProps) {
             render: (p) => (
               <RowActions>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <ClinicActionButton size="compact" onClick={() => onOpenPatientDetail(p.id)}>
+                  <ClinicActionButton size="compact" onClick={() => onOpenPatientDetail(p)}>
                     Detail
                   </ClinicActionButton>
                 </div>

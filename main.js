@@ -1052,6 +1052,10 @@ async function requestGrantedAppApi(app, entry, attempt, request, signal) {
     redirect: 'error',
     signal,
   });
+  // A bodyless 204 is a confirmed success for routes such as audited media
+  // withdrawal. Preserve that status across the host bridge without requiring
+  // JSON decoding of a response body that the server correctly omits.
+  if (response.status === 204) return { ok: true, data: { status: 204, body: undefined } };
   const responseLimit = app.id === 'finance' ? 262_144 : 524_288;
   const bytes = await readBoundedResponse(response, responseLimit, ['application/json'], true);
   if (!bytes) return { ok: false, code: 'clinic_service_unavailable', message: 'The clinic service response could not be read.' };

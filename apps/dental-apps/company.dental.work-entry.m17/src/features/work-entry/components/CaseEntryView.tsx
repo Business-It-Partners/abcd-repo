@@ -166,10 +166,8 @@ interface CaseEntryViewProps {
   initialCanalData?: Record<string, CanalChartData>;
   /** Current durable case id, used when filing a new X-ray. */
   initialChiefComplaintId?: string;
-  /** Reloads persisted media after the private upload is finalised. */
+  /** Runs after the private upload is finalised. */
   onMediaChanged?: () => void | Promise<void>;
-  /** Withdraws a persisted radiograph through the trusted Worker. */
-  onRemoveXray?: (mediaAssetId: string, reason: string) => Promise<void>;
   /** One final Worker-owned clinical commit for an existing open case. */
   onCommitTodayWork?: (input: {
     commandId: string;
@@ -255,7 +253,7 @@ const input: React.CSSProperties = {
 
 function ReadOnlyContextField({ label: fieldLabel, value }: { label: string; value: string }) {
   return <div>
-    <span style={{ display: "block", marginBottom: "4px", color: "#64748b", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", letterSpacing: "0.04em", textTransform: "uppercase" }}>{fieldLabel}</span>
+    <span style={{ display: "block", marginBottom: "4px", color: "#475569", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)", letterSpacing: "0.04em", textTransform: "uppercase" }}>{fieldLabel}</span>
     <strong style={{ display: "block", color: "#334155", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)", lineHeight: 1.45 }}>{value}</strong>
   </div>;
 }
@@ -439,7 +437,6 @@ export default function CaseEntryView({
   initialCanalData = {},
   initialChiefComplaintId,
   onMediaChanged,
-  onRemoveXray,
   onCommitTodayWork,
   onSavePerioChart,
   currentOutstandingDue = 0,
@@ -1639,28 +1636,29 @@ export default function CaseEntryView({
 
               {/* Case context belongs to the visit wizard. Standalone patient registration keeps
                   its patient-only fields inside Patient Demographics below. */}
-              {(!hideStepTabs || patientStepOnly) && <div style={card}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {(!hideStepTabs || patientStepOnly) && <div className={existingCaseWorkflow ? styles.editableCaseCard : undefined} style={existingCaseWorkflow ? undefined : card}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: existingCaseWorkflow ? "16px" : undefined }}>
                   {(!hideStepTabs || patientStepOnly) && <div>
-                    <label style={label}>{existingCaseWorkflow ? "Chief complaint / case" : <>Chief Complaint / Reason {hideStepTabs ? "(optional)" : "*"}</>}</label>
+                    <label className={existingCaseWorkflow ? styles.editableCaseLabel : undefined} style={existingCaseWorkflow ? undefined : label}>{existingCaseWorkflow ? "Chief complaint / case" : <>Chief Complaint / Reason {hideStepTabs ? "(optional)" : "*"}</>}</label>
                     <input
-                      style={input}
+                      className={existingCaseWorkflow ? styles.editableCaseInput : undefined}
+                      style={existingCaseWorkflow ? undefined : input}
                       value={chiefComplaint}
                       onChange={(e) => setChiefComplaint(e.target.value)}
                       placeholder="e.g. Pain in lower right molar, wants a crown on 46"
                     />
                   </div>}
-                  {!patientStepOnly && !hideStepTabs && <div style={{ display: "grid", gridTemplateColumns: isNew ? "1fr" : "240px 1fr", gap: "16px", alignItems: "end" }}>
+                  {!patientStepOnly && !hideStepTabs && <div className={existingCaseWorkflow ? styles.editableCaseFields : undefined} style={{ display: "grid", gridTemplateColumns: existingCaseWorkflow ? "minmax(180px, 220px) minmax(0, 1fr)" : isNew ? "1fr" : "240px 1fr", gap: "16px", alignItems: existingCaseWorkflow ? "start" : "end" }}>
                     {!isNew && <div>
-                      <label style={label}>{existingCaseWorkflow ? "Case opened" : "Visit Date"}</label>
+                      <label className={existingCaseWorkflow ? styles.editableCaseLabel : undefined} style={existingCaseWorkflow ? undefined : label}>{existingCaseWorkflow ? "Case opened" : "Visit Date"}</label>
                       <DatePicker value={dateISO} onChange={setDateISO} fluid />
                     </div>}
                     <div>
-                      <label style={label}>{existingCaseWorkflow ? "Case doctor(s)" : "Attending Doctor(s)"}</label>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", alignItems: "center" }}>
+                      <label className={existingCaseWorkflow ? styles.editableCaseLabel : undefined} style={existingCaseWorkflow ? undefined : label}>{existingCaseWorkflow ? "Case doctor(s)" : "Attending Doctor(s)"}</label>
+                      <div className={existingCaseWorkflow ? styles.editableDoctorChoices : undefined} style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px", alignItems: "center" }}>
                         {doctorsList.map((doctorName) => {
                           const selected = selectedDoctors.includes(doctorName);
-                          return <label key={doctorName} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "var(--fs-13)", fontWeight: selected ? 750 : 600, borderRadius: "0px", border: selected ? "1.5px solid #0284c7" : "1.5px solid #cbd5e1", background: selected ? "#e0f2fe" : "#ffffff", color: selected ? "#0369a1" : "#334155", cursor: "pointer" }}>
+                          return <label key={doctorName} className={existingCaseWorkflow ? styles.editableDoctorChoice : undefined} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "var(--fs-13)", fontWeight: selected ? 750 : 600, borderRadius: existingCaseWorkflow ? "999px" : "0px", border: selected ? "1.5px solid #0284c7" : "1.5px solid #cbd5e1", background: selected ? "#e0f2fe" : "#ffffff", color: selected ? "#0369a1" : "#334155", cursor: "pointer" }}>
                             <input type="checkbox" checked={selected} onChange={() => setSelectedDoctors(selected ? selectedDoctors.filter((doctor) => doctor !== doctorName) : [...selectedDoctors, doctorName])} style={{ "--checkbox-color": "#0284c7", width: "16px", height: "16px" } as React.CSSProperties} />
                             <span>{doctorName}</span>
                           </label>;
@@ -1706,9 +1704,9 @@ export default function CaseEntryView({
                   <div style={card}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", paddingBottom: "14px", borderBottom: "1px solid #e2e8f0" }}>
                       <div>
-                        <p style={{ ...label, margin: 0 }}>Patient record</p>
+                        <p style={{ ...label, margin: 0, color: "#475569" }}>Patient record</p>
                         <h3 style={{ margin: "4px 0 0", color: "#10203b", fontSize: "var(--fs-17)", fontWeight: "var(--fw-bold)" }}>{patientName}</h3>
-                        <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "var(--fs-13)" }}>{existing?.patientNumber ?? "Patient record"} · Information is read-only in Work Entry</p>
+                        <p style={{ margin: "4px 0 0", color: "#475569", fontSize: "var(--fs-13)" }}>{existing?.patientNumber ?? "Patient record"} · Information is read-only in Work Entry</p>
                       </div>
                       <span style={{ padding: "5px 9px", border: "1px solid #bae6fd", color: "#0369a1", background: "#f0f9ff", fontSize: "var(--fs-12)", fontWeight: "var(--fw-bold)" }}>Patient record</span>
                     </div>
@@ -1718,14 +1716,14 @@ export default function CaseEntryView({
                       <ReadOnlyContextField label="Address" value={npAddress || "Not recorded"} />
                       <ReadOnlyContextField label="Emergency contact" value={npEcName ? [npEcName, npEcRel, npEcPhone].filter(Boolean).join(" · ") : "Not recorded"} />
                     </div>
-                    <p style={{ margin: "16px 0 0", paddingTop: "12px", borderTop: "1px solid #e2e8f0", color: "#64748b", fontSize: "var(--fs-12)", lineHeight: 1.5 }}>Update patient details from Patient Record. This step is for the current case only.</p>
+                    <p style={{ margin: "16px 0 0", paddingTop: "12px", borderTop: "1px solid #e2e8f0", color: "#475569", fontSize: "var(--fs-12)", lineHeight: 1.5 }}>Update patient details from Patient Record. This step is for the current case only.</p>
                   </div>
                   <div style={{ ...card, borderColor: patientAlerts.length ? "#fde68a" : "#bbf7d0", background: patientAlerts.length ? "#fffbeb" : "#f0fdf4" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <div style={{ display: "grid", width: "30px", height: "30px", placeItems: "center", color: patientAlerts.length ? "#b45309" : "#15803d", background: patientAlerts.length ? "#fef3c7" : "#dcfce7" }}><ShieldAlert size={16} /></div>
                       <div>
                         <h4 style={{ margin: 0, color: "#1e293b", fontSize: "var(--fs-15)", fontWeight: "var(--fw-bold)" }}>Medical history &amp; risk flags</h4>
-                        <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "var(--fs-12)" }}>Read-only safety context for this patient.</p>
+                        <p style={{ margin: "2px 0 0", color: "#475569", fontSize: "var(--fs-12)" }}>Read-only safety context for this patient.</p>
                       </div>
                     </div>
                     <div style={{ marginTop: "14px", padding: "11px 12px", border: `1px solid ${patientAlerts.length ? "#fde68a" : "#bbf7d0"}`, color: patientAlerts.length ? "#92400e" : "#166534", background: "#fff", fontSize: "var(--fs-13)", lineHeight: 1.5 }}><strong>{patientAlerts.length ? "Recorded alerts:" : "Safety profile:"}</strong> {patientAlerts.length ? patientAlerts.join(" · ") : "No recorded allergy or medical-risk alerts."}</div>
@@ -2086,14 +2084,11 @@ export default function CaseEntryView({
                           patientId={existing?.id}
                           chiefComplaintId={existingCaseWorkflow ? initialChiefComplaintId ?? null : null}
                           defaultType={imagingType}
-                          uploadAvailable={false}
                           dateLabel={formatDateShort(dateISO)}
                           capturedOn={dateISO}
                           onUploaded={onMediaChanged}
                           savedUploads={savedRadiographUploads}
                           onUploadCompleted={(upload) => setSavedRadiographUploads((current) => current.some((item) => item.mediaAssetId === upload.mediaAssetId) ? current : [...current, upload])}
-                          onRemoveSavedUpload={undefined}
-                          onSavedUploadRemoved={(mediaAssetId) => setSavedRadiographUploads((current) => current.filter((upload) => upload.mediaAssetId !== mediaAssetId))}
                         />
                       </div>
                     )}

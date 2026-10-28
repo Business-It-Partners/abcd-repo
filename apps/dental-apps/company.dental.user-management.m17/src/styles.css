@@ -76,21 +76,25 @@
 .umCount { color: #52667a; font-size: 13px; white-space: nowrap; }
 .umTableWrap { width: 100%; overflow: auto; }
 .umTable { width: 100%; border-collapse: collapse; text-align: left; }
-.umTable th { height: 42px; padding: 0 12px; border-bottom: 1px solid #dbe5ec; color: #52667a; background: #fbfcfe; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.umTable td { height: 58px; padding: 8px 12px; border-bottom: 1px solid #e5ebf1; color: #334155; font-size: 13px; vertical-align: middle; }
+.umTable th { height: 44px; padding: 0 12px; border-bottom: 1px solid #dbe5ec; color: var(--ink-2); background: #fbfcfe; font-size: var(--fs-13); font-weight: var(--fw-bold); white-space: nowrap; }
+.umTable td { height: 60px; padding: 9px 12px; border-bottom: 1px solid #e5ebf1; color: var(--ink-1); font-size: var(--fs-14); line-height: 1.45; vertical-align: middle; }
+.umTable tbody tr:hover td { background: #f8fafc; }
 .umTable tbody tr:last-child td { border-bottom: 0; }
 .umName { display: flex; min-width: 150px; align-items: center; gap: 9px; }
-.umName strong { overflow: hidden; color: #102b43; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.umName strong { overflow: hidden; color: #0f172a; font-size: var(--fs-14); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .umAvatar { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid #b9deeb; border-radius: 50%; color: #087ea4; background: #e6f6fb; font-size: 12px; font-weight: 600; }
-.umEmail { min-width: 180px; overflow-wrap: anywhere; }
-.umRole, .umStatus, .umIdentity { display: inline-flex; min-height: 23px; align-items: center; padding: 0 8px; border: 1px solid; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: capitalize; white-space: nowrap; }
+.umEmail { display: flex; min-width: 190px; align-items: center; gap: 5px; color: var(--ink-1); }
+.umEmailText { min-width: 0; overflow-wrap: anywhere; }
+.umCopyEmail { display: inline-grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 5px; color: #475569; background: transparent; cursor: pointer; }
+.umCopyEmail:hover { color: #075985; background: #e0f2fe; }
+.umRole, .umStatus, .umIdentity { display: inline-flex; min-height: 24px; align-items: center; padding: 0 8px; border: 1px solid; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: capitalize; white-space: nowrap; }
 .umRole { border-color: #d7e5f1; color: #35506b; background: #f2f7fb; }
 .umRole-admin { border-color: #bae6fd; color: #075985; background: #f0f9ff; }
 .umStatus-enabled { border-color: #bbdfc8; color: #1c6b3d; background: #effaf2; }
 .umStatus-disabled { border-color: #e5d4d4; color: #8c4545; background: #fff6f5; }
 .umIdentity-linked { border-color: #d7e5f1; color: #52667a; background: #f8fafc; }
 .umIdentity-pending { border-color: #efd8ad; color: #855d20; background: #fff9ed; }
-.umActions { display: flex; min-width: 225px; align-items: center; justify-content: flex-end; gap: 5px; }
+.umActions { display: flex; min-width: 240px; align-items: center; justify-content: flex-end; gap: 5px; }
 .umActionsHeading { text-align: right; }
 .umProtected { color: #758599; font-size: 12px; }
 .umEmpty, .umLoading { height: 86px; color: #64748b !important; text-align: center; }

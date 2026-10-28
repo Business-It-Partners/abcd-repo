@@ -57,7 +57,6 @@ function WorkEntryApp() {
   return <ClinicSnackbarProvider><ClinicNavigationGuardProvider><ClinicLoadingProvider><ClinicPageRefreshProvider>
     <WorkEntryWorkspace
       canCollectPayment={capabilities.includes('patient_payments.collect') && capabilities.includes('patient_billing_ledger.read')}
-      canChooseLabSupplier={capabilities.includes('lab_tracker.access')}
     />
   </ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicNavigationGuardProvider></ClinicSnackbarProvider>;
 }

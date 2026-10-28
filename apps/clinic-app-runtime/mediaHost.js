@@ -155,7 +155,7 @@ export class BrowserClinicMediaHost {
     const response = await fetch(url, {
       method,
       headers: {
-        authorization: `Bearer ${token}`, accept, 'x-request-id': crypto.randomUUID(),
+        authorization: `Bearer ${token}`, accept,
         ...(body !== undefined ? { 'content-type': contentType ?? 'application/json' } : {}),
         ...(key ? { 'idempotency-key': key } : {}),
       },

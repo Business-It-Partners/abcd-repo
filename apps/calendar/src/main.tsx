@@ -6,6 +6,7 @@ import { ClinicClient, ClinicError, type ClinicCommand } from './sdk/client';
 import { connectBrowserRuntime } from './runtimeBridge';
 import { BS_MONTHS_LONG, BS_YEAR_MAX, BS_YEAR_MIN, adToBS, bsMonthToADRange, bsToAD, daysInBSMonth, formatBSMonthYear, todayBS, type BSDate } from '@/shared/dates/bikramSambat';
 import { CalendarTasksApi, type CalendarTask, type CalendarTaskCategory, type CalendarTaskReceipt } from './calendarTasks';
+import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from '@/shared/ui/workspace-primitives/sandboxedFormSubmit';
 import '@/shared/clinic.css';
 import './styles.css';
 import '@/shared/standard-app-page.css';
@@ -214,7 +215,7 @@ function CalendarApp() {
           <span className="calendarTaskLabel">{task.title}</span><small className={`category-${task.category}`}>{categories.find(item => item.value === task.category)?.label}</small>
           <button type="button" className="calendarDelete" aria-label={`Remove task: ${task.title}`} onClick={() => setArchiveTarget(task)} disabled={writing || !!pending}><Trash2 size={15} /></button>
         </div>) : <div className="calendarNoTasks"><ClipboardCheck size={25} /><strong>No tasks for this day</strong><span>Add the first task below.</span></div>}</div>
-        <form className="calendarAddTask" onSubmit={addTask}>
+        <form className="calendarAddTask" onSubmit={addTask} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
           <label htmlFor="calendar-task-title">Add a task</label>
           <div className="calendarAddControls"><input id="calendar-task-title" value={draft} onChange={event => setDraft(event.target.value.slice(0, 180))} placeholder="e.g. Prepare chairside materials" maxLength={180} autoComplete="off" disabled={!!pending || writing} /><select value={category} onChange={event => setCategory(event.target.value as CalendarTaskCategory)} aria-label="Task category" disabled={!!pending || writing}>{categories.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select><button type="submit" disabled={!draft.trim() || !!pending || writing}>{writing && pending?.after === 'create' ? <Loader2 size={15} className="calendarSpin" /> : <Plus size={16} />} Add</button></div>
           <p>Tasks are visible to everyone in this clinic workspace.</p>
