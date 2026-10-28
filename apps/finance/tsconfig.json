@@ -10,6 +10,9 @@
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
+      "react": ["node_modules/@types/react/index.d.ts"],
+      "react/*": ["node_modules/@types/react/*"],
+      "lucide-react": ["node_modules/lucide-react/dist/lucide-react.d.ts"],
       "@sbmdkl/nepali-date-converter": ["node_modules/@sbmdkl/nepali-date-converter/types/index.d.ts"],
       "@/shared/*": ["src/shared/*"],
       "@/*": ["src/*"]

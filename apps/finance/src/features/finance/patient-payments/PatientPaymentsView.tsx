@@ -5,6 +5,7 @@ import { bsMonthLabel, bsMonthToADRange, formatDateShort, todayISO } from "@/sha
 import DatePicker from "@/shared/dates/NepaliDatePicker";
 import MonthPicker from "@/shared/dates/MonthPicker";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import {
   DataTable,
   EmptyState,
@@ -82,6 +83,7 @@ export default function PatientPaymentsView({
   api: PatientPaymentsApi;
   onReportReload: () => Promise<void>;
 }) {
+  const { showSuccess, showError } = useClinicSnackbar();
   const canReadReceived = capabilities.includes("patient_payments.received.read");
   const canReadLedger = capabilities.includes("patient_billing_ledger.read");
   const canCollect = capabilities.includes("patient_payments.collect") && canReadLedger;
@@ -261,17 +263,22 @@ export default function PatientPaymentsView({
       setCollecting(false);
       try {
         await onReportReload();
+        showSuccess("Patient payment recorded successfully.");
       } catch {
-        // The saved payment is accepted. The report surface carries its own refresh error.
+        showError("Patient payment recorded, but the Finance report could not be refreshed.");
       }
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setDialogError("We could not confirm whether this payment was recorded. Keep this window open and retry the original save to check the same request.");
+        const message = "We could not confirm whether this payment was recorded. Keep this window open and retry the original save to check the same request.";
+        setDialogError(message);
+        showError(message);
       } else {
         paymentCommand.current = null;
         setUnknownWrite(false);
-        setDialogError(errorMessage(cause, "The payment could not be recorded."));
+        const message = errorMessage(cause, "The payment could not be recorded.");
+        setDialogError(message);
+        showError(message);
         if (cause instanceof ClinicError && cause.code === "CONFLICT") {
           await refreshCurrentBalance();
         }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Edit3, Eye, Package, Plus, Search } from "lucide-react";
 import { ClinicClient, ClinicError, type ClinicCommand } from "@/sdk/client";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import {
   DataTable,
   EmptyState,
@@ -91,7 +92,7 @@ export default function ProductListView({
   const viewing = products.find((product) => product.productId === selectedProductId) ?? null;
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const [unknownStatus, setUnknownStatus] = useState<UnknownStatusWrite | null>(null);
-  const [statusMessage, setStatusMessage] = useState("");
+  const { showSuccess, showError } = useClinicSnackbar();
   const modalOpen = adding || Boolean(editing);
   const writeInProgress = Boolean(pendingStatusId) || Boolean(unknownStatus);
   const navigationLocked = modalOpen || writeInProgress;
@@ -118,25 +119,24 @@ export default function ProductListView({
 
   const resolveStatusCommand = async (write: UnknownStatusWrite) => {
     setPendingStatusId(write.productId);
-    setStatusMessage(`Updating ${write.productName}…`);
     try {
       const response = await write.command.execute();
       setUnknownStatus(null);
       await onUpdated(response.product);
-      setStatusMessage("Updated successfully.");
+      showSuccess(`${write.productName} status updated.`);
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownStatus(write);
         await onUpdated({ ...write.original, active: write.targetActive });
-        setStatusMessage(`${readableStatusError(cause)} Product: ${write.productName}.`);
+        showError(`${readableStatusError(cause)} Product: ${write.productName}.`);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         setUnknownStatus(null);
         try { await onRefresh(); } catch { /* Keep the conflict visible if the purchase-history read also fails. */ }
-        setStatusMessage(readableStatusError(cause));
+        showError(readableStatusError(cause));
       } else {
         setUnknownStatus(null);
         await onUpdated(write.original);
-        setStatusMessage(readableStatusError(cause));
+        showError(readableStatusError(cause));
       }
     } finally {
       setPendingStatusId(null);
@@ -214,10 +214,7 @@ export default function ProductListView({
         </ClinicActionButton>
       </PageHeader>
 
-      {statusMessage ? <p role={unknownStatus ? "alert" : "status"} style={{ margin: "0 0 var(--sp-3)", color: unknownStatus ? "var(--danger, #b42318)" : "var(--ink-2)", fontSize: "var(--fs-13)" }}>
-        {statusMessage}
-        {unknownStatus ? <button type="button" className="btn btn-secondary" disabled={Boolean(pendingStatusId)} onClick={() => void resolveStatusCommand(unknownStatus)} style={{ marginLeft: "var(--sp-2)" }}>Retry original update</button> : null}
-      </p> : null}
+      {unknownStatus ? <button type="button" className="btn btn-secondary" disabled={Boolean(pendingStatusId)} onClick={() => void resolveStatusCommand(unknownStatus)} style={{ marginBottom: "var(--sp-3)" }}>Retry original update</button> : null}
 
       <DataTable<ClinicProduct>
         rows={rows}
@@ -247,8 +244,8 @@ export default function ProductListView({
         <ProductFormModal
           api={api}
           onClose={() => setAdding(false)}
-          onSaved={onCreated}
-          onConflict={async () => { setStatusMessage("A product changed in the clinic. The list was reloaded; review the current record before editing again."); try { await onRefresh(); } catch { /* Preserve the conflict message. */ } }}
+          onSaved={async (product) => { await onCreated(product); showSuccess("Product added successfully."); }}
+          onConflict={async () => { try { await onRefresh(); } catch { /* Product form shows the conflict and offers refresh guidance. */ } }}
         />
       ) : null}
       {editing ? (
@@ -256,8 +253,8 @@ export default function ProductListView({
           api={api}
           product={editing}
           onClose={() => setEditing(null)}
-          onSaved={onUpdated}
-          onConflict={async () => { setStatusMessage("A product changed in the clinic. The list was reloaded; review the current record before editing again."); try { await onRefresh(); } catch { /* Preserve the conflict message. */ } }}
+          onSaved={async (product) => { await onUpdated(product); showSuccess("Product updated successfully."); }}
+          onConflict={async () => { try { await onRefresh(); } catch { /* Product form shows the conflict and offers refresh guidance. */ } }}
         />
       ) : null}
     </Page>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { ClinicError, type ClinicCommand } from "@/sdk/client";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { todayISO } from "@/shared/dates/nepaliDate";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
@@ -157,6 +158,7 @@ export default function SupplierPaymentFormDialog({
   onRefresh: () => Promise<void>;
   onSaved: (payment: ClinicSupplierPayment, replacedPaymentId?: string) => Promise<void>;
 }) {
+  const { showError } = useClinicSnackbar();
   const [supplierId, setSupplierId] = useState(payment?.supplierId ?? "");
   const [date, setDate] = useState(payment?.paymentDate ?? todayISO());
   const [amountText, setAmountText] = useState(payment ? String(payment.amount) : "");
@@ -242,15 +244,25 @@ export default function SupplierPaymentFormDialog({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(writeError(cause));
+        const message = writeError(cause);
+        setError(message);
+        showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         command.current = null;
         setConflicted(true);
-        setError(writeError(cause));
-        void onRefresh().catch(() => setError("This payment changed, and the list refresh failed. Use Refresh before reopening the payment."));
+        const message = writeError(cause);
+        setError(message);
+        showError(message);
+        void onRefresh().catch(() => {
+          const refreshMessage = "This payment changed, and the list refresh failed. Use Refresh before reopening the payment.";
+          setError(refreshMessage);
+          showError(refreshMessage);
+        });
       } else {
         command.current = null;
-        setError(writeError(cause));
+        const message = writeError(cause);
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);

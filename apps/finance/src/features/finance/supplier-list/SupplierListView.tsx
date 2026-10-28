@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Edit3, Plus, Receipt, Search, Truck } from "lucide-react";
 import { ClinicClient, ClinicError, type ClinicCommand } from "@/sdk/client";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { Chip, DataTable, EmptyState, Page, PageHeader, RowActions, SearchBox, type Column } from "@/shared/ui/workspace-primitives";
 import { formatNpr } from "@/features/finance/internal/lib/domain";
 import SupplierFormModal from "./SupplierFormModal";
@@ -55,7 +56,7 @@ export default function SupplierListView({
   const [adding, setAdding] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const [unknownStatus, setUnknownStatus] = useState<UnknownStatusWrite | null>(null);
-  const [statusMessage, setStatusMessage] = useState("");
+  const { showSuccess, showError } = useClinicSnackbar();
   const modalOpen = adding || Boolean(editing);
   const navigationLocked = modalOpen || Boolean(pendingStatusId) || Boolean(unknownStatus);
 
@@ -78,26 +79,25 @@ export default function SupplierListView({
 
   const resolveStatus = async (write: UnknownStatusWrite) => {
     setPendingStatusId(write.supplier.supplierId);
-    setStatusMessage(`Updating ${write.supplier.name}…`);
     try {
       const result = await write.command.execute();
       setUnknownStatus(null);
       await onUpdated(result.supplier);
-      setStatusMessage("Updated successfully.");
+      showSuccess(`${write.supplier.name} status updated.`);
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownStatus(write);
         await onUpdated({ ...write.supplier, active: write.targetActive });
-        setStatusMessage(`${readableUpdateError(cause)} Supplier: ${write.supplier.name}.`);
+        showError(`${readableUpdateError(cause)} Supplier: ${write.supplier.name}.`);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         setUnknownStatus(null);
         await onUpdated(write.supplier);
         try { await onRefresh(); } catch { /* Keep the stale-version message visible. */ }
-        setStatusMessage(readableUpdateError(cause));
+        showError(readableUpdateError(cause));
       } else {
         setUnknownStatus(null);
         await onUpdated(write.supplier);
-        setStatusMessage(readableUpdateError(cause));
+        showError(readableUpdateError(cause));
       }
     } finally {
       setPendingStatusId(null);
@@ -119,7 +119,6 @@ export default function SupplierListView({
       expectedRowVersion: supplier.rowVersion,
     };
     await onUpdated({ ...supplier, active });
-    setStatusMessage("");
     await resolveStatus({ supplier, targetActive: active, command: api.updateSupplier(supplier.supplierId, input) });
   };
 
@@ -167,7 +166,6 @@ export default function SupplierListView({
       <PageHeader title="Supplier list" icon={<Truck size={17} style={{ color: "var(--acc)" }} />}>
         <ClinicActionButton disabled={Boolean(pendingStatusId || unknownStatus)} onClick={() => setAdding(true)}><Plus size={14} /> Add supplier</ClinicActionButton>
       </PageHeader>
-      {statusMessage ? <p className={unknownStatus || pendingStatusId ? "finance-module-message" : "finance-supplier-success"} role={unknownStatus ? "alert" : "status"}>{statusMessage}</p> : null}
       {unknownStatus ? <button type="button" className="btn btn-secondary" disabled={Boolean(pendingStatusId)} onClick={() => void resolveStatus(unknownStatus)}>
         {pendingStatusId ? "Checking original update…" : "Retry original status update"}
       </button> : null}
@@ -209,14 +207,14 @@ export default function SupplierListView({
       {adding ? <SupplierFormModal
         api={api}
         onClose={() => setAdding(false)}
-        onSaved={async (supplier) => { await onCreated(supplier); setAdding(false); setStatusMessage("Added successfully."); }}
+        onSaved={async (supplier) => { await onCreated(supplier); setAdding(false); showSuccess("Supplier added successfully."); }}
         onConflict={onRefresh}
       /> : null}
       {editing ? <SupplierFormModal
         api={api}
         supplier={editing}
         onClose={() => setEditing(null)}
-        onSaved={async (supplier) => { await onUpdated(supplier); setEditing(null); setStatusMessage("Updated successfully."); }}
+        onSaved={async (supplier) => { await onUpdated(supplier); setEditing(null); showSuccess("Supplier updated successfully."); }}
         onConflict={onRefresh}
       /> : null}
     </Page>

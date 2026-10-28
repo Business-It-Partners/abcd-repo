@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { ClinicError, type ClinicCommand } from "@/sdk/client";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { Field, FieldPair, Input, ModalBody, ModalError, Select } from "@/shared/ui/workspace-primitives";
 import { ProductListApi } from "./api";
 import { productCategories, productUnits } from "./types";
@@ -41,6 +42,7 @@ export default function ProductFormModal({
   onSaved: (product: ClinicProduct) => Promise<void>;
   onConflict: () => Promise<void>;
 }) {
+  const { showError } = useClinicSnackbar();
   const [name, setName] = useState(product?.name ?? "");
   const [unit, setUnit] = useState<ProductUnit | "">(product?.unit ?? "");
   const [category, setCategory] = useState<ProductCategory | "">(product?.category ?? "");
@@ -92,17 +94,23 @@ export default function ProductFormModal({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         command.current = null;
         setUnknownWrite(false);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
         await onConflict();
         onClose();
       } else {
         command.current = null;
         setUnknownWrite(false);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);

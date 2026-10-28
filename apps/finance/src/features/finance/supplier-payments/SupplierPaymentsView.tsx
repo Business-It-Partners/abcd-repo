@@ -5,6 +5,7 @@ import { formatDateShort, isInBSMonth, todayBSMonth, todayISO } from "@/shared/d
 import MonthPicker from "@/shared/dates/MonthPicker";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { DataTable, EmptyState, Field, Input, ModalBody, ModalError, Page, PageHeader, RowActions, type Column } from "@/shared/ui/workspace-primitives";
 import { formatNpr } from "../internal/lib/domain";
 import { SupplierListApi } from "../supplier-list/api";
@@ -46,7 +47,6 @@ export default function SupplierPaymentsView({
   paymentsError,
   suppliersError,
   purchasesError,
-  notice,
   onNavigationLockChange,
   onRefresh,
   onWritten,
@@ -62,10 +62,9 @@ export default function SupplierPaymentsView({
   paymentsError: string | null;
   suppliersError: string | null;
   purchasesError: string | null;
-  notice: { message: string; error: boolean } | null;
   onNavigationLockChange: (locked: boolean) => void;
   onRefresh: () => Promise<void>;
-  onWritten: (payment: ClinicSupplierPayment, replacedPaymentId?: string) => Promise<void>;
+  onWritten: (payment: ClinicSupplierPayment, replacedPaymentId?: string, action?: "recorded" | "corrected" | "voided") => Promise<void>;
 }) {
   const [month, setMonth] = useState(() => todayBSMonth());
   const [recording, setRecording] = useState(false);
@@ -76,6 +75,7 @@ export default function SupplierPaymentsView({
   const [voidCommand, setVoidCommand] = useState<PendingVoid | null>(null);
   const [voidSaving, setVoidSaving] = useState(false);
   const [voidConflict, setVoidConflict] = useState(false);
+  const { showError } = useClinicSnackbar();
   const formOpen = recording || Boolean(editing);
   const modalOpen = formOpen || Boolean(voiding);
   const navigationLocked = modalOpen;
@@ -100,22 +100,32 @@ export default function SupplierPaymentsView({
     try {
       const response = await write.command.execute();
       setVoidCommand(null);
-      await onWritten(response.supplierPayment);
+      await onWritten(response.supplierPayment, undefined, "voided");
       setVoiding(null);
       setVoidReason("");
       setVoidConflict(false);
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setVoidCommand(write);
-        setVoidError(writeError(cause, "void"));
+        const message = writeError(cause, "void");
+        setVoidError(message);
+        showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         setVoidCommand(null);
         setVoidConflict(true);
-        setVoidError(writeError(cause, "voided"));
-        void onRefresh().catch(() => setVoidError("The payment changed, and the list refresh failed. Use Refresh before reopening the payment."));
+        const message = writeError(cause, "voided");
+        setVoidError(message);
+        showError(message);
+        void onRefresh().catch(() => {
+          const refreshMessage = "The payment changed, and the list refresh failed. Use Refresh before reopening the payment.";
+          setVoidError(refreshMessage);
+          showError(refreshMessage);
+        });
       } else {
         setVoidCommand(null);
-        setVoidError(writeError(cause, "voided"));
+        const message = writeError(cause, "voided");
+        setVoidError(message);
+        showError(message);
       }
     } finally {
       setVoidSaving(false);
@@ -159,7 +169,6 @@ export default function SupplierPaymentsView({
           <Plus size={14} /> Record payment
         </ClinicActionButton>
       </PageHeader>
-      {notice ? <p className={notice.error ? "finance-payment-notice error" : "finance-payment-notice"} role={notice.error ? "alert" : "status"}>{notice.message}</p> : null}
       {suppliersError ? <ModalError>Supplier choices could not be loaded: {suppliersError}. Refresh before recording a payment.</ModalError> : null}
       {purchasesError ? <p className="finance-payment-reference-warning" role="status">Purchase invoices could not be loaded: {purchasesError}. Payments without an invoice link remain available.</p> : null}
       <DataTable<ClinicSupplierPayment>

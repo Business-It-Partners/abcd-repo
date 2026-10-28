@@ -6,6 +6,7 @@ import DatePicker from "@/shared/dates/NepaliDatePicker";
 import MonthPicker from "@/shared/dates/MonthPicker";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import {
   DataTable,
   EmptyState,
@@ -246,6 +247,7 @@ function ExpenseFormModal({
   onRefresh: () => Promise<void>;
   onWriteAccepted: () => Promise<void>;
 }) {
+  const { showSuccess, showError } = useClinicSnackbar();
   const [date, setDate] = useState(expense?.expenseDate ?? todayISO());
   const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
   const [category, setCategory] = useState<OperatingExpenseCategory | "">(expense?.category ?? "");
@@ -318,11 +320,14 @@ function ExpenseFormModal({
       await activeCommand.execute();
       command.current = null;
       await onWriteAccepted();
+      showSuccess(editing ? "Expense updated successfully." : "Expense recorded successfully.");
       onClose();
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause, "The expense save could not be confirmed."));
+        const message = errorMessage(cause, "The expense save could not be confirmed.");
+        setError(message);
+        showError(message);
       } else {
         command.current = null;
         setUnknownWrite(false);
@@ -330,7 +335,9 @@ function ExpenseFormModal({
           setConflicted(true);
           try { await onRefresh(); } catch { /* Keep the original conflict visible if refresh also fails. */ }
         }
-        setError(errorMessage(cause, editing ? "The expense could not be corrected." : "The expense could not be recorded."));
+        const message = errorMessage(cause, editing ? "The expense could not be corrected." : "The expense could not be recorded.");
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);
@@ -416,6 +423,7 @@ function VoidExpenseModal({
   onRefresh: () => Promise<void>;
   onWriteAccepted: () => Promise<void>;
 }) {
+  const { showSuccess, showError } = useClinicSnackbar();
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [unknownWrite, setUnknownWrite] = useState(false);
@@ -446,11 +454,14 @@ function VoidExpenseModal({
       await activeCommand.execute();
       command.current = null;
       await onWriteAccepted();
+      showSuccess("Expense removed.");
       onClose();
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause, "We could not confirm whether this record was removed. Keep this dialog open and retry the original request."));
+        const message = errorMessage(cause, "We could not confirm whether this record was removed. Keep this dialog open and retry the original request.");
+        setError(message);
+        showError(message);
       } else {
         command.current = null;
         setUnknownWrite(false);
@@ -458,7 +469,9 @@ function VoidExpenseModal({
           setConflicted(true);
           try { await onRefresh(); } catch { /* Keep the original conflict visible if refresh also fails. */ }
         }
-        setError(errorMessage(cause, "Could not remove this record. Review the current expense list before trying again."));
+        const message = errorMessage(cause, "Could not remove this record. Review the current expense list before trying again.");
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);

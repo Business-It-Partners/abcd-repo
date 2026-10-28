@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { ClinicError, type ClinicCommand } from "@/sdk/client";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import { Field, FieldPair, Input, ModalBody, ModalError, Select } from "@/shared/ui/workspace-primitives";
@@ -39,6 +40,7 @@ export default function SupplierPaymentModal({
   onClose: () => void;
   onSaved: (payment: SupplierPaymentWriteResponse["supplierPayment"]) => Promise<void>;
 }) {
+  const { showError } = useClinicSnackbar();
   const [date, setDate] = useState(todayISO());
   const [amountText, setAmountText] = useState("");
   const [method, setMethod] = useState<(typeof supplierPaymentMethods)[number]>(supplierPaymentMethods[0]);
@@ -100,11 +102,15 @@ export default function SupplierPaymentModal({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       } else {
         command.current = null;
         setUnknownWrite(false);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);

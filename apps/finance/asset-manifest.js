@@ -1,9 +1,9 @@
 export const financeBundle = Object.freeze({
   entry: "/apps/finance.v1.html",
-  entrySha256: "9a2013eff43aba65d7adaf373e5a8ae8f1b8a178dd9be9d4443491d0bc39a969",
+  entrySha256: "bd9df5c53bb524c5c918b8688472f50008e8b2bd9733e2e6c678862e1aa121ce",
   script: "/apps/finance.v1.js",
-  scriptSha256: "1fa1a23e92907d46e1eaef0f3818316f9d78af96e077bfacad399c48e574ca27",
+  scriptSha256: "e13f1fab37d3d9376f523cc196114ebcd2b99bc9a8de7d99177272195a26a727",
   style: "/apps/finance.v1.css",
-  styleSha256: "4033f21f3f8d7970202a62c1ced97e796b9be43e3bcb7ddc895bf844967871f7",
+  styleSha256: "db054a08763e7ea1b5b4bb0dc94ea80bedaec24893947e1270a08cbb66c6e306",
 });
 export const financeVersion = "1.7.16";

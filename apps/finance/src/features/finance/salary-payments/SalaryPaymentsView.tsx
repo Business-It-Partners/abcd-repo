@@ -6,6 +6,7 @@ import DatePicker from "@/shared/dates/NepaliDatePicker";
 import MonthPicker from "@/shared/dates/MonthPicker";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import {
   DataTable,
   EmptyState,
@@ -254,6 +255,7 @@ function SalaryPayoutFormModal({
   onRefresh: () => Promise<void>;
   onWriteAccepted: () => Promise<void>;
 }) {
+  const { showSuccess, showError } = useClinicSnackbar();
   const editing = Boolean(payout);
   const [paidOn, setPaidOn] = useState(payout?.paidOn ?? todayISO());
   const [staffId, setStaffId] = useState(payout?.staffId ?? "");
@@ -344,11 +346,14 @@ function SalaryPayoutFormModal({
       await activeCommand.execute();
       command.current = null;
       await onWriteAccepted();
+      showSuccess(editing ? "Salary payment updated successfully." : "Salary payment recorded successfully.");
       onClose();
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause, "The salary save could not be confirmed."));
+        const message = errorMessage(cause, "The salary save could not be confirmed.");
+        setError(message);
+        showError(message);
       } else {
         command.current = null;
         setUnknownWrite(false);
@@ -356,7 +361,9 @@ function SalaryPayoutFormModal({
           setConflicted(true);
           try { await onRefresh(); } catch { /* Keep the conflict visible if the list also fails. */ }
         }
-        setError(errorMessage(cause, editing ? "The salary payout could not be corrected." : "The salary payout could not be recorded."));
+        const message = errorMessage(cause, editing ? "The salary payout could not be corrected." : "The salary payout could not be recorded.");
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);
@@ -448,6 +455,7 @@ function VoidSalaryPayoutModal({
   onRefresh: () => Promise<void>;
   onWriteAccepted: () => Promise<void>;
 }) {
+  const { showSuccess, showError } = useClinicSnackbar();
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [unknownWrite, setUnknownWrite] = useState(false);
@@ -478,11 +486,14 @@ function VoidSalaryPayoutModal({
       await activeCommand.execute();
       command.current = null;
       await onWriteAccepted();
+      showSuccess("Salary payment removed.");
       onClose();
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause, "We could not confirm whether this payout was removed. Keep this dialog open and retry the original request."));
+        const message = errorMessage(cause, "We could not confirm whether this payout was removed. Keep this dialog open and retry the original request.");
+        setError(message);
+        showError(message);
       } else {
         command.current = null;
         setUnknownWrite(false);
@@ -490,7 +501,9 @@ function VoidSalaryPayoutModal({
           setConflicted(true);
           try { await onRefresh(); } catch { /* Keep the conflict visible if the list also fails. */ }
         }
-        setError(errorMessage(cause, "Could not void this salary payout. Review the current salary list before trying again."));
+        const message = errorMessage(cause, "Could not void this salary payout. Review the current salary list before trying again.");
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);

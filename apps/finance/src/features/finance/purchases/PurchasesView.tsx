@@ -160,15 +160,21 @@ export default function PurchasesView({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setVoidCommand(write);
-        setVoidError(readableWriteError(cause));
+        const message = readableWriteError(cause);
+        setVoidError(message);
+        snackbar.showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         setVoidCommand(null);
         setVoidConflict(true);
-        setVoidError(readableWriteError(cause));
-        void onRefresh().catch(() => undefined);
+        const message = readableWriteError(cause);
+        setVoidError(message);
+        snackbar.showError(message);
+        void onRefresh().catch(() => snackbar.showError("The purchase changed, but the list could not be refreshed. Use Refresh before continuing."));
       } else {
         setVoidCommand(null);
-        setVoidError(readableWriteError(cause));
+        const message = readableWriteError(cause);
+        setVoidError(message);
+        snackbar.showError(message);
       }
     } finally {
       setVoidSaving(false);

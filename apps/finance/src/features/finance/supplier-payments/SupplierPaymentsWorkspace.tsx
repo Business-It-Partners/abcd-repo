@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClinicClient, ClinicError } from "@/sdk/client";
 import { useClinicPageLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { useClinicPageRefresh } from "@/shared/ui/ClinicPageRefresh";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { SupplierListApi } from "../supplier-list/api";
 import SupplierPaymentsView from "./SupplierPaymentsView";
 import type { ClinicPurchase, ClinicSupplier, ClinicSupplierPayment } from "../supplier-list/types";
@@ -31,7 +32,7 @@ export function SupplierPaymentsWorkspace({
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [suppliersError, setSuppliersError] = useState<string | null>(null);
   const [purchasesError, setPurchasesError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ message: string; error: boolean } | null>(null);
+  const { showSuccess, showError } = useClinicSnackbar();
   const requestSequence = useRef(0);
   const api = useMemo(() => new SupplierListApi(client), [client]);
   const loading = paymentsLoading || suppliersLoading || purchasesLoading;
@@ -86,8 +87,7 @@ export function SupplierPaymentsWorkspace({
     placement: "page-action" as const,
   }), [loading, reload]));
 
-  const onWritten = useCallback(async (payment: ClinicSupplierPayment, replacedPaymentId?: string) => {
-    setNotice(null);
+  const onWritten = useCallback(async (payment: ClinicSupplierPayment, replacedPaymentId?: string, action: "recorded" | "corrected" | "voided" = replacedPaymentId ? "corrected" : "recorded") => {
     setPayments((current) => [payment, ...current.filter((row) => row.supplierPaymentId !== payment.supplierPaymentId && row.supplierPaymentId !== replacedPaymentId)]);
 
     const [refreshResult, statementResult] = await Promise.allSettled([
@@ -101,16 +101,13 @@ export function SupplierPaymentsWorkspace({
     }
 
     if (statementResult.status === "rejected") {
-      setNotice({
-        message: `Payment saved, but the supplier statement could not be refreshed (${readableError(statementResult.reason, "The supplier statement")}). Refresh before relying on the supplier account totals.`,
-        error: true,
-      });
+      showError(`Payment ${action} but the supplier statement could not be refreshed (${readableError(statementResult.reason, "The supplier statement")}). Refresh before relying on the supplier account totals.`);
     } else if (refreshResult.status === "rejected") {
-      setNotice({ message: "Payment saved and the supplier statement refreshed, but one or more lists could not be reloaded. Use Refresh before continuing.", error: true });
+      showError(`Payment ${action} and the supplier statement refreshed, but one or more lists could not be reloaded. Use Refresh before continuing.`);
     } else {
-      setNotice({ message: "Payment saved and the supplier statement refreshed.", error: false });
+      showSuccess(action === "voided" ? "Supplier payment removed." : action === "corrected" ? "Supplier payment updated." : "Supplier payment recorded.");
     }
-  }, [api, reload]);
+  }, [api, reload, showError, showSuccess]);
 
   return (
     <SupplierPaymentsView
@@ -125,7 +122,6 @@ export function SupplierPaymentsWorkspace({
       paymentsError={paymentsError}
       suppliersError={suppliersError}
       purchasesError={purchasesError}
-      notice={notice}
       onNavigationLockChange={onNavigationLockChange}
       onRefresh={reload}
       onWritten={onWritten}

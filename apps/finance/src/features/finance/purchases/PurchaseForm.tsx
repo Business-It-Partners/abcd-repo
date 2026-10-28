@@ -6,6 +6,7 @@ import { todayISO, formatDateShort } from "@/shared/dates/nepaliDate";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { DataTable, EmptyState, Field, Input, ModalError, PageHeader, Select, Textarea, type Column } from "@/shared/ui/workspace-primitives";
 import { Table, TableWrap, Td, Th, Tr } from "@/shared/ui/ClinicTable";
 import { formatNpr } from "../internal/lib/domain";
@@ -240,6 +241,7 @@ export default function PurchaseForm({
   onCorrected: (purchase: ClinicPurchase) => void;
   onNotice: (message: string) => void;
 }) {
+  const { showError, showSuccess } = useClinicSnackbar();
   const [purchaseType, setPurchaseType] = useState<PurchaseType>(purchase?.purchaseType ?? "product");
   const [supplierId, setSupplierId] = useState(purchase?.supplierId ?? "");
   const [date, setDate] = useState(purchase?.purchaseDate ?? todayISO());
@@ -415,15 +417,21 @@ export default function PurchaseForm({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause, "The purchase save could not be confirmed."));
+        const message = errorMessage(cause, "The purchase save could not be confirmed.");
+        setError(message);
+        showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         command.current = null;
         setConflicted(true);
-        setError(errorMessage(cause, "The purchase changed. Reload and reopen it."));
+        const message = errorMessage(cause, "The purchase changed. Reload and reopen it.");
+        setError(message);
+        showError(message);
         try { await onRefresh(); } catch { /* Keep the conflict visible. */ }
       } else {
         command.current = null;
-        setError(errorMessage(cause, "The purchase could not be saved."));
+        const message = errorMessage(cause, "The purchase could not be saved.");
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);
@@ -442,10 +450,12 @@ export default function PurchaseForm({
     if (target !== null) setLine(target, { productId: product.productId, itemName: product.name, unit: product.unit });
     pendingProductLine.current = null;
     setQuickProductFor(null);
+    showSuccess("Product added successfully.");
   };
 
   const acceptQuickSupplier = async (supplier: ClinicSupplier) => {
     onSupplierCreated(supplier);
+    showSuccess("Supplier added successfully.");
     if ((isLab && supplier.supplierType !== "goods") || (!isLab && supplier.supplierType !== "lab")) {
       setSupplierId(supplier.supplierId);
       setQuickSupplier(false);

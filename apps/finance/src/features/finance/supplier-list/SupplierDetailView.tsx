@@ -5,6 +5,7 @@ import MonthPicker from "@/shared/dates/MonthPicker";
 import { bsMonthToADRange, formatDateShort, todayISO, isInBSMonth } from "@/shared/dates/nepaliDate";
 import { ClinicActionButton } from "@/shared/ui/ClinicActionButton";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { DataTable, EmptyState, ModalBody, Page, PageHeader, RowActions, StatTile, Tabs, TileGrid, type Column } from "@/shared/ui/workspace-primitives";
 import { formatNpr } from "@/features/finance/internal/lib/domain";
 import SupplierPaymentModal from "./SupplierPaymentModal";
@@ -61,7 +62,7 @@ export default function SupplierDetailView({
   const [viewingPurchase, setViewingPurchase] = useState<ClinicPurchase | null>(null);
   const [viewingPayment, setViewingPayment] = useState<ClinicSupplierPayment | null>(null);
   const [month, setMonth] = useState("all");
-  const [paymentNotice, setPaymentNotice] = useState("");
+  const { showSuccess } = useClinicSnackbar();
   const modalOpen = recording || Boolean(viewingPurchase) || Boolean(viewingPayment);
 
   useEffect(() => {
@@ -135,9 +136,8 @@ export default function SupplierDetailView({
   return (
     <Page sheet standardPage>
       <PageHeader title={supplier.name} icon={<Truck size={17} style={{ color: "var(--acc)" }} />}>
-        <ClinicActionButton onClick={() => { setPaymentNotice(""); setRecording(true); }}><Plus size={14} /> Record payment</ClinicActionButton>
+        <ClinicActionButton onClick={() => setRecording(true)}><Plus size={14} /> Record payment</ClinicActionButton>
       </PageHeader>
-      {paymentNotice ? <p className="finance-supplier-success" role="status">{paymentNotice}</p> : null}
 
       <TileGrid>
         <StatTile value={formatNpr(selectedOpening)} label="Opening balance" tone={NEUTRAL_TONE} />
@@ -190,7 +190,7 @@ export default function SupplierDetailView({
         purchasesLoading={purchasesLoading}
         purchasesError={purchasesError}
         onClose={() => setRecording(false)}
-        onSaved={async (payment) => { await onRecordPayment(payment); setPaymentNotice("Payment recorded."); }}
+        onSaved={async (payment) => { await onRecordPayment(payment); showSuccess("Supplier payment recorded."); }}
       /> : null}
       {viewingPurchase ? <PurchaseDetailsModal purchase={viewingPurchase} onClose={() => setViewingPurchase(null)} /> : null}
       {viewingPayment ? <PaymentDetailsModal payment={viewingPayment} onClose={() => setViewingPayment(null)} /> : null}

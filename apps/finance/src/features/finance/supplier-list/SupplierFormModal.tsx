@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { ClinicError, type ClinicCommand } from "@/sdk/client";
+import { useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import { Field, FieldPair, Input, InlineCheck, ModalBody, ModalError, Select } from "@/shared/ui/workspace-primitives";
@@ -42,6 +43,7 @@ export default function SupplierFormModal({
   onSaved: (supplier: ClinicSupplier) => Promise<void>;
   onConflict: () => Promise<void>;
 }) {
+  const { showError } = useClinicSnackbar();
   const [name, setName] = useState(supplier?.name ?? "");
   const [contactPerson, setContactPerson] = useState(supplier?.contactPerson ?? "");
   const [phone, setPhone] = useState(supplier?.phone ?? "");
@@ -116,17 +118,23 @@ export default function SupplierFormModal({
     } catch (cause) {
       if (cause instanceof ClinicError && cause.outcome === "unknown") {
         setUnknownWrite(true);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       } else if (cause instanceof ClinicError && cause.code === "CONFLICT") {
         command.current = null;
         setUnknownWrite(false);
         setConflicted(true);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
         await onConflict();
       } else {
         command.current = null;
         setUnknownWrite(false);
-        setError(errorMessage(cause));
+        const message = errorMessage(cause);
+        setError(message);
+        showError(message);
       }
     } finally {
       setSaving(false);
