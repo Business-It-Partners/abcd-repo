@@ -4,6 +4,7 @@ import { Check, Copy, KeyRound, Pencil, Plus, RefreshCw, Search, ShieldCheck, Us
 import { ClinicClient, ClinicError, type ClinicCommand } from "../../../../packages/app-sdk/src/clinicClient";
 import { connectBrowserRuntime } from "../../../../apps/clinic-app-runtime/runtimeBridge";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "../../../../packages/dental-ui/src/shared/ui/workspace-primitives/sandboxedFormSubmit";
+import { handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "../../../../packages/dental-ui/src/shared/ui/workspace-primitives/formKeyboardNavigation";
 import { ClinicSnackbarProvider, useClinicSnackbar } from "@/shared/ui/ClinicSnackbar";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import {
@@ -377,7 +378,7 @@ function App() {
     </section>
 
     {createForm && <ClinicModal title="Add clinic user" description="Create a doctor or reception login. The password is sent to the clinic service and is not persisted to this device." onClose={closeDialogs} closeDisabled={writeBlocked} size="large">
-      <form className="umForm" onSubmit={submitCreate} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
+      <form className="umForm" onSubmit={submitCreate} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
         <label>Display name<input autoComplete="off" maxLength={160} required value={createForm.displayName} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, displayName: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Username<span className="umLoginField"><input autoComplete="off" maxLength={64} required value={createForm.loginName} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, loginName: cleanLoginNameInput(event.target.value) }); setFormDirty(true); setDialogError(""); }} /><span>@{LOGIN_DOMAIN}</span></span><small>Login email: {finalLoginName(createForm.loginName) || "username"}@{LOGIN_DOMAIN}</small></label>
         <label>Role<select value={createForm.role} disabled={writeBlocked} onChange={event => { setCreateForm({ ...createForm, role: event.target.value as "doctor" | "reception" }); setFormDirty(true); }}><option value="doctor">Doctor</option><option value="reception">Reception</option></select></label>
@@ -389,7 +390,7 @@ function App() {
     </ClinicModal>}
 
     {editForm && <ClinicModal title="Edit clinic user" description={`Update the name and access role for ${editForm.account.username}.`} onClose={closeDialogs} closeDisabled={writeBlocked} size="small">
-      <form className="umForm" onSubmit={submitEdit} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
+      <form className="umForm" onSubmit={submitEdit} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
         <label>Display name<input autoComplete="off" maxLength={160} required value={editForm.displayName} disabled={writeBlocked} onChange={event => { setEditForm({ ...editForm, displayName: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Role<select value={editForm.role} disabled={writeBlocked} onChange={event => { setEditForm({ ...editForm, role: event.target.value as "doctor" | "reception" }); setFormDirty(true); }}><option value="doctor">Doctor</option><option value="reception">Reception</option></select></label>
         {dialogError && <p className="umAlert" role="alert">{dialogError}</p>}
@@ -398,7 +399,7 @@ function App() {
     </ClinicModal>}
 
     {passwordForm && <ClinicModal title="Change password" description={`Set a new password for ${passwordForm.account.username}. No reset email will be sent.`} onClose={closeDialogs} closeDisabled={writeBlocked} size="small">
-      <form className="umForm" onSubmit={submitPassword} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
+      <form className="umForm" onSubmit={submitPassword} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
         <label>New password<input autoComplete="new-password" type="password" minLength={8} maxLength={128} required value={passwordForm.password} disabled={writeBlocked} onChange={event => { setPasswordForm({ ...passwordForm, password: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         <label>Confirm new password<input autoComplete="new-password" type="password" minLength={8} maxLength={128} required value={passwordForm.confirmPassword} disabled={writeBlocked} onChange={event => { setPasswordForm({ ...passwordForm, confirmPassword: event.target.value }); setFormDirty(true); setDialogError(""); }} /></label>
         {dialogError && <p className="umAlert" role="alert">{dialogError}</p>}

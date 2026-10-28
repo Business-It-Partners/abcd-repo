@@ -51,6 +51,7 @@ import PatientNotesTab from "./PatientNotesTab";
 import PeriodontalChart from "@/features/work-entry/components/PeriodontalChart";
 import { Card, CardHeader, CardBody, DataTable, RowActions, EmptyState, Field, Input, Select, Textarea, Modal, ModalBody, ModalError } from "@/shared/ui/workspace-primitives";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
+import { handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 import ConfirmDialog from "@/shared/ui/ConfirmDialog";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
@@ -679,7 +680,7 @@ function PatientBillingLedgerTab({ ledger, loading, error, onCorrect, onReverse,
           {summary.outstandingDue > 0 ? (
             <>
               <p className={styles.paymentIntro}>Outstanding balance: <strong>{formatLedgerAmount(summary.outstandingDue)}</strong></p>
-              <form className={styles.paymentForm} onSubmit={(event) => void recordPayment(event)} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
+              <form className={styles.paymentForm} onSubmit={(event) => void recordPayment(event)} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
                 <Field label="Payment date" htmlFor="patient-payment-date" required>
                   <Input
                     id="patient-payment-date"

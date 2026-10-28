@@ -1,8 +1,8 @@
 export const workEntryBundle = Object.freeze({
   "entry": "/apps/workentry.v1.html",
-  "entrySha256": "183f73cecd1e353a920e74f01a3ab2b6e620765eef97f13b9a5601980dfe522a",
+  "entrySha256": "ca8198c58ee2b28514cc45d20e195a06a922e3565f69b1df0f823ea23e79f795",
   "script": "/apps/workentry.v1.js",
-  "scriptSha256": "2af49522d4356636f6eea62f54a62c0d6066f8757038e51ac395fa8578f62547",
+  "scriptSha256": "5907267cb8ec7f16d18d0e8a49ffe47bbc9e30d76d643fda1622d2d8f519748d",
   "style": "/apps/workentry.v1.css",
   "styleSha256": "cd868dc1732c54e7552345ce949336ce4967e2a31c23ec47589db482a1b4748a"
 });

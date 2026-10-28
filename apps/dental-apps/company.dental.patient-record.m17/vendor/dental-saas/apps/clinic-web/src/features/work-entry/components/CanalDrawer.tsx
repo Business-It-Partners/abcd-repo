@@ -14,6 +14,7 @@ import {
 } from "@/features/work-entry/model/canalData";
 import { Modal, ModalBody } from "@/shared/ui/workspace-primitives";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
+import { focusFormKeyboardField, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 
 const ACC = "var(--acc, #7c3aed)";
 const INK = "#1b1b27";
@@ -92,7 +93,6 @@ export default function CanalDrawer({
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const formRef = useRef<HTMLFormElement>(null);
-  const pickerOpened = useRef(false);
   const { showToast, showError } = useSnackbar();
   const [saving, setSaving] = useState(false);
 
@@ -195,15 +195,7 @@ export default function CanalDrawer({
   const goTo = (selector: string): boolean => {
     const el = formRef.current?.querySelector<HTMLElement>(selector);
     if (!el) return false;
-    el.focus();
-    if (el instanceof HTMLSelectElement && typeof el.showPicker === "function") {
-      pickerOpened.current = true;
-      try {
-        el.showPicker();
-      } catch {
-        pickerOpened.current = false;
-      }
-    }
+    focusFormKeyboardField(el);
     return true;
   };
 
@@ -217,6 +209,7 @@ export default function CanalDrawer({
 
   const onFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (!isEditing || e.key !== "Enter" || e.ctrlKey || e.metaKey) return;
+    if (e.target instanceof HTMLSelectElement) return;
     const step = (e.target as HTMLElement).getAttribute("data-step");
     if (!step) return;
     e.preventDefault();
@@ -270,6 +263,8 @@ export default function CanalDrawer({
         <form
           ref={formRef}
           onClickCapture={handleSandboxedFormSubmitClick}
+          onFocusCapture={handleFormKeyboardFocus}
+          onPointerDownCapture={handleFormKeyboardPointerDown}
           onSubmit={(e) => {
             e.preventDefault();
             handleSave();
@@ -403,12 +398,7 @@ export default function CanalDrawer({
                             return;
                           }
                           updateCanal(i, { referencePoint: e.target.value });
-                          if (pickerOpened.current) {
-                            pickerOpened.current = false;
-                            advanceFrom("ref", i);
-                          }
                         }}
-                        onBlur={() => { pickerOpened.current = false; }}
                         aria-label={`Reference point for ${c.canal || `canal ${i + 1}`}`}
                       >
                         <option value="">Select reference…</option>

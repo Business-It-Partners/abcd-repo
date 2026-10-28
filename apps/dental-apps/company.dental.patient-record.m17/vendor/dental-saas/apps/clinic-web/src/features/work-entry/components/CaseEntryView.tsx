@@ -37,6 +37,7 @@ import {
   PAYMENT_METHODS,
 } from "@/features/patients/model/domain";
 import { readRupeeText, rupeeAmount, rupeeValue } from "@/shared/money/inputs";
+import { focusFormKeyboardField, handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 import {
   FeeScheduleItem,
   TreatmentProtocol,
@@ -846,21 +847,7 @@ export default function CaseEntryView({
   // --- handlers ---
   // Confirm a suggestion (or an arch procedure) into the plan as its own group. The tooth
   /* Keyboard navigation helper: focuses element and opens select picker sheet automatically */
-  const focusAndOpen = (el: HTMLElement | null) => {
-    if (!el) return;
-    el.focus();
-    if (el instanceof HTMLInputElement) {
-      el.select();
-    } else if (el instanceof HTMLSelectElement) {
-      try {
-        if (typeof el.showPicker === "function") {
-          el.showPicker();
-        }
-      } catch {
-        /* Fallback for unsupported environments */
-      }
-    }
-  };
+  const focusAndOpen = (el: HTMLElement | null) => focusFormKeyboardField(el);
 
   // belongs to the group, so the same protocol on another tooth is a separate group.
   // Protocol stages -> editable plan rows. Shared by adding a group and by switching its grade.
@@ -963,29 +950,7 @@ export default function CaseEntryView({
   // Mouseless data entry: Enter moves to the next field (text/number/date/select), skipping
   // checkboxes. On the last field, focus the step's Continue button so a final Enter proceeds.
   // Scoped to the form steps — the chart step is click-driven and not wired to this.
-  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter") return;
-    const target = e.target as HTMLElement;
-    if (target.tagName === "TEXTAREA" || target.tagName === "BUTTON") return;
-    if (target.tagName === "INPUT") {
-      const t = (target as HTMLInputElement).type;
-      if (t === "checkbox" || t === "radio") return;
-    }
-    const fields = Array.from(
-      e.currentTarget.querySelectorAll<HTMLElement>(
-        "input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, button[data-entry-field]"
-      )
-    ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-    const idx = fields.indexOf(target);
-    if (idx === -1) return;
-    e.preventDefault();
-    const next = fields[idx + 1];
-    if (next) {
-      focusAndOpen(next);
-    } else {
-      e.currentTarget.querySelector<HTMLButtonElement>("[data-wizard-next]:not([disabled])")?.focus();
-    }
-  };
+  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => handleFormEnterNavigation(e);
 
   /**
    * Removing a tooth's planned treatment FREES that tooth — its charted finding goes with it.
@@ -1619,7 +1584,7 @@ export default function CaseEntryView({
 
           {/* ============ STEP 1 — PATIENT & PURPOSE ============ */}
           {step === 1 && (
-            <section style={{ display: "flex", flexDirection: "column", gap: "20px" }} onKeyDown={advanceOnEnter}>
+            <section style={{ display: "flex", flexDirection: "column", gap: "20px" }} onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
 
               {createError ? <div style={{ padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)" }}>{createError}</div> : null}
 
@@ -2006,21 +1971,7 @@ export default function CaseEntryView({
             const tinySelect: React.CSSProperties = { ...input, padding: "7px 10px", fontSize: "13px" };
 
             /* Keyboard navigation helper: focuses element and opens select picker sheet automatically */
-            const focusAndOpen = (el: HTMLElement | null) => {
-              if (!el) return;
-              el.focus();
-              if (el instanceof HTMLInputElement) {
-                el.select();
-              } else if (el instanceof HTMLSelectElement) {
-                try {
-                  if (typeof el.showPicker === "function") {
-                    el.showPicker();
-                  }
-                } catch {
-                  /* Fallback for unsupported environments */
-                }
-              }
-            };
+            const focusAndOpen = (el: HTMLElement | null) => focusFormKeyboardField(el);
 
             /* Keyboard navigation handlers for fast hands-free entry */
             const handleAddRx = () => {
@@ -2197,7 +2148,7 @@ export default function CaseEntryView({
 
           {/* ============ STEP 4 — TODAY & PAYMENT / WORK ENTRY TODAY ============ */}
           {step === 4 && (
-            <section style={{ display: "flex", flexDirection: "column", gap: "14px" }} onKeyDown={advanceOnEnter}>
+            <section style={{ display: "flex", flexDirection: "column", gap: "14px" }} onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
               <h3 style={sectionTitle}>
                 <StepDot n={4} /> {existingCaseWorkflow ? <ListChecks size={15} /> : <Wallet size={15} />} {canCollectPayment ? "Today & payment" : "Today's work"}
               </h3>

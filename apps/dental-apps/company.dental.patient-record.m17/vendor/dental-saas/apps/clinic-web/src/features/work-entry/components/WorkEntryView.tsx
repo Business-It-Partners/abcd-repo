@@ -36,6 +36,7 @@ import {
 import { useSnackbar } from "@/shared/ui/SnackbarProvider";
 import { useClinicLoading } from "@/shared/ui/ClinicLoadingOverlay";
 import { readRupeeText, rupeeAmount, rupeeValue } from "@/shared/money/inputs";
+import { handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 import {
   type Case,
   type CaseStage,
@@ -988,42 +989,7 @@ export default function WorkEntryView({
     );
   };
 
-  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter") return;
-    const target = e.target as HTMLElement;
-    if (target.tagName === "TEXTAREA") return;
-    // Picker triggers keep their normal Enter behaviour (open the picker). Other fields can move
-    // focus into them, then Date/Time completion advances to the next clinical field.
-    if (target.tagName === "BUTTON") return;
-    if (target.tagName === "INPUT") {
-      const t = (target as HTMLInputElement).type;
-      if (t === "checkbox" || t === "radio") return;
-    }
-    const fields = Array.from(
-      e.currentTarget.querySelectorAll<HTMLElement>(
-        "input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, button[data-entry-field]"
-      )
-    ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-    const idx = fields.indexOf(target);
-    if (idx === -1) return;
-    e.preventDefault();
-    const next = fields[idx + 1];
-    if (next) {
-      next.focus();
-      if (next instanceof HTMLInputElement) {
-        next.select();
-      } else if (next instanceof HTMLSelectElement) {
-        const picker = (next as HTMLSelectElement & { showPicker?: () => void }).showPicker;
-        if (typeof picker === "function") {
-          try {
-            picker.call(next);
-          } catch {}
-        }
-      }
-    } else {
-      e.currentTarget.querySelector<HTMLButtonElement>("[data-wizard-next]:not([disabled])")?.focus();
-    }
-  };
+  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => handleFormEnterNavigation(e);
 
   const submit = async () => {
     if (selectedDoctors.length === 0) {
@@ -1676,7 +1642,7 @@ export default function WorkEntryView({
 
               {/* STEP 2 — WORK DONE TODAY */}
               {effStep === 2 && (
-                <section style={card} onKeyDown={advanceOnEnter}>
+                <section style={card} onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
                   {!fixedPatientFlow && (
                     <StepNav
                       top
@@ -2366,7 +2332,7 @@ export default function WorkEntryView({
 
               {/* SHARED RECALL — every role reaches this after optional Admin payment. */}
               {effStep === recallStep && (
-                <section style={card} onKeyDown={advanceOnEnter}>
+                <section style={card} onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
                   {!fixedPatientFlow && (
                     <StepNav
                       top

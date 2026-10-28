@@ -3,6 +3,7 @@
 import React from "react";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "./sandboxedFormSubmit";
+import { handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "./formKeyboardNavigation";
 import styles from "./ui.module.css";
 
 /* Finance keeps this adapter for its established import path. The shared
@@ -37,36 +38,19 @@ type ModalBodyProps =
 
 export function ModalBody(props: ModalBodyProps) {
   if (props.as === "form") {
-    const { as, className, children, onKeyDown, onClickCapture, ...rest } = props;
+    const { as, className, children, onKeyDown, onClickCapture, onFocusCapture, onPointerDownCapture, ...rest } = props;
     void as;
     const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-      if (onKeyDown) onKeyDown(e);
-      if (e.defaultPrevented || e.key !== "Enter") return;
-
-      const target = e.target as HTMLElement;
-      if (target.tagName === "BUTTON" || target.tagName === "TEXTAREA") return;
-
-      const fields = Array.from(
-        e.currentTarget.querySelectorAll<HTMLElement>(
-          "input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, .control, button[data-picker]"
-        )
-      ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-
-      const idx = fields.indexOf(target);
-      if (idx === -1) {
-        handleSandboxedFormSubmitKeyDown(e);
-        return;
-      }
-      e.preventDefault();
-
-      const next = fields[idx + 1];
-      if (next) {
-        next.focus();
-        if (next instanceof HTMLInputElement) next.select();
-      } else {
-        const submitBtn = e.currentTarget.querySelector<HTMLButtonElement>("button[type=submit]");
-        submitBtn?.focus();
-      }
+      onKeyDown?.(e);
+      if (!e.defaultPrevented) handleSandboxedFormSubmitKeyDown(e);
+    };
+    const handleFocusCapture = (event: React.FocusEvent<HTMLFormElement>) => {
+      onFocusCapture?.(event);
+      if (!event.defaultPrevented) handleFormKeyboardFocus(event);
+    };
+    const handlePointerDownCapture = (event: React.PointerEvent<HTMLFormElement>) => {
+      onPointerDownCapture?.(event);
+      if (!event.defaultPrevented) handleFormKeyboardPointerDown(event);
     };
     const handleClickCapture = (event: React.MouseEvent<HTMLFormElement>) => {
       onClickCapture?.(event);
@@ -74,7 +58,7 @@ export function ModalBody(props: ModalBodyProps) {
     };
 
     return (
-      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onClickCapture={handleClickCapture} {...rest}>
+      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onFocusCapture={handleFocusCapture} onPointerDownCapture={handlePointerDownCapture} onClickCapture={handleClickCapture} {...rest}>
         {children}
       </form>
     );

@@ -224,29 +224,6 @@ function AddLabModal({
     if (error) setError("");
   };
 
-  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter") return;
-    const target = e.target as HTMLElement;
-    if (target.tagName === "BUTTON") return;
-
-    const fields = Array.from(
-      e.currentTarget.querySelectorAll<HTMLElement>("input, select")
-    ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-
-    const idx = fields.indexOf(target);
-    if (idx === -1) return;
-    e.preventDefault();
-
-    const next = fields[idx + 1];
-    if (next) {
-      next.focus();
-      if (next instanceof HTMLInputElement) next.select();
-    } else {
-      const submitBtn = e.currentTarget.querySelector<HTMLButtonElement>("button[type=submit]");
-      submitBtn?.focus();
-    }
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -278,7 +255,7 @@ function AddLabModal({
 
   return (
     <Modal title={initialLab ? "Edit Dental Lab Supplier" : "Register a Dental Lab Supplier"} onClose={onClose}>
-      <ModalBody as="form" onKeyDown={advanceOnEnter} onSubmit={submit} noValidate>
+      <ModalBody as="form" onSubmit={submit} noValidate>
         <Field label="Lab name" required>
           <Input
             autoFocus

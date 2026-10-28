@@ -6,6 +6,7 @@ import { type LabOrderInput } from "@/features/work-entry/model/caseData";
 import { type LabSupplier } from "@/features/patients/model/domain";
 import { CUSTOM_LAB_WORK, isStandardLabWork, LAB_WORK_OPTIONS } from "@/features/labs/model/labWork";
 import { Card, CardHeader, CardBody, Field, Input, Select } from "@/shared/ui/workspace-primitives";
+import { handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 
 // Optional inline lab orders (CASE_ENTRY_SYSTEM_PLAN §1f/2d). Shared by the New Patient and
 // Work Entry flows — usually empty, filled only for crown/bridge/denture work sent out to a
@@ -127,29 +128,13 @@ export default function LabOrderBlock({ orders, onChange, defaultTooth, labs, on
     }
   };
 
-  const advanceOnEnter = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Enter") return;
-    const target = event.target as HTMLElement;
-    if (target.tagName === "TEXTAREA" || target.tagName === "BUTTON") return;
-    const fields = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("input, select"))
-      .filter((field) => !(field as HTMLInputElement).disabled && field.offsetParent !== null);
-    const index = fields.indexOf(target);
-    if (index < 0) return;
-    event.preventDefault();
-    const next = fields[index + 1];
-    if (next) {
-      next.focus();
-      if (next instanceof HTMLInputElement) next.select();
-      return;
-    }
-    if (canAdd) void addDraft();
-  };
+  const advanceOnEnter = (event: React.KeyboardEvent<HTMLElement>) => handleFormEnterNavigation(event);
 
   return (
     <Card>
       <CardHeader title={<><FlaskConical size={15} /> {handoffPreview ? "Clinical lab requirement" : "Lab work (optional)"}</>} />
       <CardBody>
-        <div onKeyDown={advanceOnEnter}>
+        <div onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
         {noLabs && !handoffPreview && (
           <p style={{ margin: 0, fontSize: "var(--fs-13)", color: "#1e293b" }}>
             No labs registered yet. Add one under <strong>Lab Tracker → Labs</strong> before sending
@@ -261,6 +246,7 @@ export default function LabOrderBlock({ orders, onChange, defaultTooth, labs, on
 
               <button
                 type="button"
+                data-wizard-next
                 onClick={() => void addDraft()}
                 disabled={!canAdd || submitting}
                 className="btn btn-primary btn-block"

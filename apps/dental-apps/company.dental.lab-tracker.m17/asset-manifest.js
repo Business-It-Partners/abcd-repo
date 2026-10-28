@@ -1,8 +1,8 @@
 export const labBundle = Object.freeze({
   "entry": "/apps/lab.v1.html",
-  "entrySha256": "ec37f60eb9ee939e6e0fe362e1b8b96b69bb304a41fd2a6ae6065ec7054c2d75",
+  "entrySha256": "59d80b98bb51df2974dc68c9f05bc8f89ad1d7c5cdd912df0997297f86f85b32",
   "script": "/apps/lab.v1.js",
-  "scriptSha256": "a4a7ea94e467a3f3231093a41024aaa3005954dd366ddbc3139f712253bf9bf4",
+  "scriptSha256": "c22cef889a1734ee1bccab6a114328425be360545a11a0fc6380bc4df220cc4f",
   "style": "/apps/lab.v1.css",
   "styleSha256": "4f0ab4aaf453746f715111618e0436c65efa990582d5744696272d5e2d73da45"
 });

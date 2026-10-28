@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Pill, Plus, Trash2 } from "lucide-react";
 import { type RxLine } from "@/features/work-entry/model/caseData";
+import { handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 
 const QUICK = [
   { label: "Amox · TDS · 5d", rx: { medicine: "Amoxicillin 500mg", dosage: "1 tab", frequency: "TDS (3×/day)", duration: "5 days", instructions: "" } },
@@ -30,26 +31,10 @@ export default function NewPatientStylePrescription({ drugs, onChange, onDraftDi
       setDraft(EMPTY_DRAFT);
     }
   };
-  const advanceOnEnter = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Enter") return;
-    const target = event.target as HTMLElement;
-    if (target.tagName === "BUTTON" || target.tagName === "SELECT") return;
-    const fields = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("input, select"))
-      .filter((field) => !(field as HTMLInputElement).disabled && field.offsetParent !== null);
-    const index = fields.indexOf(target);
-    if (index < 0) return;
-    event.preventDefault();
-    const next = fields[index + 1];
-    if (next) {
-      next.focus();
-      if (next instanceof HTMLInputElement) next.select();
-    } else {
-      add();
-    }
-  };
+  const advanceOnEnter = (event: React.KeyboardEvent<HTMLElement>) => handleFormEnterNavigation(event);
   const fieldLabel: React.CSSProperties = { display: "block", fontSize: "var(--fs-13)", fontWeight: "var(--fw-bold)", color: "var(--ink-2)", marginBottom: "4px" };
   const control: React.CSSProperties = { width: "100%", boxSizing: "border-box", height: "36px", border: "1px solid var(--field-border)", borderRadius: 0, padding: "7px 10px", fontSize: "var(--fs-14)", background: "#fff" };
-  return <div onKeyDown={advanceOnEnter}>
+  return <div onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
     <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "10px" }}><span style={{ display: "grid", placeItems: "center", width: 28, height: 28, background: "#f1f5f9", color: "#0284c7" }}><Pill size={14} /></span><strong style={{ fontSize: "var(--fs-14)" }}>Prescription</strong><span style={{ fontSize: "var(--fs-13)", color: "var(--ink-3)", background: "#f1f5f9", padding: "1px 7px" }}>Optional</span></div>
     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>{QUICK.map((r) => <button key={r.label} type="button" onClick={() => addDrug({ ...r.rx, instructions: "" })} style={{ fontSize: "var(--fs-13)", fontWeight: "var(--fw-medium)", padding: "4px 10px", borderRadius: 20, border: "1px solid #ddd6fe", background: "#f5f3ff", color: "#6d28d9", cursor: "pointer" }}>+ {r.label}</button>)}</div>
     {drugs.length > 0 && (
@@ -77,7 +62,7 @@ export default function NewPatientStylePrescription({ drugs, onChange, onDraftDi
     </div>
     <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
       {draftDirty && <button type="button" className="btn btn-secondary" onClick={() => setDraft(EMPTY_DRAFT)}>Clear draft</button>}
-      <button type="button" className="btn btn-primary" style={{ flex: 1 }} disabled={!draft.medicine.trim()} onClick={add}><Plus size={13} /> Add medication</button>
+      <button type="button" className="btn btn-primary" style={{ flex: 1 }} disabled={!draft.medicine.trim()} data-wizard-next onClick={add}><Plus size={13} /> Add medication</button>
     </div>
   </div>;
 }

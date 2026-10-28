@@ -1,4 +1,5 @@
 import type { KeyboardEvent, MouseEvent } from "react";
+import { handleFormEnterNavigation } from "./formKeyboardNavigation";
 
 const submitControlSelector = 'button[type="submit"], input[type="submit"]';
 
@@ -16,7 +17,9 @@ export function handleSandboxedFormSubmitClick(event: MouseEvent<HTMLFormElement
 }
 
 export function handleSandboxedFormSubmitKeyDown(event: KeyboardEvent<HTMLFormElement>) {
-  if (event.defaultPrevented || event.key !== "Enter" || event.nativeEvent.isComposing) return;
+  if (event.defaultPrevented) return;
+  if (handleFormEnterNavigation(event)) return;
+  if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
   const target = event.target;
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
     || (target instanceof HTMLElement && target.isContentEditable)

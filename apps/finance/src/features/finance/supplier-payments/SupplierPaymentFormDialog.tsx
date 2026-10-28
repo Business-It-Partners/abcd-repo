@@ -271,25 +271,6 @@ export default function SupplierPaymentFormDialog({
 
   const clearErrors = () => { setError(""); setValidationError(""); };
 
-  const advanceOnEnter = (event: KeyboardEvent<HTMLFormElement>) => {
-    if (event.key !== "Enter" || event.defaultPrevented) return;
-    const target = event.target as HTMLElement;
-    if (target.tagName === "BUTTON") return;
-    const fields = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
-      "input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select",
-    )).filter((field) => !(field as HTMLInputElement).disabled && field.offsetParent !== null);
-    const index = fields.indexOf(target);
-    if (index < 0) return;
-    event.preventDefault();
-    const next = fields[index + 1];
-    if (next) {
-      next.focus();
-      if (next instanceof HTMLInputElement) next.select();
-    } else {
-      event.currentTarget.querySelector<HTMLButtonElement>("button[type=submit]")?.focus();
-    }
-  };
-
   return (
     <ClinicModal
       title={payment ? "Correct supplier payment" : "Record payment"}
@@ -297,7 +278,7 @@ export default function SupplierPaymentFormDialog({
       maxWidth={640}
       closeDisabled={locked}
     >
-      <ModalBody as="form" noValidate onKeyDown={advanceOnEnter} onSubmit={(event) => void submit(event)} className="finance-payment-form">
+      <ModalBody as="form" noValidate onSubmit={(event) => void submit(event)} className="finance-payment-form">
         <Field label="Supplier" required>
           {suppliersError ? <ModalError>Supplier choices are unavailable: {suppliersError}. Refresh before saving.</ModalError> : null}
           <SupplierPicker

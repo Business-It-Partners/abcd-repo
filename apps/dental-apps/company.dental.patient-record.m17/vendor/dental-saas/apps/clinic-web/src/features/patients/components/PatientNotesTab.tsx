@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { handleSandboxedFormSubmitClick, handleSandboxedFormSubmitKeyDown } from "@/shared/ui/workspace-primitives/sandboxedFormSubmit";
+import { handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 import { FileText, Plus, Undo2 } from "lucide-react";
 import type { PatientNote } from "@/features/patients/types";
 import { formatDateShort } from "@/features/patients/model/domain";
@@ -88,7 +89,7 @@ export default function PatientNotesTab({ notes, loading, error, onCreate, onWit
             </div>
           )}
 
-          <form className={styles.composer} onSubmit={(event) => { event.preventDefault(); void save(); }} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown}>
+          <form className={styles.composer} onSubmit={(event) => { event.preventDefault(); void save(); }} onClickCapture={handleSandboxedFormSubmitClick} onKeyDown={handleSandboxedFormSubmitKeyDown} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown}>
             <div className={styles.composerHeader}>
               <label htmlFor="new-patient-note">Add a note</label>
               <span>Saved to the patient record</span>

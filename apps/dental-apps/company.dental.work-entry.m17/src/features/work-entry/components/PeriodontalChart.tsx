@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, Check, Loader2 } from "lucide-react";
 import { type ToothPerioData } from "@/features/work-entry/model/chartData";
 import { Table, TableWrap, Td, Th, Tr } from "@/shared/ui/ClinicTable";
+import { handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared/ui/workspace-primitives/formKeyboardNavigation";
 
 interface PeriodontalChartProps {
   /** The last charting session's readings, so re-probing starts from what was measured before. */
@@ -152,38 +153,7 @@ export default function PeriodontalChart({ initialPerioData = NO_PERIO, lastChar
   // Mouseless charting: Enter moves to the next reading field (the 6 probing sites → mobility
   // → recession), so a full tooth is chartable without the mouse. Skips the BOP checkboxes
   // (those stay on Space). Opens the next dropdown (mobility) on arrival.
-  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter") return;
-    const target = e.target as HTMLElement;
-    if (target.tagName === "TEXTAREA" || target.tagName === "BUTTON") return;
-    if (target.tagName === "INPUT") {
-      const t = (target as HTMLInputElement).type;
-      if (t === "checkbox" || t === "radio") return;
-    }
-    const fields = Array.from(
-      e.currentTarget.querySelectorAll<HTMLElement>(
-        "input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select"
-      )
-    ).filter((el) => !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-    const idx = fields.indexOf(target);
-    if (idx === -1) return;
-    e.preventDefault();
-    const next = fields[idx + 1];
-    if (!next) return;
-    next.focus();
-    if (next instanceof HTMLInputElement) {
-      next.select();
-    } else if (next instanceof HTMLSelectElement) {
-      const picker = (next as HTMLSelectElement & { showPicker?: () => void }).showPicker;
-      if (typeof picker === "function") {
-        try {
-          picker.call(next);
-        } catch {
-          /* unsupported — focus is enough */
-        }
-      }
-    }
-  };
+  const advanceOnEnter = (e: React.KeyboardEvent<HTMLElement>) => handleFormEnterNavigation(e);
 
   const hasPockets = Object.values(perioData).some((t) =>
     Object.values(t.probingDepths).some((depth) => depth >= 4)
@@ -276,7 +246,7 @@ export default function PeriodontalChart({ initialPerioData = NO_PERIO, lastChar
         </div>
 
         {/* Selected Tooth Perio Editor */}
-        <div onKeyDown={advanceOnEnter} style={{ minWidth: 0, background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "20px", height: "fit-content" }}>
+        <div onKeyDown={advanceOnEnter} onFocusCapture={handleFormKeyboardFocus} onPointerDownCapture={handleFormKeyboardPointerDown} style={{ minWidth: 0, background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "20px", height: "fit-content" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px", marginBottom: "16px" }}>
             <h4 style={{ fontSize: "var(--fs-14)", fontWeight: "var(--fw-bold)", color: "#1e293b", margin: 0 }}>Tooth {selectedTooth} Readings</h4>
             <span style={{ fontSize: "var(--fs-13)", color: "var(--acc)", background: "var(--acc-soft)", padding: "3px 8px", borderRadius: "12px", fontWeight: "var(--fw-medium)" }}>
@@ -472,6 +442,7 @@ export default function PeriodontalChart({ initialPerioData = NO_PERIO, lastChar
 
                 <button
                   type="button"
+                  data-wizard-next
                   onClick={() => void save()}
                   disabled={!dirty || saving}
                   title={dirty ? undefined : "Update a reading first"}

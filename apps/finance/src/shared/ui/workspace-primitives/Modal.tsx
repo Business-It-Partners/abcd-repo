@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ClinicModal } from "@/shared/ui/ClinicModal";
+import { handleFormEnterNavigation, handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "./formKeyboardNavigation";
 import styles from "./ui.module.css";
 
 /* Finance keeps this adapter for its established import path. The shared
@@ -36,11 +37,13 @@ type ModalBodyProps =
 
 export function ModalBody(props: ModalBodyProps) {
   if (props.as === "form") {
-    const { as, className, children, onKeyDown, onClickCapture, ...rest } = props;
+    const { as, className, children, onKeyDown, onClickCapture, onFocusCapture, onPointerDownCapture, ...rest } = props;
     void as;
     const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
       if (onKeyDown) onKeyDown(e);
       if (e.defaultPrevented || e.key !== "Enter") return;
+
+      if (handleFormEnterNavigation(e)) return;
 
       const target = e.target as HTMLElement;
       if (target.tagName === "BUTTON" || target.tagName === "TEXTAREA") return;
@@ -72,6 +75,14 @@ export function ModalBody(props: ModalBodyProps) {
         submitBtn?.focus();
       }
     };
+    const handleFocusCapture = (event: React.FocusEvent<HTMLFormElement>) => {
+      onFocusCapture?.(event);
+      if (!event.defaultPrevented) handleFormKeyboardFocus(event);
+    };
+    const handlePointerDownCapture = (event: React.PointerEvent<HTMLFormElement>) => {
+      onPointerDownCapture?.(event);
+      if (!event.defaultPrevented) handleFormKeyboardPointerDown(event);
+    };
     const handleClickCapture = (e: React.MouseEvent<HTMLFormElement>) => {
       onClickCapture?.(e);
       if (e.defaultPrevented || !(e.target instanceof Element)) return;
@@ -91,7 +102,7 @@ export function ModalBody(props: ModalBodyProps) {
     };
 
     return (
-      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onClickCapture={handleClickCapture} {...rest}>
+      <form className={`${styles.modalBody} ${className ?? ""}`} onKeyDown={handleKeyDown} onFocusCapture={handleFocusCapture} onPointerDownCapture={handlePointerDownCapture} onClickCapture={handleClickCapture} {...rest}>
         {children}
       </form>
     );
