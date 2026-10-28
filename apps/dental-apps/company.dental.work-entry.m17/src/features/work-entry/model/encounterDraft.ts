@@ -53,12 +53,24 @@ export function encounterDraftCommandId(
   const key = commandKeyFor(scope);
   try {
     const existing = storage?.getItem(key)?.trim();
-    if (existing) return existing;
-    const created = `encounter_command_${createId().replace(/[^A-Za-z0-9_-]/g, "")}`;
+    if (existing) {
+      // Older drafts stored a prefixed UUID, which the clinic bridge correctly
+      // rejects because idempotency keys must be bare UUIDs. Normalize that
+      // known legacy value while retaining its stable identity across refreshes.
+      const legacy = /^encounter_command_([a-f0-9]{32})$/i.exec(existing);
+      if (legacy) {
+        const hex = legacy[1];
+        const normalized = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        storage?.setItem(key, normalized);
+        return normalized;
+      }
+      return existing;
+    }
+    const created = createId();
     storage?.setItem(key, created);
     return created;
   } catch {
-    return `encounter_command_${createId().replace(/[^A-Za-z0-9_-]/g, "")}`;
+    return createId();
   }
 }
 

@@ -502,7 +502,7 @@ export default function WorkEntryView({
 
   const tabCommandId = (tab: string) => {
     if (!tabCommandIds.current[tab]) {
-      tabCommandIds.current[tab] = `work_entry_${tab}_${globalThis.crypto.randomUUID().replace(/[^A-Za-z0-9_-]/g, "")}`;
+      tabCommandIds.current[tab] = globalThis.crypto.randomUUID();
     }
     return tabCommandIds.current[tab];
   };

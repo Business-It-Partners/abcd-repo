@@ -177,7 +177,7 @@ export function InProgressWorkEntry({ patient, workEntryCase, caseDoctorNames, d
       setLocalPatient((current) => ({ ...current, canalHistory }));
     }}
     onAppendTrustedPlan={async (_clinicalCase, draft) => {
-      const commandId = `work_entry_plan_${globalThis.crypto.randomUUID().replace(/[^A-Za-z0-9_-]/g, "")}`;
+      const commandId = globalThis.crypto.randomUUID();
       const saved = await onAppendPlan(planFromDraft(draft, protocols), commandId);
       setLocalCase(continuationCase(saved, caseDoctorNames));
       return true;

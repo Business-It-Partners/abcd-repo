@@ -129,6 +129,9 @@ export class BrowserClinicClient {
       if (code === 'route_not_granted' || code === 'clinic_access_denied') {
         throw new ClinicError('FORBIDDEN', 'The clinic did not authorize this change.', 'rejected', command.operationId);
       }
+      if (code === 'invalid_request') {
+        throw new ClinicError('INVALID_REQUEST', cause instanceof Error ? cause.message : 'The clinic request is not valid.', 'not_sent', command.operationId);
+      }
       throw new ClinicError('UNKNOWN_OUTCOME', 'The save result is not confirmed. Check the original save before making another change.', 'unknown', command.operationId);
     }
     if (!response || !Number.isInteger(response.status)) {
