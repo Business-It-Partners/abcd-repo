@@ -1580,9 +1580,20 @@ export default function CaseEntryView({
                 </div>
               )}
               {step === 6 && existingCaseWorkflow && createStatus !== "done" && (
-                <button type="button" onClick={() => goToStep(5)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
-                  <ArrowLeft size={14} /> Back
-                </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button type="button" onClick={() => goToStep(5)} className="btn btn-secondary" style={{ borderRadius: "0px" }}>
+                    <ArrowLeft size={14} /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveExistingTodayWork()}
+                    disabled={createStatus === "saving"}
+                    className="btn btn-primary"
+                    style={{ borderRadius: "0px" }}
+                  >
+                    {createStatus === "saving" ? "Saving…" : <><Check size={14} /> Save</>}
+                  </button>
+                </div>
               )}
             </div>
           </div>}
@@ -2441,17 +2452,7 @@ export default function CaseEntryView({
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: createStatus === "done" ? "flex-end" : "flex-start", gap: "10px", flexWrap: "wrap" }}>
-                  {createStatus !== "done" && (existingCaseWorkflow ? (
-                    <button
-                      type="button"
-                      onClick={() => void saveExistingTodayWork()}
-                      disabled={createStatus === "saving"}
-                      className="btn btn-primary btn-tall"
-                      style={{ minWidth: "180px" }}
-                    >
-                      {createStatus === "saving" ? "Committing…" : <><Check size={16} /> Commit Work Entry</>}
-                    </button>
-                  ) : (() => {
+                  {createStatus !== "done" && (!existingCaseWorkflow ? (() => {
                     const createOff = !canCreate || createStatus !== "idle";
                     return (
                       <button
@@ -2464,7 +2465,7 @@ export default function CaseEntryView({
                         {createStatus === "saving" ? <>Saving…</> : <><Check size={16} /> Create case</>}
                       </button>
                     );
-                  })())}
+                  })() : null)}
 
                   {/* Hosted in Work Entry → return there; standalone → start a fresh registration. */}
                   <button

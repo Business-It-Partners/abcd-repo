@@ -1,9 +1,9 @@
 export const workEntryBundle = Object.freeze({
   "entry": "/apps/workentry.v1.html",
-  "entrySha256": "08eb1d12749c3a1a6f70f1d99df691e0e032a8e05d6d9cc582d9e3c0ad723f64",
+  "entrySha256": "183f73cecd1e353a920e74f01a3ab2b6e620765eef97f13b9a5601980dfe522a",
   "script": "/apps/workentry.v1.js",
-  "scriptSha256": "1100886d3dd3cc7ff4ce851110fe2287ca8693175efb72f05931886d955097d5",
+  "scriptSha256": "2af49522d4356636f6eea62f54a62c0d6066f8757038e51ac395fa8578f62547",
   "style": "/apps/workentry.v1.css",
-  "styleSha256": "f09c81916f00b4d3a6a2045cc13ee3a3acc6d2b5e5254a0f90c9fab49f01e53e"
+  "styleSha256": "cd868dc1732c54e7552345ce949336ce4967e2a31c23ec47589db482a1b4748a"
 });
-export const workEntryVersion = "1.0.0";
+export const workEntryVersion = "1.0.2";
