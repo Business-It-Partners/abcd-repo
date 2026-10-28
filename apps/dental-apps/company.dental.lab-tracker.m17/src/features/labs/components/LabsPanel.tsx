@@ -75,7 +75,6 @@ export default function LabsPanel({
     <div className="labSupplierWorkspace" style={{ display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
       <PageHeader
         title="Lab supplier record"
-        icon={<Truck size={17} style={{ color: "var(--acc)" }} />}
       >
         <button type="button" onClick={() => setShowAdd(true)} disabled={loading} className="btn btn-primary" style={{ flexShrink: 0 }}>
           <Plus size={15} /> Add Lab Supplier

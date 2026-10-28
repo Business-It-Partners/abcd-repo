@@ -236,11 +236,11 @@ const card: React.CSSProperties = {
 };
 const label: React.CSSProperties = {
   display: "block",
-  fontSize: "var(--fs-12)",
-  fontWeight: "var(--fw-bold)",
-  color: "#64748b",
+  fontSize: "13px",
+  fontWeight: 700,
+  color: "#334155",
   textTransform: "uppercase",
-  letterSpacing: "0.04em",
+  letterSpacing: "0.035em",
   marginBottom: "6px",
 };
 const input: React.CSSProperties = {

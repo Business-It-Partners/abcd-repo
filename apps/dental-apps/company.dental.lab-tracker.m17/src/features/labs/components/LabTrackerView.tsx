@@ -461,16 +461,6 @@ export default function LabTrackerView({
                     >
                       <Eye size={13} /> View
                     </button>
-                    {order.status === "Sent" && (
-                      <button
-                        type="button"
-                        onClick={() => void Promise.resolve(onUpdateOrderStatus(order.id, "Pending")).then(() => showToast("Lab assignment returned to pending.")).catch((err: unknown) => showError((err as Error).message || "Could not return this lab order to pending."))}
-                        className="btn btn-secondary btn-sm"
-                        title="Clear the lab assignment and return this order to pending"
-                      >
-                        Return to pending
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={() => setEditingOrder(order)}
@@ -635,6 +625,7 @@ function AssignLabRequestModal({
   const [patientMatchIndex, setPatientMatchIndex] = useState(-1);
   const [patientSearchBusy, setPatientSearchBusy] = useState(false);
   const [patientSearchError, setPatientSearchError] = useState("");
+  const activePatientMatchRef = useRef<HTMLButtonElement>(null);
   const [patientCases, setPatientCases] = useState<LabPatientCase[]>([]);
   const [caseId, setCaseId] = useState("");
   const [casesBusy, setCasesBusy] = useState(false);
@@ -680,6 +671,10 @@ function AssignLabRequestModal({
       window.clearTimeout(timer);
     };
   }, [onSearchPatients, patientQuery, request]);
+
+  useEffect(() => {
+    activePatientMatchRef.current?.scrollIntoView({ block: "nearest" });
+  }, [patientMatchIndex]);
 
   useEffect(() => {
     if (request || !patient) return;
@@ -766,59 +761,59 @@ function AssignLabRequestModal({
   };
 
   return (
-    <Modal title="Send to lab" onClose={onClose}>
+    <Modal title="Send to lab" maxWidth={620} onClose={onClose}>
       <ModalBody as="form" onSubmit={submit} aria-busy={saving}>
-        <Card square style={{ background: "#f8fafc", border: "1px solid #e2e8f0", marginBottom: "var(--sp-3)" }}>
-          <CardBody>
-            {request ? <strong style={{ display: "block" }}>{request.patientName} · {request.patientNumber}</strong> : patient ? <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--sp-2)" }}>
-                <strong>{patient.fullName} · {patient.patientNumber}</strong>
-                <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => { setPatient(null); setPatientCases([]); setCaseId(""); setPatientQuery(""); }}>Change</button>
-              </div>
-              {patient.phone ? <small style={{ display: "block", color: "var(--ink-3)", marginTop: "3px" }}>{patient.phone}</small> : null}
-            </> : <Field label="Find patient" required>
-              <div style={{ position: "relative" }}>
-                <Input
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  name="sajilo-lab-patient-lookup"
-                  data-1p-ignore
-                  data-lpignore="true"
-                  autoFocus={!request}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-controls="lab-patient-matches"
-                  aria-expanded={patientMatches.length > 0}
-                  aria-activedescendant={patientMatchIndex >= 0 ? `lab-patient-match-${patientMatches[patientMatchIndex]?.patientId}` : undefined}
-                  value={patientQuery}
-                  onChange={(event) => { setPatientQuery(event.target.value); setPatientMatches([]); setPatientMatchIndex(-1); }}
-                  onKeyDown={handlePatientSearchKeyDown}
-                  disabled={saving}
-                  placeholder="Search by name, record ID or phone"
-                />
-                {patientMatches.length ? <div id="lab-patient-matches" role="listbox" aria-label="Patient suggestions" style={{ position: "absolute", zIndex: 5, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: "220px", overflowY: "auto", border: "1px solid #c6d6e5", background: "#fff", boxShadow: "0 8px 22px rgba(15, 23, 42, 0.16)" }}>
+        {request ? <Card square style={{ background: "#f8fafc", border: "1px solid #e2e8f0", marginBottom: "var(--sp-3)" }}>
+          <CardBody><strong style={{ display: "block" }}>{request.patientName} · {request.patientNumber}</strong></CardBody>
+        </Card> : <>
+          <p style={{ margin: 0, color: "var(--ink-2)", fontSize: "var(--fs-14)", lineHeight: 1.5 }}>{patient ? `New lab order for ${patient.fullName} · ${patient.patientNumber}` : "Search and select the registered patient first."}</p>
+          {!patient ? <>
+            <Field label="Find patient" required>
+              <Input
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                name="sajilo-lab-patient-lookup"
+                data-1p-ignore
+                data-lpignore="true"
+                autoFocus={!request}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="lab-patient-matches"
+                aria-expanded={patientMatches.length > 0}
+                aria-activedescendant={patientMatchIndex >= 0 ? `lab-patient-match-${patientMatches[patientMatchIndex]?.patientId}` : undefined}
+                value={patientQuery}
+                onChange={(event) => { setPatientQuery(event.target.value); setPatientMatches([]); setPatientMatchIndex(-1); }}
+                onKeyDown={handlePatientSearchKeyDown}
+                disabled={saving}
+                placeholder="Search by name, record ID or phone"
+              />
+              {patientMatches.length ? <div id="lab-patient-matches" role="listbox" aria-label="Patient suggestions" style={{ display: "flex", flexDirection: "column", gap: ".2rem", maxHeight: "11rem", overflow: "auto", padding: ".3rem", border: "1px solid var(--field-border)", background: "#fff" }}>
                   {patientMatches.map((match, index) => <button
                     aria-selected={index === patientMatchIndex}
                     id={`lab-patient-match-${match.patientId}`}
                     key={match.patientId}
+                    ref={index === patientMatchIndex ? activePatientMatchRef : undefined}
                     role="option"
                     type="button"
                     onMouseEnter={() => setPatientMatchIndex(index)}
                     onClick={() => selectPatient(match)}
-                    style={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "flex-start", gap: "2px", border: 0, borderBottom: "1px solid #e2e8f0", padding: "9px 10px", textAlign: "left", background: index === patientMatchIndex ? "#eaf5fb" : "#fff", color: "var(--ink-1)", cursor: "pointer" }}
+                    style={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "flex-start", gap: ".1rem", border: index === patientMatchIndex ? "1px solid #7dd3fc" : "1px solid transparent", padding: ".5rem .6rem", textAlign: "left", background: index === patientMatchIndex ? "#e0f2fe" : "#fff", color: "#0f172a", cursor: "pointer", font: "inherit" }}
                   >
                     <strong>{match.fullName}</strong>
-                    <small style={{ color: "var(--ink-3)" }}>{match.patientNumber}{match.phone ? ` · ${match.phone}` : ""}</small>
+                    <small style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)" }}>{match.patientNumber}{match.phone ? ` · ${match.phone}` : ""}</small>
                   </button>)}
                 </div> : null}
-              </div>
-              {patientSearchBusy ? <small role="status" style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>Searching registered patients…</small> : null}
-              {!patientSearchBusy && patientQuery.trim() && !patientMatches.length && !patientSearchError ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>No matching registered patient.</small> : null}
-              {patientSearchError ? <small role="alert" style={{ display: "block", marginTop: "5px", color: "var(--danger)" }}>{patientSearchError}</small> : null}
-            </Field>}
-            {!request && patient ? <Field label="Open patient case" required style={{ marginTop: "var(--sp-3)" }}>
+              {patientSearchBusy ? <small role="status" style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)" }}>Searching registered patients…</small> : patientQuery.trim() && !patientMatches.length && !patientSearchError ? <small style={{ color: "var(--ink-3)", fontSize: "var(--fs-13)" }}>No matching registered patient.</small> : null}
+              {patientSearchError ? <small role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-13)" }}>{patientSearchError}</small> : null}
+            </Field>
+          </> : <section aria-label="Selected patient" style={{ display: "flex", alignItems: "center", gap: ".55rem", padding: ".7rem .8rem", border: "1px solid #b9d8ee", background: "#f0f9ff", color: "#0f172a", fontSize: "var(--fs-14)" }}>
+            <strong>{patient.fullName}</strong>
+            <span style={{ color: "var(--ink-3)" }}>{patient.patientNumber}</span>
+            <button type="button" disabled={saving} onClick={() => { setPatient(null); setPatientCases([]); setCaseId(""); setPatientQuery(""); setPatientMatches([]); setPatientMatchIndex(-1); }} style={{ marginLeft: "auto", border: 0, background: "transparent", color: "#0284c7", cursor: "pointer", font: "inherit", fontWeight: "var(--fw-bold)" }}>Change patient</button>
+          </section>}
+          {patient ? <Field label="Open patient case" required>
               <Select value={caseId} onChange={(event) => setCaseId(event.target.value)} disabled={casesBusy || saving}>
                 <option value="">{casesBusy ? "Loading patient cases…" : "Select an open case…"}</option>
                 {openCases.map((item) => <option key={item.chiefComplaintId} value={item.chiefComplaintId}>{item.chiefComplaint} · Opened {item.openedOn}</option>)}
@@ -826,9 +821,8 @@ function AssignLabRequestModal({
               {casesError ? <small role="alert" style={{ display: "block", marginTop: "5px", color: "var(--danger)" }}>{casesError}</small> : null}
               {!casesBusy && !casesError && patientCases.length > 0 && !openCases.length ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>This patient has no open case available for a new lab order.</small> : null}
               {!casesBusy && !casesError && !patientCases.length ? <small style={{ display: "block", marginTop: "5px", color: "var(--ink-3)" }}>Select an open case to attach this lab order to the patient’s clinical record.</small> : null}
-            </Field> : null}
-          </CardBody>
-        </Card>
+          </Field> : null}
+        </>}
         <Field label="Procedure / work" required>
           <Input list="lab-work-options" value={labWorkName} onChange={(event) => setLabWorkName(event.target.value)} autoFocus={Boolean(request)} disabled={saving} placeholder="Select or type lab work" />
           <datalist id="lab-work-options">{LAB_WORK_OPTIONS.map((work) => <option key={work} value={work} />)}</datalist>

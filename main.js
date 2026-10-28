@@ -1511,7 +1511,7 @@ function enableWindowDrag(section, titlebar, maximizeButton, appTitle) {
     // Keep the initial centered transform until the pointer actually moves.
     // Normalizing top/left on pointerdown alone applies translateY(-50%) twice,
     // which can make the first drag jump away from the pointer.
-    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, stageRect, started: false };
+    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height, stageRect, started: false };
     titlebar.setPointerCapture(event.pointerId);
     focusWindow(section.dataset.appId);
   });
@@ -1523,10 +1523,15 @@ function enableWindowDrag(section, titlebar, maximizeButton, appTitle) {
       const clickRatio = Math.min(0.9, Math.max(0.1, (drag.x - drag.maximizedRect.left) / Math.max(1, drag.maximizedRect.width)));
       const titlebarOffset = Math.min(22, Math.max(8, drag.y - drag.maximizedRect.top));
       section.classList.remove('is-maximized');
+      if (document.fullscreenElement === desktop) section.classList.add('is-fullscreen-resized');
       syncMaximizeControl(section, maximizeButton, appTitle);
 
       const restoredRect = section.getBoundingClientRect();
       const { stageRect } = drag;
+      if (document.fullscreenElement === desktop) {
+        section.style.width = (restoredRect.width / stageRect.width * 100) + '%';
+        section.style.height = (restoredRect.height / stageRect.height * 100) + '%';
+      }
       const dockRect = dock.hidden ? null : dock.getBoundingClientRect();
       const bottomLimit = dockRect ? Math.min(stageRect.bottom, dockRect.top - 12) : stageRect.bottom;
       const maxLeft = Math.max(stageRect.left, stageRect.right - 80);
@@ -1537,11 +1542,19 @@ function enableWindowDrag(section, titlebar, maximizeButton, appTitle) {
       section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
       section.style.transform = 'none';
       section.classList.add('is-dragging');
-      drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left, top, stageRect };
+      drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left, top, width: restoredRect.width, height: restoredRect.height, stageRect, started: true };
       return;
     }
     if (!drag.started) {
       const { stageRect } = drag;
+      // The fullscreen CSS centers windows with !important positioning until
+      // a resize hands geometry over to inline styles. Do the same handoff on
+      // the first actual drag so newly opened windows can move immediately.
+      if (document.fullscreenElement === desktop) {
+        section.classList.add('is-fullscreen-resized');
+        section.style.width = (drag.width / stageRect.width * 100) + '%';
+        section.style.height = (drag.height / stageRect.height * 100) + '%';
+      }
       section.style.left = ((drag.left - stageRect.left) / stageRect.width * 100) + '%';
       section.style.top = ((drag.top - stageRect.top) / stageRect.height * 100) + '%';
       section.style.transform = 'none';
