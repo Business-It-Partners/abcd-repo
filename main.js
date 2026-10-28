@@ -1480,7 +1480,7 @@ function createWindow(app, shift) {
     section.append(handle);
     enableWindowResize(section, handle, maximizeButton, app.title);
   }
-  enableWindowDrag(section, titlebar);
+  enableWindowDrag(section, titlebar, maximizeButton, app.title);
   windowStage.append(section);
   return {
     element: section, app, runtimeHost, backButton, frame: null, port: null, readyTimer: null,
@@ -1495,23 +1495,59 @@ function createWindow(app, shift) {
   };
 }
 
-function enableWindowDrag(section, titlebar) {
+function enableWindowDrag(section, titlebar, maximizeButton, appTitle) {
   let drag = null;
   titlebar.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || event.target.closest('button, .window-resize-handle') || section.classList.contains('is-maximized')) return;
+    if (event.button !== 0 || event.target.closest('button, .window-resize-handle')) return;
     const rect = section.getBoundingClientRect();
     const stageRect = windowStage.getBoundingClientRect();
-    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, stageRect };
-    section.style.left = ((rect.left - stageRect.left) / stageRect.width * 100) + '%';
-    section.style.top = ((rect.top - stageRect.top) / stageRect.height * 100) + '%';
-    section.style.transform = 'none';
+    event.preventDefault();
+    if (section.classList.contains('is-maximized')) {
+      drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, maximizedRect: rect, stageRect, maximized: true };
+      titlebar.setPointerCapture(event.pointerId);
+      focusWindow(section.dataset.appId);
+      return;
+    }
+    // Keep the initial centered transform until the pointer actually moves.
+    // Normalizing top/left on pointerdown alone applies translateY(-50%) twice,
+    // which can make the first drag jump away from the pointer.
+    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, stageRect, started: false };
     titlebar.setPointerCapture(event.pointerId);
-    section.classList.add('is-dragging');
     focusWindow(section.dataset.appId);
   });
 
   titlebar.addEventListener('pointermove', (event) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag.started && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
+    if (drag.maximized) {
+      const clickRatio = Math.min(0.9, Math.max(0.1, (drag.x - drag.maximizedRect.left) / Math.max(1, drag.maximizedRect.width)));
+      const titlebarOffset = Math.min(22, Math.max(8, drag.y - drag.maximizedRect.top));
+      section.classList.remove('is-maximized');
+      syncMaximizeControl(section, maximizeButton, appTitle);
+
+      const restoredRect = section.getBoundingClientRect();
+      const { stageRect } = drag;
+      const dockRect = dock.hidden ? null : dock.getBoundingClientRect();
+      const bottomLimit = dockRect ? Math.min(stageRect.bottom, dockRect.top - 12) : stageRect.bottom;
+      const maxLeft = Math.max(stageRect.left, stageRect.right - 80);
+      const maxTop = Math.max(stageRect.top + 35, bottomLimit - restoredRect.height);
+      const left = Math.min(maxLeft, Math.max(stageRect.left, event.clientX - restoredRect.width * clickRatio));
+      const top = Math.min(maxTop, Math.max(stageRect.top + 35, event.clientY - titlebarOffset));
+      section.style.left = ((left - stageRect.left) / stageRect.width * 100) + '%';
+      section.style.top = ((top - stageRect.top) / stageRect.height * 100) + '%';
+      section.style.transform = 'none';
+      section.classList.add('is-dragging');
+      drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left, top, stageRect };
+      return;
+    }
+    if (!drag.started) {
+      const { stageRect } = drag;
+      section.style.left = ((drag.left - stageRect.left) / stageRect.width * 100) + '%';
+      section.style.top = ((drag.top - stageRect.top) / stageRect.height * 100) + '%';
+      section.style.transform = 'none';
+      section.classList.add('is-dragging');
+      drag.started = true;
+    }
     const { stageRect } = drag;
     const dockRect = dock.hidden ? null : dock.getBoundingClientRect();
     const bottomLimit = dockRect ? Math.min(stageRect.bottom, dockRect.top - 12) : stageRect.bottom;
