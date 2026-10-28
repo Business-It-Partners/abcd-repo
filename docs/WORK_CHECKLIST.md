@@ -107,13 +107,15 @@ Finance, Calendar, and Treatment Progress were already present on `browser-versi
 
 ## B6 — Browser staging readiness
 
-**Status: PLANNED**
+**Status: IN PROGRESS — USER-DIRECTED STAGING ROLLOUT**
 
-- [ ] Complete browser-specific security, session, role, isolation, and failure checks.
-- [ ] Verify Brave V1 coverage and accessible responsive behavior; do not expand browser support in V1.
-- [ ] Confirm staging hosting, CORS, CSP, cache/update behavior, and rollback procedure.
-- [ ] Run the browser acceptance checklist on staging without production resources.
-- [ ] Record source revision, evidence, known limits, and acceptance decision.
+The user selected the existing SaaS clinic staging site on 2026-10-28. Publishing the Browser Edition there is in progress ahead of remaining B4/B5 workflow and visual acceptance; deployment does not close those gates.
+
+- [x] Confirm the existing `cloudfare-dental-saas-staging` site in project `dental-managemetn-staging` as the target; do not create another site.
+- [x] Add a repeatable allowlisted staging export and public Browser Edition source checks without secrets.
+- [ ] Publish to the selected site and verify the Browser host, asset CORS, CSP, cache behavior, and read-only Worker session path in isolated Brave.
+- [ ] Verify the remaining B4/B5 workflow and visual acceptance gates; any business writes still require a confirmed synthetic target and cleanup plan.
+- [ ] Record source revision, release and rollback evidence, known limits, and the staging acceptance decision.
 
 ## B7 — Production readiness and release decision
 

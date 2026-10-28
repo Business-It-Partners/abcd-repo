@@ -24,7 +24,7 @@
 
 ## Recorded baseline decisions
 
-B0 records the browser support policy, dedicated staging-hosting plan, single Firebase session with the existing Worker as authority, sandboxed first-party app runtime with host-mediated API access, synthetic-only staging writes, and browser-specific acceptance evidence in [Architecture baseline](ARCHITECTURE.md). Later milestones implement and verify these decisions before staging release; they do not imply that those capabilities already exist.
+B0 records the browser support policy, staging-hosting boundary, single Firebase session with the existing Worker as authority, sandboxed first-party app runtime with host-mediated API access, synthetic-only staging writes, and browser-specific acceptance evidence in [Architecture baseline](ARCHITECTURE.md). On 2026-10-28 the user selected the existing SaaS staging site, superseding the earlier separate-site proposal. A staging publication does not close B4 or B5 workflow/visual acceptance.
 
 ## Milestones
 
