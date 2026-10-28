@@ -9,6 +9,7 @@ const mainSource = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
 const pageSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const styleSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const devServerSource = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
+const staticRoutesSource = readFileSync(new URL('../tools/static-routes.mjs', import.meta.url), 'utf8');
 const sessionSource = mainSource.match(/function clinicSessionFromMeResponse\(payload\) \{[\s\S]*?^\}/m)?.[0];
 const workspaceRolesSource = mainSource.match(/function availableWorkspaceRoles\(session\) \{[\s\S]*?^\}/m)?.[0];
 const workspaceRoleNameSource = mainSource.match(/function workspaceRoleName\(role\) \{[\s\S]*?^\}/m)?.[0];
@@ -105,6 +106,6 @@ test('keeps extra retry and sign-out buttons off the clinic sign-in form', () =>
 });
 
 test('serves host modules required to initialize the browser shell and app catalog', () => {
-  assert.match(devServerSource, /\['\/vendor\/nepali-date-utils\/index\.js', 'vendor\/nepali-date-utils\/index\.js'\]/);
-  assert.match(devServerSource, /\['\/apps\/treatment-protocols\/asset-manifest\.js', 'apps\/treatment-protocols\/asset-manifest\.js'\]/);
+  assert.match(staticRoutesSource, /\['\/vendor\/nepali-date-utils\/index\.js', 'vendor\/nepali-date-utils\/index\.js'\]/);
+  assert.match(staticRoutesSource, /\['\/apps\/treatment-protocols\/asset-manifest\.js', 'apps\/treatment-protocols\/asset-manifest\.js'\]/);
 });

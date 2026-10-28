@@ -37,6 +37,7 @@ const patientRecordViewSource = readFileSync(new URL('../apps/dental-apps/compan
 const userManagementAppSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/main.tsx', import.meta.url), 'utf8');
 const userManagementApiSource = readFileSync(new URL('../apps/dental-apps/company.dental.user-management.m17/src/userManagementApi.ts', import.meta.url), 'utf8');
 const serverScript = readFileSync(new URL('../tools/dev-server.mjs', import.meta.url), 'utf8');
+const staticRoutesScript = readFileSync(new URL('../tools/static-routes.mjs', import.meta.url), 'utf8');
 const appLaunchSource = hostScript.match(/function openApp\(appId, fromRoute = false\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeFailureSource = hostScript.match(/function failAppRuntime\(app, entry, attempt, message\) \{[\s\S]*?^\}/m)?.[0];
 const runtimeInitializeSource = hostScript.match(/async function initializeAppRuntime\(app, entry\) \{[\s\S]*?^\}/m)?.[0];
@@ -103,7 +104,7 @@ test('limits User Management to its admin capability and exact account routes', 
     '/apps/user-management.v1.css',
     '/apps/dental-apps/company.dental.user-management.m17/asset-manifest.js',
     '/assets/dock/user-management.png',
-  ]) assert.ok(serverScript.includes(asset), `dev server route ${asset}`);
+  ]) assert.ok(staticRoutesScript.includes(asset), `shared dev-server and staging-export route ${asset}`);
 });
 
 test('allows app page back through dirty drafts while still blocking modals and pending writes', () => {
@@ -521,7 +522,7 @@ test('isolates app code in a scripts-only frame with a private host channel and 
   assert.ok(runtimeHtml.includes(`script-src 'sha256-${scriptIntegrity}'`));
   assert.ok(serverScript.includes(`script-src 'sha256-${scriptIntegrity}'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'`));
   assert.match(serverScript, /frame-src \$\{frameSources\}/);
-  assert.match(serverScript, /\['\/apps\/runtime\.v1\.html', 'apps\/runtime\.v1\.html'\]/);
+  assert.match(staticRoutesScript, /\['\/apps\/runtime\.v1\.html', 'apps\/runtime\.v1\.html'\]/);
   for (const path of [
     '/apps/calendar.v1.html', '/apps/calendar.v1.js', '/apps/calendar.v1.css', '/apps/calendar/asset-manifest.js',
     '/apps/finance.v1.html', '/apps/finance.v1.js', '/apps/finance.v1.css', '/apps/finance/asset-manifest.js',
@@ -531,5 +532,5 @@ test('isolates app code in a scripts-only frame with a private host channel and 
     '/apps/patients.v1.html', '/apps/patients.v1.js', '/apps/patients.v1.css',
     '/apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js',
     '/apps/clinic-app-runtime/mediaHost.js',
-  ]) assert.ok(serverScript.includes(`['${path}'`), `${path} should be served by the local dev server`);
+  ]) assert.ok(staticRoutesScript.includes(`['${path}'`), `${path} should be served by the local dev server and staging export`);
 });

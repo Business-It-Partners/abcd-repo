@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { networkInterfaces } from 'node:os';
+import { browserStaticRoutes as routes, isolatedAppAssets, isolatedAppPages } from './static-routes.mjs';
 
 const root = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const expectedFlavor = '--flavor';
@@ -49,96 +50,6 @@ const contentTypes = {
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
 };
-const routes = new Map([
-  ['/', 'index.html'],
-  ['/index.html', 'index.html'],
-  ['/main.js', 'main.js'],
-  ['/apps/catalog.js', 'apps/catalog.js'],
-  ['/apps/manifest.js', 'apps/manifest.js'],
-  ['/apps/runtime.v1.html', 'apps/runtime.v1.html'],
-  ['/apps/runtime.v1.js', 'apps/runtime.v1.js'],
-  ['/apps/treatment-protocols.v1.html', 'apps/treatment-protocols.v1.html'],
-  ['/apps/treatment-protocols.v1.js', 'apps/treatment-protocols.v1.js'],
-  ['/apps/treatment-protocols.v1.css', 'apps/treatment-protocols.v1.css'],
-  ['/apps/treatment-protocols/asset-manifest.js', 'apps/treatment-protocols/asset-manifest.js'],
-  ['/apps/appointments.v1.html', 'apps/appointments.v1.html'],
-  ['/apps/appointments.v1.js', 'apps/appointments.v1.js'],
-  ['/apps/appointments.v1.css', 'apps/appointments.v1.css'],
-  ['/apps/dental-apps/company.dental.appointments.m17/asset-manifest.js', 'apps/dental-apps/company.dental.appointments.m17/asset-manifest.js'],
-  ['/apps/calendar.v1.html', 'apps/calendar.v1.html'],
-  ['/apps/calendar.v1.js', 'apps/calendar.v1.js'],
-  ['/apps/calendar.v1.css', 'apps/calendar.v1.css'],
-  ['/apps/calendar/asset-manifest.js', 'apps/calendar/asset-manifest.js'],
-  ['/apps/finance.v1.html', 'apps/finance.v1.html'],
-  ['/apps/finance.v1.js', 'apps/finance.v1.js'],
-  ['/apps/finance.v1.css', 'apps/finance.v1.css'],
-  ['/apps/finance/asset-manifest.js', 'apps/finance/asset-manifest.js'],
-  ['/apps/user-management.v1.html', 'apps/user-management.v1.html'],
-  ['/apps/user-management.v1.js', 'apps/user-management.v1.js'],
-  ['/apps/user-management.v1.css', 'apps/user-management.v1.css'],
-  ['/apps/dental-apps/company.dental.user-management.m17/asset-manifest.js', 'apps/dental-apps/company.dental.user-management.m17/asset-manifest.js'],
-  ['/apps/followups.v1.html', 'apps/followups.v1.html'],
-  ['/apps/followups.v1.js', 'apps/followups.v1.js'],
-  ['/apps/followups.v1.css', 'apps/followups.v1.css'],
-  ['/apps/dental-apps/company.dental.followups.m17/asset-manifest.js', 'apps/dental-apps/company.dental.followups.m17/asset-manifest.js'],
-  ['/apps/staff.v1.html', 'apps/staff.v1.html'],
-  ['/apps/staff.v1.js', 'apps/staff.v1.js'],
-  ['/apps/staff.v1.css', 'apps/staff.v1.css'],
-  ['/apps/dental-apps/company.dental.staff.m17/asset-manifest.js', 'apps/dental-apps/company.dental.staff.m17/asset-manifest.js'],
-  ['/apps/lab.v1.html', 'apps/lab.v1.html'],
-  ['/apps/lab.v1.js', 'apps/lab.v1.js'],
-  ['/apps/lab.v1.css', 'apps/lab.v1.css'],
-  ['/apps/dental-apps/company.dental.lab-tracker.m17/asset-manifest.js', 'apps/dental-apps/company.dental.lab-tracker.m17/asset-manifest.js'],
-  ['/apps/treatment-progress.v1.html', 'apps/treatment-progress.v1.html'],
-  ['/apps/treatment-progress.v1.js', 'apps/treatment-progress.v1.js'],
-  ['/apps/treatment-progress.v1.css', 'apps/treatment-progress.v1.css'],
-  ['/apps/treatment-progress/asset-manifest.js', 'apps/treatment-progress/asset-manifest.js'],
-  ['/apps/workentry.v1.html', 'apps/workentry.v1.html'],
-  ['/apps/workentry.v1.js', 'apps/workentry.v1.js'],
-  ['/apps/workentry.v1.css', 'apps/workentry.v1.css'],
-  ['/apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js', 'apps/dental-apps/company.dental.work-entry.m17/asset-manifest.js'],
-  ['/apps/patients.v1.html', 'apps/patients.v1.html'],
-  ['/apps/patients.v1.js', 'apps/patients.v1.js'],
-  ['/apps/patients.v1.css', 'apps/patients.v1.css'],
-  ['/apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js', 'apps/dental-apps/company.dental.patient-record.m17/asset-manifest.js'],
-  ['/apps/clinic-app-runtime/mediaHost.js', 'apps/clinic-app-runtime/mediaHost.js'],
-  ['/styles.css', 'styles.css'],
-  ['/vendor/nepali-date-utils/index.js', 'vendor/nepali-date-utils/index.js'],
-  ['/assets/sajilo-dental-mark.svg', 'assets/sajilo-dental-mark.svg'],
-  ['/assets/fewa-turquoise-shore.jpg', 'assets/fewa-turquoise-shore.jpg'],
-  ['/assets/dock/calendar.webp', 'assets/dock/calendar.webp'],
-  ['/assets/dock/appointments.webp', 'assets/dock/appointments.webp'],
-  ['/assets/dock/finance.webp', 'assets/dock/finance.webp'],
-  ['/assets/dock/followups.webp', 'assets/dock/followups.webp'],
-  ['/assets/dock/lab.webp', 'assets/dock/lab.webp'],
-  ['/assets/dock/patients.webp', 'assets/dock/patients.webp'],
-  ['/assets/dock/protocols.webp', 'assets/dock/protocols.webp'],
-  ['/assets/dock/treatment.webp', 'assets/dock/treatment.webp'],
-  ['/assets/dock/staff.webp', 'assets/dock/staff.webp'],
-  ['/assets/dock/workentry.webp', 'assets/dock/workentry.webp'],
-  ['/assets/dock/user-management.png', 'assets/dock/user-management.png'],
-]);
-
-const isolatedAppPages = new Set([
-  '/apps/treatment-protocols.v1.html', '/apps/appointments.v1.html', '/apps/followups.v1.html',
-  '/apps/staff.v1.html', '/apps/lab.v1.html', '/apps/workentry.v1.html', '/apps/patients.v1.html',
-  '/apps/calendar.v1.html', '/apps/finance.v1.html', '/apps/treatment-progress.v1.html', '/apps/user-management.v1.html',
-]);
-const isolatedAppAssets = new Set([
-  '/apps/runtime.v1.js',
-  '/apps/treatment-protocols.v1.js', '/apps/treatment-protocols.v1.css',
-  '/apps/appointments.v1.js', '/apps/appointments.v1.css',
-  '/apps/followups.v1.js', '/apps/followups.v1.css',
-  '/apps/staff.v1.js', '/apps/staff.v1.css',
-  '/apps/lab.v1.js', '/apps/lab.v1.css',
-  '/apps/workentry.v1.js', '/apps/workentry.v1.css',
-  '/apps/patients.v1.js', '/apps/patients.v1.css',
-  '/apps/calendar.v1.js', '/apps/calendar.v1.css',
-  '/apps/finance.v1.js', '/apps/finance.v1.css',
-  '/apps/treatment-progress.v1.js', '/apps/treatment-progress.v1.css',
-  '/apps/user-management.v1.js', '/apps/user-management.v1.css',
-]);
-
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url ?? '/', `http://127.0.0.1:${port}`).pathname;
 
