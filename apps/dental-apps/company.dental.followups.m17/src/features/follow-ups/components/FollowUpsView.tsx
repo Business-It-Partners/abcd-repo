@@ -101,6 +101,7 @@ function CheckBox({
   title,
   pending = false,
   disabled = false,
+  disabledReason,
   onClick,
 }: {
   on: boolean;
@@ -108,6 +109,7 @@ function CheckBox({
   title: string;
   pending?: boolean;
   disabled?: boolean;
+  disabledReason?: string;
   onClick: () => void;
 }) {
   return (
@@ -116,7 +118,7 @@ function CheckBox({
       data-checkbox-control
       data-checkbox-visual="square"
       data-loading-message="Updating follow-up…"
-      title={pending ? "Saving…" : disabled ? "Already recorded" : title}
+      title={pending ? "Saving…" : disabled ? disabledReason || "Unavailable while a save is pending" : title}
       onClick={onClick}
       disabled={pending || disabled}
       aria-pressed={on}
@@ -167,7 +169,6 @@ const DUE_CHIP: Record<FollowUp["status"], { bg: string; text: string; border: s
 };
 
 interface FollowUpsViewProps {
-  readOnly?: boolean;
   allowCreate?: boolean;
   doctors: FollowUpDoctorOption[];
   writeState: 'none' | 'saving' | 'unknown';
@@ -414,7 +415,6 @@ function RescheduleModal({
 }
 
 export default function FollowUpsView({
-  readOnly = false,
   allowCreate = false,
   doctors,
   writeState,
@@ -450,6 +450,10 @@ export default function FollowUpsView({
   // Follow-up actions are independent commands. Keep an individual row disabled while its command
   // is in flight so a single desk action cannot be sent twice.
   const [savingFollowUpIds, setSavingFollowUpIds] = useState<Set<string>>(() => new Set());
+  const editsBlocked = writeState !== 'none' || savingFollowUpIds.size > 0;
+  const editDisabledReason = writeState === 'unknown'
+    ? 'Resolve the pending follow-up save before editing.'
+    : 'A follow-up update is being saved and reloaded.';
 
   const patchAttempt = async (
     followUp: FollowUp,
@@ -458,7 +462,7 @@ export default function FollowUpsView({
     successMessage: string,
     failureMessage: string,
   ) => {
-    if (savingFollowUpIds.has(followUp.id)) return;
+    if (editsBlocked || savingFollowUpIds.has(followUp.id)) return;
     setSavingFollowUpIds((current) => new Set(current).add(followUp.id));
     // Render the intended result first. The visible row is never replaced just because this small
     // field is being saved; a rejected write restores the exact previous state below.
@@ -508,8 +512,8 @@ export default function FollowUpsView({
         <button
           type="button"
           className="btn btn-primary"
-          disabled={!allowCreate || writeState !== 'none'}
-          title={!allowCreate ? 'Follow-up creation is unavailable in this mode' : writeState !== 'none' ? 'Resolve the pending save before creating another follow-up' : 'Create follow-up'}
+          disabled={!allowCreate || editsBlocked}
+          title={!allowCreate ? 'Follow-up creation is unavailable in this mode' : editsBlocked ? editDisabledReason : 'Create follow-up'}
           onClick={() => setCreateOpen(true)}
         >
           <Plus size={16} /> Create follow-up
@@ -688,7 +692,8 @@ export default function FollowUpsView({
                   color="var(--acc, #7c3aed)"
                   title={f.called ? "Unmark called" : "Mark as called"}
                   pending={savingFollowUpIds.has(f.id)}
-                   disabled={readOnly}
+                  disabled={editsBlocked}
+                  disabledReason={editDisabledReason}
                   onClick={() => void patchAttempt(
                     f,
                     { called: !f.called },
@@ -712,7 +717,8 @@ export default function FollowUpsView({
                   color="#d97706"
                   title={f.noAnswer ? "Remove no-response mark" : "Mark as no response"}
                   pending={savingFollowUpIds.has(f.id)}
-                   disabled={readOnly}
+                  disabled={editsBlocked}
+                  disabledReason={editDisabledReason}
                   onClick={() => void patchAttempt(
                     f,
                     { noAnswer: !f.noAnswer },
@@ -736,7 +742,8 @@ export default function FollowUpsView({
                   color="#16a34a"
                   title={f.caught ? "Reopen follow-up" : "Mark as caught"}
                   pending={savingFollowUpIds.has(f.id)}
-                   disabled={readOnly}
+                  disabled={editsBlocked}
+                  disabledReason={editDisabledReason}
                   onClick={() => void patchAttempt(
                     f,
                     { active: f.caught, caught: !f.caught },
@@ -772,8 +779,8 @@ export default function FollowUpsView({
                       className="btn btn-primary btn-sm"
                       style={{ minHeight: "26px", padding: "4px 10px", borderRadius: "2px", fontSize: "var(--fs-12)", justifyContent: "center" }}
                       onClick={() => setRescheduleTarget(f)}
-                       disabled={readOnly}
-                       title={readOnly ? 'Read-only browser verification' : 'Reschedule follow-up'}
+                      disabled={editsBlocked}
+                      title={editsBlocked ? editDisabledReason : 'Reschedule follow-up'}
                     >
                       Reschedule
                     </button>

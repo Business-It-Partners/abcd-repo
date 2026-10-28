@@ -12,7 +12,6 @@ import {
   User,
   BellRing,
   WalletCards,
-  FlaskConical,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -21,7 +20,6 @@ import {
   MapPin,
   Pencil,
   Trash2,
-  Plus,
 } from "lucide-react";
 import { type CanalChartData } from "@/features/work-entry/model/canalData";
 import { type PlanAppendDraft } from "@/features/work-entry/model/draftTypes";
@@ -29,7 +27,6 @@ import {
   displayToISO,
   formatDateShort,
   type PatientDetail,
-  type LabSupplier,
   type Visit,
   type FollowUp,
   type ProcedureCatalogItem,
@@ -42,10 +39,8 @@ import {
 import RadiographUploader from "@/features/patients/media/RadiographUploader";
 import { type Case, type CaseOutcome, type TreatmentProtocol, type FeeScheduleItem } from "@/features/work-entry/model/caseData";
 import XRayGallery from "./XRayGallery";
-import { type LabOrder } from "@/features/patients/model/domain";
-import type { FollowUpCreateInput, OdontogramMark, PatientCanalMeasurement, PatientLedger, PatientFollowUp as WorkerPatientFollowUp, PatientNote, PatientPaymentInput, PatientPrescription, PatientTimelineEvent, PatientTreatmentPlan } from "@/features/patients/types";
+import type { OdontogramMark, PatientCanalMeasurement, PatientLedger, PatientFollowUp as WorkerPatientFollowUp, PatientNote, PatientPaymentInput, PatientPrescription, PatientTimelineEvent, PatientTreatmentPlan } from "@/features/patients/types";
 import { doctorAccent } from "@/features/patients/model/doctorAccent";
-import PatientLabTab from "./PatientLabTab";
 import PatientProfileTab from "./PatientProfileTab";
 import PatientNotesTab from "./PatientNotesTab";
 import CanalDrawer from "@/features/work-entry/components/CanalDrawer";
@@ -56,11 +51,9 @@ import { handleFormKeyboardFocus, handleFormKeyboardPointerDown } from "@/shared
 import ConfirmDialog from "@/shared/ui/ConfirmDialog";
 import { useClinicRouteState } from "@/shell/routing/useClinicRouteState";
 import DatePicker from "@/shared/dates/NepaliDatePicker";
-import TimePicker from "@/shared/dates/TimePicker";
 import { CaseStatusUpdateModal, type CaseStatusValue } from "@/features/work-entry/CaseStatusUpdateModal";
-import type { LabOrderAssignmentInput } from "@/features/labs/types";
 
-type TabKey = "profile" | "cases" | "notes" | "timeline" | "periodontal" | "plan" | "lab" | "xrays" | "prescriptions" | "followups" | "ledger";
+type TabKey = "profile" | "cases" | "notes" | "timeline" | "periodontal" | "plan" | "xrays" | "prescriptions" | "followups" | "ledger";
 type VisitWithTreatmentId = Visit & { treatmentId?: string };
 
 /** Group the expanded procedure rows back into their one clinical encounter. */
@@ -89,15 +82,6 @@ interface PatientDrawerProps {
   showBackButton?: boolean;
   /** Let the Dental OS adapter load only the data required by the active section. */
   onSubTabChange?: (tab: TabKey) => void;
-  patientCases?: Case[];
-  /** This patient's lab orders, grouped by case in the Lab tab. */
-  patientLabOrders: LabOrder[];
-  labs?: LabSupplier[];
-  onUpdateOrder?: (id: string, patch: Partial<Omit<LabOrder, "id">>) => Promise<void>;
-  onUpdateOrderStatus?: (orderId: string, newStatus: LabOrder["status"], paymentDate?: string) => Promise<void>;
-  onAssignPendingLabOrder?: (orderId: string, input: Omit<LabOrderAssignmentInput, "expectedRowVersion">) => Promise<void>;
-  onAddLabOrder?: (newOrder: Omit<LabOrder, "id">, commandId: string) => Promise<void> | void;
-  onRemoveOrder?: (id: string, reason: string) => Promise<void> | void;
   onSetCaseOutcome?: (caseId: string, outcome: CaseOutcome) => void;
   onUpdateCase?: (caseId: string, patch: Partial<Case>) => Promise<void> | void;
   onAppendTrustedPlan?: (clinicalCase: Case, draft: PlanAppendDraft) => Promise<boolean>;
@@ -135,8 +119,6 @@ interface PatientDrawerProps {
   feeSchedule?: FeeScheduleItem[];
   patientCanalMeasurements?: PatientCanalMeasurement[];
   onSaveCanalMeasurement?: (session: PatientCanalMeasurement, data: CanalChartData) => Promise<void>;
-  patientLabLoading?: boolean;
-  patientLabError?: string | null;
   patientCanalMeasurementsLoading?: boolean;
   patientCanalMeasurementsError?: string | null;
   canViewBillingLedger: boolean;
@@ -155,7 +137,6 @@ interface PatientDrawerProps {
   patientFollowUps?: WorkerPatientFollowUp[];
   patientFollowUpsLoading?: boolean;
   patientFollowUpsError?: string | null;
-  onCreatePatientFollowUp?: (input: Omit<FollowUpCreateInput, "patientId">) => Promise<WorkerPatientFollowUp>;
   patientTreatmentPlans?: PatientTreatmentPlan[];
   patientTreatmentPlansLoading?: boolean;
   patientTreatmentPlansError?: string | null;
@@ -807,54 +788,14 @@ function PatientBillingLedgerTab({ ledger, loading, error, onCorrect, onReverse,
   );
 }
 
-function PatientFollowUpHistoryTab({ followUps, loading, error, onCreate }: {
+function PatientFollowUpHistoryTab({ followUps, loading, error }: {
   followUps: WorkerPatientFollowUp[];
   loading: boolean;
   error: string | null | undefined;
-  onCreate?: (input: Omit<FollowUpCreateInput, "patientId">) => Promise<WorkerPatientFollowUp>;
 }) {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [dueOn, setDueOn] = useState("");
-  const [dueTime, setDueTime] = useState("");
-  const [reason, setReason] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  const closeModal = () => {
-    if (saving) return;
-    setShowAddModal(false);
-    setSaveError(null);
-  };
-
-  const submitFollowUp = async () => {
-    if (!onCreate || !dueOn || !reason.trim() || saving) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await onCreate({
-        chiefComplaintId: null,
-        dueOn,
-        dueTime: dueTime || null,
-        reason: reason.trim(),
-        requestedByStaffId: null,
-      });
-      setDueOn("");
-      setDueTime("");
-      setReason("");
-      setShowAddModal(false);
-    } catch (submitError) {
-      setSaveError(submitError instanceof Error ? submitError.message : "Could not schedule the follow-up.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
-    <>
       <Card>
-        <CardHeader title={<><BellRing size={16} /> Follow-Up History</>}>
-          {onCreate ? <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}><Plus size={14} /> Add follow-up</button> : null}
-        </CardHeader>
+        <CardHeader title={<><BellRing size={16} /> Follow-Up History</>} />
         <CardBody>
           <p style={{ margin: "0 0 14px", color: "var(--ink-3)", fontSize: "var(--fs-13)" }}>
             Follow-up records are shared with the operational Follow-ups queue.
@@ -875,28 +816,6 @@ function PatientFollowUpHistoryTab({ followUps, loading, error, onCreate }: {
           />
         </CardBody>
       </Card>
-
-      {showAddModal ? (
-        <Modal title={<><BellRing size={18} /> Add follow-up</>} onClose={closeModal} maxWidth={520}>
-          <ModalBody as="form" onSubmit={(event) => { event.preventDefault(); void submitFollowUp(); }}>
-            {saveError ? <ModalError>{saveError}</ModalError> : null}
-            <Field label="Follow-up date and time *">
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "8px" }}>
-                <DatePicker value={dueOn} onChange={setDueOn} fluid />
-                <TimePicker value={dueTime} onChange={setDueTime} fluid />
-              </div>
-            </Field>
-            <Field label="Reason *">
-              <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Enter the follow-up reason" required autoFocus />
-            </Field>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "20px" }}>
-              <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={saving}>Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={!dueOn || !reason.trim() || saving}>{saving ? "Saving…" : "Schedule follow-up"}</button>
-            </div>
-          </ModalBody>
-        </Modal>
-      ) : null}
-    </>
   );
 }
 
@@ -1305,14 +1224,6 @@ export default function PatientDrawer({
   onClose,
   showBackButton = true,
   onSubTabChange,
-  patientCases,
-  patientLabOrders,
-  labs,
-  onUpdateOrder,
-  onUpdateOrderStatus,
-  onAssignPendingLabOrder,
-  onAddLabOrder,
-  onRemoveOrder,
   patientXrays,
   xrayLoadError,
   onMediaChanged,
@@ -1341,8 +1252,6 @@ export default function PatientDrawer({
   doctorsList,
   patientCanalMeasurements = [],
   onSaveCanalMeasurement,
-  patientLabLoading = false,
-  patientLabError,
   canViewBillingLedger,
   patientLedger,
   ledgerLoading = false,
@@ -1355,7 +1264,6 @@ export default function PatientDrawer({
   patientFollowUps = [],
   patientFollowUpsLoading = false,
   patientFollowUpsError,
-  onCreatePatientFollowUp,
   patientTreatmentPlans = [],
   patientTreatmentPlansLoading = false,
   patientTreatmentPlansError,
@@ -1365,7 +1273,7 @@ export default function PatientDrawer({
     throw new Error("Patient profile changes are unavailable through the Dental OS app bridge.");
   });
   const { route, patch } = useClinicRouteState();
-  const requestedSubTabValue = (["profile", "cases", "notes", "timeline", "periodontal", "plan", "lab", "xrays", "prescriptions", "followups", "ledger"] as const).includes(route.params.subpage as TabKey)
+  const requestedSubTabValue = (["profile", "cases", "notes", "timeline", "periodontal", "plan", "xrays", "prescriptions", "followups", "ledger"] as const).includes(route.params.subpage as TabKey)
     ? route.params.subpage as TabKey
     : "profile";
   const requestedSubTab = requestedSubTabValue === "ledger" && !canViewBillingLedger ? "profile" : requestedSubTabValue;
@@ -1380,7 +1288,7 @@ export default function PatientDrawer({
     onSubTabChange?.(activeSubTab);
   }, [activeSubTab, onSubTabChange]);
   useEffect(() => {
-    if (route.params.subpage === "odontogram" || (!canViewBillingLedger && route.params.subpage === "ledger")) patch({ subpage: null, month: null }, "replace");
+    if (route.params.subpage === "odontogram" || route.params.subpage === "lab" || (!canViewBillingLedger && route.params.subpage === "ledger")) patch({ subpage: null, month: null }, "replace");
   }, [canViewBillingLedger, patch, route.params.subpage]);
   const selectSubTab = useCallback((tab: TabKey) => {
     if (tab === "ledger" && !canViewBillingLedger) {
@@ -1411,10 +1319,9 @@ export default function PatientDrawer({
       else if (e.key === "2") selectSubTab("timeline");
       else if (e.key === "3") selectSubTab("periodontal");
       else if (e.key === "4") selectSubTab("plan");
-      else if (e.key === "5") selectSubTab("lab");
-      else if (e.key === "6") selectSubTab("xrays");
-      else if (e.key === "7") selectSubTab("prescriptions");
-      else if (e.key === "8") selectSubTab("followups");
+      else if (e.key === "5") selectSubTab("xrays");
+      else if (e.key === "6") selectSubTab("prescriptions");
+      else if (e.key === "7") selectSubTab("followups");
       else if (e.key === "0" && canViewBillingLedger) selectSubTab("ledger");
     };
     window.addEventListener("keydown", handleKeys);
@@ -1519,13 +1426,6 @@ export default function PatientDrawer({
               onClick={() => selectSubTab("plan")}
             >
               <FileText size={17} /> Treatment Plan
-            </button>
-            <button
-              data-tab="lab"
-              className={`${styles.tabBtn} ${activeSubTab === "lab" ? styles.tabBtnActive : ""}`}
-              onClick={() => selectSubTab("lab")}
-            >
-              <FlaskConical size={17} /> Lab
             </button>
             <button
               data-tab="xrays"
@@ -1635,23 +1535,6 @@ export default function PatientDrawer({
 
              {activeSubTab === "plan" && <PatientTreatmentPlansTab plans={treatmentPlanCases} timeline={patientTimeline} canalMeasurements={patientCanalMeasurements} loading={patientTreatmentPlansLoading || patientTimelineLoading} error={patientTreatmentPlansError || patientTimelineError} selectedCaseId={treatmentPlanCases[treatmentPlanCaseIndex]?.chiefComplaintId} onSaveCanalMeasurement={onSaveCanalMeasurement} />}
 
-            {activeSubTab === "lab" && (
-              <PatientLabTab
-                orders={patientLabOrders}
-                cases={patientCases ?? []}
-                labs={labs}
-                onUpdateOrder={onUpdateOrder}
-                onUpdateOrderStatus={onUpdateOrderStatus}
-                onAssignPendingLabOrder={onAssignPendingLabOrder}
-                onAddLabOrder={onAddLabOrder}
-                onRemoveOrder={onRemoveOrder}
-                loading={patientLabLoading}
-                loadError={patientLabError}
-                patientId={selectedPatient.id}
-                patientName={selectedPatient.name}
-              />
-            )}
-
             {activeSubTab === "xrays" && (
               <>
                 {xrayLoadError && (
@@ -1705,7 +1588,6 @@ export default function PatientDrawer({
                 followUps={patientFollowUps}
                 loading={patientFollowUpsLoading}
                 error={patientFollowUpsError}
-                onCreate={onCreatePatientFollowUp}
               />
             )}
 

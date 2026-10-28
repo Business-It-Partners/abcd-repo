@@ -289,11 +289,11 @@ button:focus-visible, a:focus-visible {
   overflow: hidden;
   border: 1px solid #ffffffd4;
   border-radius: 22px;
-  background: linear-gradient(145deg, #f8fbf8f2, #e9f0f2ee);
+  background: linear-gradient(145deg, #f8fbf8fb, #e9f0f2fa);
   color: #26363d;
   box-shadow: 0 26px 80px #0c263655, inset 0 1px #ffffff;
-  backdrop-filter: blur(22px) saturate(155%);
-  -webkit-backdrop-filter: blur(22px) saturate(155%);
+  backdrop-filter: blur(7px) saturate(117%);
+  -webkit-backdrop-filter: blur(7px) saturate(117%);
 }
 .app-explorer-dialog::backdrop { background: #10212a70; backdrop-filter: blur(3px); }
 .app-explorer-panel { padding: 22px; }

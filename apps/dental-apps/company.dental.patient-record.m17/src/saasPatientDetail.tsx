@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PatientDrawer from "@/features/patients/components/PatientDrawer";
-import type { PatientDetail as SaaSPatientDetail, LabOrder as SaaSLabOrder, LabSupplier as SaaSLabSupplier } from "@/features/patients/model/domain";
+import type { PatientDetail as SaaSPatientDetail } from "@/features/patients/model/domain";
 import { formatDateShort, todayISO } from "@/features/patients/model/domain";
-import type { Case } from "@/features/work-entry/model/caseData";
 import type { CanalChartData } from "@/features/work-entry/model/canalData";
 import type { PatientCanalMeasurement as SaaSPatientCanalMeasurement } from "@/features/patients/types";
 import type { ToothPerioData, XrayImage } from "@/features/work-entry/model/chartData";
@@ -101,35 +100,6 @@ function legacyPatient(core: PatientCore, plans: PatientTreatmentPlan[], timelin
     } : undefined,
   };
 }
-function workerLabOrder(order: Record<string, unknown>, name: string): SaaSLabOrder {
-  const status = order.status === "sent" ? "Sent" : order.status === "received" ? "Received" : order.status === "fitted" ? "Fitted" : "Pending";
-  return {
-    id: String(order.labOrderId ?? ""),
-    patientId: String(order.patientId ?? ""),
-    patientName: String(order.patientName ?? name),
-    procedure: String(order.labWorkName ?? ""),
-    tooth: String(order.toothScope ?? ""),
-    shade: String(order.shade ?? ""),
-    labId: String(order.supplierId ?? ""),
-    labName: String(order.labNameSnapshot ?? ""),
-    sentDate: String(order.sentOn ?? ""),
-    status,
-    notes: String(order.receptionNote ?? order.clinicalNote ?? "") || undefined,
-    caseId: String(order.chiefComplaintId ?? ""),
-    ...(order.status === "cancelled" ? { voidedAt: String(order.updatedAt ?? ""), voidReason: String(order.receptionNote ?? "Cancelled") } : {}),
-  } as SaaSLabOrder;
-}
-function legacySupplier(value: Record<string, unknown>): SaaSLabSupplier {
-  return {
-    id: String(value.supplierId ?? ""),
-    name: String(value.name ?? ""),
-    contactPerson: "",
-    phone: "",
-    email: "",
-    address: "",
-    active: value.active === true,
-  } as SaaSLabSupplier;
-}
 function toPerio(teeth: Array<Record<string, unknown>>): Record<string, ToothPerioData> {
   return Object.fromEntries(teeth.filter((tooth) => typeof tooth.toothCode === "string").map((tooth) => [
     tooth.toothCode as string,
@@ -151,13 +121,11 @@ type SnapshotValues = {
   media: PatientMediaAsset[];
   periodontal: unknown;
   canals: unknown;
-  labOrders: Record<string, unknown>[];
-  suppliers: SaaSLabSupplier[];
   staff: string[];
 };
 type SnapshotKey = keyof SnapshotValues;
 type Snapshot = { [K in SnapshotKey]: LoadedRead<SnapshotValues[K]> };
-type PatientSection = "profile" | "cases" | "notes" | "timeline" | "periodontal" | "plan" | "lab" | "xrays" | "prescriptions" | "followups" | "ledger";
+type PatientSection = "profile" | "cases" | "notes" | "timeline" | "periodontal" | "plan" | "xrays" | "prescriptions" | "followups" | "ledger";
 const SECTION_READS: Record<PatientSection, SnapshotKey[]> = {
   profile: ["staff"],
   cases: ["plans"],
@@ -165,7 +133,6 @@ const SECTION_READS: Record<PatientSection, SnapshotKey[]> = {
   timeline: ["plans", "timeline"],
   periodontal: ["periodontal"],
   plan: ["plans", "timeline", "canals"],
-  lab: ["labOrders", "suppliers"],
   xrays: ["media"],
   prescriptions: ["prescriptions"],
   followups: ["followUps"],
@@ -176,7 +143,7 @@ function emptySnapshot(): Snapshot {
   return {
     core: emptyRead(null), plans: emptyRead([]), timeline: emptyRead([]), notes: emptyRead([]),
     prescriptions: emptyRead([]), followUps: emptyRead([]), ledger: emptyRead(null), media: emptyRead([]),
-    periodontal: emptyRead(null), canals: emptyRead(null), labOrders: emptyRead([]), suppliers: emptyRead([]), staff: emptyRead([]),
+    periodontal: emptyRead(null), canals: emptyRead(null), staff: emptyRead([]),
   };
 }
 function invalidateRead<K extends SnapshotKey>(snapshot: Snapshot, key: K): Snapshot {
@@ -257,7 +224,6 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
 
   const canReadLedger = capabilities.has("patient_billing_ledger.read");
   const canReadClinicalCharts = capabilities.has("work_entry.access");
-  const canReadLabs = capabilities.has("lab_tracker.access");
   useEffect(() => {
     if (!activeSection) return;
     const controller = new AbortController();
@@ -291,12 +257,6 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
         queue("timeline", [], (signal) => api.timeline(patientId, signal));
         if (canReadClinicalCharts) queue("canals", null, (signal) => api.canals(patientId, signal));
         break;
-      case "lab":
-        if (canReadLabs) {
-          queue("labOrders", [], (signal) => api.labOrders(patientId, signal).then((value) => arrayFrom<Record<string, unknown>>(value, "labOrders")));
-          queue("suppliers", [], (signal) => api.labSuppliers(signal).then((rows) => rows.map((row) => legacySupplier(row as unknown as Record<string, unknown>))));
-        }
-        break;
       case "xrays":
         queue("media", [], (signal) => api.media(patientId, signal));
         break;
@@ -311,7 +271,7 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
         break;
     }
     return () => cancelReads(controller, keys);
-  }, [activeSection, api, canReadClinicalCharts, canReadLabs, canReadLedger, cancelReads, loadField, patientId, revision]);
+  }, [activeSection, api, canReadClinicalCharts, canReadLedger, cancelReads, loadField, patientId, revision]);
 
   const core = snapshot.core.value;
   const plans = snapshot.plans.value;
@@ -322,9 +282,7 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
     alerts: [], balance: 0, planTitle: "", planDone: 0, planTotal: 0, teeth: [], visits: [], notes: "",
   }), [initialPatient?.name, patientId]);
   const selectedPatient = useMemo(() => core ? legacyPatient(core, plans, timeline, patientLedger?.summary.outstandingDue ?? 0) : initialPatient ?? placeholderPatient, [core, initialPatient, plans, placeholderPatient, timeline, patientLedger]);
-  const rawLabOrder = (id: string) => snapshot.labOrders.value.find((order) => String(order.labOrderId) === id);
   const role = session.clinicUser.role === "admin" ? "admin" : session.clinicUser.role === "doctor" ? "doctor" : "assistant";
-  const labOrders = useMemo(() => snapshot.labOrders.value.map((order) => workerLabOrder(order, core?.fullName ?? "Patient")), [snapshot.labOrders.value, core?.fullName]);
   const xrayRows = useMemo<XrayImage[]>(() => snapshot.media.value.filter((asset) => asset.status === "active").map((asset) => ({
     id: asset.mediaAssetId,
     imageId: asset.mediaAssetId,
@@ -414,23 +372,8 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
       items, reason, expectedRowVersion: prescription.rowVersion,
     }));
   };
-  const updateOrderStatus = async (orderId: string, status: SaaSLabOrder["status"], _paymentDate?: string) => {
-    const order = rawLabOrder(orderId);
-    if (!order || !Number.isInteger(order.rowVersion)) throw new Error("This lab order changed. Reload it before updating its status.");
-    const target = status === "Sent" ? "sent" : status === "Received" ? "received" : status === "Fitted" ? "fitted" : "pending_assignment";
-    await execute("Update lab order status", api.updateLab(orderId, { expectedRowVersion: order.rowVersion as number, status: target }));
-  };
-  const assignPendingOrder = async (orderId: string, input: { supplierId: string; labWorkName: string; toothScope: string | null; shade: string | null; sentOn: string; receptionNote: string | null }) => {
-    const order = rawLabOrder(orderId);
-    if (!order || !Number.isInteger(order.rowVersion)) throw new Error("This lab order changed. Reload it before assigning a supplier.");
-    await execute("Assign lab supplier", api.assignLabOrder(orderId, { ...input, expectedRowVersion: order.rowVersion as number }));
-  };
   const periodForApiSave = async (teeth: Record<string, ToothPerioData>) => {
     await execute("Save periodontal chart", api.savePeriodontal(patientId, { patientId, chiefComplaintId: null, recordedOn: todayISO(), teeth: perioForApi(teeth) }));
-  };
-  const createFollowUp = async (input: Omit<import("./types").FollowUpCreateInput, "patientId">) => {
-    const result = await execute("Schedule follow-up", api.createFollowUp({ ...input, patientId }));
-    return result.followUp as PatientFollowUp;
   };
   const changeCaseStatus = async (caseId: string, input: { patientId: string; expectedRowVersion: number; status: "open" | "completed" | "closed"; reason: string | null }) => {
     await execute("Update chief complaint", api.updateCaseStatus(caseId, input));
@@ -453,11 +396,6 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
       isClosing={false}
       onClose={() => {}}
       showBackButton={false}
-      patientCases={[] as Case[]}
-      patientLabOrders={labOrders}
-      labs={snapshot.suppliers.value}
-      onUpdateOrderStatus={updateOrderStatus}
-      onAssignPendingLabOrder={assignPendingOrder}
       patientXrays={xrayRows}
       patientXraysLoading={snapshot.media.loading}
       xrayLoadError={snapshot.media.error}
@@ -487,8 +425,6 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
       procedureCatalog={[]}
       patientCanalMeasurements={rawCanals}
       onSaveCanalMeasurement={saveCanalMeasurement}
-      patientLabLoading={snapshot.labOrders.loading || snapshot.suppliers.loading}
-      patientLabError={snapshot.labOrders.error ?? snapshot.suppliers.error}
       patientCanalMeasurementsLoading={snapshot.canals.loading}
       patientCanalMeasurementsError={snapshot.canals.error}
       canViewBillingLedger={capabilities.has("patient_billing_ledger.read")}
@@ -503,7 +439,6 @@ export function SaaSPatientDetail({ patientId, initialPatient }: { patientId: st
       patientFollowUps={snapshot.followUps.value}
       patientFollowUpsLoading={snapshot.followUps.loading}
       patientFollowUpsError={snapshot.followUps.error}
-      onCreatePatientFollowUp={createFollowUp}
       patientTreatmentPlans={plans}
       patientTreatmentPlansLoading={snapshot.plans.loading}
       patientTreatmentPlansError={snapshot.plans.error}

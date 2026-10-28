@@ -1,9 +1,9 @@
 export const followupsBundle = Object.freeze({
   "entry": "/apps/followups.v1.html",
-  "entrySha256": "fd4efeece37862eb80871311de4eb256ce8ec7bb27d91aa83f068f4f526ee34e",
+  "entrySha256": "a71645291df909459fdd8f09700df3ffc17339b566a1ed5a168e63e4316c0b81",
   "script": "/apps/followups.v1.js",
-  "scriptSha256": "49bf6103b358d239063c12790168bd3cfdd5d589429f32f0581f60990646f817",
+  "scriptSha256": "67e795fa9bb2fd5bc03df6480a576d36b7450c903b9f7d0e9e44282fe907acf3",
   "style": "/apps/followups.v1.css",
-  "styleSha256": "f848dd5bf7387c1d9f1e533b0d634c8bad4d23074cd5994ffde885c1f057c082"
+  "styleSha256": "041aeeb022d63971839a45703d38b9e68829953e96438456aab3e5b4023b0860"
 });
-export const followupsVersion = "1.0.6";
+export const followupsVersion = "1.0.8";

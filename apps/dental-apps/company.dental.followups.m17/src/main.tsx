@@ -58,13 +58,12 @@ function FollowupsApp() {
   if (!ready) return <main className="app-message" role="status">Opening Follow-ups…</main>;
   return <ClinicSnackbarProvider><ClinicLoadingProvider><ClinicPageRefreshProvider><SnackbarProvider>
     <DraftSafety.Provider value={draft}><main className="clinicWorkspaceCanvas" data-dental-os-app={APP_ID}>
-      <p role="note" className="browser-followups-readonly">You can schedule new follow-ups for registered patients. Existing follow-up schedules and call statuses remain read-only in the Browser Edition.</p>
       {referenceError && <p className="app-warning" role="status">{referenceError}</p>}
       {(writeState === 'unknown' || reconcileError) && <section className="app-warning" role="alert">
         <p>{reconcileError || 'The last save has an uncertain result. Check the original save before making another change.'}</p>
         {writeState !== 'none' ? <button type="button" className="btn btn-secondary" disabled={writeState === 'saving'} onClick={() => { void reconcile(); }}>{writeState === 'saving' ? 'Checking…' : 'Retry original save'}</button> : <button type="button" className="btn btn-secondary" onClick={() => { setReconcileError(''); setRevision(value => value + 1); }}>Refresh Follow-ups</button>}
       </section>}
-      <FollowUpsView readOnly allowCreate key={revision} doctors={doctors}
+      <FollowUpsView allowCreate key={revision} doctors={doctors}
         writeState={writeState} onReconcile={reconcile}
         onCreate={async input => { await followUpsApi.createFollowUp(input); }}
         onSearchPatients={followUpsApi.searchPatients}
