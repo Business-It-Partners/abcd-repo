@@ -5,6 +5,7 @@ import { connectBrowserRuntime } from '../../../clinic-app-runtime/runtimeBridge
 import { ClinicLoadingProvider } from '@/shared/ui/ClinicLoadingOverlay';
 import { ClinicPageRefreshProvider } from '@/shared/ui/ClinicPageRefresh';
 import { ClinicSnackbarProvider } from '@/shared/ui/ClinicSnackbar';
+import { SnackbarProvider } from '@/shared/ui/SnackbarProvider';
 import { ClinicNavigationGuardProvider } from '@/shell/navigation/ClinicNavigationGuard';
 import { WorkEntryWorkspace } from '@/features/work-entry/WorkEntryWorkspace';
 import { installClinicClient } from '@/sdk/client';
@@ -54,11 +55,11 @@ function WorkEntryApp() {
   }, []);
 
   if (!client) return <main className="workEntryMessage" role={message.startsWith('Opening') ? 'status' : 'alert'}>{message}</main>;
-  return <ClinicSnackbarProvider><ClinicNavigationGuardProvider><ClinicLoadingProvider><ClinicPageRefreshProvider>
+  return <ClinicSnackbarProvider><SnackbarProvider><ClinicNavigationGuardProvider><ClinicLoadingProvider><ClinicPageRefreshProvider>
     <WorkEntryWorkspace
       canCollectPayment={capabilities.includes('patient_payments.collect') && capabilities.includes('patient_billing_ledger.read')}
     />
-  </ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicNavigationGuardProvider></ClinicSnackbarProvider>;
+  </ClinicPageRefreshProvider></ClinicLoadingProvider></ClinicNavigationGuardProvider></SnackbarProvider></ClinicSnackbarProvider>;
 }
 
 createRoot(document.getElementById('root')!).render(<WorkEntryApp />);

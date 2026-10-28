@@ -620,6 +620,7 @@ export function WorkEntryWorkspace({ canCollectPayment }: {
 
   if (selectedCase && selectedPatientCore && selectedFlow === "continue") return <section className={styles.continuationWorkspace} key="work-entry-continuation">
     <InProgressWorkEntry
+      key={selectedCase.chiefComplaintId}
       patient={legacyPatient(selectedPatientCore, selectedLedger?.summary.outstandingDue ?? 0)}
       workEntryCase={selectedCase}
       caseDoctorNames={selectedCase.caseDoctorStaffIds.map((staffId) => doctors.find((doctor) => doctor.staffId === staffId)?.fullName).filter((name): name is string => Boolean(name))}

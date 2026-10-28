@@ -486,7 +486,7 @@ export default function WorkEntryView({
     [],
   );
 
-  const { showLoading, showToast } = useSnackbar();
+  const { showToast, showError } = useSnackbar();
   const { beginOperation } = useClinicLoading();
   const [saved, setSaved] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
@@ -1298,11 +1298,15 @@ export default function WorkEntryView({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Work Entry could not be committed.";
       setSaveError(message);
+      showError(message);
     } finally {
       setSaving(false);
       finishCommitLoading();
     }
-    if (committed) onFinish();
+    if (committed) {
+      showToast("Work Entry saved successfully.");
+      onFinish();
+    }
   };
 
   const editTotalCost = editSteps.reduce((sum, s) => sum + (s.agreedCost || 0), 0);
@@ -1416,7 +1420,6 @@ export default function WorkEntryView({
               {/* STEP 1 — PATIENT RESOLUTION */}
               {effStep === 1 && (renderPatientStep ? (
                 <>
-                  {renderPatientStep(() => goToStep(2, true), () => undefined)}
                   {fixedPatientFlow && (
                     <section style={{ ...card, marginTop: "14px", background: "#f8fafc", padding: "16px 18px" }} aria-label="Visit details">
                       <h3 style={{ ...sectionTitle, marginBottom: "14px" }}>
@@ -1444,6 +1447,7 @@ export default function WorkEntryView({
                       </div>
                     </section>
                   )}
+                  {renderPatientStep(() => goToStep(2, true), () => undefined)}
                 </>
               ) : (
                 <section
