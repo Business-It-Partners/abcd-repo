@@ -12,19 +12,19 @@ Read-only review of the local Dental SaaS configuration and Firebase CLI establi
 
 - Staging Firebase project: `dental-managemetn-staging`.
 - Current clinic web site: `cloudfare-dental-saas-staging.web.app`.
-- The clinic and other candidate staging Hosting sites already have live releases. The browser edition should have a dedicated site so it has its own deployment boundary and does not replace a live site.
+- The clinic and other staging Hosting sites have live releases. On 2026-10-28 the user selected the existing clinic site as the Browser Edition destination, explicitly replacing the clinic UI at that staging site. This supersedes the original proposal for a separate browser-only site.
 - The staging Cloudflare Worker is the existing clinic API. The clinic web contract sends a Firebase ID token as a Bearer token; the Worker verifies it and resolves clinic tenant, role, and capabilities server-side. `GET /v1/me` returns the clinic session.
 - The Worker CORS allowlist does not include the browser preview origin `http://127.0.0.1:4280`. No API call from the current preview is enabled; its CSP blocks connections.
 - The deployed Worker already allows `http://localhost:3003` and `http://127.0.0.1:3003`. A read-only preflight from the browser staging origin succeeds, so B2 does not need a CORS or Worker deployment change.
 - The production Firebase project and production Worker are outside this browser milestone.
 
-No SaaS source, Firebase Hosting site, Firebase Auth setting, Worker configuration, backend data, or deployment was changed during this review.
+At the time of the baseline review, no SaaS source, Firebase Hosting site, Firebase Auth setting, Worker configuration, backend data, or deployment had been changed. The later user-directed staging publication is recorded in [Status](STATUS.md).
 
 ## Proposed browser system
 
 ```text
 Supported desktop browser
-  └─ Browser host (dedicated staging Firebase Hosting origin)
+  └─ Browser host (existing Dental SaaS staging Firebase Hosting origin selected by the user)
       ├─ Firebase Auth session and role-aware shell
       ├─ Static dock, routing, app catalog, and browser API client
       └─ Sandboxed first-party app frames
@@ -35,9 +35,9 @@ Supported desktop browser
 
 ### Browser host and hosting
 
-Use a dedicated Firebase Hosting site in the existing `dental-managemetn-staging` project, with its own browser edition origin. Keep the current Dental SaaS clinic site and Super Admin site untouched. The planned site ID is `dental-os-browser-staging`; it has not been created. Before staging deployment, allow the exact hosted origin in Firebase Auth and staging Worker CORS configuration.
+Use the existing Firebase Hosting site `cloudfare-dental-saas-staging` in project `dental-managemetn-staging` at `https://cloudfare-dental-saas-staging.web.app`, per the user's 2026-10-28 direction. This intentionally replaces the current clinic UI at that staging site. Do not change the Super Admin site, other Hosting sites, or production. The origin is already used by Dental SaaS staging and is present in the staging Worker CORS allowlist, so this host change does not add a new API origin.
 
-Use the same staging Firebase project for browser sign-in and the existing staging Worker for clinic APIs. Keep the browser frontend deployable independently from the Dental SaaS frontend. Do not point staging configuration at production.
+Use the same staging Firebase project for browser sign-in and the existing staging Worker for clinic APIs. The Worker remains the business authority. Do not point staging configuration at production. The static export is allowlisted, includes staging web configuration only, and uses Hosting CSP, cache, and app-frame CORS headers. The initial user-directed publication is recorded in [Status](STATUS.md); hosted session acceptance remains open.
 
 ### Browser compatibility
 
@@ -78,9 +78,9 @@ This compiled **app bundle** is the browser-ready output for one app. It is not 
 
 Local source integration and build do not constitute workflow acceptance. On 2026-10-27, an isolated staging Admin session loaded the app and `GET /v1/treatment-protocols` returned 200; the UI showed 22 protocol rows. No protocol was changed. Although the list includes test-labelled rows, the staging clinic and records are not authoritatively designated as synthetic, and no cleanup plan is recorded. Before any write, record the exact synthetic staging clinic and protocol records, role, cleanup expectations, and acceptance evidence. Mutation flows, Worker role denial, retry/error behavior, and saved-state readback remain acceptance work until a synthetic target is positively identified.
 
-**Update and recovery behavior:** app versions use exact semantic versions and the browser host release pins the bundle hashes. A migrated app update must publish a reviewed host release with a new manifest version/hash and an immutable, versioned app-asset path. The repository retains the original B3 generic preview runtime, but the active catalog points to app-specific bundles; `/apps/runtime.v1.*` identifies the old runtime protocol, not app content. An already-open frame keeps its loaded snapshot; it is not hot-replaced. Reloading the browser host adopts the new manifest. A hash, SRI, CSP, load, or handshake failure closes the frame and its channel, shows a retryable error in the window, and gives the app no API access. Rollback means restoring the last known-good browser-host release from Firebase Hosting; this hosting rollback procedure is recorded for B6 and has not been operationally tested or deployed as part of B3. The local development server uses no-store package checks to expose stale/mismatched files quickly.
+**Update and recovery behavior:** app versions use exact semantic versions and the browser host release pins the bundle hashes. A migrated app update must publish a reviewed host release with a new manifest version/hash and an immutable, versioned app-asset path. The repository retains the original B3 generic preview runtime, but the active catalog points to app-specific bundles; /apps/runtime.v1.* identifies the old runtime protocol, not app content. An already-open frame keeps its loaded snapshot; it is not hot-replaced. Reloading the browser host adopts the new manifest. A hash, SRI, CSP, load, or handshake failure closes the frame and its channel, shows a retryable error in the window, and gives the app no API access. Rollback means restoring the last known-good browser-host release from Firebase Hosting. The selected site’s previous live version is recorded as the rollback target for B6; rollback execution has not been tested. The local development server uses no-store package checks to expose stale/mismatched files quickly.
 
-This model passed local isolated Brave verification in B3. A read-only staging CORS preflight for the protocol mutation headers also succeeds from `http://localhost:3003`; this does not verify sign-in, route behavior, or writes. The dedicated staging site does not yet exist, so hosted CSP, cache behavior, and Hosting rollback remain B6 acceptance work. Hosting must also send `Access-Control-Allow-Origin: *` for SRI-loaded runtime assets because a scripts-only sandbox gives those requests an opaque origin.
+This model passed local isolated Brave verification in B3. A read-only staging CORS preflight for the protocol mutation headers also succeeds from http://localhost:3003; this does not verify sign-in, route behavior, or writes. The selected site now serves the Browser Edition. Hosted shell/assets, runtime config, app-frame CSP/CORS, redirects, and Worker preflight were checked by HTTP; hosted authenticated sign-in, cache behavior, isolated Brave acceptance, and rollback execution remain B6 work. Hosting must send Access-Control-Allow-Origin: * for SRI-loaded runtime assets because a scripts-only sandbox gives those requests an opaque origin.
 
 ### Data and write policy
 
@@ -110,10 +110,10 @@ Exact browser versions, viewport sizes, workflow, roles, test identities, and te
 | Decision | Proposal | State |
 | --- | --- | --- |
 | Browser compatibility | Brave only for V1; other browsers deferred until V1 milestones finish | Set by user; recorded for B1/B6 acceptance |
-| Browser hosting | Dedicated `dental-os-browser-staging` Hosting site in the existing staging Firebase project | Planned for browser staging deployment; no site created |
+| Browser hosting | Existing cloudfare-dental-saas-staging Hosting site in dental-managemetn-staging | User-selected and published 2026-10-28; hosted B6 acceptance remains in progress |
 | Sign-in and API | One Firebase Auth session in the host; host-owned route-granted API client; existing Worker remains authoritative | Baseline for B2 |
 | App isolation | Scripts-only sandbox, opaque origin, runtime CSP hash/SRI, nonce-bound host `MessageChannel`, per-app route grants | Implemented locally in B3; Brave isolation acceptance is recorded in Status |
 | App trust and updates | Reviewed dedicated-host release is the trust root; manifest and bundle SHA-256/SRI pinning; exact semantic versions; host release rollback | Implemented/defined for B3. Hashes are not an independent signature; hosted deployment and rollback validation remain B6 |
 | First write data | Designated synthetic staging clinic/records after read-only integration succeeds | Baseline for B4; exact workflow and cleanup to be recorded before writes |
 
-B0 closes with these product and architecture decisions recorded. Hosting creation, CORS/Auth updates, app runtime code, and clinic data access remain in their later milestones; B0 made no hosting or backend changes.
+B0 records the original product and architecture baseline. The user later superseded its separate-site proposal on 2026-10-28 and selected the existing SaaS staging site. The staging UI rollout changes no Worker or clinic data. Browser workflow acceptance remains separate from publishing the shell.
